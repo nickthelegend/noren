@@ -1,5 +1,13 @@
 # Phase 2 test results
 
+## Local stack update (2026-11-06)
+
+`pnpm test`: **9 passed, 0 failed** across 2 Vitest files. The server tests cover draft binding, dev config, merchant token protection, invoice listing, faucet rate limiting, and exact payment validation. `pnpm exec tsc --noEmit`: passed. `pnpm e2e`: **9 Foundry tests passed, 0 failed, 0 skipped** against the real pool and verifiers; the HTTP invoice flow now creates a draft and binds customer commitments before proving. The e2e summary reported 5 attack reverts and 41.03 s total.
+
+`pnpm dev:stack` started the Anvil fork, deployed the contracts, printed RPC/server/ASP URLs and one merchant token, and served `/config`. A live faucet request returned both gas and USDC transaction hashes; a repeated request for the same address was rejected. Ctrl-C stopped the server and the fork. A throwaway Vite 7.2.2 production build under `/private/tmp` succeeded with the `assert` alias in [packages/core/BROWSER.md](packages/core/BROWSER.md); browser proving itself was not run.
+
+The earlier baseline measurements follow.
+
 Run on 2026-11-06 (local Arc testnet fork at chain 5042002; no public transactions). Commands:
 
 ```sh

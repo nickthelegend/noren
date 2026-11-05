@@ -84,9 +84,11 @@ async function main() {
     const expiry = (await client.getBlock()).timestamp + 3600n;
     const opening = customer.createReceipt();
     const receiptCommitment = opening.commitment;
-    const created = await request(`/merchants/${merchant}/invoices`, 'POST', { amount, expiry, refundPrecommitment: refund.nextPrecommitment, receiptCommitment });
+    const created = await request(`/merchants/${merchant}/invoices`, 'POST', { amount, expiry });
+    if (created.status && created.status !== 'draft') throw new Error('Invoice was not drafted');
+    const bound = await request(`/invoices/${created.invoice.invoiceId}/bind`, 'POST', { refundPrecommitment: refund.nextPrecommitment, receiptCommitment });
     log('invoice', created.invoice.invoiceId);
-    const invoice = { ...created.invoice, amount, expiry, refundPrecommitment: refund.nextPrecommitment };
+    const invoice = { ...bound.invoice, amount, expiry, refundPrecommitment: refund.nextPrecommitment };
     await customer.rememberReceipt(invoice, opening);
     if ((await customer.receipt(invoice)).secret !== opening.secret) throw new Error('Receipt opening mismatch');
     let proofStart = performance.now();

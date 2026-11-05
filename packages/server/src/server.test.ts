@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { encodeInvoiceData, type Invoice } from '@noren/core';
-import { validatePayment, readableError, type RecordRow } from './server.ts';
+import { validatePayment, readableError, createMerchantServer, assertLocalFork, type RecordRow } from './server.ts';
+import { createServer } from 'node:http';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { encodeAbiParameters } from 'viem';
 const invoice: Invoice = { invoiceId: `0x${'11'.repeat(32)}`, merchant: `0x${'22'.repeat(20)}`, amount: 7_500_000n, expiry: 1000n, refundPrecommitment: 123n, receiptCommitment: `0x${'33'.repeat(32)}` };
 const checkout = `0x${'44'.repeat(20)}` as const;
 const row: RecordRow = { invoice, status: 'open' };
@@ -15,4 +20,53 @@ describe('merchant relay validation', () => {
     expect(() => validatePayment(row, body, checkout, 1001n)).toThrow(/Expired/);
   });
   it('explains stale roots as re-prove guidance', () => expect(readableError(new Error('IncorrectASPRoot'))).toMatch(/re-prove/));
+  it('requires binding before payment', () => expect(() => validatePayment({ invoice: { invoiceId: invoice.invoiceId, merchant: invoice.merchant, amount: invoice.amount, expiry: invoice.expiry }, status: 'draft' }, body, checkout, 999n)).toThrow(/InvoiceUnbound/));
+});
+
+describe('local merchant API', () => {
+  it('guards dev endpoints and creates, lists, binds and freezes drafts', async () => {
+    const merchant = invoice.merchant;
+    let sent = 0; let balances = 0;
+    const rpc = createServer(async (req, res) => {
+      let raw = ''; for await (const chunk of req) raw += chunk;
+      const { method } = JSON.parse(raw);
+      const result = method === 'eth_chainId' ? '0x4cef52' : method === 'anvil_nodeInfo' ? { forkConfig: { forkUrl: 'https://rpc.testnet.arc.io' } } : method === 'eth_getBlockByNumber' ? { number: '0x1', timestamp: '0x3e8' } : method === 'eth_call' ? encodeAbiParameters([{ type: 'address' }], [merchant]) : method === 'anvil_setBalance' ? (balances++, true) : method === 'eth_sendTransaction' ? `0x${(++sent).toString(16).padStart(64, '0')}` : method === 'eth_getTransactionReceipt' ? { transactionHash: `0x${sent.toString(16).padStart(64, '0')}`, status: '0x1', blockNumber: '0x1', logs: [] } : null;
+      res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ jsonrpc: '2.0', id: 1, result }));
+    });
+    await new Promise<void>(r => rpc.listen(0, '127.0.0.1', r));
+    const rpcUrl = `http://127.0.0.1:${(rpc.address() as any).port}`;
+    const dir = await mkdtemp(join(tmpdir(), 'noren-server-test-'));
+    const server = createMerchantServer({ deployment: { chainId: 5042002, deploymentBlock: '1', usdc: merchant, entrypoint: merchant, pool: merchant, checkout }, rpcUrl, localUnlockedMerchant: merchant, dataFile: join(dir, 'rows.json'), dev: { aspUrl: 'http://127.0.0.1:8788', merchantToken: 'test-token' } });
+    await new Promise<void>(r => server.listen(0, '127.0.0.1', r));
+    const base = `http://127.0.0.1:${(server.address() as any).port}`;
+    const call = async (path: string, method = 'GET', data?: unknown, token?: string) => { const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', origin: 'http://localhost:5190', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: data && JSON.stringify(data) }); return { status: r.status, cors: r.headers.get('access-control-allow-origin'), body: await r.json() }; };
+    try {
+      expect((await call('/config')).body.merchant).toBe(merchant);
+      expect((await call('/config')).cors).toBe('http://localhost:5190');
+      expect((await call(`/merchants/${merchant}/invoices`, 'POST', { amount: '7500000', expiry: '2000' })).status).toBe(401);
+      const created = await call(`/merchants/${merchant}/invoices`, 'POST', { amount: '7500000', expiry: '2000' }, 'test-token');
+      expect(created.status).toBe(201);
+      expect(created.body.invoice.refundPrecommitment).toBeUndefined();
+      expect((await call(`/invoices/${created.body.invoice.invoiceId}/pay`, 'POST', body)).body.error).toMatch(/InvoiceUnbound/);
+      const bound = await call(`/invoices/${created.body.invoice.invoiceId}/bind`, 'POST', { refundPrecommitment: '123', receiptCommitment: invoice.receiptCommitment });
+      expect(bound.body.invoice.refundPrecommitment).toBe('123');
+      expect(bound.body.paymentLinkPayload.data).toMatch(/^0x/);
+      expect((await call(`/invoices/${created.body.invoice.invoiceId}/bind`, 'POST', { refundPrecommitment: '124', receiptCommitment: invoice.receiptCommitment })).body.error).toMatch(/InvoiceAlreadyBound/);
+      const second = await call(`/merchants/${merchant}/invoices`, 'POST', { amount: '1000000', expiry: '2100' }, 'test-token');
+      expect(second.status).toBe(201);
+      const list = await call(`/merchants/${merchant}/invoices`);
+      expect(list.body).toHaveLength(2);
+      expect(list.body[0].invoice.invoiceId).toBe(second.body.invoice.invoiceId);
+      expect(list.body[1].status).toBe('open');
+      expect((await call(`/merchants/${merchant}/invoices`, 'POST', { amount: '1', expiry: '2000', refundPrecommitment: '123' }, 'test-token')).status).toBe(400);
+      const faucet = await call('/dev/faucet', 'POST', { address: merchant });
+      expect(faucet.status).toBe(200);
+      expect(faucet.body).toHaveProperty('gasTx'); expect(faucet.body).toHaveProperty('usdcTx');
+      expect(balances).toBe(1); expect(sent).toBe(2);
+      expect((await call('/dev/faucet', 'POST', { address: merchant })).status).toBe(429);
+    } finally {
+      await new Promise<void>(r => server.close(() => r())); await new Promise<void>(r => rpc.close(() => r())); await rm(dir, { recursive: true, force: true });
+    }
+    await expect(assertLocalFork('https://rpc.testnet.arc.io')).rejects.toThrow(/loopback/);
+  });
 });

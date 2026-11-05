@@ -18,6 +18,12 @@ contract ForkUSDC {
   /// @dev Local fork control for ASP regression tests; Arc's real USDC has this view.
   function setBlacklisted(address account, bool value) external { isBlacklisted[account] = value; }
 
+  /// @dev Fork-only faucet; this bytecode replaces Arc USDC only in Anvil.
+  function mint(address to, uint256 value) external {
+    balanceOf[to] += value;
+    emit Transfer(address(0), to, value);
+  }
+
   function approve(address spender, uint256 value) external returns (bool) {
     allowance[msg.sender][spender] = value;
     emit Approval(msg.sender, spender, value);
