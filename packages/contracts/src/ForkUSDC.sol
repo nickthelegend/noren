@@ -6,6 +6,7 @@ pragma solidity 0.8.28;
 contract ForkUSDC {
   mapping(address => uint256) public balanceOf; // slot 0, funded with anvil_setStorageAt
   mapping(address => mapping(address => uint256)) public allowance;
+  mapping(address => bool) public isBlacklisted;
 
   event Transfer(address indexed from, address indexed to, uint256 value);
   event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -13,6 +14,9 @@ contract ForkUSDC {
   function decimals() external pure returns (uint8) { return 6; }
   function symbol() external pure returns (string memory) { return 'USDC'; }
   function name() external pure returns (string memory) { return 'USD Coin'; }
+
+  /// @dev Local fork control for ASP regression tests; Arc's real USDC has this view.
+  function setBlacklisted(address account, bool value) external { isBlacklisted[account] = value; }
 
   function approve(address spender, uint256 value) external returns (bool) {
     allowance[msg.sender][spender] = value;

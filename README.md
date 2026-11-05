@@ -10,11 +10,28 @@
 Built on the Ethereum Foundation's [Kohaku](https://github.com/ethereum/kohaku) SDK and 0xbow's [Privacy Pools](https://github.com/0xbow-io/privacy-pools-core) (Apache-2.0, see NOTICE). Proofs are made on the customer's device.
 
 ## Status
-Feasibility spike **passed** on a local fork of Arc testnet (chain 5042002): see [SPIKE.md](SPIKE.md). Proof generation ~2 s on a laptop; checkout withdrawal 583k gas; 9/9 Foundry tests against the real Groth16 verifier and pool with real proofs. Next: live Arc testnet deployment (needs testnet USDC from the Circle faucet), the merchant console and customer app.
+Feasibility spike **passed** on a local fork of Arc testnet (chain 5042002): see [SPIKE.md](SPIKE.md). Phase 2 adds a merchant HTTP server, ASP postman, customer TypeScript library, deployment script, and a full local-fork e2e runner. The latest measured results are in [TESTING.md](TESTING.md). No Arc testnet deployment has been made.
 
 ```sh
-pnpm install
+pnpm install --store-dir './.pnpm-store'
 pnpm spike     # anvil fork of Arc testnet → deploy Privacy Pools + NorenCheckout → shield → invoice-bound proof → pay → refund → forge tests
+pnpm e2e       # fresh fork → merchant HTTP server + ASP postman + customer library → all attacks + refund approval
+pnpm test      # Vitest core and server validation
+pnpm exec tsc --noEmit
 ```
+
+## Phase 2 packages
+
+- `@noren/core`: Arc/fork chain config, deployment reader (`@noren/core/node`), ABI-accurate invoice encoding, and customer helpers (`@noren/core/customer`). Amounts are USDC base units: `7_500_000n` is 7.50 USDC. Invoice JSON uses decimal strings for big integers.
+- `@noren/server`: small Node HTTP server, JSON state in ignored `data/`, merchant-key relay, bearer-gated refund, and SSE on `GET /events` (`invoice_created`, `paid`, `refunded`).
+- `@noren/postman`: scans real pool `Deposited` logs, checks the Arc USDC `isBlacklisted(depositor)` view before approving labels, and batches `Entrypoint.updateRoot`. It serves versioned LeanIMT tree snapshots at `/asp/tree?v=N`; the root event's CID field contains the exact snapshot URL. The URL must be 32–64 bytes long per Entrypoint.
+
+The merchant first registers a payout with `NorenCheckout.registerMerchant(payout)`. `POST /merchants/:address/invoices` takes `{ "amount": "7500000", "expiry": "<Unix seconds>", "refundPrecommitment": "<decimal field element>", "receiptCommitment": "0x<32 bytes>" }`. The customer obtains the next refund precommitment from `refundInbox()`, prepares a receipt opening with `createReceipt()`, and later calls `rememberReceipt(invoice, opening)`. The response contains the invoice and `paymentLinkPayload`. The customer sends the output of `proveInvoicePayment(invoice)` as JSON to `POST /invoices/:id/pay`; status is at `GET /invoices/:id`. `POST /invoices/:id/refund` takes `{ "amount": "2500000" }` and `Authorization: Bearer <NOREN_REFUND_TOKEN>`.
+
+For local services, set `NOREN_RPC_URL`, `NOREN_MERCHANT_KEY`, `NOREN_POSTMAN_KEY`, and `NOREN_REFUND_TOKEN` in the environment, then run `pnpm --filter @noren/server start` and `pnpm --filter @noren/postman start`. Neither key is logged. The e2e runner uses Anvil's unlocked merchant account on loopback and never imports a private key. Production services need their own durable secret storage and publicly reachable ASP tree URL.
+
+`scripts/deploy-arc.ts` deploys the verifiers, Entrypoint proxy, USDC complex pool and checkout, registers the pool, and writes ignored `deployments/5042002.json`. It checks the deployer's native and ERC-20 USDC balance before any transaction on a remote RPC and prints only the address when funding is needed. It was **not run against Arc testnet**. Set `NOREN_POSTMAN_ADDRESS` to give a separate postman key the Entrypoint role; it defaults to the deployer. To invoke later: `NOREN_DEPLOYER_KEY=... NOREN_RPC_URL=https://rpc.testnet.arc.io pnpm exec tsx scripts/deploy-arc.ts`.
+
+The pinned prover artifacts come from the 0xbow `privacy-pools-core` commit `7bc392dad5fa483f53cf74e25d7ad19f0fc6d85f/packages/circuits`, the same URL used by `@fatsolutions/privacy-pools-core-circuits@1.0.5`. `withdraw.zkey` is about 17.8 MB and is **not in Git**. `artifactProverFactory` fetches it once per process and caches it in ignored `cache/zk/` on Node or Cache Storage (`noren-zk-v1`) in a browser. Pass `artifactBaseUrl` to `createCustomer` for a mirror URL or a local filesystem directory in Node; pass durable `storage` to retain receipt openings across app restarts. Browser proving remains to be measured on a phone.
 
 MIT © 2026 Nivesh Gajengi (Noren code). Vendored Privacy Pools contracts keep their Apache-2.0 headers.

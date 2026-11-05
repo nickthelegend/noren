@@ -7,10 +7,16 @@
   "scripts": {
     "postinstall": "node patches/apply-kohaku.mjs",
     "spike": "sh scripts/spike.sh",
+    "e2e": "sh scripts/e2e-fork.sh",
+    "test": "pnpm exec vitest run",
     "build:contracts": "cd packages/contracts && forge build --skip 'test/**'"
   },
   "devDependencies": {
+    "@noren/core": "workspace:*",
+    "@types/node": "24.10.1",
     "tsx": "4.20.6",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "viem": "2.51.3",
+    "vitest": "3.2.4"
   }
 }

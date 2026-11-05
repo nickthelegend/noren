@@ -1,0 +1,1 @@
+{"name":"@noren/postman","private":true,"type":"module","scripts":{"start":"tsx src/main.ts"},"dependencies":{"@noren/core":"workspace:*","@zk-kit/lean-imt":"2.2.4","maci-crypto":"2.5.0","viem":"2.51.3"}}
