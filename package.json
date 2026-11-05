@@ -1,0 +1,16 @@
+{
+  "name": "noren",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "postinstall": "node patches/apply-kohaku.mjs",
+    "spike": "sh scripts/spike.sh",
+    "build:contracts": "cd packages/contracts && forge build --skip 'test/**'"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

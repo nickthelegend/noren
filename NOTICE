@@ -1,0 +1,18 @@
+Noren
+Copyright (c) 2026 Nivesh Gajengi. Noren-authored code is MIT licensed.
+
+This repository vendors selected Solidity contracts from 0xbow's
+privacy-pools-core (commit df4bf730214bf9d0c717a9258f7a74861758c269):
+https://github.com/0xbow-io/privacy-pools-core
+Copyright and attribution remain with 0xbow and the original contributors.
+Those files retain their Apache-2.0 SPDX headers. The complete Apache-2.0
+license is at packages/contracts/lib/privacy-pools-core/licenses/LICENSE.
+
+The vendored lean-imt Solidity helper is from @zk-kit/lean-imt.sol 2.0.0.
+Its license is at packages/contracts/lib/lean-imt/LICENSE.
+
+The spike uses @kohaku-eth/privacy-pools 0.1.0-alpha.27 from
+https://github.com/ethereum/kohaku (MIT). A minimal local patch under
+patches/ lets its existing prover generate a direct custom-processooor
+withdrawal. The proving artifacts come from
+@fatsolutions/privacy-pools-core-circuits 1.0.5 (Apache-2.0).

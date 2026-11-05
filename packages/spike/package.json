@@ -1,0 +1,12 @@
+{
+  "name": "@noren/spike",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@kohaku-eth/privacy-pools": "0.1.0-alpha.27",
+    "@kohaku-eth/provider": "0.1.0-alpha.13",
+    "@zk-kit/lean-imt": "2.2.4",
+    "snarkjs": "0.7.5",
+    "viem": "2.51.3"
+  }
+}

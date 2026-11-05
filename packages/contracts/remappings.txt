@@ -1,0 +1,6 @@
+contracts/=lib/privacy-pools-core/src/contracts/
+interfaces/=lib/privacy-pools-core/src/interfaces/
+@oz/=node_modules/@openzeppelin/contracts/
+@oz-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/
+lean-imt/=lib/lean-imt/
+poseidon/=node_modules/poseidon-solidity/
