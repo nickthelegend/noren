@@ -38,3 +38,19 @@ For local services, set `NOREN_RPC_URL`, `NOREN_MERCHANT_KEY`, `NOREN_POSTMAN_KE
 The pinned prover artifacts come from the 0xbow `privacy-pools-core` commit `7bc392dad5fa483f53cf74e25d7ad19f0fc6d85f/packages/circuits`, the same URL used by `@fatsolutions/privacy-pools-core-circuits@1.0.5`. `withdraw.zkey` is about 17.8 MB and is **not in Git**. `artifactProverFactory` fetches it once per process and caches it in ignored `cache/zk/` on Node or Cache Storage (`noren-zk-v1`) in a browser. Pass `artifactBaseUrl` to `createCustomer` for a mirror URL or a local filesystem directory in Node; pass durable `storage` to retain receipt openings across app restarts. Browser proving remains to be measured on a phone.
 
 MIT © 2026 Nivesh Gajengi (Noren code). Vendored Privacy Pools contracts keep their Apache-2.0 headers.
+
+## The app (merchant console + private checkout)
+
+![Customer checkout, paid privately](docs/img/checkout-paid.png)
+
+![Merchant console: paid, refunded, customer unknown](docs/img/console-refunded.png)
+
+Run it locally against an Arc testnet fork:
+
+```sh
+pnpm install --store-dir './.pnpm-store'
+pnpm dev:stack                      # fork + contracts + merchant server (8790) + ASP (8788); prints a merchant token
+pnpm --filter @noren/web dev        # http://localhost:5190
+```
+
+Measured in a real (headless Chromium) browser on the local fork, Nov 6 2026: 20 USDC shielded and approved by the ASP in ~6 s; a 7.50 USDC invoice paid privately with the **proof generated in the browser in 2.18 s** (~4.5 s click-to-paid); the merchant console showed it as paid with **customer: unknown**; a 2.50 refund landed in the customer's private refund inbox. The customer's wallet is a test-network key and seed kept in the browser; proofs never leave the device.

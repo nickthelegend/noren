@@ -57,6 +57,9 @@ export function createPostman(options: PostmanOptions) {
   }
   function serve(port: number): Server {
     return createServer((req, res) => {
+      // The ASP tree is public data that customers' browsers must read to build proofs.
+      res.setHeader('access-control-allow-origin', '*');
+      if (req.method === 'OPTIONS') { res.setHeader('access-control-allow-methods', 'GET, OPTIONS'); res.writeHead(204); res.end(); return; }
       const url = new URL(req.url ?? '/', 'http://localhost');
       if (url.pathname !== '/asp/tree') { res.writeHead(404); res.end(); return; }
       const snapshot = url.searchParams.has('v') ? snapshots.get(url.searchParams.get('v')!) : tree;

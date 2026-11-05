@@ -37,3 +37,7 @@ Selected local-fork transaction hashes from this run:
 | Refund ASP root | `0xf46913daf1026ea0bda460e94fa5f9bad9cdbcbbf68709d4c0e7fc6a3e3779da` |
 
 The Anvil-only USDC shim is necessary because stock Anvil cannot execute Arc's native USDC bridge; the pool, Entrypoint, and verifiers were not mocked. These hashes disappear when the fork exits. Live Arc gas and browser proving time remain unmeasured. Arc testnet deployment was intentionally not attempted.
+
+## Browser flow (packages/web, Nov 6 2026)
+
+Headless Chromium against `pnpm dev:stack` (local fork): merchant console created a 7.50 USDC invoice; a fresh browser wallet took test USDC from the fork-only faucet, approved USDC to the Entrypoint, shielded 20 USDC (ASP approval after ~6 s), bound the invoice, **proved in the browser in 2.18 s**, and the merchant server relayed the payment (~4.5 s click-to-paid). The console showed `Paid`, then `Refunded` after a 2.50 refund; the customer saw 12.50 private balance and 2.50 in the refund inbox. Two bugs found and fixed in this run: the shield step must approve USDC first (Kohaku returns only the deposit), and the ASP tree endpoint needed CORS for browsers.
