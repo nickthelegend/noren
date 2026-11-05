@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+cache/
+broadcast/
+.env
+.env.*
+*.key
+*.state.json
+.keys*.json
+artifacts/zk/
+.DS_Store
