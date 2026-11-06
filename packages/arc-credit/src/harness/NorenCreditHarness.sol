@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {IReceiver, IERC165} from '../interfaces/IReceiver.sol';
 
+/// DEV_ONLY: fork-only test harness; scripts/deploy-public.sh refuses any step that deploys it.
 /// @title NorenCreditHarness (TEST HARNESS, not the product contract)
 /// @notice Stand-in for packages/robinhood NorenCredit on Robinhood Chain, used by
 ///         packages/cre-bridge/scripts/fork-simulate.sh with NOREN_BRIDGE_RECEIVER=harness when the
