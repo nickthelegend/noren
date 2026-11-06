@@ -50,6 +50,7 @@ contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
   error NotInventory(address asset);
   error Slippage(uint256 required, uint256 max);
   error BadConfig();
+  error DustAmount(uint256 amount);
 
   constructor(address owner_, IERC20 usdg_, NorenAssetOracle oracle_)
     ERC20('Noren Vault USDG', 'nvUSDG')
@@ -139,6 +140,7 @@ contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
     uint256 usd8 = oracle.valueUsd8(invAsset, amount);
     uint256 gross = BPS + inventorySpreadBps + (p.marketClosed ? oracle.closedHaircutBps() : 0);
     usdgIn = oracle.usd8ToUsdg(usd8.mulDiv(gross, BPS, Math.Rounding.Ceil), Math.Rounding.Ceil);
+    if (usdgIn == 0) revert DustAmount(amount); // a dust amount whose value floors to 0 is never free
     if (usdgIn > maxUsdgIn) revert Slippage(usdgIn, maxUsdgIn);
     IERC20(asset()).safeTransferFrom(msg.sender, address(this), usdgIn);
     IERC20(invAsset).safeTransfer(msg.sender, amount);
