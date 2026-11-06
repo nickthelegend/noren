@@ -11,6 +11,7 @@ case "$RPC" in http://127.0.0.1:*) ;; *) echo "Refusing: deploy-fork only target
 
 # Anvil dev accounts (public test mnemonic): #0 owner/LP, #1 demo customer, #2 demo merchant,
 # #3 Aqua maker (a merchant with idle USDG), #4 liquidation keeper,
+# #7 stand-in World ID attester (NorenReputation.worldIdSigner) on the fork,
 # #8 stand-in CRE forwarder on the fork, #9 underwriter signer on the fork.
 OWNER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 OWNER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -21,6 +22,7 @@ MAKER_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
 KEEPER=0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65
 FORWARDER="${NOREN_RH_FORWARDER:-0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f}"
 UNDERWRITER="${NOREN_RH_UNDERWRITER:-0xa0Ee7A142d267C1f36714E4a8F75612F20a79720}"
+WORLD_ID_SIGNER="${NOREN_RH_WORLD_ID_SIGNER:-0x14dC79964da2C08b23698B3D3cc7Ca32193d9955}"
 INTERVAL="${NOREN_RH_INSTALLMENT_INTERVAL:-1209600}"
 GRACE="${NOREN_RH_GRACE:-259200}"
 POOL_MANAGER=0x8366a39CC670B4001A1121B8F6A443A643e40951
@@ -36,12 +38,15 @@ done
 mkdir -p "$ROOT/.fork"
 (cd "$ROOT/../aqua/swapvm-ext" && forge build >/dev/null 2>"$ROOT/.fork/swapvm-build.log") || { echo "Setup required: pnpm install, then forge build in packages/aqua/swapvm-ext" >&2; exit 1; }
 cd "$ROOT/contracts"
-OUT="$(NOREN_RH_OWNER=$OWNER NOREN_RH_UNDERWRITER=$UNDERWRITER NOREN_RH_FORWARDER=$FORWARDER \
+OUT="$(NOREN_RH_OWNER=$OWNER NOREN_RH_UNDERWRITER=$UNDERWRITER NOREN_RH_FORWARDER=$FORWARDER NOREN_RH_WORLD_ID_SIGNER=$WORLD_ID_SIGNER \
   NOREN_RH_INSTALLMENT_INTERVAL=$INTERVAL NOREN_RH_GRACE=$GRACE \
   forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC" --broadcast --private-key "$OWNER_KEY" 2>&1)" || { echo "$OUT" >&2; exit 1; }
 pick() { sed -nE "s/.*$1[[:space:]]+(0x[[:xdigit:]]{40}).*/\1/p" <<<"$OUT" | tail -1; }
 ORACLE=$(pick NOREN_RH_ORACLE); VAULT=$(pick NOREN_RH_VAULT); GATEWAY=$(pick NOREN_RH_GATEWAY); CREDIT=$(pick NOREN_RH_CREDIT)
 ROUTER=$(pick NOREN_RH_SWAPVM_ROUTER); LIQUIDITY=$(pick NOREN_RH_LIQUIDITY)
+REPUTATION=$(pick NOREN_RH_REPUTATION); BORROW=$(pick NOREN_RH_BORROW)
+DEPOSIT_VAULTS=$(sed -nE 's/.*NOREN_RH_DEPOSIT_VAULT[[:space:]]+(0x[[:xdigit:]]{40})[[:space:]]+(0x[[:xdigit:]]{40}).*/{"asset":"\1","vault":"\2"}/p' <<<"$OUT" | paste -sd, - | sed 's/^/[/;s/$/]/')
+[ -n "$BORROW" ] && [ -n "$REPUTATION" ] || { echo "$OUT" >&2; exit 1; }
 [ -n "$CREDIT" ] && [ -n "$LIQUIDITY" ] || { echo "$OUT" >&2; exit 1; }
 DEPLOY_BLOCK=$(cast block-number --rpc-url "$RPC")
 
@@ -78,6 +83,10 @@ cat >"$ROOT/.fork/deployment.json" <<JSON
   "gateway": "$GATEWAY",
   "credit": "$CREDIT",
   "liquidity": "$LIQUIDITY",
+  "reputation": "$REPUTATION",
+  "borrow": "$BORROW",
+  "depositVaults": $DEPOSIT_VAULTS,
+  "worldIdSigner": "$WORLD_ID_SIGNER",
   "swapRouter": "$ROUTER",
   "aqua": "0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a",
   "officialSwapRouter": "0x111111338c5091E8440b67B168bAe16a668AC0De",
