@@ -1,1 +1,1 @@
-Now the customer's side: the Noren app. Sign in with Privy, or connect a browser wallet. Home shows every balance, and you can paste a link and pay privately, right here.
+Now the customer. Sign in with Privy, or a browser wallet. Home shows every balance. Paste a link. Pay privately. Done.

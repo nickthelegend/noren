@@ -2,175 +2,133 @@
   {
     "text": "Three",
     "start": 0.05,
-    "end": 0.49,
+    "end": 0.35,
     "id": "w0"
   },
   {
     "text": "ways",
-    "start": 0.49,
-    "end": 0.88,
+    "start": 0.35,
+    "end": 0.63,
     "id": "w1"
   },
   {
     "text": "to",
-    "start": 0.88,
-    "end": 0.92,
+    "start": 0.63,
+    "end": 0.77,
     "id": "w2"
   },
   {
     "text": "pay.",
-    "start": 1.22,
-    "end": 1.48,
+    "start": 0.77,
+    "end": 1.12,
     "id": "w3"
   },
   {
     "text": "First,",
-    "start": 1.53,
-    "end": 2.07,
+    "start": 1.2,
+    "end": 1.77,
     "id": "w4"
   },
   {
     "text": "USDC",
-    "start": 2.07,
-    "end": 2.39,
+    "start": 1.77,
+    "end": 2.12,
     "id": "w5"
   },
   {
     "text": "on",
-    "start": 2.39,
-    "end": 2.7,
+    "start": 2.14,
+    "end": 2.31,
     "id": "w6"
   },
   {
-    "text": "ARC",
-    "start": 2.7,
-    "end": 2.71,
+    "text": "Arc.",
+    "start": 2.33,
+    "end": 2.82,
     "id": "w7"
   },
   {
-    "text": "private",
-    "start": 2.99,
-    "end": 3.46,
+    "text": "Private",
+    "start": 2.82,
+    "end": 3.15,
     "id": "w8"
   },
   {
     "text": "by",
-    "start": 3.46,
-    "end": 3.63,
+    "start": 3.32,
+    "end": 3.37,
     "id": "w9"
   },
   {
     "text": "default.",
-    "start": 3.63,
-    "end": 4.32,
+    "start": 3.37,
+    "end": 3.87,
     "id": "w10"
   },
   {
     "text": "The",
-    "start": 4.37,
-    "end": 4.48,
+    "start": 4.02,
+    "end": 4.18,
     "id": "w11"
   },
   {
     "text": "shop",
-    "start": 4.48,
-    "end": 4.7,
+    "start": 4.18,
+    "end": 4.4,
     "id": "w12"
   },
   {
-    "text": "is",
-    "start": 4.7,
+    "text": "sees",
+    "start": 4.49,
     "end": 4.81,
     "id": "w13"
   },
   {
-    "text": "paid",
+    "text": "only",
     "start": 4.81,
-    "end": 5.03,
+    "end": 5.2,
     "id": "w14"
   },
   {
-    "text": "from",
-    "start": 5.03,
-    "end": 5.23,
+    "text": "private",
+    "start": 5.2,
+    "end": 5.72,
     "id": "w15"
   },
   {
-    "text": "the",
-    "start": 5.23,
-    "end": 5.53,
+    "text": "and",
+    "start": 6.09,
+    "end": 6.24,
     "id": "w16"
   },
   {
-    "text": "Kohaku",
-    "start": 5.53,
-    "end": 5.73,
+    "text": "it",
+    "start": 6.24,
+    "end": 6.33,
     "id": "w17"
   },
   {
-    "text": "pool",
-    "start": 5.83,
-    "end": 6,
+    "text": "ran",
+    "start": 6.47,
+    "end": 6.7,
     "id": "w18"
   },
   {
-    "text": "and",
-    "start": 6,
-    "end": 6.13,
+    "text": "live",
+    "start": 6.7,
+    "end": 7,
     "id": "w19"
   },
   {
-    "text": "sees",
-    "start": 6.21,
-    "end": 6.54,
+    "text": "from",
+    "start": 7,
+    "end": 7.44,
     "id": "w20"
   },
   {
-    "text": "only",
-    "start": 6.54,
-    "end": 6.9,
-    "id": "w21"
-  },
-  {
-    "text": "private.",
-    "start": 6.9,
-    "end": 7.77,
-    "id": "w22"
-  },
-  {
-    "text": "It",
-    "start": 7.85,
-    "end": 7.93,
-    "id": "w23"
-  },
-  {
-    "text": "ran",
-    "start": 7.93,
-    "end": 8.13,
-    "id": "w24"
-  },
-  {
-    "text": "live",
-    "start": 8.13,
-    "end": 8.39,
-    "id": "w25"
-  },
-  {
-    "text": "too",
-    "start": 8.39,
-    "end": 8.6,
-    "id": "w26"
-  },
-  {
-    "text": "from",
-    "start": 8.6,
-    "end": 8.72,
-    "id": "w27"
-  },
-  {
     "text": "Arbitrum.",
-    "start": 9.02,
-    "end": 9.44,
-    "id": "w28"
+    "start": 7.44,
+    "end": 8,
+    "id": "w21"
   }
 ]

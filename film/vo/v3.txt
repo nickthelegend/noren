@@ -1,1 +1,1 @@
-Aubelle, a demo boutique, added Noren with the SDK. Pick a dress, size small, into the bag, and check out with Noren: four ways to pay. Privately, with USDC, with stocks or crypto, or later on credit, still private.
+Aubelle is a demo boutique. One SDK file connects it to Noren. Pick a dress. Add it to the bag. Check out with Noren. Four ways to pay: private, USDC, stocks or crypto, or credit.

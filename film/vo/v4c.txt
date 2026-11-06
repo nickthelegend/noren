@@ -1,1 +1,1 @@
-Stock Tokens reach Arc as USDC through a cross-chain Aqua order. So CCTP carries USDC, Aqua orders carry stocks, and Chainlink CCIP carries credit messages.
+Stocks reach Arc as USDC through a cross-chain Aqua order. CCTP moves USDC. Aqua moves stocks. Chainlink CCIP moves credit.

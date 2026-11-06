@@ -1,7 +1,7 @@
 [
   {
     "text": "Don't",
-    "start": 0.04,
+    "start": 0.05,
     "end": 0.42,
     "id": "w0"
   },
@@ -25,7 +25,7 @@
   },
   {
     "text": "Deposit",
-    "start": 1.71,
+    "start": 1.69,
     "end": 2,
     "id": "w4"
   },
@@ -44,235 +44,241 @@
   {
     "text": "Norin's",
     "start": 2.51,
-    "end": 3.3,
+    "end": 3.02,
     "id": "w7"
   },
   {
     "text": "Aqua",
     "start": 3.35,
-    "end": 3.94,
+    "end": 4.02,
     "id": "w8"
   },
   {
     "text": "Pool.",
-    "start": 3.94,
-    "end": 4.72,
+    "start": 4.02,
+    "end": 4.88,
     "id": "w9"
   },
   {
     "text": "It",
-    "start": 4.79,
-    "end": 4.89,
+    "start": 4.93,
+    "end": 5.03,
     "id": "w10"
   },
   {
     "text": "becomes",
-    "start": 4.89,
-    "end": 5.49,
+    "start": 5.03,
+    "end": 5.56,
     "id": "w11"
   },
   {
-    "text": "1-inch",
-    "start": 5.49,
-    "end": 5.92,
+    "text": "a",
+    "start": 5.56,
+    "end": 5.63,
     "id": "w12"
   },
   {
-    "text": "Aqua",
-    "start": 6.42,
-    "end": 6.49,
+    "text": "1-inch",
+    "start": 5.63,
+    "end": 6.22,
     "id": "w13"
   },
   {
-    "text": "Liquidity",
-    "start": 6.55,
-    "end": 7.32,
+    "text": "Aqua",
+    "start": 6.22,
+    "end": 6.26,
     "id": "w14"
   },
   {
-    "text": "and",
-    "start": 7.32,
-    "end": 7.59,
+    "text": "liquidity",
+    "start": 6.59,
+    "end": 7.24,
     "id": "w15"
   },
   {
-    "text": "66%",
-    "start": 7.59,
-    "end": 8.15,
+    "text": "and",
+    "start": 7.24,
+    "end": 7.56,
     "id": "w16"
   },
   {
-    "text": "of",
-    "start": 8.23,
-    "end": 8.35,
+    "text": "66%",
+    "start": 7.56,
+    "end": 8.3,
     "id": "w17"
   },
   {
-    "text": "its",
-    "start": 8.45,
-    "end": 8.68,
+    "text": "of",
+    "start": 8.3,
+    "end": 8.51,
     "id": "w18"
   },
   {
-    "text": "value",
-    "start": 8.68,
-    "end": 8.9,
+    "text": "its",
+    "start": 8.51,
+    "end": 8.77,
     "id": "w19"
   },
   {
-    "text": "is",
-    "start": 8.9,
-    "end": 9.37,
+    "text": "value",
+    "start": 8.88,
+    "end": 9.36,
     "id": "w20"
   },
   {
-    "text": "your",
-    "start": 9.37,
-    "end": 9.62,
+    "text": "is",
+    "start": 9.36,
+    "end": 9.41,
     "id": "w21"
   },
   {
-    "text": "credit",
-    "start": 9.67,
-    "end": 10.22,
+    "text": "your",
+    "start": 9.7,
+    "end": 9.99,
     "id": "w22"
   },
   {
-    "text": "limit.",
-    "start": 10.22,
-    "end": 11,
+    "text": "credit",
+    "start": 9.99,
+    "end": 10.63,
     "id": "w23"
   },
   {
-    "text": "Tasks",
-    "start": 11.07,
-    "end": 11.39,
+    "text": "limit.",
+    "start": 10.63,
+    "end": 11.24,
     "id": "w24"
   },
   {
-    "text": "raise",
-    "start": 11.39,
-    "end": 11.79,
+    "text": "Tasks",
+    "start": 11.29,
+    "end": 11.75,
     "id": "w25"
   },
   {
-    "text": "it.",
-    "start": 11.79,
-    "end": 12.19,
+    "text": "raise",
+    "start": 11.75,
+    "end": 12.25,
     "id": "w26"
   },
   {
-    "text": "World",
-    "start": 12.27,
-    "end": 12.6,
+    "text": "it.",
+    "start": 12.26,
+    "end": 12.56,
     "id": "w27"
   },
   {
-    "text": "ID,",
-    "start": 12.6,
-    "end": 12.92,
+    "text": "World",
+    "start": 12.61,
+    "end": 13.41,
     "id": "w28"
   },
   {
-    "text": "a",
-    "start": 12.92,
-    "end": 12.99,
+    "text": "ID,",
+    "start": 13.41,
+    "end": 13.89,
     "id": "w29"
   },
   {
-    "text": "Reclaim",
-    "start": 13.04,
-    "end": 13.39,
+    "text": "a",
+    "start": 13.89,
+    "end": 13.94,
     "id": "w30"
   },
   {
-    "text": "proof",
-    "start": 13.9,
-    "end": 13.96,
+    "text": "Reclaim",
+    "start": 13.94,
+    "end": 14.42,
     "id": "w31"
   },
   {
-    "text": "and",
-    "start": 13.96,
-    "end": 14.2,
+    "text": "proof,",
+    "start": 14.42,
+    "end": 14.92,
     "id": "w32"
   },
   {
     "text": "Repaying",
-    "start": 14.2,
-    "end": 14.84,
+    "start": 14.92,
+    "end": 15.52,
     "id": "w33"
   },
   {
     "text": "on",
-    "start": 14.84,
-    "end": 15,
+    "start": 15.56,
+    "end": 15.71,
     "id": "w34"
   },
   {
     "text": "time,",
-    "start": 15,
-    "end": 15.56,
+    "start": 15.71,
+    "end": 16.2,
     "id": "w35"
   },
   {
     "text": "recorded",
-    "start": 15.56,
-    "end": 16.32,
+    "start": 16.2,
+    "end": 16.85,
     "id": "w36"
   },
   {
-    "text": "on-chain",
-    "start": 16.32,
-    "end": 17.08,
+    "text": "on",
+    "start": 16.85,
+    "end": 17.01,
     "id": "w37"
   },
   {
-    "text": "as",
-    "start": 17.08,
-    "end": 17.27,
+    "text": "chain",
+    "start": 17.01,
+    "end": 17.42,
     "id": "w38"
   },
   {
-    "text": "a",
-    "start": 17.27,
-    "end": 17.36,
+    "text": "as",
+    "start": 17.42,
+    "end": 17.57,
     "id": "w39"
   },
   {
-    "text": "proof",
-    "start": 17.36,
-    "end": 17.84,
+    "text": "a",
+    "start": 17.6,
+    "end": 17.68,
     "id": "w40"
   },
   {
-    "text": "type",
-    "start": 17.84,
-    "end": 18.22,
+    "text": "proof",
+    "start": 17.68,
+    "end": 18.12,
     "id": "w41"
   },
   {
-    "text": "only",
-    "start": 18.22,
-    "end": 18.6,
+    "text": "type",
+    "start": 18.12,
+    "end": 18.63,
     "id": "w42"
   },
   {
-    "text": "up",
+    "text": "only,",
     "start": 18.71,
-    "end": 18.8,
+    "end": 19.2,
     "id": "w43"
   },
   {
-    "text": "to",
-    "start": 18.8,
-    "end": 18.96,
+    "text": "up",
+    "start": 19.21,
+    "end": 19.36,
     "id": "w44"
   },
   {
-    "text": "80%.",
-    "start": 18.96,
-    "end": 19.8,
+    "text": "to",
+    "start": 19.41,
+    "end": 19.54,
     "id": "w45"
+  },
+  {
+    "text": "80%.",
+    "start": 19.54,
+    "end": 20.44,
+    "id": "w46"
   }
 ]

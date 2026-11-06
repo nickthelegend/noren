@@ -1,86 +1,74 @@
 [
   {
     "text": "Third,",
-    "start": 0.09,
-    "end": 0.48,
+    "start": 0.06,
+    "end": 5.01,
     "id": "w0"
   },
   {
     "text": "pay",
-    "start": 0.76,
-    "end": 0.9,
+    "start": 5.01,
+    "end": 5.1,
     "id": "w1"
   },
   {
-    "text": "later,",
-    "start": 0.9,
-    "end": 1.39,
+    "text": "later",
+    "start": 5.1,
+    "end": 5.16,
     "id": "w2"
   },
   {
-    "text": "privately.",
-    "start": 1.71,
-    "end": 2.62,
+    "text": "privately,",
+    "start": 5.16,
+    "end": 5.34,
     "id": "w3"
   },
   {
-    "text": "It",
-    "start": 2.73,
-    "end": 2.75,
+    "text": "live",
+    "start": 5.34,
+    "end": 5.41,
     "id": "w4"
   },
   {
-    "text": "also",
-    "start": 2.75,
-    "end": 3.01,
+    "text": "on",
+    "start": 5.41,
+    "end": 5.44,
     "id": "w5"
   },
   {
-    "text": "ran",
-    "start": 3.01,
-    "end": 3.09,
+    "text": "arctestnet",
+    "start": 5.44,
+    "end": 5.6,
     "id": "w6"
   },
   {
-    "text": "live",
-    "start": 3.38,
-    "end": 3.47,
+    "text": "and",
+    "start": 5.6,
+    "end": 5.65,
     "id": "w7"
   },
   {
-    "text": "on",
-    "start": 3.47,
-    "end": 3.6,
+    "text": "over",
+    "start": 5.65,
+    "end": 5.71,
     "id": "w8"
   },
   {
-    "text": "ArcTestNet",
-    "start": 3.6,
-    "end": 4.3,
+    "text": "chain",
+    "start": 5.71,
+    "end": 5.83,
     "id": "w9"
   },
   {
-    "text": "and",
-    "start": 4.33,
-    "end": 4.53,
+    "text": "link",
+    "start": 5.83,
+    "end": 5.87,
     "id": "w10"
   },
   {
-    "text": "over",
-    "start": 4.53,
-    "end": 4.79,
-    "id": "w11"
-  },
-  {
-    "text": "Chainlink",
-    "start": 5.23,
-    "end": 5.54,
-    "id": "w12"
-  },
-  {
     "text": "CCIP.",
-    "start": 5.54,
-    "end": 5.94,
-    "id": "w13"
+    "start": 5.87,
+    "end": 6,
+    "id": "w11"
   }
 ]

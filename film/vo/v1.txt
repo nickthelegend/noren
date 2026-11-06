@@ -1,1 +1,1 @@
-Pay a shop in crypto today, and it sees your whole wallet. Noren lets merchants accept stablecoins, stocks or credit, privately. Underneath: a payment network on Arc, with 1inch Aqua liquidity and USDC from any chain.
+Pay a shop in crypto, and it sees your whole wallet. Noren fixes that. Stablecoins, stocks or credit. Private by default. Built on Arc, with 1inch Aqua liquidity and USDC from any chain.

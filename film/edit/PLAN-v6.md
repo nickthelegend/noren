@@ -48,25 +48,34 @@ current audio.
 
 Deadline: record and render by 07:00 IST (submission 09:00, live judging 09:30).
 
-## Narration: Nick's voice (ElevenLabs)
+## Narration: Nick's voice (ElevenLabs), confident take
 
-All 13 lines re-voiced with Nick's instant voice clone `MjGt6kOSu6JUWZqpE0Z3` (`eleven_multilingual_v2`, stability 0.5,
-similarity 0.8); the professional clone `nEK4SX92gTOZL1Weda0K` answered "not fine-tuned and cannot be used". Silence
-trimmed, converted to wav, word timings from `npx hyperframes transcribe` in `vo/*.words.json`. "Noren" is read as written
-(it comes out "NOR-en"; "Noh-ren" split into "no rent"). Long lines were shortened in the text, never sped up:
+Voice: Nick's instant clone `MjGt6kOSu6JUWZqpE0Z3` (his choice). Three v1 variants were measured (pace, loudness,
+loudness range, pauses, pitch spread, and a transcript for pronunciation):
+
+| Variant | Pace (words/s) | Loudness (LUFS) | LRA | Pauses | Pitch spread | Notes |
+|---|---|---|---|---|---|---|
+| a `eleven_multilingual_v2`, stability 0.35, similarity 0.85, style 0.45, speaker boost | 1.94 | -11.3 | 3.1 | 6, at full stops | 4.71 st | "Noren", "Aqua" clear; ends each statement |
+| b `eleven_v3`, same | 2.45 | -12.6 | 1.8 | 0 | 4.58 st | flattest; "No run", "Arkwa" |
+| c `eleven_turbo_v2_5`, stability 0.4, style 0.35 | 2.34 | -10.8 | 2.9 | 3 | 4.57 st | runs sentences together |
+
+**Chosen: (a)**, the most dynamic and the only one that lands each short statement. The lines were rewritten as short
+declaratives (full stops, no hedging) so the slower, firmer delivery still fits every slot without speeding up:
 
 | Line | s | Placed at |
 |---|---|---|
-| v1 | 15.83 | 0.0 |
-| v2 | 15.87 | 15.9 |
-| v3 | 13.46 | 35.3 |
-| v4 | 9.80 | 54.2 |
-| v4e | 16.37 | 66.4 |
-| v4c | 12.22 | 86.2 |
-| v4b | 19.82 | 99.8 |
-| v4d | 5.25 | 124.6 |
-| v4s | 4.02 | 130.2 |
-| v5a | 9.50 | 134.4 |
-| v5b | 9.57 | 146.6 |
-| v5c | 5.85 | 159.0 |
-| v6 | 11.07 | 167.6 |
+| v1 | 14.33 | 0.0 |
+| v2 | 17.76 | 15.9 |
+| v3 | 13.98 | 35.3 |
+| v4 | 7.41 | 54.2 |
+| v4e | 13.36 | 66.4 |
+| v4c | 11.33 | 86.2 |
+| v4b | 20.49 | 99.8 |
+| v4d | 4.03 | 124.6 |
+| v4s | 3.44 | 130.2 |
+| v5a | 8.34 | 134.4 |
+| v5b | 10.33 | 146.6 |
+| v5c | 6.20 | 159.0 |
+| v6 | 11.79 | 167.6 (ends 179.4) |
+
+Characters used on Nov 7: about 5,650 in all (two full passes, the re-dos, the pronunciation test and the 3-variant test).

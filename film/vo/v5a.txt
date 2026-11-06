@@ -1,1 +1,1 @@
-Three ways to pay. First, USDC on Arc, private by default: the shop is paid from the Kohaku pool and sees only “private”. It ran live too, from Arbitrum.
+Three ways to pay. First, USDC on Arc. Private by default. The shop sees only “private”. And it ran live, from Arbitrum.

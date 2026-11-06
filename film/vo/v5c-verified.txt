@@ -1,1 +1,1 @@
-Third, pay later, privately. It also ran live on Arc testnet and over Chainlink CCIP.
+Third, pay later, privately. Live on Arc testnet, and over Chainlink CCIP.
