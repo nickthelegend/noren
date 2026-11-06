@@ -12,7 +12,7 @@ export type InvoiceView = {
   createdAt?: number | string; boundAt?: number | string; paidAt?: number | string; refundedAt?: number | string;
   paymentTx?: string; refundTx?: string; refundAmount?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string;
   /** How the customer paid: the private pool, a credit line (backed by stock on Robinhood Chain, bridged by Chainlink CRE), or stocks. */
-  method?: "private" | "credit" | "stocks"; creditLineId?: `0x${string}`;
+  method?: "private" | "credit" | "stocks" | "usdc"; creditLineId?: `0x${string}`;
   /** NorenRateOracle.verifyQuote at the quote's rounds (rates written on Arc by the CRE pricing workflow). */
   rateCheck?: { oracle: `0x${string}`; verified: boolean; detail: string };
   stock?: { asset: `0x${string}`; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number; route?: "aqua-maker" | "vault"; maker?: `0x${string}`; strategyHash?: `0x${string}`; makerFeeUsdg?: string };

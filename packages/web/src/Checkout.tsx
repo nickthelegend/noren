@@ -5,6 +5,7 @@ import type { Wallet } from "./wallet";
 import { Icon, Logo, Setup, TxRef, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
 import { StockPay } from "./StockPay";
+import { UsdcPay } from "./UsdcPay";
 
 type Step = "idle" | "binding" | "proving" | "relaying" | "paid" | "error";
 
@@ -32,7 +33,7 @@ export function Checkout({ id }: { id: string }) {
   const started = useRef(0);
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
-  const [method, setMethod] = useState<"private" | "stocks" | "credit">("private");
+  const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit">("usdc");
 
   useEffect(() => { if (cfg) import("./wallet").then((m) => setWallet(m.makeWallet(cfg))).catch((e) => setNote(`Couldn't load the private wallet: ${msgOf(e)}`)); }, [cfg]);
   const load = useCallback(async () => {
@@ -41,6 +42,18 @@ export function Checkout({ id }: { id: string }) {
   }, [id, wallet]);
   useEffect(() => { load(); const t = setInterval(load, 6000); return () => clearInterval(t); }, [load]);
   const cd = useCountdown(view?.invoice.expiry);
+  const successUrl = typeof view?.successUrl === "string" ? view.successUrl : null;
+  const cancelUrl = typeof view?.cancelUrl === "string" ? view.cancelUrl : null;
+  const orderId = (view?.metadata as Record<string, string> | undefined)?.orderId;
+  const back = (base: string) => { try { const u = new URL(base); if (u.protocol !== "http:" && u.protocol !== "https:") return null; u.searchParams.set("noren_invoice", id); if (orderId) u.searchParams.set("order_id", orderId); return u.toString(); } catch { return null; } };
+  const doneUrl = successUrl ? back(successUrl) : null;
+  const [leaving, setLeaving] = useState<number | null>(null);
+  useEffect(() => {
+    if (!doneUrl || (view?.status !== "paid")) return;
+    setLeaving(5);
+    const t = setInterval(() => setLeaving((n) => { if (n === null) return n; if (n <= 1) { clearInterval(t); location.assign(doneUrl); return 0; } return n - 1; }), 1000);
+    return () => clearInterval(t);
+  }, [doneUrl, view?.status]);
 
   if (err) return <div className="co-page"><Setup err={err} /></div>;
   const shop = view?.merchantName || "Noren merchant";
@@ -104,8 +117,8 @@ export function Checkout({ id }: { id: string }) {
             </ul>
             <div className="co-privacy">
               <Icon.eyeOff />
-              {method === "private" || !method ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
-                : <p><b>Only “Pay privately” hides you.</b> {method === "stocks" ? "Paying with stocks" : "Paying later"} comes from your Robinhood wallet, so {shop} and the chain can link it to you.</p>}
+              {method === "private" ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
+                : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks comes from your Robinhood wallet" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
           <footer className="co-foot"><span>Powered by</span><a href="#/"><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
@@ -118,7 +131,7 @@ export function Checkout({ id }: { id: string }) {
           ) : settled ? (
             <div className="co-done">
               <div className="co-check" aria-hidden><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="m15 27 7.5 7.5L38 19" /></svg></div>
-              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : view?.method === "stocks" ? <>Paid with <em>stocks</em></> : <>Paid <em>privately</em></>}</h2>
+              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : view?.method === "stocks" ? <>Paid with <em>stocks</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
               <p>{usdc(view?.invoice.amount)} USDC to {shop}.{view?.status === "refunded" && ` ${usdc(view.refundAmount)} USDC came back to your private refund inbox.`}</p>
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
@@ -127,6 +140,9 @@ export function Checkout({ id }: { id: string }) {
                 {view?.method === "stocks" && view.stock ? <>
                   <dt>You paid</dt><dd>{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} shares at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
                   <dt>Private</dt><dd>no: paid from your Robinhood wallet</dd>
+                </> : view?.method === "usdc" ? <>
+                  <dt>Paid from</dt><dd>your wallet on Arc</dd>
+                  <dt>Private</dt><dd>no: a direct USDC transfer</dd>
                 </> : view?.method === "credit" ? <>
                   <dt>Paid from</dt><dd>Credit line <span className="mono">{short(view.creditLineId, 4)}</span></dd>
                   <dt>Private</dt><dd>no: the line is tied to your Robinhood wallet</dd>
@@ -135,19 +151,22 @@ export function Checkout({ id }: { id: string }) {
                   <dt>Refund inbox</dt><dd>{inbox ? `${usdc(inbox.approved + inbox.pending)} USDC` : "…"}</dd>
                 </>}
               </dl>
-              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool. Repay it in the <a href="#/app">Noren app</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
+              {doneUrl && view?.status === "paid" && <a className="btn ink full lg" href={doneUrl}>Return to {shop}{leaving ? ` (${leaving})` : ""} <Icon.arrow /></a>}
+              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool, out of your credit limit. Your repayment plan is in the <a href="#/app/credit">Noren app</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
             </div>
           ) : expired ? (
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
           ) : (
             <>
-              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
-              <div className="co-methods" role="tablist" aria-label="Payment method">
+              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
+              {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
+              <div className="co-methods four" role="tablist" aria-label="Payment method">
+                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Icon.card /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
-                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Pay with stocks</b><small>Shares sold at the Chainlink price</small></span></button>
-                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay later</b><small>Credit line backed by your stock</small></span></button>
+                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Pay with stocks</b><small>Sold to the best price, settles to Arc</small></span></button>
+                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>From your credit limit, repay later</small></span></button>
               </div>
-              {method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
+              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
               <div className="co-bal">
                 <div><span>Private balance</span><b>{bal ? usdc(bal.approved) : <span className="skel-t sm" />}<em>USDC</em></b>{bal && bal.pending > 0n && <small className="pend"><span className="spin xs" /> +{usdc(bal.pending)} being screened</small>}</div>
                 <div><span>Refund inbox</span><b>{inbox ? usdc(inbox.approved + inbox.pending) : <span className="skel-t sm" />}<em>USDC</em></b></div>

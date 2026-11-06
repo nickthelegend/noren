@@ -6,7 +6,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
-import { usd8, units, type Holding, type Onchain } from "./onchain";
+import { USDG, usd8, units, type Holding, type Onchain } from "./onchain";
+import { swapper, type RouteQuote } from "./app/swap";
+import { TOKENS, USDG_TOKEN } from "./app/tokens";
 
 type Mirror = Awaited<ReturnType<typeof api.mirrorOnRobinhood>>;
 
@@ -21,6 +23,8 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
+  const [v4, setV4] = useState<{ need: bigint; route: RouteQuote } | { error: string } | null>(null);
+  const [via, setVia] = useState<"aqua" | "v4">("aqua");
 
   useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
   useEffect(() => {
@@ -44,6 +48,26 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
     return () => { on = false; clearInterval(t); };
   }, [tk, mirror, s?.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Uniswap v4 comparison: how much of the same stock buys the invoice's USDG on the v4 pool (exact-in quote of the
+  // Aqua amount, scaled, plus 0.5% so slippage can't leave the invoice short). The v4 route swaps, then pays in USDG.
+  useEffect(() => {
+    if (!tk || !q || !s || q.route !== "aqua-maker") { setV4(null); return; }
+    let on = true;
+    const tin = TOKENS.find((t) => t.sym === s.sym)!;
+    const sw = swapper(cfg, tk);
+    sw.quote(tin, USDG_TOKEN, q.assetIn).then((r) => {
+      if (!on) return;
+      const u = r.routes.find((x): x is RouteQuote => x.id === "v4" && "out" in x);
+      if (!u) { setV4({ error: (r.routes.find((x) => x.id === "v4") as { error?: string })?.error ?? "No Uniswap v4 pool can fill this" }); return; }
+      const need = (q.assetIn * BigInt(mirror!.amountUsdg) * 10050n) / (u.out * 10000n) + 1n;
+      setV4({ need, route: u });
+    }).catch((e) => on && setV4({ error: msgOf(e) }));
+    return () => { on = false; };
+  }, [tk, q?.assetIn, s?.sym]); // eslint-disable-line react-hooks/exhaustive-deps
+  const v4ok = v4 && "need" in v4 ? v4 : null;
+  const v4Better = !!v4ok && !!q && v4ok.need < q.assetIn;
+  useEffect(() => { setVia(v4Better ? "v4" : "aqua"); }, [v4Better]);
+
   if (err) return <div className="co-setup"><span className="eyebrow">Setup required</span><p>{err.replace(/^Setup required:\s*/, "")}</p></div>;
   if (!hold || !mirror) return <div className="co-setup quiet"><span className="spin xs" /> Opening this invoice on Robinhood Chain…</div>;
   if (!hold.length) return (
@@ -53,11 +77,24 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
       {note && <p className={note.bad ? "err" : "note"}>{note.t}</p>}
     </div>
   );
-  const enough = !!s && !!q && s.balance >= q.assetIn;
+  const needIn = via === "v4" && v4ok ? v4ok.need : q?.assetIn;
+  const enough = !!s && !!needIn && s.balance >= needIn;
   const pay = async () => {
     if (!s || !q || !tk) return;
     setBusy("pay"); setNote(null);
-    try { const h = await tk.payWithStock(mirror.gateway, mirror.merchant, mirror.invoiceId, s.token, q.assetIn); setTx(h); setNote({ t: `Paid on Robinhood Chain (tx ${short(h, 6)}). Waiting for ${shop} to see it…` }); onPaid(); }
+    try {
+      let h: string;
+      if (via === "v4" && v4ok) {
+        const tin = TOKENS.find((t) => t.sym === s.sym)!;
+        setNote({ t: `Selling ${units(v4ok.need, 18, 6)} ${s.sym} on Uniswap v4…` });
+        const fresh = await swapper(cfg, tk).quote(tin, USDG_TOKEN, v4ok.need);
+        const r = fresh.routes.find((x): x is RouteQuote => x.id === "v4" && "out" in x);
+        if (!r || r.out < BigInt(mirror.amountUsdg)) throw new Error("The Uniswap v4 price moved; pick the Aqua route or try again");
+        await swapper(cfg, tk).execute(r, tin, USDG_TOKEN, v4ok.need, 50, (t) => setNote({ t }));
+        setNote({ t: `Paying ${usdc(mirror.amountUsdg)} USDG to ${shop}…` });
+        h = await tk.payWithStock(mirror.gateway, mirror.merchant, mirror.invoiceId, USDG, BigInt(mirror.amountUsdg));
+      } else h = await tk.payWithStock(mirror.gateway, mirror.merchant, mirror.invoiceId, s.token, q.assetIn);
+      setTx(h); setNote({ t: `Paid on Robinhood Chain (tx ${short(h, 6)}). Waiting for ${shop} to see it…` }); onPaid(); }
     catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); load(); }
   };
   return (
@@ -69,16 +106,27 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
         <dt>You pay</dt><dd><b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
         <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}` : "…"}</dd>
         {q?.marketClosed && <><dt>US markets</dt><dd><span className="co-closed" title="Saturday, Sunday and Monday before 06:00 UTC the stock feeds pause, so makers add 3% to their spread">markets closed: wider spread</span></dd></>}
-        <dt>Filled by</dt><dd>{q ? (q.route === "aqua-maker" ? "1inch Aqua maker · SwapVM, Chainlink-pegged" : `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread`) : "…"}</dd>
+        <dt>Best execution</dt><dd>{!q ? "…" : q.route !== "aqua-maker" ? `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread` : via === "v4" ? "Uniswap v4 → USDG" : "1inch Aqua maker · SwapVM, Chainlink-pegged"}</dd>
         <dt>{shop} receives</dt><dd>{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
       </dl>
+      {q?.route === "aqua-maker" && (
+        <div className="co-routes" role="radiogroup" aria-label="Route">
+          <button role="radio" aria-checked={via === "aqua"} onClick={() => setVia("aqua")}><span><b>1inch Aqua maker</b><small>SwapVM order pegged to Chainlink, pays {shop} directly</small></span><b className="num">{units(q.assetIn, 18, 6)} {sym}</b></button>
+          <button role="radio" aria-checked={via === "v4"} disabled={!v4ok} onClick={() => setVia("v4")}><span><b>Uniswap v4</b><small>{v4ok ? `${(v4ok.route.id === "v4" ? v4ok.route.key.fee / 10000 : 0).toFixed(2)}% pool → USDG, then pays ${shop}; includes 0.5% slippage room` : v4 && "error" in v4 ? v4.error : "Quoting…"}</small></span><b className="num">{v4ok ? `${units(v4ok.need, 18, 6)} ${sym}` : "–"}</b></button>
+        </div>
+      )}
+      <ol className="co-settle" aria-label="How the merchant gets paid">
+        <li data-on="true"><b>{shop} gets USDG</b><span>on Robinhood Chain, in the payment tx</span></li>
+        <li><b>Settle to Arc</b><span>Chainlink CRE approves a live Relay or Across quote</span></li>
+        <li><b>USDC on Arc</b><span>filled by a real relayer (none on a local fork)</span></li>
+      </ol>
       <div className="co-privacy light">
         <Icon.chart />
         <p><b>Not private.</b> The payment comes from your Robinhood wallet. A 1inch Aqua maker (or Noren's vault) buys your shares at the Chainlink price and {shop} gets USDG.</p>
       </div>
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn kaki full xl" disabled={!!busy || !!tx || !enough || eth === 0n} onClick={pay}>
-        {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {q ? units(q.assetIn, 18, 4) : ""} {sym}</>}
+        {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {needIn ? units(needIn, 18, 4) : ""} {sym}</>}
       </button>
       <p className="faint sm center">NorenGateway.pay on a local Robinhood Chain fork, signed by your test key in this browser.</p>
       <p className="co-attrib mono">Powered by SwapVM — © Degensoft Ltd 2025</p>

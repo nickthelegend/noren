@@ -824,3 +824,27 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-settle-list header { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .sd-tl.small b { font-size: 13px; } .sd-tl.small span { display: block; font-size: 12px; overflow-wrap: anywhere; }
 @media (max-width: 560px) { .sd-settle-amt, .sd-settle-amt .sd-input, .sd-settle-row .sd-btn { width: 100%; } }
+
+/* checkout: four methods (USDC, private, stocks, Pay in 3) and the shop's cancel link */
+.co-methods.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.co-methods.four button { flex-direction: row; align-items: center; gap: 10px; min-height: 64px; }
+.co-methods.four button[aria-selected="true"]:nth-child(2) svg { color: var(--moss); }
+.co-methods.four button[aria-selected="true"]:nth-child(3) svg { color: var(--ai); }
+.co-methods.four button[aria-selected="true"]:last-child svg { color: var(--kaki-2); }
+.co-cancel { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: var(--muted); text-decoration: none; }
+.co-cancel:hover { color: var(--ai); }
+.co-credit-meter { height: 8px; border-radius: 99px; background: var(--ai-wash); overflow: hidden; }
+.co-credit-meter i { display: block; height: 100%; background: var(--kaki); border-radius: inherit; }
+.co-credit-meter i + i { background: var(--ai); opacity: .35; }
+@media (max-width: 420px) { .co-methods.four button { flex-direction: column; align-items: flex-start; min-height: 80px; } }
+.co-routes { display: grid; gap: 6px; }
+.co-routes button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--hair-2); background: var(--white); text-align: left; cursor: pointer; }
+.co-routes button[aria-checked="true"] { border-color: var(--moss); background: var(--moss-wash); box-shadow: 0 0 0 1px var(--moss) inset; }
+.co-routes button:disabled { opacity: .6; cursor: not-allowed; }
+.co-routes b { display: block; font-size: 13.5px; font-weight: 600; } .co-routes small { display: block; font-size: 11.5px; color: var(--faint); }
+.co-routes > button > b { flex: none; white-space: nowrap; }
+.co-settle { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.co-settle li { padding: 9px 10px; border-radius: 10px; border: 1px dashed var(--hair-2); min-width: 0; }
+.co-settle li[data-on="true"] { border-style: solid; border-color: var(--moss); background: var(--moss-wash); }
+.co-settle b { display: block; font-size: 12.5px; } .co-settle span { display: block; font-size: 11px; color: var(--faint); line-height: 1.35; }
+@media (max-width: 420px) { .co-settle { grid-template-columns: 1fr; } }

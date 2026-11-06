@@ -59,6 +59,10 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
         <div><span>Available credit</span><b>{usdc(available)}<em>USDC</em></b></div>
         <div><span>Line</span><b className="mono sm">{short(line.lineId, 4)}</b><small className="faint">limit {usdc(line.limit)}</small></div>
       </div>
+      <div aria-label="Credit limit used by this payment">
+        <div className="co-credit-meter" aria-hidden><i style={{ width: `${line.limit > 0n ? Math.min(100, Number(((line.drawn - line.repaid) * 10000n) / line.limit) / 100) : 0}%`, float: "left" }} /><i style={{ width: `${line.limit > 0n ? Math.min(100, Number((amount * 10000n) / line.limit) / 100) : 0}%`, float: "left" }} /></div>
+        <p className="faint sm" style={{ margin: "6px 0 0" }}>This payment uses <b>{usdc(amount)}</b> of your <b>{usdc(line.limit)} USDC</b> credit limit{line.drawn > line.repaid ? ` (${usdc(line.drawn - line.repaid)} already drawn)` : ""}. Afterwards: {usdc(available > amount ? available - amount : 0n)} USDC left.</p>
+      </div>
       <p className="co-plan-h">{parts.length ? `Suggested: repay in ${parts.length} parts` : "Repay any amount, any time,"} before the line expires on {new Date(line.expiry * 1000).toLocaleDateString([], { month: "short", day: "numeric" })}.</p>
       {parts.length > 0 && <ol className="co-plan" aria-label="Suggested repayment plan" style={{ gridTemplateColumns: `repeat(${parts.length}, minmax(0, 1fr))` }}>
         {parts.map((v, i) => <li key={i}><i>{i + 1}</i><span>{i === 0 ? "First" : i === parts.length - 1 ? "Last" : `Part ${i + 1}`}</span><b className="num">{usdc(v)}</b></li>)}
@@ -74,7 +78,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
       )}
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn kaki full xl" disabled={!!busy || !!tx || available < amount || needGas} onClick={pay}>
-        {busy === "pay" ? <><span className="spin" /> Paying from your line…</> : available < amount ? `Not enough credit (${usdc(available)} USDC)` : <><Icon.layers /> Pay {usdc(amount)} USDC on credit</>}
+        {busy === "pay" ? <><span className="spin" /> Paying from your line…</> : available < amount ? `Not enough credit (${usdc(available)} USDC)` : <><Icon.layers /> Use {usdc(amount)} USDC of my credit</>}
       </button>
       <p className="faint sm center">NorenCreditLine.payInvoice on Arc, signed by your test key in this browser.</p>
     </div>
