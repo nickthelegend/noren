@@ -9,7 +9,10 @@
   },
   "scripts": {
     "build:contracts": "cd contracts && forge build",
+    "abi": "tsx scripts/gen-abi.ts",
     "fork": "sh scripts/fork.sh",
+    "snapshot": "sh scripts/fork-snapshot.sh",
+    "chain": "sh scripts/serve-snapshot.sh",
     "test:contracts": "sh scripts/test-fork.sh",
     "deploy:fork": "sh scripts/deploy-fork.sh",
     "underwriter": "tsx underwriter/src/server.ts",
@@ -18,6 +21,7 @@
     "probe": "tsx scripts/probe-eips.ts"
   },
   "dependencies": {
+    "@noren/ai-underwriter": "workspace:*",
     "@openzeppelin/contracts": "5.1.0",
     "viem": "2.51.3"
   },

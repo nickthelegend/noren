@@ -109,6 +109,9 @@ importers:
 
   packages/robinhood:
     dependencies:
+      '@noren/ai-underwriter':
+        specifier: workspace:*
+        version: link:../ai-underwriter
       '@openzeppelin/contracts':
         specifier: 5.1.0
         version: 5.1.0
