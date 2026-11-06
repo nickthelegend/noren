@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { HOSTED } from "./network";
 import { Landing } from "./Landing";
 import { Dashboard } from "./Dashboard";
 import { Checkout } from "./Checkout";
@@ -41,7 +42,7 @@ function Site() {
       <footer className="site-foot">
         <div className="site-brand"><Logo /><span>Noren</span></div>
         <p>Private payments for EVM. Built on the Ethereum Foundation's Kohaku and 0xbow's Privacy Pools. MIT licensed.</p>
-        <p className="faint">Test networks only. Running on an Arc testnet fork until the public deployment is funded.</p>
+        <p className="faint">{HOSTED ? "Test mode: Arc testnet and a Robinhood Chain mainnet snapshot. No real funds." : "Test networks only. Running on an Arc testnet fork until the public deployment is funded."}</p>
       </footer>
     </div>
   );

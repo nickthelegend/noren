@@ -2,6 +2,7 @@
  * Pay later's credit line: lock Stock Tokens on NorenCredit (Robinhood), Chainlink CRE carries the limit to
  * NorenCreditLine on Arc, spend it at any Noren checkout, repay in USDC on Arc.
  */
+import { HOSTED } from "../network";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { api, short, usdc } from "../api";
@@ -118,7 +119,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
       <button className="nk-cta" disabled={!!busy || !q || tooMuch || !s} onClick={() => run("lock", async () => { const r = await actions.open(s!, amt, say); return <>{r.text} (tx <TxLink chain="robinhood" hash={r.hash} />). Chainlink CRE is bringing it to Arc.</>; })}>
         {busy === "lock" ? <><Spin /> Locking on Robinhood…</> : !s ? "Nothing to lock yet" : tooMuch ? `Not enough ${sym}` : `Lock ${units(parseUnitsSafe(amt, s.decimals), s.decimals)} ${sym} and open the line`}
       </button>
-      {(!s || tooMuch) && <p className="nk-fine">Deposit NVDA, TSLA, AAPL or ETH in <a href="#/app/earn">Earn</a> to get shares that keep earning while they back the line. No stock yet? The wallet menu (top right) moves test NVDA to you on the fork.</p>}
+      {(!s || tooMuch) && <p className="nk-fine">Deposit NVDA, TSLA, AAPL or ETH in <a href="#/app/earn">Earn</a> to get shares that keep earning while they back the line. No stock yet? The wallet menu (top right) moves test NVDA to you on {HOSTED ? "the Robinhood Chain mainnet snapshot" : "the fork"}.</p>}
     </>
   );
 }

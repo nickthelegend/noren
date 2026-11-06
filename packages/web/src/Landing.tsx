@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
 import { Mark } from "./logos";
 import { AQUA_LIVE, CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, ccipMsgUrl, explorerTx, shortChain } from "./crosschain";
-import { LIVE } from "./network";
+import { HOSTED, LIVE } from "./network";
 import "./landing.css";
 
 /* Every number on this page comes from TESTING.md (local Arc testnet fork and Robinhood Chain mainnet snapshot, Nov 6 2026).
@@ -10,7 +10,7 @@ import "./landing.css";
 
 /** Honest status of each piece. Flip a value here when its branch lands. */
 type Status = "live" | "key" | "wip" | "quotes" | "testnet";
-const STATUS: Record<Status, string> = { live: "Runs on Arc testnet fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
+const STATUS: Record<Status, string> = { live: HOSTED ? "Runs end to end" : "Runs on Arc testnet fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
 const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
@@ -92,8 +92,8 @@ const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: str
   { name: "Chainlink CRE + Data Feeds", logos: ["CHAINLINK"], use: "Orchestration and price checks: CRE relays CCTP burns, carries Aqua orders and credit lines between chains, writes FX rates and approves settlements. Feeds price every invoice and every stock.", s: "testnet", note: "CRE runs in the simulator with --broadcast; not on a DON" },
   { name: "World ID + 0G", logos: ["WORLD", "0G"], use: "How credit reaches real humans safely: one starter line per verified human (Noren keeps only the nullifier), and a sealed AI second opinion inside a 0G TEE.", s: "live", note: "Production World ID; a real check needs World App" },
   { name: "Kohaku privacy pools", logos: ["KOHAKU"], use: "Why the shop never sees who paid: the Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools, with the proof made in the browser.", s: "testnet" },
-  { name: "Uniswap v4", logos: ["UNISWAP"], use: "The default swap route. On Arc testnet: the USDC/EURC pool through V4Quoter and the Universal Router at Arc mainnet's v4 addresses (not in Uniswap's docs for the testnet). On Robinhood Chain: the same contracts on the fork. Noren's Aqua maker fills only when it beats Uniswap.", s: "testnet" },
-  { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "The mainnet route for USDG on Robinhood Chain to USDC on Arc. Quotes are live; no relayer fills a local fork.", s: "quotes" },
+  { name: "Uniswap v4", logos: ["UNISWAP"], use: "The default swap route. On Arc testnet: the USDC/EURC pool through V4Quoter and the Universal Router at Arc mainnet's v4 addresses (not in Uniswap's docs for the testnet). On Robinhood Chain: the same contracts on the mainnet snapshot. Noren's Aqua maker fills only when it beats Uniswap.", s: "testnet" },
+  { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "The mainnet route for USDG on Robinhood Chain to USDC on Arc. Quotes are live; no relayer fills a local test chain.", s: "quotes" },
 ];
 
 /** Real public-testnet transactions (docs/LIVE.md, docs/CCTP.md, docs/CCIP.md), linked to their explorers. */
@@ -125,7 +125,7 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
   { v: "4.5–7.4", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "605", l: "tests passing across 21 suites, forks and live testnets included" },
+  { v: "605", l: "tests passing across 21 suites, local chains and live testnets included" },
 ];
 
 function useReveal() {
@@ -224,7 +224,7 @@ export function Landing() {
               <li key={x.href}><a href={x.href} target="_blank" rel="noreferrer"><span className="nx-live-m" aria-hidden>{x.marks.map((m) => <Mark key={m} id={m} size={18} />)}</span><span><b>{x.t}</b><small>{x.d}</small></span><Icon.ext /></a></li>
             ))}
           </ul>
-          <p className="mono">Every link opens a block explorer or ccip.chain.link. The Robinhood Chain side of stocks and Aqua runs on local forks; see the README's "What's simulated".</p>
+          <p className="mono">Every link opens a block explorer or ccip.chain.link. The Robinhood Chain side of stocks and Aqua runs on a Robinhood Chain mainnet snapshot; see the README's "What's simulated".</p>
         </div>
       </section>
 
@@ -258,7 +258,7 @@ export function Landing() {
               <figure className={`nx-shot ${s.k === "app" ? "phone" : "browser"}`}>
                 {s.k !== "app" && <span className="nx-dots" aria-hidden><i /><i /><i /></span>}
                 <img src={s.img} alt={`${s.name}: ${s.cap}`} width={s.w} height={s.h} loading="lazy" />
-                <figcaption className="mono">{s.cap} Real capture on the local forks.</figcaption>
+                <figcaption className="mono">{s.cap} Real capture on the local test chains.</figcaption>
               </figure>
             </article>
           ))}
@@ -286,7 +286,7 @@ export function Landing() {
             </article>
           ))}
         </div>
-        <p className="nx-legend mono"><Chip s="live" /> runs end to end on local Anvil forks of Arc testnet and Robinhood Chain mainnet, against the real contracts. <Chip s="quotes" /> real third-party quotes, not filled on a fork. <Chip s="key" /> code ready, waiting for an API key. <Chip s="wip" /> being built now.</p>
+        <p className="nx-legend mono"><Chip s="live" /> runs end to end against the real contracts, on Arc testnet and a Robinhood Chain mainnet snapshot. <Chip s="quotes" /> real third-party quotes, not filled on a test chain. <Chip s="key" /> code ready, waiting for an API key. <Chip s="wip" /> being built now.</p>
       </section>
 
       {/* ---------------------------------------------------------------- (d) built with */}
@@ -366,7 +366,7 @@ export function Landing() {
         <div className="nx-num-grid" data-reveal>
           {NUMBERS.map((n) => <div key={n.l}><b>{n.v}{n.u && <em>{n.u}</em>}</b><span>{n.l}</span></div>)}
         </div>
-        <p className="nx-note mono">Fork numbers: local Anvil fork of Arc testnet (chain 5042002) and a snapshot of Robinhood Chain mainnet, Nov 6 2026. Public testnet transactions are in the strip at the top and in docs/LIVE.md, docs/CCTP.md and docs/CCIP.md.</p>
+        <p className="nx-note mono">Measured on a local copy of Arc testnet (chain 5042002) and a snapshot of Robinhood Chain mainnet, Nov 6 2026. Public testnet transactions are in the strip at the top and in docs/LIVE.md, docs/CCTP.md and docs/CCIP.md.</p>
       </section>
 
       {/* ---------------------------------------------------------------- (h) cta */}

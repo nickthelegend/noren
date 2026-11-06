@@ -3,6 +3,7 @@
  * The server verifies the SIWE signature, gives the store its own on-chain merchant account
  * (NorenCheckout.registerMerchant(payout) on Arc), a publishable key and a secret key shown once.
  */
+import { HOSTED } from "./network";
 import { useEffect, useState } from "react";
 import { createSiweMessage } from "viem/siwe";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
@@ -119,7 +120,7 @@ const { invoice } = await noren.invoices.create({
         <div className="ob-brand"><Logo size={28} /><b>Noren Merchant</b></div>
         <p>Set up your store in a minute. Customers can pay privately, with USDC, with stocks or crypto, or in 3 parts; you get USDC on Arc.</p>
         <ol className="ob-steps">{STEPS.map((t, i) => <li key={t} data-state={i < step ? "done" : i === step ? "now" : "todo"}><i>{i < step ? <Icon.check /> : i + 1}</i><span>{t}</span></li>)}</ol>
-        <p className="ob-fine">Test mode: Arc testnet and Robinhood Chain run as local forks. No real money.</p>
+        <p className="ob-fine">{HOSTED ? "Test mode: Arc testnet and a Robinhood Chain mainnet snapshot. No real funds." : "Test mode: Arc testnet and Robinhood Chain run as local forks. No real money."}</p>
       </aside>
 
       <section className="ob-main" aria-live="polite">
@@ -133,7 +134,7 @@ const { invoice } = await noren.invoices.create({
                 <Icon.user /><span><b>{busy === "privy" ? "Waiting for Privy…" : "Sign in with Privy"}</b><small>{PRIVY_APP_ID ? "Email, a wallet, or a new embedded wallet" : "Setup required: VITE_PRIVY_APP_ID"}</small></span><Icon.arrow />
               </button>
               <button className="ob-choice" disabled={!!busy} onClick={() => run("local", async () => { onSession(await signIn(cfg, "local")); setStep(1); })}>
-                <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>A key kept in this browser, for the local forks</small></span><Icon.arrow />
+                <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>{HOSTED ? "A key kept in this browser, for Arc testnet and the Robinhood Chain mainnet snapshot" : "A key kept in this browser, for the local forks"}</small></span><Icon.arrow />
               </button>
               {wallets?.length ? wallets.map((w) => (
                 <button key={w.info.uuid} className="ob-choice" disabled={!!busy} onClick={() => run(w.info.uuid, async () => { onSession(await signIn(cfg, w)); setStep(1); })}>

@@ -9,6 +9,9 @@ import { createPublicClient, createWalletClient, defineChain, erc20Abi, http, pa
 import { activeAccount, walletTransport } from "./signer";
 import { localFork } from "@noren/core";
 import type { Config } from "./api";
+import { HOSTED } from "./network";
+/** Pay later needs NorenCreditLine plus the CRE credit bridge, which the hosted demo does not run. */
+const NO_CREDIT_LINE = HOSTED ? "Setup required: Pay later runs with the Chainlink CRE credit bridge on the local Robinhood Chain mainnet snapshot stack; see the demo video and README" : "Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)";
 
 export type CreditCfg = {
   creditLine: Address | null; robinhoodRpc: string | null;
@@ -133,7 +136,7 @@ export function makeOnchain(cfg: Config) {
     /** Arc: pays a Noren invoice from the credit pool. The merchant server sees the Drawn log and settles the invoice. */
     async payInvoice(lineId: Hex, merchant: Address, amount: bigint, invoiceId: Hex) {
       const creditLine = credit?.creditLine;
-      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      if (!creditLine) throw new Error(NO_CREDIT_LINE);
       await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId] });
       const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId], chain: arcChain });
       const r = await arc.waitForTransactionReceipt({ hash });
@@ -143,7 +146,7 @@ export function makeOnchain(cfg: Config) {
     /** Pay later, privately: is drawToPool on, and the pool's minimum deposit (a draw can't be smaller). */
     async poolDraw() {
       const creditLine = credit?.creditLine;
-      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      if (!creditLine) throw new Error(NO_CREDIT_LINE);
       const [entrypoint, cfgRow] = await Promise.all([
         arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "privacyEntrypoint" }).catch(() => null),
         arc.readContract({ address: cfg.deployment.entrypoint, abi: entrypointConfigAbi, functionName: "assetConfig", args: [cfg.deployment.usdc] }),
@@ -154,7 +157,7 @@ export function makeOnchain(cfg: Config) {
     /** Arc: draws on the line straight into the Kohaku pool under this wallet's precommitment (NorenCreditLine.drawToPool). */
     async drawToPool(lineId: Hex, amount: bigint, precommitment: bigint) {
       const creditLine = credit?.creditLine;
-      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      if (!creditLine) throw new Error(NO_CREDIT_LINE);
       await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "drawToPool", args: [lineId, amount, precommitment] });
       const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "drawToPool", args: [lineId, amount, precommitment], chain: arcChain });
       const r = await arc.waitForTransactionReceipt({ hash });
@@ -164,7 +167,7 @@ export function makeOnchain(cfg: Config) {
     /** Arc: repays the line in USDC (approve, then repay). The CRE workflow carries the Repaid log back to NorenCredit. */
     async repay(lineId: Hex, amount: bigint) {
       const creditLine = credit?.creditLine;
-      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      if (!creditLine) throw new Error(NO_CREDIT_LINE);
       const usdc = cfg.deployment.usdc;
       const allowance = await arc.readContract({ address: usdc, abi: erc20Abi, functionName: "allowance", args: [account.address, creditLine] });
       if (allowance < amount) {
@@ -221,7 +224,7 @@ export function makeOnchain(cfg: Config) {
     /** Arc: the line as NorenCreditLine sees it (written by the CRE bridge). live = the bridge has delivered it. */
     async arcLine(lineId: Hex) {
       const creditLine = credit?.creditLine;
-      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      if (!creditLine) throw new Error(NO_CREDIT_LINE);
       const [l, available] = await Promise.all([
         arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "lines", args: [lineId] }),
         arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "available", args: [lineId] }),

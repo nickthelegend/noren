@@ -27,7 +27,7 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
   return (
     <section className="la" aria-label="Noren live on Arc testnet">
       <header><span className="la-dot" aria-hidden /><Mark id="ARC" size={24} /><div><b>Live on Arc testnet</b><small>chain {LIVE.chainId} · real testnet USDC · {f ? `block ${f.block.toString()}` : err ? "RPC unreachable" : "reading…"}</small></div></header>
-      {context === "checkout" && <p className="la-note">This checkout runs on a local Arc testnet fork. On the public Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
+      {context === "checkout" && !HOSTED && <p className="la-note">This checkout runs on a local Arc testnet fork. On the public Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
       {context === "app" && <p className="la-note">Arc, the CCTP rail, the CCIP gateways and 1inch Aqua on Arc are live on public testnets (below). Swap, Earn, Borrow and the Robinhood side of credit run on {RH_LABEL}; switch back to “Arc testnet fork” to use them.</p>}
       <dl className="la-grid">
         <div><dt>NorenCheckout</dt><dd><a href={addrUrl(LIVE.checkout)} target="_blank" rel="noreferrer">{short(LIVE.checkout)}</a></dd></div>

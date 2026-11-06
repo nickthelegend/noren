@@ -3,6 +3,7 @@
  * wallet (EIP-6963 or window.ethereum), or use this browser's test wallet. Without VITE_PRIVY_APP_ID there's no Privy
  * sign-in, and the app says so.
  */
+import { HOSTED } from "../network";
 import { useState } from "react";
 import { Logo, msgOf } from "../ui";
 import { PRIVY_APP_ID, connectBrowserWallet, disconnectBrowserWallet, privyActions, setWalletMode, useSigner, type WalletMode } from "../signer";
@@ -56,7 +57,7 @@ export function SignIn() {
         <button className="nk-cta soft" onClick={() => setWalletMode("test")}>Use a test wallet</button>
       </div>
       <ul className="nk-signin-notes">
-        <li><Mark id="ARC" size={16} />Arc testnet and local forks. No real money.</li>
+        <li><Mark id="ARC" size={16} />{HOSTED ? "Arc testnet and a Robinhood Chain mainnet snapshot. No real funds." : "Arc testnet and local forks. No real money."}</li>
         <li><Mark id="KOHAKU" size={16} />Your private balance's keys come from a signature by your wallet, made on this device.</li>
       </ul>
     </section>
@@ -71,7 +72,7 @@ export function WalletSwitch() {
   const modes: [WalletMode, string, string][] = [...(PRIVY_APP_ID ? [["privy", "Noren", "Noren wallet (email or wallet sign-in)"] as [WalletMode, string, string]] : []), ["browser", "Browser", "Browser wallet"], ["test", "Test", "Test wallet"]];
   const who = s.mode === "privy" ? (s.status === "in" ? `Noren wallet: signed in as ${s.wallet!.login} (Privy)` : "Noren wallet: not signed in")
     : s.mode === "browser" ? (s.browser ? `Browser wallet: ${s.browser.name}. It asks to switch chains when needed.` : "Browser wallet: not connected")
-    : "Test wallet: a key kept in this browser, for the local forks";
+    : (HOSTED ? "Test wallet: a key kept in this browser, for Arc testnet and the Robinhood Chain mainnet snapshot" : "Test wallet: a key kept in this browser, for the local forks");
   return (
     <div className="nk-wmode">
       <div className="nk-seg" role="radiogroup" aria-label="Wallet" style={{ gridTemplateColumns: `repeat(${modes.length}, 1fr)` }}>

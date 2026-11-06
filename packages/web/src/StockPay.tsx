@@ -3,6 +3,7 @@
  * Chain, the customer pays it with any Stock Token they hold or with ETH (asset 0x0, priced as WETH) at the Chainlink
  * price, a 1inch Aqua maker (or the vault) buys it, and the merchant gets USDG. The merchant server sees InvoicePaid and settles the Noren invoice.
  */
+import { HOSTED } from "./network";
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
@@ -94,7 +95,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   if (!hold || !mirror) return <div className="co-setup quiet"><span className="spin xs" /> Opening this invoice on Robinhood Chain…</div>;
   if (!hold.some((x) => x.balance > 0n)) return (
     <div className="co-credit-empty">
-      <p><b>No Stock Tokens or ETH in this wallet.</b> On the test network you can take a few real NVDA tokens from the fork faucet.</p>
+      <p><b>No Stock Tokens or ETH in this wallet.</b> {HOSTED ? "On the Robinhood Chain mainnet snapshot you can take a few test NVDA tokens from the test faucet." : "On the test network you can take a few real NVDA tokens from the fork faucet."}</p>
       <button className="btn line full" disabled={!!busy} onClick={async () => { setBusy("faucet"); try { await api.robinhoodFaucet(tk!.address); await load(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } }}>{busy === "faucet" ? <><span className="spin" /> Moving tokens…</> : "Get test stock"}</button>
       {note && <p className={note.bad ? "err" : "note"}>{note.t}</p>}
     </div>

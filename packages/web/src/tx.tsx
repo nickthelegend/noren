@@ -5,6 +5,7 @@
  * - Local forks have no public explorer, so the link opens #/tx/<chain>/<hash> in a new tab: this page reads the receipt
  *   from that fork's RPC and decodes Noren, Aqua, Kohaku and ERC-20 events.
  */
+import { HOSTED } from "./network";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPublicClient, decodeEventLog, erc20Abi, formatUnits, http, parseAbi, toEventSelector, type Abi, type Address, type Hex, type Log } from "viem";
 import { api, short, type Config } from "./api";
@@ -165,7 +166,7 @@ export function TxPage({ chain, hash }: { chain: string; hash: string }) {
     return () => { on = false; };
   }, [chain, hash, ok]);
   useEffect(() => { document.title = `Test transaction ${short(hash, 6)} · Noren`; }, [hash]);
-  const chainName = chain === "arc" ? "Arc testnet fork" : "Robinhood Chain fork";
+  const chainName = chain === "arc" ? (HOSTED ? "Arc testnet" : "Arc testnet fork") : (HOSTED ? "Robinhood Chain · mainnet snapshot" : "Robinhood Chain fork");
   const fee = useMemo(() => (data ? data.gasUsed * data.price : 0n), [data]);
 
   return (
@@ -175,7 +176,7 @@ export function TxPage({ chain, hash }: { chain: string; hash: string }) {
         <span className="tx-chain"><Mark id={chain === "arc" ? "ARC" : "ROBINHOOD"} size={20} />{chainName}</span>
       </header>
       <main className="tx-main">
-        <span className="eyebrow">{chain === "robinhood" ? "Robinhood Chain · mainnet snapshot transaction" : "Arc testnet fork transaction"}</span>
+        <span className="eyebrow">{chain === "robinhood" ? "Robinhood Chain · mainnet snapshot transaction" : (HOSTED ? "Arc testnet transaction" : "Arc testnet fork transaction")}</span>
         <h1 className="tx-h">{data ? (data.status === "success" ? "Succeeded" : "Reverted") : err ? "Can't show this transaction" : ok ? "Reading the receipt…" : "Not a transaction link"}</h1>
         <div className="tx-hash"><span className="mono">{hash}</span>{ok && <Copy text={hash} label="Copy hash" />}</div>
         <p className="tx-note">A local Anvil fork has no public explorer, so Noren reads this receipt straight from the fork's RPC{data ? <> (<span className="mono">{data.rpc}</span>, chain {data.chainId})</> : null}. Nothing here exists on a public network.</p>

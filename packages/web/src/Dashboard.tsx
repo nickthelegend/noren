@@ -7,7 +7,7 @@ import { STOCKS, assetSym, creditLineAbi, creditOf } from "./onchain";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
-import { useNet } from "./network";
+import { HOSTED, useNet } from "./network";
 import { CCTP_CHAINS, CHAIN_MARK, crossChainPayments, type CrossChainPayment } from "./crosschain";
 import { privyActions } from "./signer";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
@@ -100,7 +100,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const firstRun = !!baseCfg && !err && (tab === "onboard" || (!devToken && !session && tab === "home") || (!!session && stores !== null && stores.length === 0 && tab === "home"));
   if (firstRun && baseCfg) return (
     <div className="ob-page">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
+      <div className="sd-testbar">{HOSTED ? "Noren Merchant · Test mode: Arc testnet and a Robinhood Chain mainnet snapshot. No real funds." : "Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds."}</div>
       <Onboard cfg={baseCfg} session={session} onSession={setSession} onStore={(st) => { setStores((l) => [...(l ?? []), st]); setStoreId(st.id); }} onDone={() => go("#/dashboard")} />
       <Toasts />
     </div>
@@ -110,7 +110,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
 
   return (
     <div className="sd">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
+      <div className="sd-testbar">{HOSTED ? "Noren Merchant · Test mode: Arc testnet and a Robinhood Chain mainnet snapshot. No real funds." : "Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds."}</div>
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
@@ -409,7 +409,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
                   <li data-on="true"><i /><div><b>Requested on Robinhood</b><span><TxLink chain="robinhood" hash={x.requestTx} /></span></div></li>
                   <li data-on={!!x.cre?.written}><i /><div><b>Chainlink CRE approval</b><span>{x.cre?.error ? x.cre.error : x.cre ? `${x.cre.decision ?? ""}${x.cre.written ? ` · ${(x.cre.ms / 1000).toFixed(1)} s` : ""}` : "running the settlement workflow…"}{x.cre?.written && <> · forwarder tx <TxLink chain="robinhood" hash={x.cre.written} /></>}</span>{x.quotes && <span>Relay: {x.quotes.relay ?? "–"} · Across: {x.quotes.across ?? "–"}</span>}</div></li>
                   <li data-on={!!x.deposit}><i /><div><b>Deposit on the approved route</b><span>{x.deposit ? <>tx <TxLink chain="robinhood" hash={x.deposit.tx} /> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
-                  <li data-on="false"><i /><div><b>USDC filled on Arc</b><span>{x.deposit ? "Pending: needs a real Relay solver, which never sees a local fork" : "–"}</span></div></li>
+                  <li data-on="false"><i /><div><b>USDC filled on Arc</b><span>{x.deposit ? (HOSTED ? "Pending: needs a real Relay solver, which never fills on the mainnet snapshot" : "Pending: needs a real Relay solver, which never sees a local fork") : "–"}</span></div></li>
                 </ol>
               </li>
             ))}</ul>
@@ -591,7 +591,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
                 <dt>Paid with</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
-                <dt>Network</dt><dd>Robinhood Chain {r.stock.chainId} (local fork)</dd>
+                <dt>Network</dt><dd>{HOSTED ? `Robinhood Chain · mainnet snapshot (${r.stock.chainId})` : `Robinhood Chain ${r.stock.chainId} (local fork)`}</dd>
                 <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
               </dl>
             ) : credit ? (
