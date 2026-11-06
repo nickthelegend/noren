@@ -11,6 +11,7 @@ optimizer_runs = 10000
 via_ir = true
 bytecode_hash = 'none'
 cbor_metadata = false
+fs_permissions = [{ access = "read", path = "./fixtures" }]
 
 [profile.default.lint]
 exclude_lints = ['block-timestamp', 'unsafe-typecast']
