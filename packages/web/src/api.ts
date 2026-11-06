@@ -13,6 +13,7 @@ export type InvoiceView = {
   paymentTx?: string; refundTx?: string; refundAmount?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string;
   /** How the customer paid: the private pool, a Tsuke credit line (bridged from Robinhood by Chainlink CRE), or stocks. */
   method?: "private" | "credit" | "stocks"; creditLineId?: `0x${string}`;
+  stock?: { asset: `0x${string}`; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number };
   [k: string]: unknown;
 };
 export type Webhook = { id: string; url: string; createdAt?: number | string; secret?: string };
@@ -35,6 +36,7 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
 
 export const api = {
   config: () => call<Config>("/config"),
+  mirrorOnRobinhood: (id: string) => call<{ gateway: `0x${string}`; merchant: `0x${string}`; invoiceId: `0x${string}`; amountUsdg: string; expiry: string }>(`/invoices/${id}/robinhood`, { method: "POST" }),
   robinhoodFaucet: (address: string) => call<Record<string, string>>("/dev/robinhood-faucet", { method: "POST", body: JSON.stringify({ address }) }),
   faucet: (address: string) => call<{ hashes?: string[] }>("/dev/faucet", { method: "POST", body: JSON.stringify({ address }) }),
   listInvoices: (merchant: string) => call<InvoiceView[]>(`/merchants/${merchant}/invoices`),

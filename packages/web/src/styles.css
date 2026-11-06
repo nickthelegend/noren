@@ -1007,3 +1007,15 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 @media (max-width: 900px) { .lp-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lp-flow li:nth-child(2) { border-right: 0; } .lp-flow li:nth-child(3) { padding-left: 0; } .lp-flow li:nth-child(2)::after { display: none; } .lp-honest { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .lp-flow { grid-template-columns: minmax(0, 1fr); } .lp-flow li { padding: 22px 0 12px !important; border-right: 0; border-bottom: 1px solid var(--hair); } .lp-flow li::after { display: none; } .lp-honest > div { padding: 18px; } }
 .sd-oracle { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--sd-line); }
+.co-methods { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.co-methods button { flex-direction: column; align-items: flex-start; gap: 6px; min-height: 84px; padding: 12px; }
+.co-methods button[aria-selected="true"]:nth-child(2) svg { color: var(--moss); }
+.co-stock-pick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.co-stock-pick button { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 12px 6px 6px; border-radius: 12px; border: 1px solid var(--hair-2); background: var(--white); cursor: pointer; text-align: left; }
+.co-stock-pick button[aria-checked="true"] { border-color: var(--ai); box-shadow: 0 0 0 1px var(--ai) inset; background: var(--ai-wash); }
+.co-stock-pick b { display: block; font-size: 13.5px; } .co-stock-pick small { display: block; font-size: 11.5px; color: var(--faint); }
+.tk-tick.sm { width: 30px; height: 30px; border-radius: 8px; font-size: 12px; }
+.co-quote { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--paper); border: 1px solid var(--hair); font-size: 13.5px; }
+.co-quote dt { padding: 5px 0; color: var(--muted); } .co-quote dd { margin: 0; padding: 5px 0; text-align: right; color: var(--ink); }
+.co-quote dd b { font-size: 17px; }
+@media (max-width: 560px) { .co-methods { grid-template-columns: minmax(0, 1fr); } .co-methods button { flex-direction: row; align-items: center; min-height: 56px; } }

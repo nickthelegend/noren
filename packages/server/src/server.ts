@@ -6,10 +6,10 @@ import { createPublicClient, createWalletClient, http, decodeErrorResult, encode
 import { privateKeyToAccount } from 'viem/accounts';
 import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork, parseInvoice, poolAbi, usdcAbi, type Deployment, type Invoice } from '@noren/core';
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
-import { creditDrawProblem, robinhoodFaucet, watchCreditDraws } from './credit.ts';
+import { creditDrawProblem, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
-export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex };
+export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex; stock?: { asset: Address; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number } };
 type Endpoint = { id: string; merchant: string; url: string; createdAt: number; secret: string };
 type Delivery = { endpointId: string; url: string; attempt: number; status: number | null; ok: boolean; ms: number; error?: string; at: number };
 type MerchantEvent = { id: string; merchant: string; type: string; created: number; data: { invoiceId: Hex; amount: string; status: string; method: string | null; description: string | null; paymentTx: Hex | null; refundTx: Hex | null; refundAmount: string | null; quote: UsdcQuote | null }; deliveries: Delivery[] };
@@ -36,7 +36,7 @@ export function readableError(error: any): string {
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
 /** Tsuke credit: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
-export type CreditOptions = { creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; public?: Record<string, unknown> };
+export type CreditOptions = { creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -98,6 +98,33 @@ export function createMerchantServer(options: ServerOptions): Server {
     const receipt = await publicClient.getTransactionReceipt({ hash: draw.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
+  // Pay with stock: the invoice is mirrored on TsukeGateway (Robinhood) and settles when its InvoicePaid log appears.
+  const rh = options.credit?.robinhoodRpc ? createPublicClient({ transport: http(options.credit.robinhoodRpc), cacheTime: 0 }) as any : undefined;
+  const stockWatch = rh && options.credit?.gateway && merchantAddress ? watchStockPayments({ rpcUrl: options.credit.robinhoodRpc!, gateway: options.credit.gateway, merchant: merchantAddress, fromBlock: options.credit.robinhoodFromBlock, onError: e => console.error('Stock watcher:', e.message), onPaid: async p => {
+    await ready;
+    const row = rows.get(p.invoiceId.toLowerCase());
+    if (!row || (row.status !== 'draft' && row.status !== 'open')) { console.warn(`Stock payment ${p.txHash} not applied: ${row ? `invoice is ${row.status}` : 'unknown invoice'}`); return; }
+    row.status = 'paid'; row.method = 'stocks'; row.paymentTx = p.txHash; row.paidAt = p.timestamp; row.paymentBlock = p.blockNumber.toString();
+    row.stock = { asset: p.asset, assetIn: p.assetIn.toString(), usdgOut: p.usdgOut.toString(), priceUsd8: p.priceUsd8.toString(), chainId: 4663 };
+    const receipt = await rh.getTransactionReceipt({ hash: p.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
+    await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
+  } }) : undefined;
+  /** Mirrors a Noren invoice onto TsukeGateway as the merchant (USDC and USDG both have 6 decimals). Idempotent. */
+  async function mirrorOnRobinhood(row: RecordRow) {
+    if (!rh || !options.credit?.gateway) throw new Error('Setup required: TsukeGateway is not deployed on the Robinhood fork (pnpm dev:all with packages/tsuke)');
+    if (!merchantAddress) throw new Error('Setup required: merchant key missing');
+    const gateway = options.credit.gateway, id = row.invoice.invoiceId;
+    const existing = await rh.readContract({ address: gateway, abi: gatewayAbi, functionName: 'invoice', args: [merchantAddress, id] });
+    if (existing.status === 0) {
+      const data = encodeFunctionData({ abi: gatewayAbi, functionName: 'createInvoice', args: [id, row.invoice.amount, row.invoice.expiry] });
+      let hash: Hex;
+      if (options.localUnlockedMerchant) hash = await rh.request({ method: 'eth_sendTransaction', params: [{ from: merchantAddress, to: gateway, data }] });
+      else hash = await createWalletClient({ account: account as any, transport: http(options.credit.robinhoodRpc!) }).sendTransaction({ to: gateway, data, chain: null } as any);
+      const receipt = await rh.waitForTransactionReceipt({ hash });
+      if (receipt.status !== 'success') throw new Error(`TsukeGateway.createInvoice reverted: ${hash}`);
+    }
+    return { gateway, merchant: merchantAddress, invoiceId: id, amountUsdg: row.invoice.amount.toString(), expiry: row.invoice.expiry.toString() };
+  }
   const server = createHttpServer(async (req, res) => {
     try {
       await ready; await devReady;
@@ -105,7 +132,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       const path = url.pathname;
       if (options.dev && req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': req.headers.origin === 'http://localhost:5190' || req.headers.origin === 'http://127.0.0.1:5190' ? req.headers.origin : '', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' }); res.end(); return; }
       if (options.dev) { const origin = req.headers.origin; if (origin === 'http://localhost:5190' || origin === 'http://127.0.0.1:5190') res.setHeader('access-control-allow-origin', origin); }
-      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, ...options.credit.public } : null });
+      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, gateway: options.credit.gateway ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);
       if (req.method === 'GET' && path === '/pricing/quote') {
         const currency = url.searchParams.get('currency') ?? '';
@@ -175,10 +202,15 @@ export function createMerchantServer(options: ServerOptions): Server {
         const row: RecordRow = { invoice, status: 'draft', createdAt: Number(now), ...(quote ? { quote } : {}), ...(b.description === undefined ? {} : { description: b.description.trim() }) }; rows.set(invoice.invoiceId.toLowerCase(), row); await save(); emit('invoice_created', row); publish('invoice.created', row, Number(now));
         return send(res, 201, { invoice, ...(quote ? { quote } : {}), paymentLinkPayload: { invoiceId: invoice.invoiceId, checkout: options.deployment.checkout } });
       }
-      const match = /^\/invoices\/(0x[0-9a-fA-F]{64})(?:\/(bind|pay|refund))?$/.exec(path);
+      const match = /^\/invoices\/(0x[0-9a-fA-F]{64})(?:\/(bind|pay|refund|robinhood))?$/.exec(path);
       if (!match) return send(res, 404, { error: 'Not found' });
       const row = rows.get(match[1].toLowerCase()); if (!row) return send(res, 404, { error: 'Invoice not found' });
       if (req.method === 'GET' && !match[2]) return send(res, 200, { ...row, merchantName: profiles.get(row.invoice.merchant.toLowerCase()) ?? null, status: ['draft', 'open'].includes(row.status) && (await publicClient.getBlock()).timestamp > row.invoice.expiry ? 'expired' : row.status });
+      if (req.method === 'POST' && match[2] === 'robinhood') {
+        if (row.status !== 'draft' && row.status !== 'open') throw new Error(`InvoiceNotOpen: invoice is ${row.status}`);
+        if ((await publicClient.getBlock()).timestamp > row.invoice.expiry) throw new Error('Expired: invoice has expired');
+        return send(res, 200, await mirrorOnRobinhood(row));
+      }
       if (req.method === 'POST' && match[2] === 'bind') {
         if (row.status !== 'draft') throw new Error('InvoiceAlreadyBound: invoice is immutable');
         if ((await publicClient.getBlock()).timestamp > row.invoice.expiry) throw new Error('Expired: invoice has expired');
@@ -198,7 +230,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (req.method === 'POST' && match[2] === 'refund') {
         if (!authorized(req)) return send(res, 401, { error: 'Merchant bearer token required' });
         if (row.status !== 'paid') throw new Error('Invoice is not paid or has already been refunded');
-        if (row.method === 'credit') throw new Error('RefundUnsupported: this invoice was paid with Tsuke credit, not from the private pool');
+        if (row.method === 'credit' || row.method === 'stocks') throw new Error(`RefundUnsupported: this invoice was paid ${row.method === 'credit' ? 'with Tsuke credit' : 'with Stock Tokens on Robinhood Chain'}, not from the private pool`);
         const amount = BigInt((await body(req)).amount); if (amount <= 0n || amount > row.invoice.amount) throw new Error('RefundTooLarge: amount must be positive and at most invoice amount');
         const approval = await wallet.writeContract({ address: options.deployment.usdc, abi: usdcAbi, functionName: 'approve', args: [options.deployment.checkout, amount] });
         const approved = await publicClient.waitForTransactionReceipt({ hash: approval }); if (approved.status !== 'success') throw new Error('Approval reverted');
@@ -210,6 +242,6 @@ export function createMerchantServer(options: ServerOptions): Server {
       return send(res, 405, { error: 'Method not allowed' });
     } catch (error: any) { const message = String(error?.message ?? error); send(res, /Setup required|StalePrice|InvalidPrice/.test(message) ? 503 : 400, { error: /StalePrice|InvalidPrice/.test(message) ? message : readableError(error) }); }
   });
-  server.on('close', () => creditWatch?.stop());
+  server.on('close', () => { creditWatch?.stop(); stockWatch?.stop(); });
   return server;
 }

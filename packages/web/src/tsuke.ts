@@ -43,6 +43,11 @@ export const creditLineAbi = parseAbi([
   "event Repaid(bytes32 indexed lineId, uint256 amount)",
 ]);
 
+export const gatewayAbi = parseAbi([
+  "function quote(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)",
+  "function pay(bytes32 invoiceId, address merchant, address asset, uint256 maxAssetIn) payable returns (uint256 assetIn)",
+  "function spreadBps(address asset) view returns (uint16)",
+]);
 export const robinhoodFork = (url: string) => defineChain({ id: 4663, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
 
 /** The checkout's test key (see wallet.ts): same storage slot, so the borrower is the payer. */
@@ -133,6 +138,29 @@ export function makeTsuke(cfg: Config) {
       await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount] });
       const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount], chain: arcChain });
       if ((await arc.waitForTransactionReceipt({ hash })).status !== "success") throw new Error(`repay reverted: ${hash}`);
+      return hash;
+    },
+    /** Robinhood: what `asset` it takes to pay a TsukeGateway invoice now (Chainlink price plus the vault's spread). */
+    async stockQuote(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address) {
+      const c = need();
+      const [assetIn, priceUsd8, marketClosed] = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "quote", args: [merchant, invoiceId, asset] });
+      const spread = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "spreadBps", args: [asset] });
+      return { assetIn, priceUsd8, marketClosed, spreadBps: Number(spread) };
+    },
+    /** Robinhood: approve the Stock Token to the gateway, then pay. maxAssetIn allows 1% price movement. */
+    async payWithStock(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address, quoted: bigint) {
+      const c = need(); const chain = robinhoodFork(credit!.robinhoodRpc!);
+      const w = createWalletClient({ chain, transport: http(credit!.robinhoodRpc!), account });
+      const max = quoted + quoted / 100n;
+      const allowance = await c.readContract({ address: asset, abi: erc20Abi, functionName: "allowance", args: [account.address, gateway] });
+      if (allowance < max) {
+        const a = await w.writeContract({ address: asset, abi: erc20Abi, functionName: "approve", args: [gateway, max], chain });
+        if ((await c.waitForTransactionReceipt({ hash: a })).status !== "success") throw new Error(`Approval reverted: ${a}`);
+      }
+      await c.simulateContract({ account, address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, asset, max] });
+      const hash = await w.writeContract({ address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, asset, max], chain });
+      const r = await c.waitForTransactionReceipt({ hash });
+      if (r.status !== "success") throw new Error(`TsukeGateway.pay reverted: ${hash}`);
       return hash;
     },
     arcGas: () => arc.getBalance({ address: account.address }),

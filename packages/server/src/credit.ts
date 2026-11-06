@@ -103,3 +103,39 @@ export async function robinhoodFaucet(rpcUrl: string, to: Address, amounts = { n
   }
   return out;
 }
+
+/* ------------------------------------------------------------------ Pay with stock: TsukeGateway on Robinhood */
+
+/** TsukeGateway (packages/tsuke): a merchant invoice in USDG that a customer pays with USDG, ETH or a Stock Token. */
+export const gatewayAbi = parseAbi([
+  'function createInvoice(bytes32 invoiceId, uint128 amountUsdg, uint64 expiry)',
+  'function invoice(address merchant, bytes32 invoiceId) view returns ((uint128 amountUsdg, uint64 expiry, uint8 status, address payer, address asset, uint256 assetIn))',
+  'function quote(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)',
+  'function pay(bytes32 invoiceId, address merchant, address asset, uint256 maxAssetIn) payable returns (uint256 assetIn)',
+  'event InvoicePaid(address indexed merchant, bytes32 indexed invoiceId, address indexed payer, address asset, uint256 assetIn, uint256 usdgOut, uint256 priceUsd8)',
+]);
+
+export type StockPayment = { invoiceId: Hex; payer: Address; asset: Address; assetIn: bigint; usdgOut: bigint; priceUsd8: bigint; txHash: Hex; blockNumber: bigint; timestamp: number };
+
+/** Watches InvoicePaid for one merchant on the Robinhood fork. */
+export function watchStockPayments(opts: { rpcUrl: string; gateway: Address; merchant: Address; fromBlock?: bigint; intervalMs?: number; onPaid: (p: StockPayment) => Promise<void>; onError?: (e: Error) => void }) {
+  const client: any = createPublicClient({ transport: http(opts.rpcUrl), cacheTime: 0 });
+  let next = opts.fromBlock, busy = false, stopped = false;
+  const tick = async () => {
+    if (busy || stopped) return; busy = true;
+    try {
+      const head: bigint = await client.getBlockNumber();
+      if (next === undefined) next = head + 1n;
+      if (next > head) return;
+      const logs = await client.getLogs({ address: opts.gateway, event: gatewayAbi[4], args: { merchant: opts.merchant }, fromBlock: next, toBlock: head });
+      for (const log of logs) {
+        const block = await client.getBlock({ blockNumber: log.blockNumber });
+        await opts.onPaid({ invoiceId: log.args.invoiceId, payer: log.args.payer, asset: log.args.asset, assetIn: log.args.assetIn, usdgOut: log.args.usdgOut, priceUsd8: log.args.priceUsd8, txHash: log.transactionHash, blockNumber: log.blockNumber, timestamp: Number(block.timestamp) });
+      }
+      next = head + 1n;
+    } catch (e: any) { opts.onError?.(e); } finally { busy = false; }
+  };
+  const timer = setInterval(tick, opts.intervalMs ?? 1500);
+  void tick();
+  return { stop: () => { stopped = true; clearInterval(timer); }, tick };
+}
