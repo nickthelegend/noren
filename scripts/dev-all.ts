@@ -52,7 +52,7 @@ run(async () => {
         try { const c = await deployCreditLine(arc); creditLine = creditLineAddr = c.creditLine; arcCreditFrom = c.deployBlock; pub.arcFromBlock = String(c.deployBlock); console.log(`NorenCreditLine on Arc fork: ${c.creditLine} (pool ${Number(c.poolUsdc) / 1e6} USDC)`); }
         catch (e: any) { missing.push(`NorenCreditLine deploy failed: ${e.message}`); }
       } else missing.push('packages/arc-credit (NorenCreditLine): merge the cre-bridge branch');
-      if (robinhood) Object.assign(pub, { robinhood: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
+      if (robinhood) Object.assign(pub, { creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
       pub.robinhoodChainId = Number(await rh.getChainId());
       return { bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
     },

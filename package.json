@@ -8,6 +8,7 @@
     "postinstall": "node patches/apply-kohaku.mjs",
     "spike": "sh scripts/spike.sh",
     "e2e": "sh scripts/e2e-fork.sh",
+    "e2e:credit": "tsx scripts/e2e-credit.ts",
     "dev:stack": "sh scripts/dev-stack.sh",
     "dev:all": "sh scripts/dev-all.sh",
     "deploy:arc:dry": "tsx scripts/deploy-arc.ts --dry-run",

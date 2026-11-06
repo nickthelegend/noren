@@ -28,14 +28,14 @@ async function rpc(url: string, method: string, params: unknown[] = []) {
 /** The Robinhood contracts on the fork. The fork must report chain 4663 here: Deploy.s.sol refuses any other chain. */
 export async function deployRobinhood(robinhoodRpc: string, forwarder: Address = FORWARDER.robinhood): Promise<RobinhoodDeployment> {
   const owner = dev(0), underwriter = dev(9).address;
-  const env = { ...process.env, TSUKE_OWNER: owner.address, TSUKE_UNDERWRITER: underwriter, TSUKE_FORWARDER: forwarder, TSUKE_INSTALLMENT_INTERVAL: '1209600', TSUKE_GRACE: '259200' };
+  const env = { ...process.env, NOREN_RH_OWNER: owner.address, NOREN_RH_UNDERWRITER: underwriter, NOREN_RH_FORWARDER: forwarder, NOREN_RH_INSTALLMENT_INTERVAL: '1209600', NOREN_RH_GRACE: '259200' };
   const key = toHex(owner.getHdKey().privateKey!);
   let out: string;
   try {
     out = execFileSync('forge', ['script', 'script/Deploy.s.sol:Deploy', '--rpc-url', robinhoodRpc, '--broadcast', '--private-key', key], { cwd: resolve('packages/robinhood/contracts'), env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e: any) { throw new Error(`Robinhood Deploy.s.sol failed: ${String(e.stdout ?? '').slice(-600)} ${String(e.stderr ?? '').replace(/0x[0-9a-f]{64}/gi, '0x…').slice(-400)}`); }
   const pick = (name: string) => { const m = new RegExp(`${name}\\s+(0x[0-9a-fA-F]{40})`).exec(out); if (!m) throw new Error(`Robinhood deploy printed no ${name}`); return m[1] as Address; };
-  const d = { oracle: pick('TSUKE_ORACLE'), vault: pick('TSUKE_VAULT'), gateway: pick('TSUKE_GATEWAY'), credit: pick('TSUKE_CREDIT') };
+  const d = { oracle: pick('NOREN_RH_ORACLE'), vault: pick('NOREN_RH_VAULT'), gateway: pick('NOREN_RH_GATEWAY'), credit: pick('NOREN_RH_CREDIT') };
   const c: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
   const deployBlock: bigint = await c.getBlockNumber();
   // Vault liquidity: 25,000 USDG from the PoolManager (impersonated, fork only), deposited by the owner as LP.
