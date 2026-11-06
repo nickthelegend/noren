@@ -152,7 +152,7 @@ export function Checkout({ id }: { id: string }) {
           ) : settled ? (
             <div className="co-done">
               <div className="co-check" aria-hidden><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="m15 27 7.5 7.5L38 19" /></svg></div>
-              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : drawnOnCredit && view?.method !== "stocks" && view?.method !== "usdc" ? <>Paid <em>later</em>, privately</> : view?.method === "stocks" ? <>Paid with <em>stocks</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
+              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : drawnOnCredit && view?.method !== "stocks" && view?.method !== "usdc" ? <>Paid <em>later</em>, privately</> : view?.method === "stocks" ? <>Paid with <em>{view.stock?.asset?.toLowerCase() === "0x0bd7d308f8e1639fab988df18a8011f41eacad73" ? "ETH" : "stocks"}</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
               <p>{usdc(view?.invoice.amount)} USDC to {shop}.{view?.status === "refunded" && ` ${usdc(view.refundAmount)} USDC came back to your private refund inbox.`}</p>
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
@@ -181,7 +181,7 @@ export function Checkout({ id }: { id: string }) {
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
           ) : (
             <>
-              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "credit-private" ? <>Pay <em>later</em>, privately</> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
+              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "credit-private" ? <>Pay <em>later</em>, privately</> : method === "stocks" ? <>Pay with <em>stocks or crypto</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
               <div className="co-methods four" role="tablist" aria-label="Payment method">
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · USDC from your private balance; {shop} never learns who paid</small></span></button>
