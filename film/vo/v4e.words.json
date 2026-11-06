@@ -1,0 +1,218 @@
+[
+  {
+    "text": "Bring",
+    "start": 0.06,
+    "end": 0.49,
+    "id": "w31"
+  },
+  {
+    "text": "USDC",
+    "start": 0.49,
+    "end": 0.833,
+    "id": "w32"
+  },
+  {
+    "text": "to",
+    "start": 0.833,
+    "end": 1.005,
+    "id": "w33"
+  },
+  {
+    "text": "ARC",
+    "start": 1.005,
+    "end": 1.263,
+    "id": "w34"
+  },
+  {
+    "text": "from",
+    "start": 1.263,
+    "end": 1.607,
+    "id": "w35"
+  },
+  {
+    "text": "any",
+    "start": 1.607,
+    "end": 1.864,
+    "id": "w36"
+  },
+  {
+    "text": "chain,",
+    "start": 1.864,
+    "end": 2.38,
+    "id": "w37"
+  },
+  {
+    "text": "Ethereum,",
+    "start": 2.38,
+    "end": 3.198,
+    "id": "w38"
+  },
+  {
+    "text": "Base,",
+    "start": 3.198,
+    "end": 3.652,
+    "id": "w39"
+  },
+  {
+    "text": "Arbitrum,",
+    "start": 3.652,
+    "end": 4.47,
+    "id": "w40"
+  },
+  {
+    "text": "or",
+    "start": 4.47,
+    "end": 4.651,
+    "id": "w41"
+  },
+  {
+    "text": "Robinhood.",
+    "start": 4.651,
+    "end": 5.56,
+    "id": "w42"
+  },
+  {
+    "text": "Circle",
+    "start": 5.56,
+    "end": 5.956,
+    "id": "w43"
+  },
+  {
+    "text": "burns",
+    "start": 5.956,
+    "end": 6.287,
+    "id": "w44"
+  },
+  {
+    "text": "it",
+    "start": 6.287,
+    "end": 6.419,
+    "id": "w45"
+  },
+  {
+    "text": "on",
+    "start": 6.419,
+    "end": 6.551,
+    "id": "w46"
+  },
+  {
+    "text": "one",
+    "start": 6.551,
+    "end": 6.749,
+    "id": "w47"
+  },
+  {
+    "text": "side",
+    "start": 6.749,
+    "end": 7.013,
+    "id": "w48"
+  },
+  {
+    "text": "and",
+    "start": 7.013,
+    "end": 7.212,
+    "id": "w49"
+  },
+  {
+    "text": "attests,",
+    "start": 7.212,
+    "end": 7.74,
+    "id": "w50"
+  },
+  {
+    "text": "and",
+    "start": 7.74,
+    "end": 7.991,
+    "id": "w51"
+  },
+  {
+    "text": "NoRen's",
+    "start": 7.991,
+    "end": 8.577,
+    "id": "w52"
+  },
+  {
+    "text": "hook",
+    "start": 8.577,
+    "end": 8.912,
+    "id": "w53"
+  },
+  {
+    "text": "mints",
+    "start": 8.912,
+    "end": 9.33,
+    "id": "w54"
+  },
+  {
+    "text": "it",
+    "start": 9.33,
+    "end": 9.498,
+    "id": "w55"
+  },
+  {
+    "text": "on",
+    "start": 9.498,
+    "end": 9.665,
+    "id": "w56"
+  },
+  {
+    "text": "ARC.",
+    "start": 9.665,
+    "end": 10,
+    "id": "w57"
+  },
+  {
+    "text": "These",
+    "start": 10,
+    "end": 10.335,
+    "id": "w58"
+  },
+  {
+    "text": "ran",
+    "start": 10.335,
+    "end": 10.536,
+    "id": "w59"
+  },
+  {
+    "text": "live",
+    "start": 10.536,
+    "end": 10.804,
+    "id": "w60"
+  },
+  {
+    "text": "on",
+    "start": 10.804,
+    "end": 10.938,
+    "id": "w61"
+  },
+  {
+    "text": "public",
+    "start": 10.938,
+    "end": 11.34,
+    "id": "w62"
+  },
+  {
+    "text": "test-nits",
+    "start": 11.34,
+    "end": 11.943,
+    "id": "w63"
+  },
+  {
+    "text": "from",
+    "start": 11.943,
+    "end": 12.211,
+    "id": "w64"
+  },
+  {
+    "text": "the",
+    "start": 12.211,
+    "end": 12.412,
+    "id": "w65"
+  },
+  {
+    "text": "app.",
+    "start": 12.412,
+    "end": 12.68,
+    "id": "w66"
+  }
+]

@@ -29,3 +29,15 @@ back to 1.0× at the end). The cursor itself is the recorder's drawn overlay, so
 (Earn → credit tasks → World ID → Reclaim → swap). v4b opens with Nick's line: "Don't sell your stocks. Deposit NVDA
 into Noren's Aqua pool, borrow up to 80% of its value, and the fees it earns pay your loan back." Kokoro af_heart, transcribe for timings, update caption data-start
 and the matching GSAP tweens together.
+
+## As cut (v4 render)
+
+0–5 problem → positioning card · 5–15 website (1.0×) · 15–35 Noren Merchant (Privy glimpse → injected wallet) ·
+35–52 Aubelle, SDK file, four ways · 52–64 app sign-in, Home, in-app private pay · 64–86 USDC from any chain (chain
+chips; live Ethereum/Base/Arbitrum Sepolia → Arc explorer pages; Robinhood → Arc live from the app) · 86–90 stocks → USDC
+(fork) · 90–98 any-chain diagram · 98–133 stocks → credit on the v4 stack (2 NVDA → Aqua pool; $245.97 at 66%; World ID
+and Reclaim QRs shown, not completed; real fork repayment steps → 70%; lock more $391.63 → $522.07; 391.51 USDC line live
+on Arc; pay later 20.00 privately; 3 real Aqua fills pay it down 20.00 → 19.75), pointer-following camera · 133–136 swap
+· 136–149.5 private by default + live SHIELD · 149.5–160 pay with NVDA, then ETH · 160–167 pay later privately, World ID
+Orb, live CCIP · 167–180 live-on-testnets card, tagline end card. 80% is captioned as reachable with World ID and
+repayment history, never shown as reached.

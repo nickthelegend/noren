@@ -193,7 +193,7 @@ def scene_html(s):
                 tl.append(f'tl.fromTo("#{cid}", {{ scale: {s0}, transformOrigin: "{x0}% {y0}%" }}, {{ scale: {s1}, transformOrigin: "{x1}% {y1}%", duration: {max(0.6, seg["dur"] - 0.4):.2f}, ease: "power1.inOut" }}, {seg["at"] + 0.2:.3f});')
         if seg["take"] == "world":
             extra.append(f'<div id="{sid}-wl{seg["n"]}" class="clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="4" style="position:absolute;left:18px;top:18px"><div class="wid">World ID · production · World App</div></div>')
-        if seg["rate"] > 1.25:
+        if seg["rate"] > 1.0001:   # never true now: every shot plays at 1.0x
             extra.append(f'<div id="{sid}-s{seg["n"]}" class="spd clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="4"><span class="in">▸▸ {seg["rate"]:.1f}×</span></div>')
     # redaction over the secret key (only where the onboard take is shown)
     red = []
@@ -296,7 +296,7 @@ for k in order:
 for i, t in enumerate(clicks):
     src = "click-soft" if i % 2 else "click"
     audio.append(f'<audio id="sx-k{i}" class="clip" data-start="{t:.2f}" data-duration="0.36" data-track-index="11" data-volume="0.55" src="assets/sfx/{src}.mp3"></audio>')
-for i, k in enumerate(order[1:]):
+for i, k in enumerate([] if True else order[1:]):   # no transition whooshes either (voice + UI clicks only)
     t = scenes[k]["start"] - 0.12
     audio.append(f'<audio id="sx-w{i}" class="clip" data-start="{t:.2f}" data-duration="0.57" data-track-index="12" data-volume="0.35" src="assets/sfx/{"whoosh-short" if i % 2 else "whoosh"}.mp3"></audio>')
 # a soft pop where a real result lands on screen (the take logged it the moment it appeared)
@@ -312,8 +312,9 @@ for k in order:
                 pops.append(s["start"] + seg["at"] + (e["t"] - seg["tin"]) / seg["rate"] + 0.05)
 for i, t in enumerate(sorted(pops)):
     audio.append(f'<audio id="sx-p{i}" class="clip" data-start="{t:.2f}" data-duration="0.72" data-track-index="13" data-volume="0.4" src="assets/sfx/pop.mp3"></audio>')
+# ETHGlobal finalist rules: "audio without music" -- voice and the UI's own click sounds only, no music bed
 music = FILM / "assets" / "music" / "bed.wav"
-if music.exists():
+if False and music.exists():
     audio.append(f'<audio id="music" class="clip" data-start="0" data-duration="{edl.TOTAL:.2f}" data-track-index="14" data-volume="0.14" data-fade-in="0.8" data-fade-out="2.5" src="assets/music/bed.wav"></audio>')
 else:
     print("no music bed yet (assets/music/bed.wav)")

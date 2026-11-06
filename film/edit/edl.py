@@ -44,55 +44,60 @@ APP_CARD = (1.42, 50, 30)
 OFFSET = {"intro": 5.0}
 # Segments: (scene, take, in, out, rate, zoom[, network label]). zoom = (scale, x%, y%) or (from, to); None = full frame.
 # A take named "@card" is a drawn card (CARDS below), "in"/"out" only give its length.
-SEGMENTS = [
-    # 01 the website: one slow eased scroll, 1.0x
-    ("intro", "landing4", 0.9, 10.9, 1.0, None),
-    # 02 Noren Merchant: the Privy modal (not completed), then the injected test wallet: SIWE, store, link, keys
-    ("merchant", "merchant3", 2.0, 4.6, 1.0, None),
-    ("merchant", "merchant3", 5.6, 33.0, 27.4 / 17.4, None),
+# ETHGlobal rules: every shot plays at 1.0x (no speed-ups), so beats are built from real-time windows of the takes,
+# joined by hard jump cuts that drop the waiting. BEATS = (scene, take, [(in, out), ...], zoom, network, captions);
+# captions are (seconds from the beat's start, duration, text). Segments and captions are derived below.
+BEATS = [
+    ("intro", "landing4", [(0.9, 10.9)], None, None, []),
+    # 02 Noren Merchant: Privy modal (not completed), then the injected test wallet: SIWE, store, link, keys
+    ("merchant", "merchant3", [(2.0, 4.6)], None, ARC_FORK, [(0.1, 2.5, "Privy sign-in (email or wallet)")]),
+    ("merchant", "merchant3", [(5.6, 7.8), (8.9, 12.1)], None, ARC_FORK, [(0.1, 2.9, "demo continues with an injected test wallet on local forks"), (3.1, 2.3, "Signed in with SIWE (EIP-4361): no transaction")]),
+    ("merchant", "merchant3", [(13.6, 16.9)], None, ARC_FORK, [(0.1, 3.1, "Store registered on Arc: <em>NorenCheckout.registerMerchant</em>")]),
+    ("merchant", "merchant3", [(18.4, 22.8)], None, ARC_FORK, [(0.1, 4.2, "First payment link: 12.50 {usdc} USDC")]),
+    ("merchant", "merchant3", [(25.0, 29.3)], None, ARC_FORK, [(0.1, 4.1, "API keys; the secret is shown once <em>(redacted here)</em>")]),
     # 03 Aubelle: browse, the integration file, the hosted checkout's four ways to pay
-    ("shop", "shop3", 0.5, 20.0, 2.6, None),
-    ("shop", "shop", 25.5, 36.3, 2.0, ((1.0, 50, 50), (1.25, 74, 52))),
-    ("shop", "shop3", 22.4, 32.0, 9.6 / (17.0 - 7.5 - 5.4), ((1.0, 50, 50), (1.18, 72, 34))),
-    # 04 the Noren app at full width: Privy shown, browser wallet connected, Home, Pay privately
-    ("app", "applogin3", 2.0, 4.3, 1.0, None, ARC_FORK),
-    ("app", "applogin3", 6.2, 9.8, 2.0, None, ARC_FORK),
-    ("app", "apphome3", 1.0, 9.4, 2.4, None, ARC_FORK),
-    ("app", "apphome3", 10.5, 27.0, 16.5 / 4.4, None, ARC_FORK),
-    # USDC from any chain to Arc: the chain chips, then the live transfers made from the app (public testnets)
-    ("app", "bridge4", 2.0, 14.0, 2.0, None, ANY_LIVE),
-    ("app", "xexplorer4", 0.5, 2.5, 1.0, (1.4, 0, 10), ETH_LIVE),
-    ("app", "xexplorer4", 18.6, 20.6, 1.0, (1.12, 30, 30), LIVE),
-    ("app", "xexplorer4", 36.1, 37.85, 1.0, (1.45, 30, 12), BASE_LIVE),
-    ("app", "xexplorer4", 53.7, 55.45, 1.0, (1.12, 30, 30), LIVE),
-    ("app", "xexplorer4", 71.1, 72.85, 1.0, (1.45, 30, 12), ARB_LIVE),
-    ("app", "xexplorer4", 88.7, 90.45, 1.0, (1.12, 30, 30), LIVE),
-    ("app", "bridge3", 13.4, 32.3, 18.9 / 5.0, None, BRIDGE_LIVE),
-    ("app", "stocks3", 2.2, 11.6, 9.4 / 3.823, None, STOCK_DEMO),
-    ("app", "@xchain", 0.0, 8.2, 1.0, None, ""),
-    # Stocks -> credit (fork; real fork txs): full width, then a camera that follows the pointer
-    ("app", "credit4a", 2.0, 23.0, 3.5, ("follow", 1.45, 4.2), RH),
-    ("app", "credit4a", 24.3, 35.9, 3.0, ("follow", 1.45, None), RH),
-    ("app", "credit4a", 36.0, 47.0, 3.0, ("follow", 1.3, None), WORLD),
-    ("app", "credit4a", 49.0, 60.0, 3.0, ("follow", 1.3, None), RECLAIM),
-    ("app", "credit4b", 1.5, 8.9, 2.5, ("follow", 1.45, None), RH),
-    ("app", "credit4b", 8.9, 33.0, 6.0, ("follow", 1.45, None), RH),
-    ("app", "credit4b", 33.0, 86.0, 53.0 / 3.8, ("follow", 1.45, None), FORK),
-    ("app", "credit4c", 1.0, 19.0, 4.5, None, FORK),
-    ("app", "credit4d", 2.0, 12.0, 10.0 / 3.0, ("follow", 1.45, None), RH),
-    ("app", "swap3", 0.5, 5.95, 5.45 / 3.0, None, SWAP_LIVE),
+    ("shop", "shop3", [(4.0, 7.0), (10.8, 16.8)], None, FORK, [(0.1, 8.8, "Aubelle: a demo shop in <em>examples/shop</em>")]),
+    ("shop", "shop", [(27.0, 31.5)], (1.25, 74, 52), FORK, [(0.1, 4.3, "<em>server/noren.ts</em>: the whole integration")]),
+    ("shop", "shop3", [(25.0, 28.5)], (1.15, 72, 34), FORK, [(0.1, 3.3, "Four ways to pay: private · USDC · <em>stocks or crypto</em> · later")]),
+    # 04 the Noren app: Privy shown, browser wallet connected, Home, in-app private pay
+    ("app", "applogin3", [(2.0, 4.3), (6.1, 7.0), (8.7, 10.3)], None, ARC_FORK, [(0.1, 4.6, "Noren app: Privy sign-in shown · connect the injected test wallet")]),
+    ("app", "apphome3", [(1.0, 4.0)], None, ARC_FORK, [(0.1, 2.8, "Home: private, Arc, Robinhood and credit balances")]),
+    ("app", "apphome3", [(10.4, 13.9), (16.6, 17.4), (21.5, 22.3), (26.0, 27.4)], None, ARC_FORK, [(0.1, 6.3, "Paste a Noren link · pay 12.50 {usdc} privately in the app")]),
+    # USDC from any chain to Arc: the chain chips, the live transfers from the app (public testnets)
+    ("app", "bridge4", [(2.5, 8.9)], None, ANY_LIVE, [(0.1, 6.2, "USDC from any chain to Arc: Ethereum · Base · Arbitrum · Robinhood")]),
+    ("app", "xexplorer4", [(0.5, 2.3)], (1.4, 0, 10), ETH_LIVE, [(0.05, 3.3, "Live: Ethereum Sepolia → Arc, 0.5 {usdc} USDC in 31 s")]),
+    ("app", "xexplorer4", [(18.6, 20.2)], (1.12, 30, 30), LIVE, []),
+    ("app", "xexplorer4", [(36.1, 37.6)], (1.45, 30, 12), BASE_LIVE, [(0.05, 2.85, "Live: Base Sepolia → Arc in 19 s")]),
+    ("app", "xexplorer4", [(53.7, 55.1)], (1.12, 30, 30), LIVE, []),
+    ("app", "xexplorer4", [(71.1, 72.6)], (1.45, 30, 12), ARB_LIVE, [(0.05, 2.85, "Live: Arbitrum Sepolia → Arc in 16 s")]),
+    ("app", "xexplorer4", [(88.7, 90.1)], (1.12, 30, 30), LIVE, []),
+    ("app", "bridge3", [(12.9, 14.6), (30.6, 33.0)], None, BRIDGE_LIVE, [(0.05, 1.6, "Live from the app: Robinhood → Arc"), (1.75, 2.3, "cut: 16 s for Circle · minted by NorenArcHook")]),
+    ("app", "stocks3", [(2.0, 5.8)], None, STOCK_DEMO, [(0.1, 3.6, "Stocks → USDC on Arc: a cross-chain Aqua order (fork demo)")]),
+    ("app", "@xchain", [(0.0, 8.2)], None, "", []),
+    # Stocks -> credit (fork, real fork txs), full width with a camera that follows the pointer
+    ("app", "credit4a", [(2.8, 4.6), (7.3, 8.4), (11.0, 14.5)], ("follow", 1.45, 4.2), RH, [(0.1, 6.2, "Deposit 2 {nvda} NVDA into the Aqua pool")]),
+    ("app", "credit4a", [(16.0, 19.5)], ("follow", 1.45, None), RH, [(0.1, 3.3, "Your stock is now <em>1inch Aqua liquidity</em>")]),
+    ("app", "credit4a", [(24.0, 25.2), (34.0, 35.9)], ("follow", 1.45, None), RH, [(0.1, 3.0, "Credit limit $245.97: 66% of your NVDA")]),
+    ("app", "credit4a", [(38.9, 39.6), (42.5, 45.0)], ("follow", 1.3, None), WORLD, [(0.05, 3.1, "World ID QR · up to 80% with World ID and repayment history")]),
+    ("app", "credit4a", [(51.7, 52.4), (54.0, 56.5)], ("follow", 1.3, None), RECLAIM, [(0.05, 3.1, "Reclaim (zkTLS): a credit-score proof · waiting for the phone")]),
+    ("app", "credit4b", [(3.8, 5.6), (6.8, 8.6)], ("follow", 1.45, None), RH, [(0.05, 3.5, "Repaid on time (real fork txs) → 70% · on-chain: proof type only")]),
+    ("app", "credit4b", [(18.3, 19.5), (30.9, 32.4)], ("follow", 1.45, None), RH, [(0.05, 2.6, "Lock more NVDA: limit $391.63 → $522.07")]),
+    ("app", "credit4b", [(38.9, 40.4), (82.0, 84.0)], ("follow", 1.45, None), FORK, [(0.05, 1.4, "Open a credit line with nNVDA"), (1.55, 1.9, "cut: 42 s · 391.51 {usdc} USDC live on Arc via CRE")]),
+    ("app", "credit4c", [(6.8, 7.8), (15.6, 17.4)], None, FORK, [(0.05, 2.7, "Pay later at checkout: 20.00 {usdc} USDC, privately")]),
+    ("app", "credit4d", [(4.0, 5.6), (8.3, 9.7)], ("follow", 1.45, None), RH, [(0.05, 2.9, "Fees from 3 real Aqua fills pay it down: 20.00 → 19.75")]),
+    ("app", "swap3", [(0.5, 3.5)], None, SWAP_LIVE, [(0.1, 2.85, "Swap: Uniswap v4 first; Noren's Aqua maker when it's better")]),
     # 05a USDC on Arc, private by default, then the live CCTP SHIELD run (docs/PRIVACY.md)
-    ("private", "privdefault", 0.3, 20.3, 20.0 / 8.09, None),
-    ("private", "privdefault", 27.2, 33.2, 2.0, (1.9, 40, 8)),
-    ("private", "xexplorer", 17.6, 18.85, 1.0, (1.12, 30, 30), ARB_LIVE),
-    ("private", "xexplorer", 53.0, 54.16, 1.0, (1.12, 30, 30), LIVE),
+    ("private", "privdefault", [(0.5, 2.5), (4.4, 5.2), (7.7, 8.6), (14.6, 15.9), (18.6, 22.3)], None, ARC_FORK, [(0.1, 2.6, "Checkout opens on <em>Pay privately</em>, the default"), (2.8, 5.8, "Shield 20 {usdc} · proof in the browser · payer in the tx: <em>none</em>")]),
+    ("private", "privdefault", [(30.2, 32.6)], (1.9, 40, 8), ARC_FORK, [(0.1, 2.25, "Noren Merchant: Customer: <em>Private</em>")]),
+    ("private", "xexplorer", [(17.6, 18.85)], (1.12, 30, 30), ARB_LIVE, [(0.05, 2.35, "Live: Arbitrum SHIELD burn → private invoice on Arc")]),
+    ("private", "xexplorer", [(53.0, 54.15)], (1.12, 30, 30), LIVE, []),
     # 05b Aubelle's dress paid with NVDA (the lender pool's Aqua maker), then with ETH
-    ("stocks", "shop3", 32.0, 45.0, 13.0 / 5.25, None),
-    ("stocks", "ethpay4", 5.0, 22.5, 17.5 / 5.25, None),
+    ("stocks", "shop3", [(31.9, 33.0), (34.6, 36.6), (36.9, 37.6), (43.0, 44.95)], None, RH, [(0.1, 5.6, "Pay $148 with 0.788045 {nvda} NVDA at $188.41")]),
+    ("stocks", "ethpay4", [(8.8, 9.6), (12.3, 13.8), (14.8, 15.4), (21.8, 23.65)], None, RH, [(0.05, 4.6, "Or with ETH: 0.06693 {eth} ETH at $2,217.87 · paid")]),
     # 05c pay later, privately (Noren Merchant sees "Private"), the World ID Orb check, the live CCIP run
-    ("later", "privcredit-m", 1.5, 9.5, 4.0, None, ARC_FORK),
-    ("later", "@world", 0.0, 2.0, 1.0, None, WORLD),
-    ("later", "xexplorer", 88.0, 91.0, 1.0, (1.2, 50, 10), CCIP_LIVE),
+    ("later", "privcredit-m", [(3.6, 5.6)], None, ARC_FORK, [(0.05, 1.9, "Pay later, privately · Customer: <em>Private</em>")]),
+    ("later", "@world", [(0.0, 2.0)], None, WORLD, [(0.05, 1.9, "World ID verified in World App (Orb)")]),
+    ("later", "xexplorer", [(88.0, 91.0)], (1.2, 50, 10), CCIP_LIVE, [(0.05, 2.9, "Live over CCIP: Robinhood testnet → Base hub → Arc")]),
 ]
 
 # The World ID shot: the real verification in World App (record/takes/world.events.json)
@@ -101,49 +106,21 @@ _wev = _json.load(open(_W))["events"] if _os.path.exists(_W) else []
 WORLD_VERIFIED = next((e["t"] for e in _wev if e["type"] == "world-verified"), None)
 if WORLD_VERIFIED is None:
     raise SystemExit("record/takes/world.events.json has no world-verified event")
-SEGMENTS = [(s[0], "world", WORLD_VERIFIED - 0.3, WORLD_VERIFIED + 1.7, 1.0, None, WORLD) if s[1] == "@world" else s for s in SEGMENTS]
+_starts = {sc[0]: sc[1] + OFFSET.get(sc[0], 0.0) for sc in SCENES}
+SEGMENTS, CAPTIONS = [], []
+for sc, take, wins, zoom, net, caps in BEATS:
+    t0 = _starts[sc]
+    for (a, b) in wins:
+        if take == "@world":
+            seg = (sc, "world", WORLD_VERIFIED - 0.3 + a, WORLD_VERIFIED - 0.3 + b, 1.0, zoom)
+        else:
+            seg = (sc, take, a, b, 1.0, zoom)
+        SEGMENTS.append(seg + ((net,) if net is not None else ()))
+        _starts[sc] += b - a
+    CAPTIONS += [(round(t0 + r, 3), d, txt) for (r, d, txt) in caps]
 
 # Captions: (absolute start, duration, text)
-CAPTIONS = [
-    (15.1, 2.5, "Privy sign-in (email or wallet)"),
-    (17.7, 2.9, "demo continues with an injected test wallet on local forks"),
-    (20.7, 3.2, "Signed in with SIWE (EIP-4361): a signature, no transaction"),
-    (24.0, 4.0, "Store registered on Arc: <em>NorenCheckout.registerMerchant</em>"),
-    (28.1, 1.9, "First payment link: 12.50 {usdc} USDC"),
-    (30.1, 4.7, "API keys; the secret is shown once <em>(redacted here)</em>"),
-    (35.3, 7.0, "Aubelle: a demo shop in <em>examples/shop</em>"),
-    (42.6, 5.2, "<em>server/noren.ts</em>: the whole integration"),
-    (48.0, 3.9, "Four ways to pay: private · USDC · <em>stocks or crypto</em> · later"),
-    (52.2, 3.8, "Noren app: Privy sign-in shown · connect the injected test wallet"),
-    (56.2, 3.3, "Home: private, Arc, Robinhood and credit balances"),
-    (59.7, 4.2, "Paste a Noren link · pay 12.50 {usdc} privately in the app"),
-    (64.1, 5.8, "USDC from any chain to Arc: Ethereum · Base · Arbitrum · Robinhood"),
-    (70.05, 3.9, "Live: Ethereum Sepolia → Arc, 0.5 {usdc} USDC in 31 s"),
-    (74.05, 3.4, "Live: Base Sepolia → Arc in 19 s"),
-    (77.55, 3.4, "Live: Arbitrum Sepolia → Arc in 16 s"),
-    (81.05, 4.9, "Live from the app: Robinhood → Arc, minted by NorenArcHook"),
-    (86.1, 3.65, "Stocks → USDC on Arc: a cross-chain Aqua order (fork demo)"),
-    (98.1, 3.0, "Deposit 2 {nvda} NVDA into the Aqua pool"),
-    (101.15, 2.8, "Your stock is now <em>1inch Aqua liquidity</em>"),
-    (104.1, 3.75, "Credit limit $245.97: 66% of your NVDA"),
-    (107.95, 3.55, "World ID QR · up to 80% with World ID and repayment history"),
-    (111.6, 3.55, "Reclaim (zkTLS): a credit-score proof · waiting for the phone"),
-    (115.3, 2.85, "Repaid on time (real fork txs) → 70% · on-chain: proof type only"),
-    (118.25, 3.9, "Lock more NVDA: limit $391.63 → $522.07"),
-    (122.25, 3.7, "Credit line 391.51 {usdc} USDC, live on Arc via Chainlink CRE"),
-    (126.05, 3.9, "Pay later at checkout: 20.00 {usdc} USDC, privately"),
-    (130.05, 2.9, "Fees from 3 real Aqua fills pay it down: 20.00 → 19.75"),
-    (133.1, 2.85, "Swap: Uniswap v4 first; Noren's Aqua maker when it's better"),
-    (136.1, 3.6, "Checkout opens on <em>Pay privately</em>, the default"),
-    (139.8, 4.2, "Shield 20 {usdc} · proof in the browser · payer in the tx: <em>none</em>"),
-    (144.1, 2.9, "Noren Merchant: Customer: <em>Private</em>"),
-    (147.1, 2.35, "Live: Arbitrum SHIELD burn → private invoice on Arc"),
-    (149.6, 5.1, "Pay $148 with 0.788045 {nvda} NVDA at $188.41"),
-    (154.8, 5.15, "Or with ETH: 0.06693 {eth} ETH at $2,217.87 · paid"),
-    (160.05, 1.9, "Pay later, privately · Customer: <em>Private</em>"),
-    (162.05, 1.9, "World ID verified in World App (Orb)"),
-    (164.05, 2.9, "Live over CCIP: Robinhood testnet → Base hub → Arc"),
-]
+# CAPTIONS are derived from BEATS above
 
 # Drawn cards (facts copied from the named source)
 CARDS = {
@@ -163,7 +140,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). v4 is split at a sentence: v4 (home, pay, bridge) and v4c (stocks, the three rails).
-VO = [("v1", 0.0), ("v2", 15.5), ("v3", 35.2), ("v4", 52.2), ("v4c", 86.2), ("v4b", 98.4), ("v4d", 123.3), ("v4s", 132.6), ("v5a", 136.3), ("v5b", 149.6), ("v5c-verified", 160.15), ("v6", 167.4)]
+VO = [("v1", 0.0), ("v2", 15.5), ("v3", 35.2), ("v4", 52.2), ("v4e", 66.4), ("v4c", 86.2), ("v4b", 99.8), ("v4d", 124.6), ("v4s", 132.6), ("v5a", 136.3), ("v5b", 149.6), ("v5c-verified", 160.15), ("v6", 167.4)]
 
 POPS = []
 
