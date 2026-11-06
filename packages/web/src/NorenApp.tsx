@@ -22,6 +22,8 @@ export function NorenApp() {
   const [lines, setLines] = useState<Line[] | null>(null);
   const [linesErr, setLinesErr] = useState<string | null>(null);
   const [arcUsdc, setArcUsdc] = useState<bigint | null>(null);
+  const [arcPos, setArcPos] = useState<Position | null>(null);
+  const [bridgeLog, setBridgeLog] = useState<{ source: string; written?: string; event: string; ms: number }[] | null>(null);
   const [priv, setPriv] = useState<{ approved: bigint; pending: bigint } | null>(null);
   const [privErr, setPrivErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -33,7 +35,12 @@ export function NorenApp() {
   const load = useCallback(async () => {
     if (!tk) return;
     tk.holdings().then((h) => { setHold(h); setHoldErr(null); }).catch((e) => setHoldErr(msgOf(e)));
-    tk.lines().then((l) => { setLines(l); setLinesErr(null); }).catch((e) => { setLines(null); setLinesErr(msgOf(e)); });
+    tk.lines().then(async (l) => {
+      setLines(l); setLinesErr(null);
+      const last = l.filter((x) => !x.closed).at(-1);
+      if (last) setArcPos(await tk.arcLine(last.lineId).catch(() => null));
+      api.bridgeLog().then(setBridgeLog).catch(() => setBridgeLog(null));
+    }).catch((e) => { setLines(null); setLinesErr(msgOf(e)); });
     tk.arcUsdc().then(setArcUsdc).catch(() => setArcUsdc(null));
   }, [tk]);
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, [load]);
@@ -79,7 +86,7 @@ export function NorenApp() {
         <section className="na-strip" aria-label="Your balances and credit line">
           <div><span>Private balance</span><b><i>$</i>{priv ? usdc(priv.approved) : "–"}</b><small>{privErr ? "Couldn't read the pool" : priv ? (priv.pending > 0n ? `+${usdc(priv.pending)} being screened` : "USDC in the privacy pool, Arc") : "Loading…"}</small></div>
           <div><span>Credit limit</span><b><i>$</i>{line ? usdc(line.limit) : "0.00"}</b><small>{line ? `Opened on Robinhood · expires ${day(line.expiry)}` : lines ? "No line yet" : linesErr ? "Setup required" : "Loading…"}</small></div>
-          <div><span>Available on Arc</span><b><i>$</i>{line ? usdc(line.limit > owed ? line.limit - owed : 0n) : "0.00"}</b><small>Spend it at any Noren checkout</small></div>
+          <div><span>Available on Arc</span><b><i>$</i>{arcPos?.live ? usdc(arcPos.available) : "0.00"}</b><small>{line && !arcPos?.live ? "Waiting for Chainlink CRE…" : "Spend it at any Noren checkout"}</small></div>
           <div><span>Owed</span><b className={owed > 0n ? "kaki" : ""}><i>$</i>{usdc(owed)}</b><small>{line ? `${usdc(line.drawn)} drawn · ${usdc(line.repaid)} repaid` : "Nothing drawn"}</small></div>
           <div><span>Stock you hold</span><b><i>$</i>{hold ? usd8(collateral8) : "–"}</b><small>At live Chainlink prices on the fork</small></div>
         </section>
@@ -115,7 +122,7 @@ export function NorenApp() {
             </Panel>
 
             <Panel n="2" title="Lock stock, open a credit line" sub="NorenCredit on Robinhood Chain">
-              {actions ? <LockForm actions={actions} hold={hold} busy={busy} run={run} hasLine={!!line} /> : <Skel rows={2} />}
+              {actions ? <LockForm actions={actions} hold={hold} busy={busy} run={run} hasLine={!!line} say={(t) => setNote({ t })} /> : <Skel rows={2} />}
             </Panel>
 
             <Panel n="4" title="Repay" sub="USDC on Arc; the CRE workflow carries each repayment back to Robinhood">
@@ -125,13 +132,13 @@ export function NorenApp() {
 
           <div className="na-col">
             <Panel title="Your credit score" sub="From this wallet's Robinhood Chain history, signed with EIP-712">
-              {actions ? <><Score actions={actions} /><AiDecision actions={actions} /></> : <Skel rows={3} />}
+              {actions ? <><Score key={`${collateral8}-${line?.lineId ?? ''}`} actions={actions} /><AiDecision actions={actions} /></> : <Skel rows={3} />}
             </Panel>
             <Panel title="No stock? Start with a small line" sub="World ID: one unsecured starter line per unique human. Noren keeps only the nullifier, never who you are.">
               <VerifyHuman serverUrl={SERVER} wallet={tk?.address} />
             </Panel>
             <Panel n="3" title="Bridged to Arc by Chainlink CRE" sub="CreditLineOpened on Robinhood → workflow → NorenCreditLine on Arc">
-              {linesErr ? <SetupLine text={linesErr} /> : !lines ? <Skel rows={2} /> : <Bridge line={line} actions={actions} />}
+              {linesErr ? <SetupLine text={linesErr} /> : !lines ? <Skel rows={2} /> : <Bridge line={line} pos={arcPos} log={bridgeLog} />}
             </Panel>
             <Panel title="Pay later at any Noren checkout">
               <p className="na-p">Open any Noren payment link and choose <b>Pay later</b>. The merchant is paid in full, upfront, from the Arc credit pool. Paying on credit is <b>not private</b>: the line is tied to your Robinhood wallet. For a private payment, use your shielded balance instead.</p>
@@ -165,7 +172,7 @@ function Score({ actions }: { actions: ReturnType<typeof creditActions> }) {
   return (
     <div className="na-score">
       <div className="na-gauge">
-        <svg viewBox="0 0 180 100" role="img" aria-label={`Tier ${u.tier} of ${segs}`}>{u.tiers.map((t, i) => <path key={t.name} d={arc(i)} className={i <= u.tierIndex ? `on t${i}` : ""} />)}</svg>
+        <svg viewBox="0 0 180 100" role="img" aria-label={`${u.tier} of ${segs} tiers`}>{u.tiers.map((t, i) => <path key={t.name} d={arc(i)} className={i <= u.tierIndex ? `on t${i}` : ""} />)}</svg>
         <div><b>{u.tier}</b><small>{u.tierIndex < 0 ? `score ${u.score} of 100 · 30 needed` : `score ${u.score} of 100 · ${u.ltvBps / 100}% collateral`}</small></div>
       </div>
       <ul className="na-factors">{u.factors.map((f) => <li key={f.label} data-missing={f.missing}><span>{f.label}</span><b className="num">{f.value}</b>{f.max ? <i className="na-bar" aria-hidden><i style={{ width: `${Math.min(100, ((f.points ?? 0) / f.max) * 100)}%` }} /></i> : null}{f.note && <small>{f.note}</small>}</li>)}</ul>
@@ -203,7 +210,7 @@ function AiDecision({ actions }: { actions: ReturnType<typeof creditActions> }) 
 }
 
 /* ------------------------------------------------------------------ lock form (order-panel layout) */
-function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<typeof creditActions>; hold: { stocks: Holding[] } | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void; hasLine: boolean }) {
+function LockForm({ actions, hold, busy, run, hasLine, say }: { actions: ReturnType<typeof creditActions>; hold: { stocks: Holding[] } | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void; hasLine: boolean; say: (t: string) => void }) {
   const owned = hold?.stocks.filter((s) => s.balance > 0n) ?? [];
   const [sym, setSym] = useState("NVDA");
   const [amt, setAmt] = useState("1");
@@ -215,7 +222,7 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
     let on = true; setQe(null);
     actions.quote(s, amt).then((x) => on && setQ(x)).catch((x) => on && (setQ(null), setQe(msgOf(x))));
     return () => { on = false; };
-  }, [actions, sym, amt, s?.price8]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [actions, sym, amt, s?.price8, s?.balance]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!hold) return <Skel rows={2} />;
   const tooMuch = s ? Number(amt) > Number(s.balance) / 1e18 : true;
   return (
@@ -237,7 +244,7 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
           <dt>Liquidation if price falls below</dt><dd>{q?.liquidation8 ? `$${usd8(q.liquidation8)}` : "–"}</dd>
         </dl>
       )}
-      <button className="btn kaki full lg" disabled={!!busy || !q || tooMuch || hasLine} onClick={() => run("lock", () => actions.open(s!, amt))}>
+      <button className="btn kaki full lg" disabled={!!busy || !q || tooMuch || hasLine} onClick={() => run("lock", () => actions.open(s!, amt, say))}>
         {busy === "lock" ? <><span className="spin" /> Locking on Robinhood…</> : hasLine ? "You have an open credit line" : tooMuch ? `Not enough ${sym}` : <>Lock {amt || 0} {sym} and open a credit line</>}
       </button>
     </div>
@@ -245,13 +252,13 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
 }
 
 /* ------------------------------------------------------------------ bridge status */
-function Bridge({ line, actions }: { line?: Line; actions: ReturnType<typeof creditActions> | null }) {
-  const [pos, setPos] = useState<Position | null>(null);
-  useEffect(() => { if (!line || !actions) return; let on = true; actions.arcLine(line.lineId).then((p) => on && setPos(p)).catch(() => on && setPos(null)); return () => { on = false; }; }, [line?.lineId, line?.drawn, actions]); // eslint-disable-line react-hooks/exhaustive-deps
+function Bridge({ line, pos, log }: { line?: Line; pos: Position | null; log: { source: string; written?: string; event: string; ms: number }[] | null }) {
+  const run = line ? log?.find((e) => e.source.toLowerCase() === line.openedTx.toLowerCase()) : undefined;
+  const live = !!line && !!pos?.live;
   const steps: [string, string, boolean][] = [
     ["CreditLineOpened on Robinhood", line ? `tx ${short(line.openedTx, 6)} · block ${line.openedBlock}` : "Lock stock to open a line", !!line],
-    ["Chainlink CRE workflow", line ? (pos?.live ? "log trigger fired, report signed and written" : "waiting for the workflow to report…") : "Listens for CreditLineOpened", !!pos?.live],
-    ["Live on Arc: NorenCreditLine", pos?.live ? `limit ${usdc(pos.limit)} USDC · line ${short(line!.lineId, 4)}` : "Not yet", !!pos?.live],
+    ["Chainlink CRE workflow", line ? (run?.written ? `report written through the forwarder in ${(run.ms / 1000).toFixed(1)} s · tx ${short(run.written, 6)}` : live ? "report written" : "waiting for the workflow to report…") : "Listens for CreditLineOpened", live],
+    ["Live on Arc: NorenCreditLine", live ? `limit ${usdc(pos!.limit)} USDC · line ${short(line!.lineId, 4)}` : "Not yet", live],
   ];
   return <ol className="na-bridge">{steps.map(([t, d, on], i) => <li key={t} data-on={on} data-now={!on && (i === 0 || steps[i - 1][2])}><i>{on ? <Icon.check /> : i + 1}</i><div><b>{t}</b><span>{d}</span></div></li>)}</ol>;
 }

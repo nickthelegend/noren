@@ -36,6 +36,7 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
 
 export const api = {
   config: () => call<Config>("/config"),
+  bridgeLog: () => call<{ source: string; written?: string; event: string; ms: number; handler: number; skipped?: string; error?: string }[]>("/credit/bridge"),
   mirrorOnRobinhood: (id: string) => call<{ gateway: `0x${string}`; merchant: `0x${string}`; invoiceId: `0x${string}`; amountUsdg: string; expiry: string }>(`/invoices/${id}/robinhood`, { method: "POST" }),
   robinhoodFaucet: (address: string) => call<Record<string, string>>("/dev/robinhood-faucet", { method: "POST", body: JSON.stringify({ address }) }),
   faucet: (address: string) => call<{ hashes?: string[] }>("/dev/faucet", { method: "POST", body: JSON.stringify({ address }) }),

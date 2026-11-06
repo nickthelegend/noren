@@ -80,17 +80,20 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       return { collateral8: value8, ltvBps: Math.round(1e8 / ratio), limitUsdc6, termDays: 30, liquidation8, tier, needsAttestation };
     },
     /** Attest if needed, then lock the shares and open the line on Robinhood. The CRE bridge takes it to Arc. */
-    async open(s: Holding, amount: string): Promise<string> {
+    async open(s: Holding, amount: string, say: (step: string) => void = () => {}): Promise<string> {
       const { pub, wallet, chain } = oc.robinhood();
       const q = await this.quote(s, amount);
       const send = async (req: Parameters<typeof wallet.writeContract>[0]) => { const h = await wallet.writeContract(req); const r = await pub.waitForTransactionReceipt({ hash: h }); if (r.status !== "success") throw new Error(`${req.functionName} reverted: ${h}`); return h; };
       if (q.needsAttestation) {
+        say("Asking the underwriter: it reads this wallet's Robinhood Chain history (about 30 s)…");
         const a = await getJson(`${c!.underwriterUrl}/attest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ borrower: oc.address }) });
         if (a.declined) throw new Error(`Declined by the underwriter: ${a.reason}`);
+        say(`Signed: tier ${a.attestation.tier} (${a.decisionSource ?? "underwriter"}). Applying the EIP-712 attestation on NorenCredit…`);
         const att = a.attestation;
         await send({ address: contract(), abi: creditAbi, functionName: "applyAttestation", args: [{ borrower: att.borrower as Address, tier: att.tier, limitUsdg: BigInt(att.limitUsdg), collateralRatioBps: att.collateralRatioBps, nonce: BigInt(att.nonce), expiry: BigInt(att.expiry) }, a.signature as Hex], chain });
       }
       const raw = parseUnits(amount, 18);
+      say(`Locking ${amount} ${s.sym} and opening the line on Robinhood…`);
       await send({ address: s.token, abi: erc20Abi, functionName: "approve", args: [contract(), raw], chain });
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
       const h = await send({ address: contract(), abi: creditAbi, functionName: "openCreditLine", args: [s.token, raw, q.limitUsdc6, expiry], chain });
