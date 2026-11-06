@@ -41,6 +41,8 @@ export const creditLineAbi = parseAbi([
   "function repay(bytes32 lineId, uint256 amount)",
   "event Drawn(bytes32 indexed lineId, uint256 amount, bytes32 invoiceId, address merchant)",
   "event Repaid(bytes32 indexed lineId, uint256 amount)",
+  "function lines(bytes32 lineId) view returns ((address borrower, uint64 expiry, uint64 updatedAt, bool closed, uint256 limitUsdc6, uint256 drawnUsdc6, uint256 repaidUsdc6))",
+  "function available(bytes32 lineId) view returns (uint256)",
 ]);
 
 export const gatewayAbi = parseAbi([
@@ -162,6 +164,17 @@ export function makeTsuke(cfg: Config) {
       const r = await c.waitForTransactionReceipt({ hash });
       if (r.status !== "success") throw new Error(`TsukeGateway.pay reverted: ${hash}`);
       return hash;
+    },
+    /** Arc: the line as NorenCreditLine sees it (written by the CRE bridge). live = the bridge has delivered it. */
+    async arcLine(lineId: Hex) {
+      const creditLine = credit?.creditLine;
+      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      const [l, available] = await Promise.all([
+        arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "lines", args: [lineId] }),
+        arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "available", args: [lineId] }),
+      ]);
+      const live = l.borrower !== "0x0000000000000000000000000000000000000000";
+      return { live, closed: l.closed, limit: l.limitUsdc6, expiry: Number(l.expiry), drawn: l.drawnUsdc6, repaid: l.repaidUsdc6, updatedAt: Number(l.updatedAt), available };
     },
     arcGas: () => arc.getBalance({ address: account.address }),
     arcUsdc: () => arc.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),
