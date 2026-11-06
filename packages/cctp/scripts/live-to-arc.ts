@@ -21,13 +21,14 @@ const log = (s: string) => console.log(`${new Date().toISOString()} ${s}`);
 const pk = loadKey();
 const wallet = walletFor(from, pk);
 const me = wallet.account!.address as Address;
-const demoMerchant: Address = "0x000000000000000000000000000000000000dEaD";
+// A fresh demo merchant address so the router's InvoicePaid and the merchant balance are easy to see.
+const demoMerchant: Address = (process.env.MERCHANT as Address | undefined) ?? "0x000000000000000000000000000000000000dEaD";
 const actions: Record<string, ArcAction | undefined> = {
   plain: undefined,
   "pay-invoice": { kind: "pay-invoice", merchant: demoMerchant, invoiceId: `inv-${label}`.slice(0, 32), ref: "noren-cctp" },
   "earn-deposit": { kind: "earn-deposit", vault: demoMerchant, ref: "noren-cctp" },
   "aqua-order": { kind: "aqua-order", order: toHex(`aqua-order-${label}`), ref: "noren-cctp" },
-  "credit-line": { kind: "credit-line", lineId: toBytes32(`line-${label}`.slice(0, 32)), limitUsdc6: 1_000_000n, expiry: Math.floor(Date.now() / 1000) + 86400, ref: "noren-cctp" },
+  "credit-line": { kind: "credit-line", lineId: toBytes32(`line-${label}`.slice(0, 32)), limitUsdc6: 1_000_000n, expiry: Math.floor(Date.now() / 1000) + 86400, asOf: Math.floor(Date.now() / 1000), ref: "noren-cctp" },
 };
 if (!(kind in actions)) throw new Error(`unknown kind ${kind}`);
 

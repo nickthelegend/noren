@@ -4,8 +4,14 @@ pragma solidity 0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {NorenArcHook} from "../src/NorenArcHook.sol";
 import {IMessageTransmitterV2} from "../src/interfaces/IMessageTransmitterV2.sol";
-import {INorenArcActionRouter} from "../src/interfaces/INorenArcActionRouter.sol";
+import {INorenActionSink} from "../src/interfaces/INorenActionSink.sol";
 import {IERC20Min} from "../src/interfaces/IERC20Min.sol";
+
+interface IRouterAdmin {
+  function owner() external view returns (address);
+  function setRail(address rail, bytes32 railId) external;
+  function executed(bytes32 rail, bytes32 msgId) external view returns (bool);
+}
 
 interface IAttestable {
   function attesterManager() external view returns (address);
@@ -33,7 +39,7 @@ contract ForkArcUsdc {
 }
 
 /// Records what the hook hands it, like the shared router (the real one lives on branch `ccip`).
-contract ForkRouter is INorenArcActionRouter {
+contract ForkRouter is INorenActionSink {
   uint256 public lastAmount;
   bytes public lastAction;
 
@@ -120,6 +126,22 @@ contract NorenArcHookForkTest is Test {
     assertEq(router.lastAmount(), 2_999_610);
     assertEq(keccak256(router.lastAction()), keccak256(action));
     assertEq(IERC20Min(ARC_USDC).balanceOf(address(hook)), 0);
+  }
+
+  /// The ccip agent's live NorenArcActionRouter on Arc Testnet pays the invoice from the bridged USDC.
+  function test_fork_arc_realRouterPaysInvoiceFromBridgedUsdc() public {
+    _arcFork();
+    address router = 0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4;
+    vm.prank(IRouterAdmin(router).owner());
+    IRouterAdmin(router).setRail(address(hook), keccak256("CCTP"));
+    hook.setRouter(INorenActionSink(router));
+    address merchant = makeAddr("merchant");
+    bytes memory action = abi.encode(uint8(1), alice, bytes32("ref"), abi.encode(merchant, bytes32("inv-fork-9")));
+    bytes32 nonce = keccak256("noren-fork-9");
+    bytes memory m = _baseToArc(nonce, address(hook), 4_000_000, 520, action);
+    hook.relay(m, _attest(m));
+    assertEq(IERC20Min(ARC_USDC).balanceOf(merchant), 3_999_480);
+    assertTrue(IRouterAdmin(router).executed(keccak256("CCTP"), nonce));
   }
 
   function test_fork_arc_garbageHookDataRefundsDepositorOnArc() public {

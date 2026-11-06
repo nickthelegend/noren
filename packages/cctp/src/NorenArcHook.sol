@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {IReceiver, IERC165} from "./interfaces/IReceiver.sol";
 import {IMessageTransmitterV2} from "./interfaces/IMessageTransmitterV2.sol";
-import {INorenArcActionRouter} from "./interfaces/INorenArcActionRouter.sol";
+import {INorenActionSink} from "./interfaces/INorenActionSink.sol";
 import {IERC20Min} from "./interfaces/IERC20Min.sol";
 
 /// @title NorenArcHook
@@ -11,8 +11,8 @@ import {IERC20Min} from "./interfaces/IERC20Min.sol";
 ///         this contract completes the transfer on Arc by calling Circle's `MessageTransmitterV2.receiveMessage`.
 ///         - Plain transfer (`mintRecipient` is someone else): Circle mints to them; this contract emits `Bridged`.
 ///         - Hook transfer (`depositForBurnWithHook`, `mintRecipient` is this contract): the minted USDC and the
-///           hookData `action` go to Noren's shared action router (pay an invoice, Earn deposit, Aqua order,
-///           credit line). Malformed hookData never strands funds: they go to the beneficiary, or back to the
+///           hookData `action` go to Noren's shared action router NorenArcActionRouter (pay an invoice, Earn
+///           deposit, Aqua order, credit line, pay on credit). Malformed hookData never strands funds: they go to the beneficiary, or back to the
 ///           depositor's address on Arc when no beneficiary can be read.
 ///         A Chainlink CRE workflow is the relayer: a log trigger on the source chain's `MessageSent`, the Circle
 ///         Iris attestation fetched with DON consensus, and a report through the CRE forwarder into `onReport`.
@@ -29,6 +29,9 @@ contract NorenArcHook is IReceiver {
   uint8 public constant EARN_DEPOSIT = 2;
   uint8 public constant AQUA_ORDER = 3;
   uint8 public constant CREDIT_LINE = 4;
+  uint8 public constant PAY_ON_CREDIT = 5;
+  /// @dev Arc -> other chains only (sent by the router); never accepted inbound.
+  uint8 public constant LINE_REPORT = 6;
   uint256 public constant MAX_PARAMS = 2048;
 
   // CCTP V2 message header offsets (MessageV2.sol)
@@ -50,7 +53,7 @@ contract NorenArcHook is IReceiver {
   uint32 public immutable localDomain;
   address public forwarder;
   address public owner;
-  INorenArcActionRouter public router;
+  INorenActionSink public router;
   mapping(bytes32 nonce => bool) public processed;
 
   /// @notice Every completed transfer. `recipient` is the mint recipient, or the hook beneficiary.
@@ -170,7 +173,7 @@ contract NorenArcHook is IReceiver {
       emit HookRejected(nonce, who, amount, reason);
       return who;
     }
-    INorenArcActionRouter r = router;
+    INorenActionSink r = router;
     if (address(r) == address(0)) {
       _send(who, amount);
       emit HookExecuted(nonce, kind, who, amount, false, true);
@@ -210,8 +213,15 @@ contract NorenArcHook is IReceiver {
       if (len != 32) return (false, kind, beneficiary, "EARN_DEPOSIT params must be (address)");
       if (!_isAddressWord(_word(a, 160)) || _word(a, 160) == 0) return (false, kind, beneficiary, "vault is not an address");
     } else if (kind == CREDIT_LINE) {
-      if (len != 96) return (false, kind, beneficiary, "CREDIT_LINE params must be (bytes32,uint256,uint64)");
-      if (uint256(_word(a, 224)) > type(uint64).max) return (false, kind, beneficiary, "expiry is not a uint64");
+      if (len != 128) return (false, kind, beneficiary, "CREDIT_LINE params must be (bytes32,uint256,uint64,uint64)");
+      if (uint256(_word(a, 224)) > type(uint64).max || uint256(_word(a, 256)) > type(uint64).max) {
+        return (false, kind, beneficiary, "expiry or asOf is not a uint64");
+      }
+    } else if (kind == PAY_ON_CREDIT) {
+      if (len != 128) return (false, kind, beneficiary, "PAY_ON_CREDIT params must be (bytes32,address,bytes32,uint256)");
+      if (!_isAddressWord(_word(a, 192)) || _word(a, 192) == 0) return (false, kind, beneficiary, "merchant is not an address");
+    } else if (kind == LINE_REPORT) {
+      return (false, kind, beneficiary, "LINE_REPORT is outbound only");
     }
     // AQUA_ORDER params are opaque here. Unknown kinds also go to the router, which books them as a
     // claimable balance for the beneficiary.
@@ -252,7 +262,7 @@ contract NorenArcHook is IReceiver {
   }
 
   /// @notice Noren's shared action router; zero delivers hook transfers straight to the beneficiary.
-  function setRouter(INorenArcActionRouter router_) external onlyOwner {
+  function setRouter(INorenActionSink router_) external onlyOwner {
     router = router_;
     emit RouterSet(address(router_));
   }

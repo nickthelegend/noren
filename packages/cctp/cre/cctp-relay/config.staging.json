@@ -1,7 +1,7 @@
 {
   "arc": {
     "chainSelectorName": "arc-testnet",
-    "hook": "0xc0347F3f66C0867F385679a8E0ceF3DB4A3bcb45",
+    "hook": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
     "gasLimit": "700000"
   },
   "messageTransmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",

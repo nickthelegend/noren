@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {NorenArcHook} from "../src/NorenArcHook.sol";
 import {IMessageTransmitterV2} from "../src/interfaces/IMessageTransmitterV2.sol";
-import {INorenArcActionRouter} from "../src/interfaces/INorenArcActionRouter.sol";
+import {INorenActionSink} from "../src/interfaces/INorenActionSink.sol";
 import {IERC20Min} from "../src/interfaces/IERC20Min.sol";
 
 /// Test USDC (6 dp) minted by the transmitter double.
@@ -57,7 +57,7 @@ contract TransmitterDouble is IMessageTransmitterV2 {
 }
 
 /// Records what the hook hands it, like the shared router: funds first, then execute once per (rail, msgId).
-contract RouterDouble is INorenArcActionRouter {
+contract RouterDouble is INorenActionSink {
   bytes32 public lastRail;
   bytes32 public lastMsgId;
   uint64 public lastSource;
@@ -264,13 +264,13 @@ contract NorenArcHookTest is Test {
     assertFalse(hook.processed(bytes32(uint256(11))));
     assertEq(mt.usedNonces(bytes32(uint256(11))), 0);
     vm.prank(owner);
-    hook.setRouter(INorenArcActionRouter(address(0)));
+    hook.setRouter(INorenActionSink(address(0)));
     hook.relay(m, attestation);
     assertEq(usdc.balanceOf(alice), 1e6);
   }
 
   function test_validateActionStrict() public view {
-    (bool ok, uint8 kind, address who,) = hook.validateAction(_action(4, alice, abi.encode(bytes32("line"), uint256(5e6), uint64(1e9))));
+    (bool ok, uint8 kind, address who,) = hook.validateAction(_action(4, alice, abi.encode(bytes32("line"), uint256(5e6), uint64(1e9), uint64(1e9 - 60))));
     assertTrue(ok);
     assertEq(kind, 4);
     assertEq(who, alice);
@@ -299,9 +299,22 @@ contract NorenArcHookTest is Test {
     // empty params
     (ok,,,) = hook.validateAction(_action(3, alice, ""));
     assertFalse(ok);
-    // CREDIT_LINE expiry beyond uint64
-    (ok,,,) = hook.validateAction(_action(4, alice, abi.encode(bytes32("l"), uint256(1), uint256(type(uint64).max) + 1)));
+    // CREDIT_LINE expiry beyond uint64, and the old 3-field encoding
+    (ok,,,) = hook.validateAction(_action(4, alice, abi.encode(bytes32("l"), uint256(1), uint256(type(uint64).max) + 1, uint64(0))));
     assertFalse(ok);
+    (ok,,,) = hook.validateAction(_action(4, alice, abi.encode(bytes32("l"), uint256(1), uint64(1))));
+    assertFalse(ok);
+    // PAY_ON_CREDIT
+    (ok, kind,,) = hook.validateAction(_action(5, alice, abi.encode(bytes32("l"), merchant, bytes32("inv"), uint256(1e6))));
+    assertTrue(ok);
+    assertEq(kind, 5);
+    (ok,,,) = hook.validateAction(_action(5, alice, abi.encode(bytes32("l"), address(0), bytes32("inv"), uint256(1e6))));
+    assertFalse(ok);
+    // LINE_REPORT never comes in
+    string memory reason;
+    (ok,,, reason) = hook.validateAction(_action(6, alice, abi.encode(bytes32("l"), uint256(1), uint256(0), uint64(1))));
+    assertFalse(ok);
+    assertEq(reason, "LINE_REPORT is outbound only");
   }
 
   function testFuzz_validateActionNeverReverts(bytes calldata a) public view {

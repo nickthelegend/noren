@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Hex } from "viem";
+import { createPublicClient, http, keccak256, parseAbi, toHex, type Hex } from "viem";
 import { describe, expect, it } from "vitest";
 import { norenArcHookAbi } from "../sdk/abi";
 import { decodeAction, encodeAction, toBytes32 } from "../sdk/actions";
@@ -15,7 +15,8 @@ describe("encodeAction (shared Arc action ABI)", () => {
     expect(inv.ref).toBe(toBytes32("noren"));
     expect(decodeAction(encodeAction({ kind: "earn-deposit", vault: merchant }, alice)).kind).toBe(2);
     expect(decodeAction(encodeAction({ kind: "aqua-order", order: "0x0102" }, alice)).params).toBe("0x0102");
-    expect(decodeAction(encodeAction({ kind: "credit-line", lineId: toBytes32("line"), limitUsdc6: 5_000_000n, expiry: 2_000_000_000 }, alice)).kind).toBe(4);
+    expect(decodeAction(encodeAction({ kind: "credit-line", lineId: toBytes32("line"), limitUsdc6: 5_000_000n, expiry: 2_000_000_000, asOf: 1_999_999_000 }, alice)).kind).toBe(4);
+    expect(decodeAction(encodeAction({ kind: "pay-on-credit", lineId: toBytes32("line"), merchant, invoiceId: "inv-9", amountUsdc6: 1_000_000n }, alice)).kind).toBe(5);
   });
   it("rejects bad inputs", () => {
     expect(() => encodeAction({ kind: "aqua-order", order: "0x" }, alice)).toThrow();
@@ -33,7 +34,8 @@ describe("the deployed NorenArcHook on Arc Testnet agrees (live eth_call)", () =
       encodeAction({ kind: "pay-invoice", merchant, invoiceId: "inv-42" }, alice),
       encodeAction({ kind: "earn-deposit", vault: merchant }, alice),
       encodeAction({ kind: "aqua-order", order: "0x0102030405" }, alice),
-      encodeAction({ kind: "credit-line", lineId: toBytes32("line"), limitUsdc6: 5_000_000n, expiry: 2_000_000_000 }, alice),
+      encodeAction({ kind: "credit-line", lineId: toBytes32("line"), limitUsdc6: 5_000_000n, expiry: 2_000_000_000, asOf: 1_999_999_000 }, alice),
+      encodeAction({ kind: "pay-on-credit", lineId: toBytes32("line"), merchant, invoiceId: "inv-9", amountUsdc6: 1_000_000n }, alice),
     ]) {
       const [valid, , beneficiary, reason] = await arc.readContract({ address: NOREN_ARC_HOOK, abi: norenArcHookAbi, functionName: "validateAction", args: [a] });
       expect(reason).toBe("");
@@ -44,9 +46,13 @@ describe("the deployed NorenArcHook on Arc Testnet agrees (live eth_call)", () =
     expect(valid).toBe(false);
     expect(reason).toBe("action shorter than 160 bytes");
   });
-  it("is wired to Circle's MessageTransmitterV2 on domain 26 and the CRE forwarder", async () => {
+  it("is wired to Circle's MessageTransmitterV2 on domain 26, the CRE forwarder and the shared router", async () => {
     if (!NOREN_ARC_HOOK) throw new Error("Setup required");
     expect(await arc.readContract({ address: NOREN_ARC_HOOK, abi: norenArcHookAbi, functionName: "localDomain" })).toBe(26);
     expect(await arc.readContract({ address: NOREN_ARC_HOOK, abi: norenArcHookAbi, functionName: "forwarder" })).toBe("0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1");
+    const router = await arc.readContract({ address: NOREN_ARC_HOOK, abi: norenArcHookAbi, functionName: "router" });
+    expect(router).toBe("0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4");
+    const rail = await arc.readContract({ address: router, abi: parseAbi(["function railOf(address) view returns (bytes32)"]), functionName: "railOf", args: [NOREN_ARC_HOOK] });
+    expect(rail).toBe(keccak256(toHex("CCTP")));
   });
 });
