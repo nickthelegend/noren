@@ -27,10 +27,10 @@ const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secre
 | | Pay privately | Pay with stocks | Pay later |
 |---|---|---|---|
 | Customer pays with | USDC in a Kohaku privacy pool (Arc) | NVDA, TSLA, AAPL… Stock Tokens (Robinhood Chain) | A USDC credit line on Arc, backed by locked Stock Tokens |
-| Merchant receives | USDC on Arc, in the payment tx | USDG on Robinhood Chain, from Noren's stock vault | USDC on Arc, upfront, from the credit pool |
+| Merchant receives | USDC on Arc, in the payment tx | USDG on Robinhood Chain, from a 1inch Aqua maker (or Noren's vault as fallback) | USDC on Arc, upfront, from the credit pool |
 | Merchant learns the payer | **no**: the proof binds the invoice, not a wallet | yes (public wallet) | yes (the line is public) |
-| Contract | `NorenCheckout` + 0xbow Privacy Pools | `NorenGateway` + `NorenVault` | `NorenCredit` (Robinhood) ↔ CRE ↔ `NorenCreditLine` (Arc) |
-| Price | Chainlink fiat feeds (Arc mainnet, read-only) | Chainlink stock feeds (Robinhood) + 0.50% spread | Chainlink stock feeds value the collateral |
+| Contract | `NorenCheckout` + 0xbow Privacy Pools | `NorenGateway` → `NorenLiquidity` (1inch Aqua + SwapVM), `NorenVault` fallback | `NorenCredit` (Robinhood) ↔ CRE ↔ `NorenCreditLine` (Arc) |
+| Price | Chainlink fiat feeds (Arc mainnet, read-only) | Chainlink stock feeds (Robinhood): makers quote through the `NorenOraclePeg` SwapVM instruction; the vault adds a 0.50% spread | Chainlink stock feeds value the collateral |
 
 The checkout says it plainly: only "Pay privately" hides you.
 
@@ -41,7 +41,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 | `pnpm test` (offline suites across the monorepo) | **99 passed**, 14 files |
 | `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), proof 1.28 s, re-proof 1.14 s, 39.0 s total |
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
-| `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040588 NVDA at $185.56 pays a 7.50 invoice (merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |
+| `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040798 NVDA at $184.61 pays a 7.50 invoice, filled by a 1inch Aqua maker (fee 0.0377 USDG; merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |
 | One CRE simulator run (bridge workflow, `--broadcast` through the MockKeystoneForwarder) | 4.6–5.2 s per event |
 | Settle to Arc: CRE settlement-desk workflow on a 7.50 USDG request | live quotes Relay 7.475568 / Across 7.491332 USDC against a Chainlink fair value of 7.501225; approved Across with a 7.426212 minimum in 6.4–7.1 s |
 | CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
@@ -108,7 +108,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 3. **Lock.** `NorenCredit.openCreditLine` values the shares with Chainlink (with a weekend haircut when markets are closed) and emits `CreditLineOpened`.
 4. **Bridge.** The Chainlink CRE workflow writes the limit to `NorenCreditLine` on Arc through the forwarder.
 5. **Spend.** On any Noren checkout, "Pay later" calls `NorenCreditLine.payInvoice`; the merchant is paid USDC upfront and the server settles the invoice from the `Drawn` log.
-6. **Repay.** USDC on Arc, in parts or at once. CRE carries each `Drawn`/`Repaid` back to `NorenCredit`. Debt left after expiry plus grace, or collateral below 110% of the debt, makes the line liquidatable.
+6. **Repay.** USDC on Arc, in parts or at once; the app suggests `NorenCredit.INSTALLMENTS()` parts (3). CRE carries each `Drawn`/`Repaid` back to `NorenCredit`. Debt left after expiry plus grace, or collateral below 110% of the debt, makes the line liquidatable, and liquidation sells the collateral to 1inch Aqua makers through SwapVM.
 7. **No stock?** Verify with World ID (IDKit, server-verified) for one small unsecured starter line per human. Noren stores only the nullifier.
 
 ## CROPS
@@ -124,6 +124,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 - **Robinhood testnet has no Chainlink feeds**, so the Robinhood side is a snapshot of mainnet state. CRE only knows Robinhood *testnet*, so that node is served as chain 46630 with testnet's simulation forwarder. CRE workflows run in the CRE CLI simulator, not on a DON.
 - **Keys not yet created:** the 0G credit check needs `ZG_PC_API_KEY` and World ID needs `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY`. Until then both say "Setup required" and nothing is faked; the history underwriter's deterministic score (labelled as such) decides terms.
 - **Settle to Arc** runs the CRE approval for real, but no relayer fills a local fork, so the USDC fill on Arc stays pending. The Robinhood snapshot carries the Relay Depository's code but not the Across SpokePool, so an Across approval is shown and not deposited; `sh packages/bridge-settlement/scripts/fork-settle.sh` runs both deposits on a live fork.
+- **1inch Aqua:** Aqua is the official registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Robinhood Chain. The SwapVM router is the official AquaSwapVMRouter (`0x111111338c5091E8440b67B168bAe16a668AC0De`) recompiled with one added opcode (`NorenOraclePeg`), so it is redeployed on the fork rather than called at the official address. Maker liquidity on the fork is seeded from a real USDG holder.
 - Stock Tokens can't leave Robinhood Chain and their issuer can pause or block them; only stablecoin value crosses, as a credit limit carried by CRE. See [docs/BRIDGE-ROUTES.md](docs/BRIDGE-ROUTES.md).
 - The privacy pool on a fresh fork has few depositors, so timing can link a payment to a deposit; the checkout shows the anonymity set.
 - Browser proving was measured on a laptop, not yet on a phone. The contracts are unaudited.
@@ -137,7 +138,8 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 | `packages/server` | merchant API, relay, webhooks, credit and stock settlement watchers, Robinhood fork faucet |
 | `packages/postman` | ASP: USDC blacklist check, Merkle roots |
 | `packages/web` | landing, Noren Merchant, Noren app, hosted checkout |
-| `packages/robinhood` | `NorenCredit`, `NorenGateway`, `NorenVault`, `NorenAssetOracle`, history underwriter, SDK |
+| `packages/robinhood` | `NorenCredit` (credit lines, Pay in 3), `NorenGateway`, `NorenLiquidity` (Aqua maker registry and routing), `NorenVault`, `NorenAssetOracle`, history underwriter, SDK |
+| `packages/aqua` | `NorenOraclePeg` (a Chainlink-pegged SwapVM instruction) and `NorenAquaSwapVMRouter` (the official AquaSwapVMRouter plus that one opcode), under the SwapVM-1.1 license |
 | `packages/arc-credit` | `NorenCreditLine` |
 | `packages/bridge-settlement` | `NorenSettlementDesk`, the settlement CRE workflow and keeper (USDG → USDC on Arc via Relay or Across) |
 | `packages/cre-bridge`, `packages/cre-pricing` | Chainlink CRE workflows (TypeScript) |
@@ -145,7 +147,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 | `packages/world-id` | IDKit request signing, server verification, nullifier registry, `VerifyHuman` |
 | `scripts` | `dev:all`, `dev:stack`, e2e runners, CRE runner, Arc deploy |
 
-MIT © 2026 Nivesh Gajengi. Vendored Privacy Pools contracts keep their Apache-2.0 headers (see NOTICE).
+MIT © 2026 Nivesh Gajengi. Vendored Privacy Pools contracts keep their Apache-2.0 headers (see NOTICE). `packages/aqua/swapvm-ext` extends 1inch SwapVM and is distributed under the SwapVM-1.1 license that its files name.
 
 ### Assets
 The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Screenshots are real captures of this app on the local forks. Fonts: Geist, Geist Mono, Instrument Serif (OFL), bundled from Fontsource.

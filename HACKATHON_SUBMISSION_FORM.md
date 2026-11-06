@@ -21,7 +21,7 @@ Noren is a payments stack with three surfaces.
 
 Customers who want more than private USDC have two more options:
 
-- **Pay with stocks.** Robinhood Chain Stock Tokens (NVDA, TSLA, AAPL…) are sold to Noren's vault at the Chainlink price plus a 0.5% spread, and the merchant receives USDG.
+- **Pay with stocks.** Robinhood Chain Stock Tokens (NVDA, TSLA, AAPL…) are sold to a 1inch Aqua maker at a Chainlink-pegged price, quoted by our own SwapVM instruction. Noren's vault is the fallback. The merchant receives USDG.
 - **Pay later.** The customer locks Stock Tokens on Robinhood Chain. An underwriter reads the wallet's on-chain history and signs an EIP-712 credit attestation, and a sealed model on 0G Private Computer gives a second opinion with a request ID. A Chainlink CRE workflow carries the credit line to Arc, where it pays any Noren checkout upfront. Repayments flow back to Robinhood through the same workflow.
 - **No stock?** A customer can verify once with World ID for a small unsecured starter line. Noren keeps only the nullifier.
 
@@ -30,6 +30,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 ## How it's made
 - **Private payments:** EF Kohaku SDK + 0xbow Privacy Pools (Groth16 withdraw circuit, LeanIMT, Entrypoint), with our `NorenCheckout` as the pool's processooor. The withdrawal context commits to (invoiceId, merchant, amount, expiry, refund precommitment, receipt commitment). The merchant's server relays the proof and pays the gas. An ASP postman approves deposits only if Arc USDC's own `isBlacklisted` is false and posts Merkle roots. Refunds go into a shielded refund inbox. Proofs are generated in the browser with snarkjs, using artifacts served by the app itself.
 - **Chainlink:** Data Feeds on Arc mainnet (read-only) quote fiat links. A **CRE** TypeScript workflow (cron + HTTP `eth_call`) writes those rates to `NorenRateOracle` on Arc, and the server checks each invoice's quote with `verifyQuote` at its own round IDs. A second CRE workflow is the credit bridge: EVM log triggers on `CreditLineOpened`/`CreditLineClosed` (Robinhood) write `NorenCreditLine.onReport` (Arc), log triggers on `Drawn`/`Repaid` (Arc) write `NorenCredit.onReport` (Robinhood), and an HTTP trigger opens World ID starter lines. A third, the settlement desk, approves moving a merchant's USDG to USDC on Arc only when live Relay and Across quotes agree with Chainlink USDG/USD and USDC/USD; a keeper then deposits into Relay (on a fork no relayer fills the Arc side). Everything runs in the CRE CLI simulator with `--broadcast` through the real MockKeystoneForwarders. Stock collateral is valued with Chainlink stock feeds on Robinhood Chain.
+- **1inch Aqua + SwapVM:** `NorenOraclePeg` is a new SwapVM instruction (opcode 34) that prices a Stock Token from its Chainlink feed and `uiMultiplier`, with a maker-set spread. `NorenAquaSwapVMRouter` is the official AquaSwapVMRouter plus that opcode, against the official Aqua registry on Robinhood Chain. `NorenLiquidity` registers maker strategies, routes each stock payment to the best maker quote (vault fallback) and sells liquidated collateral to makers.
 - **Robinhood Chain:** `NorenCredit` (EIP-712 attestations, credit tiers that move with repayment history, liquidation), `NorenGateway` (pay an invoice with USDG, ETH or Stock Tokens), `NorenVault` (ERC-4626 USDG liquidity) and `NorenAssetOracle` (uiMultiplier-aware, with a haircut when markets are closed). They run against the real Stock Token, USDG and Chainlink contracts on a warmed snapshot of mainnet state, because Robinhood testnet has no feeds.
 - **Arc:** `NorenCheckout`, `NorenCreditLine` (revolving USDC credit pool, one draw per invoice) and `NorenRateOracle`. Gas and settlement are in USDC. `scripts/deploy-arc.ts` measures a dry run of the deploy on a fork from the real deployer.
 - **0G Private Computer:** model 0GM-1.0 in private (TeeML) mode, a strict JSON schema, policy caps, and independent checks of the TEE signer and TDX quote. The request ID and `tee_verified` are shown next to the decision. There is no fallback scorer.
@@ -56,15 +57,16 @@ The checkout says it plainly: only "Pay privately" hides you.
 
 ## Partner prizes (pick at most 3)
 
-**Recommended three: 1inch Build an Aqua App, EF Best CROPS App, Chainlink Best workflow with CRE.** None of them needs a credential from Nick; the only action is making the repo public. **1inch Aqua is still in progress** (branch `aqua-liquidity`, not merged into this submission yet). If it doesn't land in time, use World IDKit in its place, provided Nick has created the World app. World IDKit and 0G are the alternates if Nick creates the World app or the 0G key in time. Arc needs Nick's Arc Studio login and testnet USDC. One EF prize per project; Arc allows one track.
+**Recommended three: 1inch Build an Aqua App, EF Best CROPS App, Chainlink Best workflow with CRE.** None of them needs a credential from Nick; the only action is making the repo public. 1inch Aqua is merged and runs in `pnpm e2e:credit`. World IDKit and 0G are the alternates if Nick creates the World app or the 0G key in time. Arc needs Nick's Arc Studio login and testnet USDC. One EF prize per project; Arc allows one track.
 
-### ⏳ 1. 1inch: Build an Aqua App (recommended once merged; in progress)
+### ✅ 1. 1inch: Build an Aqua App (recommended)
 Requirements: a sophisticated DeFi position on the **official** Aqua / SwapVM contracts (custom SwapVM instructions score higher); **on-chain token transfers in the demo** (forks are allowed); **real, steady git history**.
-- [ ] Official contracts: Aqua and SwapVM as officially deployed on Robinhood Chain (4663); addresses listed in the README once merged.
-- [ ] The position: Aqua makers quote Stock Tokens at Chainlink-pegged prices (`NorenOraclePeg` SwapVM instruction). They convert pay-with-stocks payments and buy collateral in liquidations.
-- [ ] On-chain token transfers on a Robinhood mainnet fork, shown in the demo: a stock payment filled by an Aqua maker, and a liquidation sold through SwapVM.
+- [x] Official contracts: the official Aqua registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Robinhood Chain (4663). SwapVM is the official AquaSwapVMRouter (`0x111111338c5091E8440b67B168bAe16a668AC0De`, v1.0.2) plus one custom opcode, `NorenOraclePeg` (custom instructions score higher). Because it has the added opcode, the router is redeployed on the fork rather than called at the official address.
+- [x] The position: Aqua makers quote Stock Tokens at Chainlink-pegged prices (`NorenOraclePeg`) from one wallet balance shared across strategies. They fill pay-with-stocks payments (best execution, with `NorenVault` as fallback) and buy collateral in Pay in 3 and credit-line liquidations.
+- [x] On-chain token transfers on a Robinhood mainnet fork: `pnpm e2e:credit` pays an invoice with 0.040798 NVDA, filled by an Aqua maker (`MakerFill`, fee 0.0377 USDG), and Noren Merchant shows the maker and strategy. Liquidation through SwapVM is covered by the package's fork tests.
+- [ ] Show the Aqua-filled stock payment (and a liquidation) in the demo.
 - [x] Steady commit history: separate commits per contract and test suite on `aqua-liquidity` (`git log origin/aqua-liquidity`).
-- [ ] Merged into `web-integration`, with the Robinhood snapshot rebuilt and `pnpm e2e:credit` passing (web agent).
+- [x] Merged into `web-integration`; the Robinhood snapshot was rebuilt with the Aqua makers and `pnpm e2e:credit` passes 8/8.
 
 ### ✅ 2. Ethereum Foundation: Best CROPS App (recommended)
 Requirements: censorship resistant, open source, private, secure; privacy that is structural, not cosmetic; a README CROPS section; a demo of the moment it matters.

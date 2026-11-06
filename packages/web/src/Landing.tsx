@@ -263,7 +263,7 @@ export function Landing() {
         <div className="lp-head" data-reveal>
           <span className="lx-tag mono">■ In the Noren app</span>
           <h2>Pay with stocks. <em>Pay later.</em></h2>
-          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. Or pay with the shares themselves: Noren's vault buys them at the Chainlink price and the merchant gets USDG. Either way the merchant is paid in full, upfront, and a Chainlink CRE workflow keeps the two chains in step.</p>
+          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. Or pay with the shares themselves: a 1inch Aqua maker buys them at a Chainlink-pegged price and the merchant gets USDG. Either way the merchant is paid in full, upfront, and a Chainlink CRE workflow keeps the two chains in step.</p>
         </div>
         <ol className="lp-flow" data-reveal>
           {[
