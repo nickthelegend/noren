@@ -123,9 +123,9 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "1.09–1.13", u: "s", l: "to make the payment proof in a browser" },
   { v: "0", l: "payer addresses in the private payment tx" },
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
-  { v: "5.0–7.0", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
+  { v: "4.5–7.4", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "589", l: "tests passing across 21 suites on the final build, forks and live testnets included" },
+  { v: "590", l: "tests passing across 22 suites, forks and live testnets included" },
 ];
 
 function useReveal() {

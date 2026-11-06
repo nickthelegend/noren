@@ -110,8 +110,8 @@ Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party l
 
 | What | Result |
 |---|---|
-| All suites on the final build ([TESTING.md](TESTING.md)) | **589 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
-| `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), proof 1.28 s, re-proof 1.14 s, 39.0 s total |
+| All suites ([TESTING.md](TESTING.md)) | **590 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
+| `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), first proof 5.03 s (cold), re-proof 1.06 s, 54.8 s total (v3 rerun, Nov 6) |
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
 | Pay from the Noren app's Home (headless Chromium, fresh wallet, `pnpm dev:all`) | open link picked → fork USDC moved into the private balance in one step → **proof 1.12 s on the device**, **tap to paid 6.2 s**, payer address in the tx: none |
 | `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **30.9 s** (v3 stack, Nov 6): fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 7.4 s** → invoice paid later and settled by the server → 0.039935 NVDA at $188.41 pays a 7.50 invoice, filled by the **lender pool's own Aqua strategy** (fee 0.0301 USDG booked to `NorenVault`, which now shows as realised fees in Borrow) → CRE carries `Drawn` and `Repaid` back to Robinhood |

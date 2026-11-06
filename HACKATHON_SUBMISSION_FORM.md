@@ -58,10 +58,10 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 
   | Suite | Result |
   |---|---|
-  | All suites on the final build (TESTING.md) | **589 passed**, 0 failed, 1 weekend-only skip |
+  | All suites (TESTING.md) | **590 passed**, 0 failed, 1 weekend-only skip |
   | `pnpm test` | 136 offline tests |
-  | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 47.6 s |
-  | `pnpm e2e:credit` | 8/8 steps in 30.3 s; CRE Robinhood→Arc in 6.0 s |
+  | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 54.8 s |
+  | `pnpm e2e:credit` | 8/8 steps in 30.9 s; CRE Robinhood→Arc in 7.4 s; the stock payment filled by the lender pool's own Aqua strategy |
   | Robinhood contracts incl. Aqua routing and Pay in 3 | 150 Foundry tests on a fresh mainnet fork, incl. 16 for partial Dutch-auction liquidations |
   | CCTP (`NorenArcHook`) / CCIP (gateways, hub, router, `NorenShieldSink`) | 24 / 32 Foundry tests, incl. forks of the real Circle and CCIP 2.0 contracts |
   | Cross-chain Aqua / Aqua on Arc | 31 / 8 fork tests |
@@ -69,7 +69,7 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
   | `NorenCreditLine` / `NorenRateOracle` | 47 / 22 |
   | CRE workflows (bun) | 31 + 8 + 8 + 15 + 14 |
 
-  In a browser, a private payment took a 1.13 s proof and 6.0 s from click to paid.
+  In a browser, a private payment from the Noren app's Home took a 1.12 s proof and 6.2 s from tap to paid. All four ways to pay completed on the dev stack (pay privately, pay with USDC, pay with stocks, Pay in 3 and pay later, privately).
 - **AI usage:** Claude (Anthropic) and Codex wrote and reviewed most of the code, tests and docs, as several coordinated agents working on separate branches. We checked every on-chain claim against the forks, and the README numbers come from our own runs. ChatGPT generated the app icon and illustrations, and Google Gemini (Veo) the landing film. The 0G credit check is itself an AI model, and its decision is shown with its request ID.
 
 ## Partner prizes (pick at most 3)

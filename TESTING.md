@@ -1,5 +1,29 @@
 # Test results
 
+## v3: product polish (branch `v3`, Nov 6 2026)
+
+`v3` is `private-credit` plus the app Home, the four ways to pay, Uniswap v4 as the default swap route (live on Arc testnet), Aqua makers shown in Earn and Borrow, and the Robinhood ⇄ Arc bridge hero. Suites the changes touch were rerun on its HEAD, one at a time:
+
+| Suite | Command | Result |
+|---|---|---|
+| Offline suites | `pnpm test` | **136 passed**, 20 files |
+| Arc swap quotes, live and read-only (Uniswap v4 USDC/EURC pool via V4Quoter; Noren's Aqua maker) | `pnpm exec vitest run packages/web/src/app/arc-swap.live.test.ts` | **1 passed** (new); 1 USDC → 0.831320 EURC on Uniswap, 0.888729 from the Aqua maker, Chainlink fair 0.891395 |
+| Demo shop (node:test) | `pnpm --dir examples/shop test` | **5 passed** |
+| Web typecheck and production build | `cd packages/web && pnpm exec tsc --noEmit -p . && pnpm exec vite build` | pass |
+| `pnpm e2e` (fresh Arc testnet fork) | `pnpm e2e` | **9/9** Foundry checkout tests, **5/5** attacks reverted, first proof 5.03 s (cold), re-proof 1.06 s, 54.8 s |
+| `pnpm e2e:credit` against `pnpm dev:all` | `NOREN_MERCHANT_TOKEN=<printed> pnpm e2e:credit` | **8/8** in 30.9 s; the NVDA payment was filled by the lender pool's Aqua strategy (fee 0.0301 USDG, `makerFeesUsdg(NorenVault)` = 0.030120) |
+
+So the total becomes **590 passed** (589 + the live Arc swap test), 1 weekend-only skip.
+
+**Browser, headless Chromium against `pnpm dev:all` (fresh wallets):**
+- **Pay privately from the app's Home:** pick an open link → one-step fork USDC into the private balance → proof 1.12 s, tap to paid 6.2 s, payer address in the tx: none.
+- **Pay later, privately:** Credit tab locks 1 NVDA (line on Arc via CRE), then the checkout reached with `?m=later` draws into the pool and pays 12.00 USDC: proof 1.12 s, "Your address in it: none".
+- **Pay with USDC:** the checkout reached with `?m=usdc` (after another checkout, no reload) pays 6.10 USDC from the Arc wallet.
+- **Pay with stocks and Pay in 3:** `pnpm e2e:credit` above.
+- No horizontal overflow at 1440 or 375 px on Home, Pay, Bridge, Swap, Earn, Borrow, Credit, the checkout and the landing page; no page errors.
+
+**Public testnets, from the app's UI** (the browser's test key, funded by `scripts/live/fund-test-key.ts` with 1 USDC on Arc and 0.003 ETH on Robinhood): Arc → Robinhood 0.60 USDC (14 s), Robinhood → Arc 0.50 and 0.10 USDC (12 s), a Uniswap v4 swap and an Aqua maker swap on Arc. Hashes in [docs/CCTP.md](docs/CCTP.md#live-runs-public-testnets-nov-6-2026) and [docs/AQUA-LIVE.md](docs/AQUA-LIVE.md).
+
 ## Private credit (branch `private-credit`, Nov 6 2026)
 
 `private-credit` is `final` (1670f26) plus `film-v2` plus "Pay later, privately" ([docs/PRIVACY.md](docs/PRIVACY.md#private-credit-pay-later-privately)). It adds one suite, **15 fork tests**, so the total below becomes **589 passed**. The suites the change touches were rerun on its HEAD:
