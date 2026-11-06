@@ -3,7 +3,7 @@
  * The server verifies the SIWE signature, gives the store its own on-chain merchant account
  * (NorenCheckout.registerMerchant(payout) on Arc), a publishable key and a secret key shown once.
  */
-import { HOSTED } from "./network";
+import { ARC_LABEL, HOSTED } from "./network";
 import { useEffect, useState } from "react";
 import { createSiweMessage } from "viem/siwe";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
@@ -185,7 +185,7 @@ const { invoice } = await noren.invoices.create({
           <div className="ob-card">
             <span className="ob-k">Step 3 of 3</span>
             <h1>Create your first payment link</h1>
-            <p><b>{store.name}</b> is live on the Arc fork (registered in tx <TxLink chain="arc" cfg={cfg} hash={store.registerTx} n={8} />). Make a link and share it, or print its QR at the counter.</p>
+            <p><b>{store.name}</b> is live on {ARC_LABEL} (registered in tx <TxLink chain="arc" cfg={cfg} hash={store.registerTx} n={8} />). Make a link and share it, or print its QR at the counter.</p>
             {!link ? (
               <>
                 <div className="ob-row2">
