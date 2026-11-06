@@ -26,7 +26,7 @@
 .nk-brand small { font: 400 11px/1 var(--nk-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--nk-faint); padding: 5px 8px; border: 1px solid var(--nk-hair); border-radius: var(--nk-pill); }
 .nk-tabs { display: flex; gap: 2px; padding: 4px; border-radius: var(--nk-pill); background: rgba(28, 42, 94, .05); border: 1px solid var(--nk-hair); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .nk-tabs::-webkit-scrollbar { display: none; }
-.nk-tabs button { position: relative; flex: none; appearance: none; border: 0; background: transparent; min-height: 40px; padding: 0 18px; border-radius: var(--nk-pill); font: 600 15px/1 var(--nk-sans); color: var(--nk-dim); cursor: pointer; transition: color .15s; }
+.nk-tabs button { position: relative; flex: none; appearance: none; border: 0; background: transparent; min-height: 44px; padding: 0 18px; border-radius: var(--nk-pill); font: 600 15px/1 var(--nk-sans); color: var(--nk-dim); cursor: pointer; transition: color .15s; }
 .nk-tabs button:hover { color: var(--nk-ink); }
 .nk-tabs button[aria-selected="true"] { color: var(--nk-paper, #fbf8f1); }
 .nk-tab-pill { position: absolute; inset: 0; border-radius: var(--nk-pill); background: var(--nk-ai); box-shadow: 0 1px 2px rgba(17, 26, 61, .3), inset 0 1px 0 rgba(255, 255, 255, .12); }
@@ -263,7 +263,8 @@ li[data-done="true"] .nk-check { background: var(--nk-ok); border-color: var(--n
   .nk-brand small { display: none; }
   .nk-right { grid-area: right; }
   .nk-tabs { grid-area: tabs; justify-self: stretch; }
-  .nk-tabs button { padding: 0 14px; flex: 1 0 auto; }
+  .nk-tabs { gap: 0; padding: 3px; }
+  .nk-tabs button { padding: 0 8px; flex: 1 0 auto; font-size: 14px; min-height: 44px; }
   .nk-main { padding: 20px 16px 64px; }
   .nk-row input, .nk-row output { font-size: 32px; }
   .nk-kv { grid-template-columns: 1fr 1fr; }
