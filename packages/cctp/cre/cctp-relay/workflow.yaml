@@ -6,3 +6,13 @@ staging-settings:
     workflow-path: "./main.ts"
     config-path: "./config.staging.json"
     secrets-path: ""
+
+# "Arrive private": the same relay for the SHIELD-aware NorenArcHook (scripts/live/private-deploy.ts), whose router
+# is NorenShieldSink. A pool deposit costs more gas than a plain mint, so the write gets 1.2M.
+privacy-settings:
+  user-workflow:
+    workflow-name: "noren-cctp-relay-privacy"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.privacy.json"
+    secrets-path: ""
