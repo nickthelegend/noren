@@ -21,6 +21,9 @@ import { deploySettlementDesk, requestSettlement, startSettlementRelay } from '.
 import { relayDeposit, acrossDeposit } from '../packages/bridge-settlement/keeper/lib.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
+// Keys (World ID, 0G) from the worktree's .env, else the main checkout's. Loaded before any service starts; never printed.
+for (const f of ['.env', mainCheckoutEnv()]) if (f && existsSync(f)) { process.loadEnvFile(f); break; }
+
 const has = (p: string) => existsSync(resolve(p));
 const UNDERWRITER_PORT = 8791, AI_UNDERWRITER_PORT = 8792;
 
@@ -67,8 +70,6 @@ run(async () => {
     mounts: async (arc) => {
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
       if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
-      // The worktree's .env first, then the main checkout's (where Nick keeps the World ID keys). Values are never printed.
-      for (const f of ['.env', mainCheckoutEnv()]) if (f && existsSync(f)) { process.loadEnvFile(f); break; }
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
       const gaps = w.missingSettings(config);
