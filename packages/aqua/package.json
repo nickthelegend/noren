@@ -1,0 +1,17 @@
+{
+  "name": "@noren/aqua",
+  "private": true,
+  "license": "MIT",
+  "description": "Noren liquidity on 1inch Aqua + SwapVM (Robinhood Chain). swapvm-ext/ is LicenseRef-Degensoft-SwapVM-1.1; scripts are MIT.",
+  "scripts": {
+    "build:swapvm": "cd swapvm-ext && forge build",
+    "test:swapvm": "sh scripts/test-swapvm.sh",
+    "demo": "sh scripts/aqua-demo.sh"
+  },
+  "devDependencies": {
+    "@1inch/aqua": "github:1inch/aqua#b51f3b6e3c02fa5208e1429f0f14706b025d9dd6",
+    "@1inch/solidity-utils": "6.9.7",
+    "@1inch/swap-vm": "github:1inch/swap-vm#32c687c2b73101fc26549e48fa1ff8a4d73afbac",
+    "@openzeppelin/contracts": "5.4.0"
+  }
+}
