@@ -332,6 +332,7 @@ function BagPage() {
 }
 
 // ---------------- Order confirmation ----------------
+const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, settled to USDC', credit: 'Noren · Pay in 3 on credit' };
 const short = (s: string, n = 6) => s.length > 2 * n + 2 ? `${s.slice(0, n + 2)}…${s.slice(-n)}` : s;
 function OrderPage({ id }: { id: string }) {
   const [order, setOrder] = useState<any>(null);
@@ -358,7 +359,7 @@ function OrderPage({ id }: { id: string }) {
         <div className="order-card">
           <div className={`status status-${order.status}`}><i aria-hidden />{paid ? 'Paid' : order.status === 'awaiting_payment' ? 'Awaiting payment' : order.status.replace('_', ' ')}</div>
           <dl className="facts">
-            <dt>Paid with</dt><dd>Noren · USDC on Arc</dd>
+            <dt>Paid with</dt><dd>{paid || order.method ? METHOD[order.method ?? ''] ?? 'Noren' : 'Noren checkout'}</dd>
             <dt>Noren payment</dt><dd className="mono" title={order.invoiceId}>{short(order.invoiceId)}</dd>
             {order.paymentTx && <><dt>Transaction</dt><dd className="mono" title={order.paymentTx}>{short(order.paymentTx)}</dd></>}
             {order.paidVia === 'webhook' && <><dt>Confirmed by</dt><dd>Signed Noren webhook <span className="ok">✓ signature verified</span></dd></>}

@@ -23,7 +23,7 @@ const missing = () => REQUIRED.filter(k => !process.env[k]);
 type Order = {
   id: string; createdAt: number; lines: { slug: string; size: string; qty: number; name: string; price: number }[]; totalCents: number;
   invoiceId: string; checkoutUrl: string; status: 'awaiting_payment' | 'paid' | 'expired' | 'refunded';
-  paymentTx: string | null; paidAt: number | null; paidVia: 'webhook' | null; events: { id: string; type: string; at: number }[];
+  paymentTx: string | null; paidAt: number | null; paidVia: 'webhook' | null; method?: string | null; events: { id: string; type: string; at: number }[];
 };
 const orders = new Map<string, Order>();
 let webhook: { id: string; secret: string; server: string; merchant: string } | null = null;
@@ -77,7 +77,7 @@ async function refresh(order: Order) {
   if (order.status !== 'awaiting_payment' || missing().length) return order;
   try {
     const row = await noren.invoices.retrieve(order.invoiceId) as any;
-    if (row.status === 'paid' && order.status === 'awaiting_payment') { order.status = 'paid'; order.paymentTx = row.paymentTx ?? order.paymentTx; order.paidAt ??= Math.floor(Date.now() / 1000); await saveOrders(); }
+    if (row.status === 'paid' && order.status === 'awaiting_payment') { order.status = 'paid'; order.paymentTx = row.paymentTx ?? order.paymentTx; order.method ??= row.method ?? null; order.paidAt ??= Math.floor(Date.now() / 1000); await saveOrders(); }
     else if (row.status === 'expired') { order.status = 'expired'; await saveOrders(); }
   } catch (e: any) { console.error(`Could not read invoice ${order.invoiceId}: ${e.message}`); }
   return order;
@@ -133,7 +133,7 @@ const server = createServer(async (req, res) => {
       const order = [...orders.values()].find(o => o.invoiceId.toLowerCase() === event.data.invoiceId.toLowerCase());
       if (order && !order.events.some(e => e.id === event.id)) {
         order.events.push({ id: event.id, type: event.type, at: event.created });
-        if (paid) { order.status = 'paid'; order.paymentTx = paid.tx; order.paidAt = event.created; order.paidVia = 'webhook'; console.log(`Order ${order.id} paid (webhook ${event.id}, tx ${paid.tx})`); }
+        if (paid) { order.status = 'paid'; order.paymentTx = paid.tx; order.paidAt = event.created; order.paidVia = 'webhook'; order.method = (event.data as { method?: string | null }).method ?? null; console.log(`Order ${order.id} paid (webhook ${event.id}, tx ${paid.tx})`); }
         if (event.type === 'refund.succeeded') order.status = 'refunded';
         await saveOrders();
       }
