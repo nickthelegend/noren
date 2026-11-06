@@ -88,10 +88,10 @@ export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<C
   await ensureZkArtifacts();
   const rpcUrl = await startFork('Arc testnet', PORTS.arc, 'https://rpc.testnet.arc.io', 5042002, assertLocalFork);
   const client: any = createPublicClient({ chain: localFork(rpcUrl), transport: http(rpcUrl), cacheTime: 0 });
-  // Anvil dev accounts: #0 deployer, #3 the merchant. (#1 and #2 are the Robinhood snapshot's demo customer and merchant,
-  // which hold seeded balances there; using #3 keeps the merchant's Robinhood USDG equal to what its customers paid.)
+  // Anvil dev accounts: #0 deployer, #6 the merchant. On the Robinhood snapshot #1/#2 are the seeded demo customer and
+  // merchant, #3 the Aqua maker and #4 the keeper; #6 holds nothing there, so its USDG is only what its customers paid.
   const accounts = await client.request({ method: 'eth_accounts' }) as Address[];
-  const [deployer, merchant] = [accounts[0], accounts[3]];
+  const [deployer, merchant] = [accounts[0], accounts[6]];
   const shim = JSON.parse(readFileSync(resolve('packages/contracts/out/ForkUSDC.sol/ForkUSDC.json'), 'utf8'));
   await client.request({ method: 'anvil_setCode', params: [ARC_USDC, shim.deployedBytecode.object as Hex] });
   const slot = keccak256(encodeAbiParameters([{ type: 'address' }, { type: 'uint256' }], [deployer, 0n]));
