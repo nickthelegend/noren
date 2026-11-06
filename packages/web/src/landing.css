@@ -46,6 +46,7 @@
 .nx-chip.key { color: var(--nx-key); background: rgba(217, 119, 47, .1); border-color: rgba(217, 119, 47, .3); }
 .nx-chip.quotes { color: var(--nx-q); background: rgba(47, 95, 208, .08); border-color: rgba(47, 95, 208, .24); }
 .nx-chip.wip { color: var(--nx-mute); background: transparent; border: 1px dashed rgba(95, 100, 119, .45); }
+.nx-chip.local { color: var(--nx-mute); background: transparent; border: 1px solid rgba(95, 100, 119, .35); }
 .nx-chip.wip i { background: transparent; border: 1.4px solid currentColor; }
 
 /* ------------------------------------------------------------ (a) what Noren is */

@@ -9,8 +9,8 @@ import "./landing.css";
    Screens are real captures of this app. Art: ChatGPT (stills) and Google Gemini Veo (film), see README. */
 
 /** Honest status of each piece. Flip a value here when its branch lands. */
-type Status = "live" | "key" | "wip" | "quotes" | "testnet";
-const STATUS: Record<Status, string> = { live: HOSTED ? "Runs end to end" : "Runs on Arc testnet fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
+type Status = "live" | "key" | "wip" | "quotes" | "testnet" | "local";
+const STATUS: Record<Status, string> = { live: HOSTED ? "Runs end to end" : "Runs on Arc testnet fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets", local: "Local stack only" };
 const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
@@ -69,7 +69,7 @@ const POWERS: Power[] = [
   { k: "stocks", t: "Pay with stocks or crypto", s: ["live"],
     d: "Spend any Stock Token you hold (NVDA, TSLA, AAPL…) or ETH. A 1inch Aqua maker buys it at the Chainlink price and the merchant receives USDG.",
     m: "0.040798 NVDA at $184.61 → 7.50 USDG" },
-  { k: "in3", t: "Pay in 3", s: ["live"],
+  { k: "in3", t: "Pay in 3", s: [HOSTED ? "local" : "live"],
     d: "Pay later on your credit line, then repay in three parts in USDC before the line expires.",
     m: "14.02 USDC checkout → 4.67 × 3" },
   { k: "earn", t: "Deposit stock, get credit", s: ["live"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
@@ -125,7 +125,7 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
   { v: "4.5–7.4", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "605", l: "tests passing across 21 suites, local chains and live testnets included" },
+  { v: "656", l: "tests passing across 21 suites, local chains and live testnets included" },
 ];
 
 function useReveal() {
@@ -224,7 +224,7 @@ export function Landing() {
               <li key={x.href}><a href={x.href} target="_blank" rel="noreferrer"><span className="nx-live-m" aria-hidden>{x.marks.map((m) => <Mark key={m} id={m} size={18} />)}</span><span><b>{x.t}</b><small>{x.d}</small></span><Icon.ext /></a></li>
             ))}
           </ul>
-          <p className="mono">Every link opens a block explorer or ccip.chain.link. The Robinhood Chain side of stocks and Aqua runs on a Robinhood Chain mainnet snapshot; see the README's "What's simulated".</p>
+          <p className="mono">Every link opens a block explorer or ccip.chain.link. The Robinhood Chain side of stocks and Aqua runs on a Robinhood Chain mainnet snapshot; see the README's "Honest limits".</p>
         </div>
       </section>
 
