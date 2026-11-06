@@ -9,7 +9,7 @@ import { StockPay } from "./StockPay";
 import { UsdcPay } from "./UsdcPay";
 import { CctpPay } from "./CctpPay";
 import { LiveArc, NetSwitch } from "./LiveArc";
-import { useNet } from "./network";
+import { HOSTED, useNet } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { assetSym } from "./onchain";
@@ -88,7 +88,10 @@ export function Checkout({ id }: { id: string }) {
   const working = step === "binding" || step === "proving" || step === "relaying";
 
   const getUsdc = async () => { if (!wallet) return; setBusy("faucet"); setNote(null); try { await api.faucet(wallet.address); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
-  const shield = async () => { if (!wallet) return; setBusy("shield"); setNote(null); try { await wallet.shield(20_000_000n); setNote("Shielded 20 USDC. The compliance check approves it in a few seconds."); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
+  // Hosted (public Arc testnet): shield only what this invoice still needs, rounded up to whole cents; the local fork tops up 20.
+  const shortfall = amount - (bal ? bal.approved + bal.pending : 0n);
+  const shieldAmt = HOSTED ? (shortfall > 0n ? ((shortfall + 9_999n) / 10_000n) * 10_000n : 0n) : 20_000_000n;
+  const shield = async () => { if (!wallet || shieldAmt <= 0n) return; setBusy("shield"); setNote(null); try { await wallet.shield(shieldAmt); setNote(`Shielded ${usdc(shieldAmt)} USDC. The compliance check approves it in a few seconds.`); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
   const pay = async () => {
     if (!wallet || !view) return;
     setNote(null); started.current = performance.now();
@@ -227,10 +230,11 @@ export function Checkout({ id }: { id: string }) {
 
               {!enough && !working && bal && (
                 <div className="co-fund">
-                  <p><b>Add funds to your private balance.</b> Test network: get free test USDC, then shield it into the pool. A compliance check clears it in a few seconds.</p>
+                  {HOSTED ? <p><b>Add funds to your private balance.</b> This checkout runs on the public Arc testnet. Get free test USDC (it also pays Arc gas) at <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">faucet.circle.com</a> → Arc Testnet, sent to this browser's wallet <code className="mono" style={{ wordBreak: "break-all" }}>{wallet?.address}</code>, then shield it. The ASP compliance check approves the deposit in about 15 seconds.</p>
+                    : <p><b>Add funds to your private balance.</b> Test network: get free test USDC, then shield it into the pool. A compliance check clears it in a few seconds.</p>}
                   <div className="row2">
-                    <button className="btn line" disabled={!!busy} onClick={getUsdc}>{busy === "faucet" ? <><span className="spin" /> Sending…</> : <><span className="n">1</span> Get test USDC</>}</button>
-                    <button className="btn line" disabled={!!busy} onClick={shield}>{busy === "shield" ? <><span className="spin" /> Shielding…</> : <><span className="n">2</span> Shield 20 USDC</>}</button>
+                    {HOSTED ? <a className="btn line" href="https://faucet.circle.com" target="_blank" rel="noreferrer"><span className="n">1</span> Circle faucet</a> : <button className="btn line" disabled={!!busy} onClick={getUsdc}>{busy === "faucet" ? <><span className="spin" /> Sending…</> : <><span className="n">1</span> Get test USDC</>}</button>}
+                    <button className="btn line" disabled={!!busy || shieldAmt <= 0n} onClick={shield}>{busy === "shield" ? <><span className="spin" /> Shielding…</> : <><span className="n">2</span> Shield {usdc(shieldAmt)} USDC</>}</button>
                   </div>
                 </div>
               )}
