@@ -6,6 +6,8 @@ import type { Wallet } from "./NorenApp";
 import { swapper, type RouteMiss, type RouteQuote, type SwapQuote } from "./swap";
 import { TOKENS, USDG_TOKEN, fmtUnits, parseAmount, tokenBy, type Token } from "./tokens";
 import { Band, Card, Result, Spin, TokenButton, shortHex } from "./kit";
+import { TxLink } from "../tx";
+import { Mark } from "../logos";
 
 type Done = { id: number; route: RouteQuote; other: RouteQuote | null; tin: Token; tout: Token; amountIn: bigint; hash?: string; received?: bigint; gasWei?: bigint; error?: string; step?: string };
 export const SWAPVM_ATTRIBUTION = "Powered by SwapVM — © Degensoft Ltd 2025";
@@ -70,7 +72,7 @@ export function SwapTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Swap">
-        <div className="nk-card-h"><b>Swap</b><span className={`nk-pill ${q?.marketClosed ? "warn" : "live"}`}>{q?.marketClosed ? "US market closed" : "Robinhood Chain"}</span></div>
+        <div className="nk-card-h"><b>Swap</b><span className={`nk-pill ${q?.marketClosed ? "warn" : "live"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood Chain</>}</span></div>
         <div className="nk-box">
           <label htmlFor="nk-in"><span>You pay</span></label>
           <div className="nk-row">
@@ -116,14 +118,14 @@ export function SwapTab({ w }: { w: Wallet }) {
 function RouteRow({ r, best, tout, fair }: { r: RouteQuote | RouteMiss; best: RouteQuote | null; tout: Token; fair: bigint | null }) {
   const name = r.id === "aqua" ? "1inch Aqua maker" : "Uniswap v4";
   if (!("out" in r)) return (
-    <div className="nk-route" data-dead="true"><span className="nk-route-i">{r.id === "aqua" ? "AQ" : "v4"}</span><div><b>{name}</b><small>{r.error}</small></div><div className="r"><b>–</b></div></div>
+    <div className="nk-route" data-dead="true"><Mark id={r.id === "aqua" ? "1INCH" : "UNISWAP"} size={32} /><div><b>{name}</b><small>{r.error}</small></div><div className="r"><b>–</b></div></div>
   );
   const isBest = best === r;
   const diff = best && !isBest ? best.out - r.out : 0n;
   const detail = r.id === "aqua" ? `SwapVM order pegged to Chainlink · maker ${shortHex(r.maker, 4)} · ${(r.spreadBps / 100).toFixed(2)}% spread` : `Pool ${(r.key.fee / 10_000).toFixed(2)}% fee · tick spacing ${r.key.tickSpacing} · no hooks`;
   return (
     <div className="nk-route" data-best={isBest}>
-      <span className="nk-route-i">{r.id === "aqua" ? "AQ" : "v4"}</span>
+      <Mark id={r.id === "aqua" ? "1INCH" : "UNISWAP"} size={32} />
       <div><b>{name}</b><small>{detail}</small></div>
       <div className="r"><b>{fmtUnits(r.out, tout.decimals, tout.decimals === 6 ? 2 : 5)}</b><small>{isBest ? <span className="tag">Best price</span> : `−${fmtUnits(diff, tout.decimals, tout.decimals === 6 ? 2 : 5)} ${tout.sym}`}{fair ? "" : ""}</small></div>
     </div>
@@ -138,7 +140,7 @@ function SwapDone({ d }: { d: Done }) {
     <Result
       tone={pending ? "" : d.error ? "bad" : "good"}
       tag={`${venue} · Robinhood fork`}
-      link={d.hash ? <span title={`${d.hash} (local fork: not on the public explorer)`}>{shortHex(d.hash, 8)}</span> : undefined}
+      link={d.hash ? <TxLink chain="robinhood" hash={d.hash} n={8} /> : undefined}
       title={pending ? d.step ?? "Swapping…" : d.error ? "Swap did not complete" : `Received ${fmtUnits(d.received ?? 0n, d.tout.decimals, d.tout.decimals === 6 ? 2 : 6)} ${d.tout.sym}`}
       body={d.error ? d.error : pending ? `Selling ${fmtUnits(d.amountIn, d.tin.decimals, 5)} ${d.tin.sym}` : undefined}
       kv={[["Quoted", `${fmtUnits(d.route.out, d.tout.decimals, 5)} ${d.tout.sym}`], ["Received", d.received !== undefined ? `${fmtUnits(d.received, d.tout.decimals, 5)} ${d.tout.sym}` : pending ? "…" : "—"], ["Gas", d.gasWei !== undefined ? `${(Number(d.gasWei) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 7 })} ETH` : "…"]]}

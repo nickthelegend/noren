@@ -24,6 +24,7 @@ import { CreditTab } from "./CreditTab";
 import { PayTab } from "./PayTab";
 import { LiveArc, NetSwitch } from "../LiveArc";
 import { useNet } from "../network";
+import { Mark } from "../logos";
 
 export const TABS = ["swap", "bridge", "earn", "borrow", "credit", "pay"] as const;
 export type Tab = (typeof TABS)[number];
@@ -83,8 +84,8 @@ export function NorenApp() {
           <div className="nk-right">
             <NetSwitch />
             {net === "fork" && <span className="nk-nets" aria-label="Networks">
-              <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} />Robinhood fork</span>
-              <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} />Arc fork</span>
+              <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} /><Mark id="ROBINHOOD" size={16} />Robinhood fork</span>
+              <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />Arc fork</span>
             </span>}
             <div className="nk-prof">
               <button className="nk-chip" onClick={() => setMenu((o) => !o)} aria-expanded={menu} aria-haspopup="dialog"><i className="nk-ava" aria-hidden />{oc ? shortHex(oc.address, 6) : "…"}</button>
@@ -123,12 +124,12 @@ function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
     <div className="nk-menu" role="dialog" aria-label="Your wallet">
       <div className="nk-menu-row"><small>Your address on both chains (a test key kept in this browser)</small><span>{w.oc.address}</span></div>
       <div className="nk-bal" aria-label="Robinhood Chain balances">
-        <span>{h ? usdc(h.usdg) : "…"}<em>USDG</em></span>
-        <span>{h ? (Number(h.eth) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em>ETH</em></span>
-        <span>{h ? (Number(h.stocks.find((s) => s.sym === "NVDA")?.balance ?? 0n) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em>NVDA</em></span>
+        <span>{h ? usdc(h.usdg) : "…"}<em><Mark id="USDG" size={14} />USDG</em></span>
+        <span>{h ? (Number(h.eth) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em><Mark id="ETH" size={14} />ETH</em></span>
+        <span>{h ? (Number(h.stocks.find((s) => s.sym === "NVDA")?.balance ?? 0n) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em><Mark id="NVDA" size={14} />NVDA</em></span>
       </div>
-      <div className="nk-menu-row"><small>Arc</small></div>
-      <div className="nk-bal" style={{ gridTemplateColumns: "1fr" }}><span>{w.arcUsdc === null ? "–" : usdc(w.arcUsdc)}<em>USDC on Arc</em></span></div>
+      <div className="nk-menu-row"><small className="lg-row"><Mark id="ARC" size={14} />Arc</small></div>
+      <div className="nk-bal" style={{ gridTemplateColumns: "1fr" }}><span>{w.arcUsdc === null ? "–" : usdc(w.arcUsdc)}<em><Mark id="USDC" size={14} />USDC on Arc</em></span></div>
       <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Robinhood fork faucet: NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>
       <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>
       {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}

@@ -11,6 +11,8 @@ import type { Wallet } from "./NorenApp";
 import { borrowAbi, readVaults, type VaultRow } from "./earn";
 import { TOKENS, USDG_TOKEN, fmtUnits, parseAmount } from "./tokens";
 import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
+import type { ReactNode } from "react";
+import { TxLink } from "../tx";
 
 const symOf = (a: Address) => TOKENS.find((t) => t.address.toLowerCase() === a.toLowerCase())?.sym ?? shortHex(a, 4);
 type Pos = { debt: bigint; limit: bigint; health: bigint; ltvBps: number; liqLtvBps: number; rateBps: number; collateral8: bigint; liq: Record<string, bigint> };
@@ -25,7 +27,7 @@ export function BorrowTab({ w }: { w: Wallet }) {
   const [amount, setAmount] = useState("");
   const [lockAmt, setLockAmt] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
 
   useEffect(() => {
     if (!borrow || !list.length) return;
@@ -44,7 +46,7 @@ export function BorrowTab({ w }: { w: Wallet }) {
   const amt = useMemo(() => parseAmount(amount, 6), [amount]);
   if (!borrow || !list.length) return <div className="nk-col"><Card title="Borrow"><div className="nk-pad"><SetupCard title="NorenBorrow isn't deployed on this stack" text="Rebuild the Robinhood snapshot (sh packages/robinhood/scripts/fork-snapshot.sh) and restart pnpm dev:all." /></div></Card></div>;
 
-  const run = async (k: string, f: (x: ReturnType<Wallet["oc"]["robinhood"]>) => Promise<string>) => {
+  const run = async (k: string, f: (x: ReturnType<Wallet["oc"]["robinhood"]>) => Promise<ReactNode>) => {
     setBusy(k); setNote(null);
     try { const t = await f(w.oc.robinhood()); setNote({ t }); setAmount(""); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
   };
@@ -92,12 +94,12 @@ export function BorrowTab({ w }: { w: Wallet }) {
             </dl>
             {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
             <button className="nk-cta" disabled={!!busy || !amt || over} onClick={() => run(mode, async (x) => {
-              if (mode === "borrow") { const h = await tx(x, "Borrowing…", { address: borrow, abi: borrowAbi, functionName: "borrow", args: [amt!, x.account.address] }); return `Borrowed ${fmtUnits(amt!, 6, 2)} USDG (tx ${shortHex(h, 6)}).`; }
+              if (mode === "borrow") { const h = await tx(x, "Borrowing…", { address: borrow, abi: borrowAbi, functionName: "borrow", args: [amt!, x.account.address] }); return <>Borrowed {fmtUnits(amt!, 6, 2)} USDG (tx <TxLink chain="robinhood" hash={h} />).</>; }
               const allowance = await x.pub.readContract({ address: USDG, abi: erc20Abi, functionName: "allowance", args: [x.account.address, borrow] });
               if (allowance < amt!) await tx(x, "Approving USDG…", { address: USDG, abi: erc20Abi, functionName: "approve", args: [borrow, maxUint256] });
               const all = amt! >= pos.debt;
               const h = await tx(x, "Repaying…", { address: borrow, abi: borrowAbi, functionName: "repay", args: [x.account.address, all ? maxUint256 : amt!] });
-              return `Repaid${all ? " in full" : ""} (tx ${shortHex(h, 6)}).${all ? " A fully repaid loan counts toward your reputation." : ""}`;
+              return <>Repaid{all ? " in full" : ""} (tx <TxLink chain="robinhood" hash={h} />).{all ? " A fully repaid loan counts toward your reputation." : ""}</>;
             })}>{busy === mode ? <><Spin /> {mode === "borrow" ? "Borrowing…" : "Repaying…"}</> : !amt ? "Enter an amount" : over ? (mode === "borrow" ? "Above your borrow limit" : "Not enough USDG") : mode === "borrow" ? `Borrow ${fmtUnits(amt, 6, 2)} USDG` : `Repay ${fmtUnits(amt, 6, 2)} USDG`}</button>
           </>
         )}
@@ -119,11 +121,11 @@ export function BorrowTab({ w }: { w: Wallet }) {
                       const allowance = await x.pub.readContract({ address: v.vault, abi: erc20Abi, functionName: "allowance", args: [x.account.address, borrow] });
                       if (allowance < a!) await tx(x, `Approving ${v.shareSym}…`, { address: v.vault, abi: erc20Abi, functionName: "approve", args: [borrow, maxUint256] });
                       const h = await tx(x, `Locking ${v.shareSym}…`, { address: borrow, abi: borrowAbi, functionName: "lock", args: [v.vault, a!] });
-                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Locked ${fmtUnits(a!, v.decimals, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
+                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return <>Locked {fmtUnits(a!, v.decimals, 4)} {v.shareSym} (tx <TxLink chain="robinhood" hash={h} />).</>;
                     })}>{busy === `lock${v.vault}` ? "Locking…" : "Lock"}</button>
                     <button className="nk-btn" disabled={!!busy || !a || a > v.locked} onClick={() => run(`unlock${v.vault}`, async (x) => {
                       const h = await tx(x, `Unlocking ${v.shareSym}…`, { address: borrow, abi: borrowAbi, functionName: "unlock", args: [v.vault, a!, x.account.address] });
-                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Unlocked ${fmtUnits(a!, v.decimals, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
+                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return <>Unlocked {fmtUnits(a!, v.decimals, 4)} {v.shareSym} (tx <TxLink chain="robinhood" hash={h} />).</>;
                     })}>Unlock</button>
                   </li>
                 );

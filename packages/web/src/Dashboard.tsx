@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type NorenEvent, type Webhook } from "./api";
-import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
+import { Copy, Icon, Logo, Setup, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
-import { creditLineAbi, creditOf } from "./onchain";
+import { STOCKS, creditLineAbi, creditOf } from "./onchain";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
@@ -28,8 +30,19 @@ const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = 
 
 type Method = "usdc" | "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
-const METHOD: Record<Method, [string, string, () => JSX.Element]> = { usdc: ["USDC", "A direct USDC transfer from the customer's Arc wallet, verified on-chain", Icon.card], private: ["Private pool", "Zero-knowledge withdrawal from the Kohaku privacy pool", Icon.shield], credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Pay with stocks", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
-const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}><span className="sd-pm-ic"><I /></span>{t}</span>; };
+const stockSym = (asset?: string) => STOCKS.find((s) => s.token.toLowerCase() === asset?.toLowerCase())?.sym;
+/** Payment methods with their real logos: USDC, the Kohaku pool, the Stock Token paid (Robinhood Chain when unknown). Pay later is a concept, so it keeps an icon. */
+const METHOD: Record<Method, [string, string, (r?: Row) => JSX.Element]> = {
+  usdc: ["USDC", "A direct USDC transfer from the customer's Arc wallet, verified on-chain", () => <Mark id="USDC" size={16} />],
+  private: ["Private pool", "Zero-knowledge withdrawal from the Kohaku privacy pool", () => <Mark id="KOHAKU" size={16} />],
+  credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", () => <span className="sd-pm-ic round" aria-hidden><Icon.layers /></span>],
+  stocks: ["Pay with stocks", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", (r) => <Mark id={stockSym(r?.stock?.asset) ?? "ROBINHOOD"} size={16} />],
+};
+const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}>{I(r)}{t}{m === "stocks" && stockSym(r.stock?.asset) && <span className="sd-muted">· {stockSym(r.stock?.asset)}</span>}</span>; };
+/** The settlement currency with its logo: USDG on Robinhood Chain for stock payments, USDC on Arc for the rest. */
+const Cur = ({ r }: { r: Row }) => <span className="lg-row"><Mark id={r.method === "stocks" ? "USDG" : "USDC"} size={16} />{r.method === "stocks" ? "USDG" : "USDC"}</span>;
+/** Which chain a payment's transaction is on: stock payments settle on Robinhood Chain, the rest on Arc. */
+const payChain = (r: Row) => (r.method === "stocks" ? "robinhood" : "arc") as "robinhood" | "arc";
 const Who = ({ r }: { r: Row }) => r.method === "usdc" ? <span className="sd-linked" title="Paid from a public Arc wallet"><Icon.card />Arc wallet</span> : r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
 /* ================================================================== shell */
@@ -126,7 +139,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
               {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}
               {tab === "balances" && <Balances rows={rows} cfg={cfg} token={token} />}
-              {tab === "payments" && (sub ? <PaymentPage id={sub} rows={rows} cfg={cfg} token={token} onDone={refresh} tick={tick} /> : <Payments rows={rows} />)}
+              {tab === "payments" && (sub ? <PaymentPage id={sub} rows={rows} cfg={cfg} token={token} onDone={refresh} tick={tick} /> : <Payments rows={rows} cfg={cfg} />)}
               {tab === "links" && <Links rows={rows} onCreate={() => setCreating(true)} token={token} />}
               {tab === "developers" && <Developers cfg={cfg} token={token} setToken={setToken} sub={sub} tick={tick} store={store} session={session} onStores={() => session && listStores(session.session).then(setStores).catch(() => {})} />}
               {tab === "settings" && <Settings cfg={cfg} token={token} name={name} onSaved={setName} />}
@@ -227,7 +240,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
       <Methods rows={rows} cfg={cfg} />
 
       <div className="sd-section-h"><h2>Recent payments</h2><a className="sd-link" href="#/dashboard/payments">View all <Icon.arrow /></a></div>
-      <PayTable rows={r.slice(0, 6)} loading={!rows} />
+      <PayTable rows={r.slice(0, 6)} loading={!rows} cfg={cfg} />
     </>
   );
 }
@@ -259,7 +272,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       <div>
         <div className="sd-section-h tight"><h2>Payment methods</h2><span className="sd-muted">{paid.length} settled</span></div>
         <div className="sd-mix" aria-hidden>{total > 0 && mix.map((x) => x.v > 0 && <i key={x.m} className={x.m} style={{ width: `${(x.v / total) * 100}%` }} />)}</div>
-        <ul className="sd-mix-l">{mix.map((x) => { const [t, d, I] = METHOD[x.m]; return <li key={x.m} title={d}><span className={`sd-pm ${x.m}`}><span className="sd-pm-ic"><I /></span>{t}</span><b className="num">{fmt(x.v)} <em>{x.m === "stocks" ? "USDG" : "USDC"}</em></b><small>{x.n} payment{x.n === 1 ? "" : "s"}{total > 0 && ` · ${Math.round((x.v / total) * 100)}%`}</small></li>; })}</ul>
+        <ul className="sd-mix-l">{mix.map((x) => { const [t, d, I] = METHOD[x.m]; return <li key={x.m} title={d}><span className={`sd-pm ${x.m}`}>{I()}{t}</span><b className="num">{fmt(x.v)} <em className="lg-row"><Mark id={x.m === "stocks" ? "USDG" : "USDC"} size={14} />{x.m === "stocks" ? "USDG" : "USDC"}</em></b><small>{x.n} payment{x.n === 1 ? "" : "s"}{total > 0 && ` · ${Math.round((x.v / total) * 100)}%`}</small></li>; })}</ul>
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
@@ -329,7 +342,7 @@ function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token
         </div>
         <dl className="sd-dl">
           <dt>Payout address</dt><dd className="mono">{short(bal.payout ?? cfg.merchant, 8)} <Copy text={bal.payout ?? cfg.merchant} /></dd>
-          <dt>Settlement asset</dt><dd>USDC · <span className="mono">{short(cfg.deployment.usdc, 6)}</span></dd>
+          <dt>Settlement asset</dt><dd><span className="lg-row"><Mark id="USDC" size={16} />USDC</span> on <span className="lg-row"><Mark id="ARC" size={16} />Arc</span> · <span className="mono">{short(cfg.deployment.usdc, 6)}</span></dd>
           <dt>Payout timing</dt><dd>Instant, in the payment transaction</dd>
           <dt>Read from</dt><dd className="mono">{cfg.rpcUrl}</dd>
         </dl>
@@ -343,9 +356,9 @@ function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token
             <tbody>{ledger.map((l, i) => (
               <tr key={i} onClick={() => go(`#/dashboard/payments/${l.id}`)}>
                 <td><span className={`sd-type ${l.type === "Refund" ? "neg" : ""}`}>{l.type}</span></td>
-                <td className={`r num ${l.amount < 0 ? "neg" : ""}`}>{l.amount < 0 ? "−" : "+"}{fmt(Math.abs(l.amount))} <span className="sd-muted">{/USDG/.test(l.type) ? "USDG" : "USDC"}</span></td>
+                <td className={`r num ${l.amount < 0 ? "neg" : ""}`}>{l.amount < 0 ? "−" : "+"}{fmt(Math.abs(l.amount))} <span className="sd-muted lg-row"><Mark id={/USDG/.test(l.type) ? "USDG" : "USDC"} size={14} />{/USDG/.test(l.type) ? "USDG" : "USDC"}</span></td>
                 <td className="hide-s">{l.desc || <span className="sd-muted mono">{short(l.id, 8)}</span>}</td>
-                <td className="hide-s"><TxRef cfg={cfg} hash={l.tx} /></td>
+                <td className="hide-s"><TxLink chain={/USDG/.test(l.type) ? "robinhood" : "arc"} cfg={cfg} hash={l.tx} /></td>
                 <td className="sd-muted">{dt(l.at)}</td>
               </tr>
             ))}</tbody>
@@ -385,11 +398,11 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
           {d.settlements.length > 0 && (
             <ul className="sd-settle-list">{d.settlements.map((x) => (
               <li key={x.id}>
-                <header><b className="num">{fmt(Number(x.amountUsdg6) / 1e6)} USDG → USDC on Arc</b><span className={`sd-badge ${x.status === "executed" ? "ok" : x.status === "failed" || x.status === "rejected" ? "bad" : "info"}`}>{x.status === "executed" ? "Deposited" : x.status[0].toUpperCase() + x.status.slice(1)}</span></header>
+                <header><b className="num lg-row"><Mark id="USDG" size={16} />{fmt(Number(x.amountUsdg6) / 1e6)} USDG → <Mark id="USDC" size={16} />USDC on Arc</b><span className={`sd-badge ${x.status === "executed" ? "ok" : x.status === "failed" || x.status === "rejected" ? "bad" : "info"}`}>{x.status === "executed" ? "Deposited" : x.status[0].toUpperCase() + x.status.slice(1)}</span></header>
                 <ol className="sd-tl small">
-                  <li data-on="true"><i /><div><b>Requested on Robinhood</b><span className="mono">{short(x.requestTx, 6)}</span></div></li>
-                  <li data-on={!!x.cre?.written}><i /><div><b>Chainlink CRE approval</b><span>{x.cre?.error ? x.cre.error : x.cre ? `${x.cre.decision ?? ""}${x.cre.written ? ` · forwarder tx ${short(x.cre.written, 6)} · ${(x.cre.ms / 1000).toFixed(1)} s` : ""}` : "running the settlement workflow…"}</span>{x.quotes && <span>Relay: {x.quotes.relay ?? "–"} · Across: {x.quotes.across ?? "–"}</span>}</div></li>
-                  <li data-on={!!x.deposit}><i /><div><b>Deposit on the approved route</b><span>{x.deposit ? <>tx <span className="mono">{short(x.deposit.tx, 6)}</span> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
+                  <li data-on="true"><i /><div><b>Requested on Robinhood</b><span><TxLink chain="robinhood" hash={x.requestTx} /></span></div></li>
+                  <li data-on={!!x.cre?.written}><i /><div><b>Chainlink CRE approval</b><span>{x.cre?.error ? x.cre.error : x.cre ? `${x.cre.decision ?? ""}${x.cre.written ? ` · ${(x.cre.ms / 1000).toFixed(1)} s` : ""}` : "running the settlement workflow…"}{x.cre?.written && <> · forwarder tx <TxLink chain="robinhood" hash={x.cre.written} /></>}</span>{x.quotes && <span>Relay: {x.quotes.relay ?? "–"} · Across: {x.quotes.across ?? "–"}</span>}</div></li>
+                  <li data-on={!!x.deposit}><i /><div><b>Deposit on the approved route</b><span>{x.deposit ? <>tx <TxLink chain="robinhood" hash={x.deposit.tx} /> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
                   <li data-on="false"><i /><div><b>USDC filled on Arc</b><span>{x.deposit ? "Pending: needs a real Relay solver, which never sees a local fork" : "–"}</span></div></li>
                 </ol>
               </li>
@@ -403,7 +416,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
 
 /* ================================================================== payments */
 type Filter = "all" | "paid" | "refunded" | "open" | "expired";
-function Payments({ rows }: { rows: Row[] | null }) {
+function Payments({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
   const [f, setF] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [range, setRange] = useState<"all" | Range>("all");
@@ -426,27 +439,28 @@ function Payments({ rows }: { rows: Row[] | null }) {
         <Menu align="left" trigger={(o) => <button className={`sd-chip ${range !== "all" ? "on" : ""}`} onClick={o}><Icon.plus /> Date{range !== "all" && `: ${RANGES.find(([k]) => k === range)?.[1]}`}</button>} items={[["Any time", () => setRange("all")], ...RANGES.map(([k, t]) => [t, () => setRange(k)] as [string, () => void])]} />
         <Menu align="left" trigger={(o) => <button className={`sd-chip ${pm !== "all" ? "on" : ""}`} onClick={o}><Icon.plus /> Payment method{pm !== "all" && `: ${METHOD[pm][0]}`}</button>} items={[["Any method", () => setPm("all")], ...(Object.keys(METHOD) as Method[]).map((k) => [METHOD[k][0], () => setPm(k)] as [string, () => void])]} />
       </div>
-      <PayTable rows={shown} loading={!rows} />
+      <PayTable rows={shown} loading={!rows} cfg={cfg} />
       {rows && <p className="sd-foot-n">{shown.length} result{shown.length === 1 ? "" : "s"}</p>}
     </>
   );
 }
 
-function PayTable({ rows, loading }: { rows: Row[]; loading?: boolean }) {
+function PayTable({ rows, loading, cfg }: { rows: Row[]; loading?: boolean; cfg: Config }) {
   if (loading) return <div className="sd-table-wrap"><div className="sd-skel-rows"><i /><i /><i /></div></div>;
   if (!rows.length) return <div className="sd-table-wrap"><Empty title="No payments match" text="Create a payment link and pay it privately on the hosted checkout. It shows up here the moment it settles." action={<a className="sd-btn sm" href="#/dashboard/links">Go to payment links</a>} /></div>;
   return (
     <div className="sd-table-wrap">
       <table className="sd-table">
-        <thead><tr><th className="r">Amount</th><th />  <th>Status</th><th className="hide-s">Payment method</th><th className="hide-m">Description</th><th>Customer</th><th className="hide-s">Date</th><th /></tr></thead>
+        <thead><tr><th className="r">Amount</th><th />  <th>Status</th><th className="hide-s">Payment method</th><th className="hide-m">Description</th><th>Customer</th><th className="hide-m">Transaction</th><th className="hide-s">Date</th><th /></tr></thead>
         <tbody>{rows.map((x) => (
           <tr key={x.invoice.invoiceId} tabIndex={0} onClick={() => go(`#/dashboard/payments/${x.invoice.invoiceId}`)} onKeyDown={(e) => e.key === "Enter" && go(`#/dashboard/payments/${x.invoice.invoiceId}`)}>
             <td className="r num"><b>{usdc(x.invoice.amount)}</b></td>
-            <td className="sd-cur">{x.method === "stocks" ? "USDG" : "USDC"}{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
+            <td className="sd-cur"><Cur r={x} />{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
             <td><Badge s={x.status} /></td>
             <td className="hide-s"><PM r={x} /></td>
             <td className="hide-m sd-desc">{x.description || <span className="sd-muted mono">{short(x.invoice.invoiceId, 8)}</span>}</td>
             <td><Who r={x} /></td>
+            <td className="hide-m">{x.paymentTx ? <TxLink chain={payChain(x)} cfg={cfg} hash={x.paymentTx} /> : <span className="sd-muted">–</span>}</td>
             <td className="hide-s sd-muted">{dt(x.paidAt ?? x.createdAt)}</td>
             <td className="r"><Menu trigger={(o) => <button className="sd-icon-btn sm" onClick={o} aria-label="Row actions">⋯</button>} items={[["View payment details", () => go(`#/dashboard/payments/${x.invoice.invoiceId}`)], ["Copy payment ID", () => { navigator.clipboard?.writeText(x.invoice.invoiceId); toast("Payment ID copied"); }], ["Copy checkout link", () => { navigator.clipboard?.writeText(payLink(x.invoice.invoiceId)); toast("Checkout link copied"); }], ["Open hosted checkout", () => go(`#/pay/${x.invoice.invoiceId}`)]]} /></td>
           </tr>
@@ -469,15 +483,15 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
   const credit = r.method === "credit", stock = r.method === "stocks";
   const steps: [string, number | string | undefined, ReactNode, boolean][] = stock ? [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
-    ["Paid with Stock Tokens on Robinhood Chain, USDG received", r.paidAt, r.paymentTx ? <><span className="mono" title="Local Robinhood Chain fork">{short(r.paymentTx, 8)}</span> · NorenGateway.pay, gas paid by the customer</> : null, settled(r)],
+    ["Paid with Stock Tokens on Robinhood Chain, USDG received", r.paidAt, r.paymentTx ? <><TxLink chain="robinhood" hash={r.paymentTx} n={8} /> · NorenGateway.pay, gas paid by the customer</> : null, settled(r)],
   ] : credit ? [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
-    ["Paid later from a credit line, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
+    ["Paid later from a credit line, USDC received", r.paidAt, r.paymentTx ? <><TxLink chain="arc" cfg={cfg} hash={r.paymentTx} n={8} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
   ] : [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
     ["Customer opened the link and bound the invoice", r.boundAt, "Private refund inbox and receipt commitment fixed in the invoice", !!r.invoice.receiptCommitment],
-    ["Zero-knowledge proof verified, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} />{r.paymentGasUsed && <> · {Number(r.paymentGasUsed).toLocaleString()} gas paid by you</>}</> : null, settled(r)],
-    ["Refunded to the customer's private inbox", r.refundedAt, r.refundTx ? <>{usdc(r.refundAmount)} USDC · <TxRef cfg={cfg} hash={r.refundTx} /></> : null, r.status === "refunded"],
+    ["Zero-knowledge proof verified, USDC received", r.paidAt, r.paymentTx ? <><TxLink chain="arc" cfg={cfg} hash={r.paymentTx} n={8} />{r.paymentGasUsed && <> · {Number(r.paymentGasUsed).toLocaleString()} gas paid by you</>}</> : null, settled(r)],
+    ["Refunded to the customer's private inbox", r.refundedAt, r.refundTx ? <>{usdc(r.refundAmount)} USDC · <TxLink chain="arc" cfg={cfg} hash={r.refundTx} n={8} /></> : null, r.status === "refunded"],
   ];
   return (
     <>
@@ -485,7 +499,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
       <div className="sd-pay-head">
         <div>
           <span className="sd-eyebrow">Payment</span>
-          <h1><span className="num">{usdc(r.invoice.amount)}</span> <em>{stock ? "USDG" : "USDC"}</em> <Badge s={r.status} /></h1>
+          <h1><span className="num">{usdc(r.invoice.amount)}</span> <em className="lg-row"><Mark id={stock ? "USDG" : "USDC"} size={24} />{stock ? "USDG" : "USDC"}</em> <Badge s={r.status} /></h1>
           {r.quote && <p className="sd-quote-line">Priced at <b>{fiatStr(r.quote)}</b> · Chainlink rate locked at creation</p>}
         </div>
         <div className="sd-head-act">
@@ -530,10 +544,10 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             {stock && r.stock ? (
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
-                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono">{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
-                <dt>Shares</dt><dd className="num">{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
+                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono lg-row"><Mark id="1INCH" size={16} />{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
+                <dt>Shares</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
-                <dt>You received</dt><dd>{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
+                <dt>You received</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
                 <dt>Network</dt><dd>Robinhood Chain {r.stock.chainId} (local fork)</dd>
                 <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
               </dl>
@@ -542,14 +556,14 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
                 <dt>Type</dt><dd>Credit line (pay later)</dd>
                 <dt>Line ID</dt><dd className="mono">{short(r.creditLineId, 8)} {r.creditLineId && <Copy text={r.creditLineId} />}</dd>
                 <dt>Collateral</dt><dd>Stock Tokens on Robinhood Chain</dd>
-                <dt>Bridged by</dt><dd>Chainlink CRE workflow</dd>
+                <dt>Bridged by</dt><dd className="lg-row"><Mark id="CHAINLINK" size={16} />Chainlink CRE workflow</dd>
                 <dt>Your risk</dt><dd>None: paid in full upfront from the credit pool</dd>
                 <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
               </dl>
             ) : (
             <dl className="sd-dl">
               <dt>Type</dt><dd>Zero-knowledge withdrawal</dd>
-              <dt>Pool</dt><dd className="mono">{short(cfg.deployment.pool, 6)}</dd>
+              <dt>Pool</dt><dd><span className="lg-row"><Mark id="KOHAKU" size={16} />Kohaku privacy pool</span> · <span className="mono">{short(cfg.deployment.pool, 6)}</span></dd>
               <dt>Payer address</dt><dd className="sd-private">none on-chain</dd>
               <dt>Receipt commitment</dt><dd className="mono">{r.invoice.receiptCommitment ? short(r.invoice.receiptCommitment, 8) : "not bound"}</dd>
               <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
@@ -743,7 +757,7 @@ function StoreKeys({ store, session, onChange }: { store: StoreView; session: Se
           <thead><tr><th>Name</th><th>Token</th><th className="hide-s">Created</th><th /></tr></thead>
           <tbody>
             <tr><td><b>Publishable key</b><small className="sd-sub">safe in a browser</small></td><td className="mono">{store.publishableKey}</td><td className="hide-s sd-muted">{dt(store.createdAt)}</td><td className="r"><Copy text={store.publishableKey} /></td></tr>
-            <tr><td><b>Merchant ID</b><small className="sd-sub">on-chain, registered on Arc</small></td><td className="mono">{short(store.merchant, 10)}</td><td className="hide-s sd-muted mono">{short(store.registerTx, 6)}</td><td className="r"><Copy text={store.merchant} /></td></tr>
+            <tr><td><b>Merchant ID</b><small className="sd-sub">on-chain, registered on Arc</small></td><td className="mono">{short(store.merchant, 10)}</td><td className="hide-s sd-muted"><TxLink chain="arc" hash={store.registerTx} /></td><td className="r"><Copy text={store.merchant} /></td></tr>
             {store.keys.map((k) => (
               <tr key={k.id}><td><b>Secret key</b><small className="sd-sub">{k.revokedAt ? `revoked ${dt(k.revokedAt)}` : "test mode"}</small></td><td className="mono">{k.prefix}{"•".repeat(16)}</td><td className="hide-s sd-muted">{dt(k.createdAt)}</td><td className="r">{!k.revokedAt && <button className="sd-btn xs" disabled={!!busy} onClick={() => { if (confirm("Revoke this secret key? Requests using it fail immediately.")) act(k.id, async () => { await call(`/stores/${store.id}/keys/${k.id}`, "DELETE"); toast("Secret key revoked"); }); }}>{busy === k.id ? "Revoking…" : "Revoke"}</button>}</td></tr>
             ))}

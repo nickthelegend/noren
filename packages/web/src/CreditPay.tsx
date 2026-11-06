@@ -7,6 +7,9 @@ import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
 import { payoutOf } from "./kit";
 import type { Line, Onchain } from "./onchain";
+import type { ReactNode } from "react";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
 
 export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: InvoiceView; shop: string; onPaid: () => void }) {
   const [tk, setTk] = useState<Onchain | null>(null);
@@ -14,7 +17,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   const [err, setErr] = useState<string | null>(null);
   const [gas, setGas] = useState<bigint | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
   const [n, setN] = useState<number | null>(null);
   useEffect(() => { if (tk) import("./credit-actions").then((m) => m.creditActions(cfg, tk).installments()).then(setN).catch(() => setN(null)); }, [tk, cfg]);
@@ -47,7 +50,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
       const payout = await payoutOf(cfg.rpcUrl, cfg.deployment.checkout, view.invoice.merchant);
       const to = (/^0x0{40}$/.test(payout) ? view.invoice.merchant : payout) as `0x${string}`;
       const r = await tk!.payInvoice(line.lineId, to, amount, view.invoice.invoiceId);
-      setTx(r.hash); setNote({ t: `Paid from your credit line (tx ${short(r.hash, 6)}). Waiting for ${shop} to see it…` });
+      setTx(r.hash); setNote({ t: <>Paid from your credit line (tx <TxLink chain="arc" cfg={cfg} hash={r.hash} />). Waiting for {shop} to see it…</> });
       onPaid();
     } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); load(); }
   };
@@ -56,7 +59,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   return (
     <div className="co-credit">
       <div className="co-bal">
-        <div><span>Available credit</span><b>{usdc(available)}<em>USDC</em></b></div>
+        <div><span>Available credit</span><b>{usdc(available)}<em className="lg-row"><Mark id="USDC" size={16} />USDC</em></b></div>
         <div><span>Line</span><b className="mono sm">{short(line.lineId, 4)}</b><small className="faint">limit {usdc(line.limit)}</small></div>
       </div>
       <div aria-label="Credit limit used by this payment">

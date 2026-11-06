@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
+import { Mark } from "./logos";
 import "./landing.css";
 
 /* Every number on this page comes from TESTING.md (local Arc testnet fork and Robinhood Chain mainnet snapshot, Nov 6 2026).
@@ -81,14 +82,14 @@ const POWERS: Power[] = [
     m: "7.50 USDG: Relay 7.475568 · Across 7.491332 USDC" },
 ];
 
-const BUILT: { name: string; use: string; s: Status; note?: string }[] = [
-  { name: "Kohaku privacy pools", use: "The Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools contracts: the pool customers pay from, with Groth16 proofs made in the browser.", s: "live" },
-  { name: "Chainlink Data Feeds + CRE", use: "Fiat feeds price payment links, and stock and ETH feeds value collateral. CRE workflows bridge credit lines, write FX rates and approve settlements (CRE simulator).", s: "live" },
-  { name: "1inch Aqua + SwapVM", use: "Makers fill stock payments at a Chainlink-pegged price through a SwapVM instruction we added, NorenOraclePeg.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
-  { name: "Uniswap v4", use: "Best-execution quotes from the official V4Quoter and swaps through the Universal Router and Permit2 on Robinhood Chain, in the Noren app and at checkout.", s: "live" },
-  { name: "World ID", use: "One starter credit line per verified human and a NorenReputation milestone. Noren stores the nullifier, not the person.", s: "live", note: "Production World ID; a real check needs World App" },
-  { name: "0G Private Computer", use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE, and Noren verifies the TeeML provider independently.", s: "live" },
-  { name: "Relay / Across", use: "USDG on Robinhood Chain to USDC on Arc for merchant settlement. Quotes are live; no relayer fills a local fork.", s: "quotes" },
+const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: string }[] = [
+  { name: "Kohaku privacy pools", logos: ["KOHAKU"], use: "The Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools contracts: the pool customers pay from, with Groth16 proofs made in the browser.", s: "live" },
+  { name: "Chainlink Data Feeds + CRE", logos: ["CHAINLINK"], use: "Fiat feeds price payment links, and stock and ETH feeds value collateral. CRE workflows bridge credit lines, write FX rates and approve settlements (CRE simulator).", s: "live" },
+  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "Makers fill stock payments at a Chainlink-pegged price through a SwapVM instruction we added, NorenOraclePeg.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
+  { name: "Uniswap v4", logos: ["UNISWAP"], use: "Best-execution quotes from the official V4Quoter and swaps through the Universal Router and Permit2 on Robinhood Chain, in the Noren app and at checkout.", s: "live" },
+  { name: "World ID", logos: ["WORLD"], use: "One starter credit line per verified human and a NorenReputation milestone. Noren stores the nullifier, not the person.", s: "live", note: "Production World ID; a real check needs World App" },
+  { name: "0G Private Computer", logos: ["0G"], use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE, and Noren verifies the TeeML provider independently.", s: "live" },
+  { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "USDG on Robinhood Chain to USDC on Arc for merchant settlement. Quotes are live; no relayer fills a local fork.", s: "quotes" },
 ];
 
 const ONBOARD: [string, string][] = [
@@ -264,13 +265,17 @@ export function Landing() {
           <ul className="nx-built-list">
             {BUILT.map((b, i) => (
               <li key={b.name} data-reveal style={{ transitionDelay: `${i * 50}ms` }}>
-                <b>{b.name}</b>
+                <b className="nx-built-name"><span className="nx-built-logos">{b.logos.map((l) => <Mark key={l} id={l} size={24} />)}</span>{b.name}</b>
                 <p>{b.use}{b.note && <small className="mono">{b.note}</small>}</p>
                 <Chip s={b.s} />
               </li>
             ))}
           </ul>
-          <p className="nx-built-foot mono">Runs on Arc (USDC checkout and credit lines) and Robinhood Chain (Stock Tokens, USDG). No endorsement by any of these projects is implied.</p>
+          <div className="nx-built-chains" aria-label="Chains and assets">
+            <span><Mark id="ARC" size={24} /><b>Arc</b><small><span className="nx-chunk">by <Mark id="CIRCLE" size={16} /> Circle ·</span><span className="nx-chunk"><Mark id="USDC" size={16} /> USDC checkout and credit lines</span></small></span>
+            <span><Mark id="ROBINHOOD" size={24} /><b>Robinhood Chain</b><small><span className="nx-stock-row" aria-hidden>{["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "GOOGL", "AMZN", "META"].map((t) => <Mark key={t} id={t} size={16} />)}</span> Stock Tokens ·<span className="nx-chunk"><Mark id="USDG" size={16} /> USDG</span></small></span>
+          </div>
+          <p className="nx-built-foot mono">Runs on Arc (USDC checkout and credit lines) and Robinhood Chain (Stock Tokens, USDG). Logos belong to their owners and are shown only to name each project; no endorsement by any of them is implied.</p>
         </div>
       </section>
 

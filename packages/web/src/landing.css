@@ -252,3 +252,23 @@
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   .nx-pw.dark:hover .nx-pw-art, .nx-link:hover svg { transform: none; }
 }
+
+/* Built with: real logos on white discs so they read on the night background */
+.nx-built-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nx-built-logos { display: inline-flex; flex: none; }
+.nx-built-logos .lg-mark { box-shadow: 0 0 0 2px rgba(255, 255, 255, .14); }
+.nx-built-logos .lg-mark + .lg-mark { margin-left: -6px; }
+.nx-built-list li { align-items: center; }
+.nx-built-chains { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+.nx-built-chains > span { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 12px; row-gap: 4px; padding: 16px 18px; border-radius: 16px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .1); min-width: 0; }
+.nx-built-chains > span > .lg-mark { grid-row: span 2; }
+.nx-built-chains b { font: 500 18px/1.2 var(--disp); letter-spacing: -.02em; color: #fff; }
+.nx-built-chains small { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 12.5px; color: rgba(215, 225, 255, .65); min-width: 0; }
+.nx-stock-row { display: inline-flex; }
+.nx-stock-row .lg-mark { box-shadow: 0 0 0 1.5px #0d1430; }
+.nx-stock-row .lg-mark + .lg-mark { margin-left: -4px; }
+@media (max-width: 760px) {
+  .nx-built-chains { grid-template-columns: minmax(0, 1fr); }
+  .nx-built-name { gap: 10px; }
+}
+.nx-chunk { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }

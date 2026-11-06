@@ -9,6 +9,9 @@ import { QR } from "../kit";
 import type { Wallet } from "./NorenApp";
 import { rhSdk, type Positions } from "./rh";
 import { Card, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
+import type { ReactNode } from "react";
+import { TxLink } from "../tx";
+import { Mark } from "../logos";
 
 const day = (t: bigint | number) => new Date(Number(t) * 1000).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 const linkFor = (id: string) => `${location.origin}${location.pathname}#/pay/${id}`;
@@ -25,7 +28,7 @@ export function PayTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <div className="nk-hero" aria-label="Private balance">
-        <small>Private balance · Kohaku privacy pool on Arc</small>
+        <small className="lg-row"><Mark id="KOHAKU" size={16} />Private balance · Kohaku privacy pool on Arc</small>
         <b><i>$</i>{priv ? usdc(priv.approved) : privErr ? "–" : "…"}</b>
         <p>{privErr ? `Couldn't read the pool: ${privErr}` : priv && priv.pending > 0n ? `+${usdc(priv.pending)} USDC being screened by the ASP` : "Pay any Noren checkout from here and the merchant never learns your wallet."}{w.arcUsdc !== null ? ` · Public Arc wallet: ${usdc(w.arcUsdc)} USDC` : ""}</p>
       </div>
@@ -63,7 +66,7 @@ function PayLink({ w }: { w: Wallet }) {
             <ul className="nk-items">
               {open.map((r) => (
                 <li key={r.invoice.invoiceId}>
-                  <div><b>{r.description ?? "Payment"} · {usdc(r.invoice.amount)} USDC</b><small className="nk-mono">{shortHex(r.invoice.invoiceId, 8)} · expires {day(BigInt(r.invoice.expiry))}</small></div>
+                  <Mark id="USDC" size={24} /><div><b>{r.description ?? "Payment"} · {usdc(r.invoice.amount)} USDC</b><small className="nk-mono">{shortHex(r.invoice.invoiceId, 8)} · expires {day(BigInt(r.invoice.expiry))}</small></div>
                   <button className="nk-btn ghost" onClick={() => setQr(qr === r.invoice.invoiceId ? null : r.invoice.invoiceId)} aria-expanded={qr === r.invoice.invoiceId}>QR</button>
                   <a className="nk-btn ink" href={`#/pay/${r.invoice.invoiceId}`}>Pay</a>
                 </li>
@@ -81,12 +84,12 @@ function Plans({ w }: { w: Wallet }) {
   const [pos, setPos] = useState<Positions | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   useEffect(() => { let on = true; try { rhSdk(w).readPositions(w.oc.address).then((p) => on && (setPos(p), setErr(null))).catch((e) => on && setErr(msgOf(e))); } catch (e) { setErr(msgOf(e)); } return () => { on = false; }; }, [w.tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const plans = pos?.plans.filter((p) => Number(p.plan.status) === 1) ?? [];
   const pay = async (planId: bigint) => {
     setBusy(String(planId)); setNote(null);
-    try { const r = await rhSdk(w).repay({ planId, count: 1 }); setNote({ t: `Paid ${usdc(r.amountUsdg)} USDG on Robinhood (tx ${shortHex(r.hash, 6)}).` }); w.refresh(); }
+    try { const r = await rhSdk(w).repay({ planId, count: 1 }); setNote({ t: <>Paid {usdc(r.amountUsdg)} USDG on Robinhood (tx <TxLink chain="robinhood" hash={r.hash} />).</> }); w.refresh(); }
     catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
   };
   return (

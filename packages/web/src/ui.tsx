@@ -1,13 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { api, short, SERVER, type Config } from "./api";
+import { api, SERVER, type Config } from "./api";
 
-export const EXPLORER = "https://explorer.testnet.arc.io/tx/";
 export const isFork = (cfg: Config | null) => !cfg || /127\.0\.0\.1|localhost/.test(cfg.rpcUrl);
-/** Fork transactions don't exist on the public explorer: link only when talking to a real network. */
-export const TxRef = ({ cfg, hash, n = 8 }: { cfg: Config | null; hash?: string; n?: number }) => !hash ? <span className="faint">–</span> : !isFork(cfg)
-  ? <a className="mono tx" href={`${EXPLORER}${hash}`} target="_blank" rel="noreferrer">{short(hash, n)} <Icon.ext /></a>
-  : <span className="mono tx" title={`${hash} (local Arc fork: not on the public explorer)`}>{short(hash, n)}</span>;
-
 /** viem errors carry request dumps; show the human part only. */
 export const msgOf = (e: unknown) => {
   const m = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
@@ -19,10 +13,13 @@ export type Route =
   | { page: "home" }
   | { page: "dashboard"; tab: "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard"; sub?: string }
   | { page: "pay"; id: string }
-  | { page: "app" };
+  | { page: "app" }
+  | { page: "tx"; chain: string; hash: string };
 export function useRoute(): Route {
   const [hash, setHash] = useState(() => location.hash);
   useEffect(() => { const on = () => { setHash(location.hash); window.scrollTo(0, 0); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
+  const t = /^#\/tx\/([\w-]+)\/([^/?#]+)/.exec(hash);
+  if (t) return { page: "tx", chain: t[1], hash: t[2] };
   const m = /^#\/pay\/(0x[0-9a-fA-F]{64})/.exec(hash);
   if (m) return { page: "pay", id: m[1] };
   if (/^#\/(app|credit)\b/.test(hash)) return { page: "app" };
