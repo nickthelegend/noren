@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
 import { Mark } from "./logos";
+import { CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, ccipMsgUrl, explorerTx, shortChain } from "./crosschain";
+import { LIVE } from "./network";
 import "./landing.css";
 
 /* Every number on this page comes from TESTING.md (local Arc testnet fork and Robinhood Chain mainnet snapshot, Nov 6 2026).
    Screens are real captures of this app. Art: ChatGPT (stills) and Google Gemini Veo (film), see README. */
 
 /** Honest status of each piece. Flip a value here when its branch lands. */
-type Status = "live" | "key" | "wip" | "quotes";
-const STATUS: Record<Status, string> = { live: "Live on fork", key: "Needs key", wip: "In progress", quotes: "Live quotes" };
+type Status = "live" | "key" | "wip" | "quotes" | "testnet";
+const STATUS: Record<Status, string> = { live: "Live on fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
 const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
@@ -77,19 +79,36 @@ const POWERS: Power[] = [
     m: "2 NVDA locked = $371.41 collateral" },
   { k: "human", t: "Credit for real humans", s: ["live"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
     d: "No stock? Verify with World ID (production, Selfie Check in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
-  { k: "bridge", t: "Swap and bridge", s: ["live", "quotes"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
-    d: "Swap stock, ETH and USDG at the better of a 1inch Aqua maker and Uniswap v4. Move USDG on Robinhood Chain to USDC on Arc through Relay or Across, with a Chainlink CRE workflow approving the route against the Chainlink fair value.",
-    m: "7.50 USDG: Relay 7.475568 · Across 7.491332 USDC" },
+  { k: "bridge", t: "From any chain", s: ["testnet", "live"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
+    d: "Bring USDC to Arc from 10 chains with Circle CCTP, or pay an invoice on arrival. Sell stock on Robinhood and get USDC on Arc from a 1inch Aqua maker, with Chainlink CRE carrying the order. Swap at the better of an Aqua maker and Uniswap v4.",
+    m: "Base Sepolia → Arc: invoice paid on arrival" },
 ];
 
+/** Each partner's one job in Noren, in the order of the positioning: the engine, the rails, orchestration, credit. */
 const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: string }[] = [
-  { name: "Kohaku privacy pools", logos: ["KOHAKU"], use: "The Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools contracts: the pool customers pay from, with Groth16 proofs made in the browser.", s: "live" },
-  { name: "Chainlink Data Feeds + CRE", logos: ["CHAINLINK"], use: "Fiat feeds price payment links, and stock and ETH feeds value collateral. CRE workflows bridge credit lines, write FX rates and approve settlements (CRE simulator).", s: "live" },
-  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "Makers fill stock payments at a Chainlink-pegged price through a SwapVM instruction we added, NorenOraclePeg.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
-  { name: "Uniswap v4", logos: ["UNISWAP"], use: "Best-execution quotes from the official V4Quoter and swaps through the Universal Router and Permit2 on Robinhood Chain, in the Noren app and at checkout.", s: "live" },
-  { name: "World ID", logos: ["WORLD"], use: "One starter credit line per verified human and a NorenReputation milestone. Noren stores the nullifier, not the person.", s: "live", note: "Production World ID; a real check needs World App" },
-  { name: "0G Private Computer", logos: ["0G"], use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE, and Noren verifies the TeeML provider independently.", s: "live" },
-  { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "USDG on Robinhood Chain to USDC on Arc for merchant settlement. Quotes are live; no relayer fills a local fork.", s: "quotes" },
+  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "The engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills, all priced by NorenOraclePeg, a SwapVM instruction we added that pegs makers to Chainlink.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
+  { name: "Circle CCTP V2", logos: ["CIRCLE"], use: "Native USDC into Arc from 10 testnets, burned and minted by Circle. A hook can pay an invoice, open an Aqua order or fund Earn on arrival.", s: "testnet" },
+  { name: "Chainlink CCIP", logos: ["CHAINLINK"], use: "Orders and credit instructions from Ethereum, Base and Robinhood Chain into Arc (Robinhood through a Base hub, since there is no direct lane).", s: "testnet" },
+  { name: "Chainlink CRE + Data Feeds", logos: ["CHAINLINK"], use: "Orchestration and price checks: CRE relays CCTP burns, carries Aqua orders and credit lines between chains, writes FX rates and approves settlements. Feeds price every invoice and every stock.", s: "testnet", note: "CRE runs in the simulator with --broadcast; not on a DON" },
+  { name: "World ID + 0G", logos: ["WORLD", "0G"], use: "How credit reaches real humans safely: one starter line per verified human (Noren keeps only the nullifier), and a sealed AI second opinion inside a 0G TEE.", s: "live", note: "Production World ID; a real check needs World App" },
+  { name: "Kohaku privacy pools", logos: ["KOHAKU"], use: "Why the shop never sees who paid: the Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools, with the proof made in the browser.", s: "testnet" },
+  { name: "Uniswap v4", logos: ["UNISWAP"], use: "The second quote: the official V4Quoter, Universal Router and Permit2 on Robinhood Chain, against which every Aqua fill is compared.", s: "live" },
+  { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "The mainnet route for USDG on Robinhood Chain to USDC on Arc. Quotes are live; no relayer fills a local fork.", s: "quotes" },
+];
+
+/** Real public-testnet transactions (docs/LIVE.md, docs/CCTP.md, docs/CCIP.md), linked to their explorers. */
+const pick = (re: RegExp) => LIVE.e2e.steps.find((x) => re.test(x.step))?.tx;
+const cctpIn = (from: string, kind: string) => CCTP_RUNS.find((r) => r.from === from && r.to === "arc-testnet" && r.kind === kind);
+const LIVE_STRIP: { t: string; d: string; href: string; marks: string[] }[] = [
+  { t: "Private payment on Arc", d: "2.50 USDC, no payer address in the tx", href: `${LIVE.explorer}/tx/${pick(/^pay \d/i)}`, marks: ["KOHAKU", "ARC"] },
+  { t: "Refund into a shielded inbox", d: "1.00 USDC back, still private", href: `${LIVE.explorer}/tx/${pick(/^refund \d/i)}`, marks: ["ARC"] },
+  { t: "CRE writes FX rates", d: "9 currencies from Chainlink feeds", href: `${LIVE.explorer}/tx/${LIVE.pricing.simulateTx}`, marks: ["CHAINLINK", "ARC"] },
+  ...([["base-sepolia", "pay-invoice", "Invoice paid on arrival"], ["arbitrum-sepolia", "aqua-order", "Aqua order opened on arrival"], ["robinhood-testnet", "plain", "USDC into Arc"]] as const).flatMap(([from, kind, t]) => {
+    const r = cctpIn(from, kind); if (!r) return [];
+    return [{ t: `${shortChain(r.from)} → Arc: ${t}`, d: `CCTP V2, relayed by CRE · ${(Number(r.minted) / 1e6).toFixed(2)} USDC`, href: explorerTx("arc-testnet", r.mintTx), marks: [CHAIN_MARK[r.from], "CIRCLE"] }];
+  }),
+  ...CCTP_RUNS.filter((r) => r.from === "arc-testnet" && r.to === "robinhood-testnet").map((r) => ({ t: "Arc → Robinhood", d: "CCTP V2 out of Arc, 1 USDC", href: explorerTx("robinhood-testnet", r.mintTx), marks: ["ARC", "ROBINHOOD"] })),
+  ...CCIP_MESSAGES.filter((m) => m.from !== "arc-testnet").slice(0, 3).map((m) => ({ t: `CCIP: ${m.route}`, d: m.action, href: ccipMsgUrl(m.id), marks: [CHAIN_MARK[m.from], "CHAINLINK"] })),
 ];
 
 const ONBOARD: [string, string][] = [
@@ -183,9 +202,9 @@ export function Landing() {
       <section className="lx-hero">
         <GlyphField />
         <div className="lx-hero-in">
-          <span className="lx-pill mono"><i />New: private payments for EVM</span>
+          <span className="lx-pill mono"><i />Live on Arc, CCTP and CCIP testnets</span>
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
-          <p>Payment links, hosted checkout, refunds and signed webhooks. Customers pay from a Kohaku privacy pool. You get the USDC and the receipt; nobody gets their wallet.</p>
+          <p>Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and every payment is private: a merchant never learns which customer paid.</p>
           <div className="lx-ctas">
             <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
@@ -194,11 +213,24 @@ export function Landing() {
         <div className="lx-horizon" aria-hidden />
       </section>
 
+      {/* ---------------------------------------------------------------- live on public testnets */}
+      <section className="nx-live" aria-label="Live on public testnets">
+        <div className="nx-live-in">
+          <span className="nx-live-h mono"><i aria-hidden />Live on public testnets</span>
+          <ul>
+            {LIVE_STRIP.map((x) => (
+              <li key={x.href}><a href={x.href} target="_blank" rel="noreferrer"><span className="nx-live-m" aria-hidden>{x.marks.map((m) => <Mark key={m} id={m} size={18} />)}</span><span><b>{x.t}</b><small>{x.d}</small></span><Icon.ext /></a></li>
+            ))}
+          </ul>
+          <p className="mono">Every link opens a block explorer or ccip.chain.link. The Robinhood Chain side of stocks and Aqua runs on local forks; see the README's "What's simulated".</p>
+        </div>
+      </section>
+
       {/* ---------------------------------------------------------------- (a) what Noren is */}
       <section className="nx-one">
         <div className="nx-one-in">
           <div data-reveal><Tag dark>What Noren is</Tag></div>
-          <h2 data-reveal>Noren lets shops take stablecoins <em>without</em> seeing who paid. <span>Merchants get USDC on Arc. Customers pay privately, with stock, or later.</span></h2>
+          <h2 data-reveal>A DEX and payment rails on Arc, and the merchant <em>never</em> learns who paid. <span>Liquidity from 1inch Aqua makers, credit lines, and settlement from other chains, all landing as USDC on Arc.</span></h2>
           <figure className="nx-film" data-reveal>
             <Film src="/art/vault.mp4" poster="/art/vault-poster.jpg" label="Glossy coins drift behind a noren curtain; only a point of light reaches the vault" />
             <figcaption className="mono">The coins go behind the curtain. Only the payment comes out. <span>Film generated with Google Gemini (Veo); Gemini's mark is kept, bottom right.</span></figcaption>
@@ -260,7 +292,7 @@ export function Landing() {
         <div className="nx-built-in">
           <div className="nx-head" data-reveal>
             <Tag dark>Built with</Tag>
-            <h2>Seven protocols. <span>Each one labelled with what actually runs today.</span></h2>
+            <h2>One job each. <span>Aqua turns anything into USDC, CCTP and CCIP bring it to Arc, CRE orchestrates and checks prices, World ID and 0G keep credit human. Each labelled with what runs today.</span></h2>
           </div>
           <ul className="nx-built-list">
             {BUILT.map((b, i) => (
@@ -275,7 +307,7 @@ export function Landing() {
             <span><Mark id="ARC" size={24} /><b>Arc</b><small><span className="nx-chunk">by <Mark id="CIRCLE" size={16} /> Circle ·</span><span className="nx-chunk"><Mark id="USDC" size={16} /> USDC checkout and credit lines</span></small></span>
             <span><Mark id="ROBINHOOD" size={24} /><b>Robinhood Chain</b><small><span className="nx-stock-row" aria-hidden>{["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "GOOGL", "AMZN", "META"].map((t) => <Mark key={t} id={t} size={16} />)}</span> Stock Tokens ·<span className="nx-chunk"><Mark id="USDG" size={16} /> USDG</span></small></span>
           </div>
-          <p className="nx-built-foot mono">Runs on Arc (USDC checkout and credit lines) and Robinhood Chain (Stock Tokens, USDG). Logos belong to their owners and are shown only to name each project; no endorsement by any of them is implied.</p>
+          <p className="nx-built-foot mono">Runs on Arc (USDC checkout and credit lines), Robinhood Chain (Stock Tokens, USDG) and {Object.keys(CCTP_CHAINS).length - 1} CCTP testnets that feed Arc. Logos belong to their owners and are shown only to name each project; no endorsement by any of them is implied.</p>
         </div>
       </section>
 
@@ -332,7 +364,7 @@ export function Landing() {
         <div className="nx-num-grid" data-reveal>
           {NUMBERS.map((n) => <div key={n.l}><b>{n.v}{n.u && <em>{n.u}</em>}</b><span>{n.l}</span></div>)}
         </div>
-        <p className="nx-note mono">Local Anvil fork of Arc testnet (chain 5042002) and a snapshot of Robinhood Chain mainnet, Nov 6 2026. No public transaction was sent. The public Arc testnet deploy waits on testnet USDC.</p>
+        <p className="nx-note mono">Fork numbers: local Anvil fork of Arc testnet (chain 5042002) and a snapshot of Robinhood Chain mainnet, Nov 6 2026. Public testnet transactions are in the strip at the top and in docs/LIVE.md, docs/CCTP.md and docs/CCIP.md.</p>
       </section>
 
       {/* ---------------------------------------------------------------- (h) cta */}
