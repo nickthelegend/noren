@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type NorenEvent, type Webhook } from "./api";
 import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
+import { createPublicClient, http } from "viem";
+import { creditLineAbi, creditOf } from "./tsuke";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings";
 type Quote = { currency: string; fiatAmount: string; usdcAmount: string; rate?: string; quotedAt?: number | string; fiatUsd?: Feed; usdcUsd?: Feed };
@@ -20,6 +22,12 @@ const n6 = (v?: string | bigint) => (v === undefined ? 0 : Number(BigInt(v)) / 1
 const fmt = (v: number) => v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dt = (v?: number | string, withYear = false) => { const s = secs(v); if (!s) return "–"; const d = new Date(s * 1000); return d.toLocaleDateString([], { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}) }) + ", " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
 const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = cur?.decimals ?? (q.currency === "JPY" || q.currency === "KRW" ? 0 : 2); const v = Number(q.fiatAmount) / 10 ** d; return `${cur?.symbol ?? ""}${v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })} ${q.currency}`; };
+
+type Method = "private" | "credit" | "stocks";
+const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
+const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Kohaku pool", "Zero-knowledge withdrawal from the privacy pool", Icon.shield], credit: ["Tsuke credit", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Stock Tokens", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
+const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}><span className="sd-pm-ic"><I /></span>{t}</span>; };
+const Who = ({ r }: { r: Row }) => r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
 /* ================================================================== shell */
 export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
@@ -149,7 +157,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
   const cards: [string, { vals: number[]; total: number }, number, (v: number) => string, string][] = [
     ["Gross volume", gross, grossP.total, (v) => `${fmt(v)} USDC`, "Settled payments, before refunds"],
     ["Net volume", net, netP, (v) => `${fmt(v)} USDC`, "Gross volume minus refunds"],
-    ["Successful payments", count, countP.total, (v) => String(Math.round(v)), "Private payments relayed by you"],
+    ["Successful payments", count, countP.total, (v) => String(Math.round(v)), "Private and credit payments"],
     ["Refunds", refunds, refundsP.total, (v) => `${fmt(v)} USDC`, "Sent to customers' private inboxes"],
     ["Payment links created", links, linksP.total, (v) => String(Math.round(v)), "Including unpaid and expired"],
     ["Average payment", { vals: gross.vals.map((v, i) => (count.vals[i] ? v / count.vals[i] : 0)), total: count.total ? gross.total / count.total : 0 }, countP.total ? grossP.total / countP.total : 0, (v) => `${fmt(v)} USDC`, "Gross volume ÷ payments"],
@@ -172,7 +180,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
         <div className="sd-today-side">
           <div className="sd-stat"><span>USDC balance</span><b>{bal.value === null ? <span className="sd-skel w80" /> : `${fmt(n6(bal.value))}`} <em>USDC</em></b><small>{bal.error ? <span className="sd-err-t">{bal.error}</span> : <>On-chain at your payout address <span className="mono">{short(bal.payout ?? "", 6)}</span></>}</small><a href="#/dashboard/balances">View balance <Icon.arrow /></a></div>
           <div className="sd-stat"><span>Payouts</span><b>Instant</b><small>USDC lands at your payout address in the same transaction as the proof. No payout schedule, no holding period.</small></div>
-          <div className="sd-stat accent"><span>Customers identified</span><b>0</b><small>of {r.filter(settled).length} paying customers. Payments come from the privacy pool, never from a person's wallet.</small></div>
+          <div className="sd-stat accent"><span>Customers identified</span><b>0</b><small>of {r.filter((x) => methodOf(x) === "private").length} private payments. They come from the privacy pool, never from a person's wallet.{r.some((x) => methodOf(x) === "credit") && <> Credit payments are tied to a public credit line.</>}</small></div>
         </div>
       </section>
 
@@ -195,9 +203,58 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
         })}
       </section>
 
+      <Methods rows={rows} cfg={cfg} />
+
       <div className="sd-section-h"><h2>Recent payments</h2><a className="sd-link" href="#/dashboard/payments">View all <Icon.arrow /></a></div>
       <PayTable rows={r.slice(0, 6)} loading={!rows} />
     </>
+  );
+}
+
+/** Payment-method mix, and what the credit pool is still owed on lines that paid this merchant (read from Arc logs). */
+function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
+  const credit = creditOf(cfg);
+  const paid = (rows ?? []).filter(settled);
+  const mix = (Object.keys(METHOD) as Method[]).map((m) => { const xs = paid.filter((x) => methodOf(x) === m); return { m, n: xs.length, v: xs.reduce((a, x) => a + n6(x.invoice.amount), 0) }; });
+  const total = mix.reduce((a, x) => a + x.v, 0);
+  const lineIds = useMemo(() => [...new Set(paid.filter((x) => x.method === "credit" && x.creditLineId).map((x) => x.creditLineId!.toLowerCase()))], [paid.length, rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [exp, setExp] = useState<{ drawn: number; repaid: number } | null>(null);
+  const [expErr, setExpErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!credit || !lineIds.length) { setExp({ drawn: 0, repaid: 0 }); return; }
+    let live = true;
+    const c = createPublicClient({ transport: http(cfg.rpcUrl) });
+    const from = BigInt(credit.arcFromBlock ?? cfg.deployment.deploymentBlock);
+    Promise.all([
+      c.getLogs({ address: credit.creditLine, event: creditLineAbi[2], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
+      c.getLogs({ address: credit.creditLine, event: creditLineAbi[3], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
+    ]).then(([d, rp]) => { if (live) { setExp({ drawn: d.reduce((a, l) => a + n6(l.args.amount), 0), repaid: rp.reduce((a, l) => a + n6(l.args.amount), 0) }); setExpErr(null); } })
+      .catch((e) => live && setExpErr(`Couldn't read NorenCreditLine: ${msgOf(e)}`));
+    return () => { live = false; };
+  }, [cfg, credit?.creditLine, lineIds.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <section className="sd-methods">
+      <div>
+        <div className="sd-section-h tight"><h2>Payment methods</h2><span className="sd-muted">{paid.length} settled</span></div>
+        <div className="sd-mix" aria-hidden>{total > 0 && mix.map((x) => x.v > 0 && <i key={x.m} className={x.m} style={{ width: `${(x.v / total) * 100}%` }} />)}</div>
+        <ul className="sd-mix-l">{mix.map((x) => { const [t, d, I] = METHOD[x.m]; return <li key={x.m} title={d}><span className={`sd-pm ${x.m}`}><span className="sd-pm-ic"><I /></span>{t}</span><b className="num">{fmt(x.v)} <em>USDC</em></b><small>{x.n} payment{x.n === 1 ? "" : "s"}{total > 0 && ` · ${Math.round((x.v / total) * 100)}%`}</small></li>; })}</ul>
+      </div>
+      <div className="sd-exposure">
+        <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
+        {!credit ? <p className="sd-muted">Setup required: Tsuke credit isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, TsukeCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+          <>
+            <dl className="sd-dl">
+              <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
+              <dt>Drawn on those lines</dt><dd className="num">{exp ? `${fmt(exp.drawn)} USDC` : "…"}</dd>
+              <dt>Repaid so far</dt><dd className="num">{exp ? `${fmt(exp.repaid)} USDC` : "…"}</dd>
+              <dt>Owed to the credit pool</dt><dd className="num"><b>{exp ? `${fmt(Math.max(0, exp.drawn - exp.repaid))} USDC` : "…"}</b></dd>
+              <dt>Your exposure</dt><dd><b>0.00 USDC</b> · paid upfront</dd>
+            </dl>
+            <p className="sd-muted sm">Drawn and repaid amounts are summed from <code>Drawn</code> and <code>Repaid</code> logs on NorenCreditLine <span className="mono">{short(credit.creditLine, 6)}</span>. Collateral sits in TsukeCredit on Robinhood Chain.</p>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -282,13 +339,14 @@ function Payments({ rows }: { rows: Row[] | null }) {
   const [f, setF] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [range, setRange] = useState<"all" | Range>("all");
-  const r = rows ?? [];
+  const [pm, setPm] = useState<"all" | Method>("all");
+  const r = (rows ?? []).filter((x) => pm === "all" || methodOf(x) === pm);
   const inRange = (x: Row) => { if (range === "all") return true; const b = buckets(range); const t = secs(x.paidAt ?? x.createdAt) ?? 0; return t >= b.start && t < b.end; };
   const match = (x: Row) => !q || [x.invoice.invoiceId, x.description, x.paymentTx, x.refundTx, usdc(x.invoice.amount)].some((v) => v && String(v).toLowerCase().includes(q.toLowerCase()));
   const byStatus = (x: Row, k: Filter) => k === "all" || x.status === k || (k === "open" && x.status === "draft");
   const shown = r.filter((x) => byStatus(x, f) && match(x) && inRange(x));
   const counts = Object.fromEntries((["all", "paid", "refunded", "open", "expired"] as Filter[]).map((k) => [k, r.filter((x) => byStatus(x, k) && match(x) && inRange(x)).length])) as Record<Filter, number>;
-  const exportCsv = () => downloadCsv(`noren-payments-${new Date().toISOString().slice(0, 10)}.csv`, [["invoice_id", "status", "amount_usdc", "presentment", "description", "created", "paid", "refunded_usdc", "payment_tx", "refund_tx", "gas_used", "customer"], ...shown.map((x) => [x.invoice.invoiceId, x.status, n6(x.invoice.amount).toFixed(6), fiatStr(x.quote) ?? "", x.description ?? "", secs(x.createdAt) ? new Date(secs(x.createdAt)! * 1000).toISOString() : "", secs(x.paidAt) ? new Date(secs(x.paidAt)! * 1000).toISOString() : "", x.refundAmount ? n6(x.refundAmount).toFixed(6) : "", x.paymentTx ?? "", x.refundTx ?? "", x.paymentGasUsed ?? "", "private"])]);
+  const exportCsv = () => downloadCsv(`noren-payments-${new Date().toISOString().slice(0, 10)}.csv`, [["invoice_id", "status", "amount_usdc", "presentment", "description", "created", "paid", "refunded_usdc", "payment_tx", "refund_tx", "gas_used", "method", "customer"], ...shown.map((x) => [x.invoice.invoiceId, x.status, n6(x.invoice.amount).toFixed(6), fiatStr(x.quote) ?? "", x.description ?? "", secs(x.createdAt) ? new Date(secs(x.createdAt)! * 1000).toISOString() : "", secs(x.paidAt) ? new Date(secs(x.paidAt)! * 1000).toISOString() : "", x.refundAmount ? n6(x.refundAmount).toFixed(6) : "", x.paymentTx ?? "", x.refundTx ?? "", x.paymentGasUsed ?? "", methodOf(x) ?? "", x.method === "credit" ? `credit line ${x.creditLineId}` : "private"])]);
   return (
     <>
       <PageHead title="Payments"><button className="sd-btn" onClick={exportCsv} disabled={!shown.length}>Export</button></PageHead>
@@ -298,7 +356,7 @@ function Payments({ rows }: { rows: Row[] | null }) {
       <div className="sd-filters">
         <label className="sd-filter-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg><input placeholder="Filter by ID, description, amount or tx" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Filter payments" /></label>
         <Menu align="left" trigger={(o) => <button className={`sd-chip ${range !== "all" ? "on" : ""}`} onClick={o}><Icon.plus /> Date{range !== "all" && `: ${RANGES.find(([k]) => k === range)?.[1]}`}</button>} items={[["Any time", () => setRange("all")], ...RANGES.map(([k, t]) => [t, () => setRange(k)] as [string, () => void])]} />
-        <span className="sd-chip static"><Icon.eyeOff /> Customer: always private</span>
+        <Menu align="left" trigger={(o) => <button className={`sd-chip ${pm !== "all" ? "on" : ""}`} onClick={o}><Icon.plus /> Payment method{pm !== "all" && `: ${METHOD[pm][0]}`}</button>} items={[["Any method", () => setPm("all")], ...(Object.keys(METHOD) as Method[]).map((k) => [METHOD[k][0], () => setPm(k)] as [string, () => void])]} />
       </div>
       <PayTable rows={shown} loading={!rows} />
       {rows && <p className="sd-foot-n">{shown.length} result{shown.length === 1 ? "" : "s"}</p>}
@@ -318,9 +376,9 @@ function PayTable({ rows, loading }: { rows: Row[]; loading?: boolean }) {
             <td className="r num"><b>{usdc(x.invoice.amount)}</b></td>
             <td className="sd-cur">USDC{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
             <td><Badge s={x.status} /></td>
-            <td className="hide-s"><span className="sd-pm"><span className="sd-pm-ic"><Icon.shield /></span>Kohaku pool</span></td>
+            <td className="hide-s"><PM r={x} /></td>
             <td className="hide-m sd-desc">{x.description || <span className="sd-muted mono">{short(x.invoice.invoiceId, 8)}</span>}</td>
-            <td><span className="sd-private"><Icon.eyeOff />Private</span></td>
+            <td><Who r={x} /></td>
             <td className="hide-s sd-muted">{dt(x.paidAt ?? x.createdAt)}</td>
             <td className="r"><Menu trigger={(o) => <button className="sd-icon-btn sm" onClick={o} aria-label="Row actions">⋯</button>} items={[["View payment details", () => go(`#/dashboard/payments/${x.invoice.invoiceId}`)], ["Copy payment ID", () => { navigator.clipboard?.writeText(x.invoice.invoiceId); toast("Payment ID copied"); }], ["Copy checkout link", () => { navigator.clipboard?.writeText(payLink(x.invoice.invoiceId)); toast("Checkout link copied"); }], ["Open hosted checkout", () => go(`#/pay/${x.invoice.invoiceId}`)]]} /></td>
           </tr>
@@ -340,7 +398,11 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
   useEffect(() => { if (!token) { setEvents([]); return; } api.eventLog(cfg.merchant, token).then((l) => setEvents(l.filter((e) => String(e.data?.invoiceId ?? "").toLowerCase() === id.toLowerCase()))).catch(() => setEvents([])); }, [cfg, token, id, tick]);
   if (!rows) return <div className="sd-loading"><span className="spin" /> Loading payment…</div>;
   if (!r) return <><a className="sd-back" href="#/dashboard/payments"><Icon.back /> Payments</a><Empty title="Payment not found" text={`No payment ${short(id, 10)} in this merchant's records.`} /></>;
-  const steps: [string, number | string | undefined, ReactNode, boolean][] = [
+  const credit = r.method === "credit";
+  const steps: [string, number | string | undefined, ReactNode, boolean][] = credit ? [
+    ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
+    ["Paid from a Tsuke credit line, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
+  ] : [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
     ["Customer opened the link and bound the invoice", r.boundAt, "Private refund inbox and receipt commitment fixed in the invoice", !!r.invoice.receiptCommitment],
     ["Zero-knowledge proof verified, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} />{r.paymentGasUsed && <> · {Number(r.paymentGasUsed).toLocaleString()} gas paid by you</>}</> : null, settled(r)],
@@ -356,15 +418,15 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
           {r.quote && <p className="sd-quote-line">Priced at <b>{fiatStr(r.quote)}</b> · Chainlink rate locked at creation</p>}
         </div>
         <div className="sd-head-act">
-          {r.status === "paid" && <button className="sd-btn" disabled={!token} onClick={() => setRefunding(true)}><Icon.refund /> Refund</button>}
+          {r.status === "paid" && !credit && <button className="sd-btn" disabled={!token} onClick={() => setRefunding(true)}><Icon.refund /> Refund</button>}
           <Menu trigger={(o) => <button className="sd-btn" onClick={o} aria-label="More actions">⋯</button>} items={[["Copy payment ID", () => { navigator.clipboard?.writeText(r.invoice.invoiceId); toast("Payment ID copied"); }], ["Copy checkout link", () => { navigator.clipboard?.writeText(payLink(r.invoice.invoiceId)); toast("Checkout link copied"); }], ["Open hosted checkout", () => go(`#/pay/${r.invoice.invoiceId}`)]]} />
         </div>
       </div>
       <div className="sd-summary">
         <div><span>Last update</span><b>{dt(r.refundedAt ?? r.paidAt ?? r.boundAt ?? r.createdAt)}</b></div>
-        <div><span>Customer</span><b className="sd-private"><Icon.eyeOff />Private</b></div>
-        <div><span>Payment method</span><b className="sd-pm"><span className="sd-pm-ic"><Icon.shield /></span>Kohaku privacy pool</b></div>
-        <div><span>Network fee</span><b>{r.paymentGasUsed ? `${Number(r.paymentGasUsed).toLocaleString()} gas · paid by you` : "–"}</b></div>
+        <div><span>Customer</span><b><Who r={r} /></b></div>
+        <div><span>Payment method</span><b><PM r={r} /></b></div>
+        <div><span>Network fee</span><b>{r.paymentGasUsed ? `${Number(r.paymentGasUsed).toLocaleString()} gas · paid by ${credit ? "the customer" : "you"}` : "–"}</b></div>
       </div>
 
       <div className="sd-detail-grid">
@@ -394,6 +456,16 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
           </section>
           <section className="sd-panel">
             <h2>Payment method</h2>
+            {credit ? (
+              <dl className="sd-dl">
+                <dt>Type</dt><dd>Tsuke credit line</dd>
+                <dt>Line ID</dt><dd className="mono">{short(r.creditLineId, 8)} {r.creditLineId && <Copy text={r.creditLineId} />}</dd>
+                <dt>Collateral</dt><dd>Stock Tokens on Robinhood Chain</dd>
+                <dt>Bridged by</dt><dd>Chainlink CRE workflow</dd>
+                <dt>Your risk</dt><dd>None: paid in full upfront from the credit pool</dd>
+                <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
+              </dl>
+            ) : (
             <dl className="sd-dl">
               <dt>Type</dt><dd>Zero-knowledge withdrawal</dd>
               <dt>Pool</dt><dd className="mono">{short(cfg.deployment.pool, 6)}</dd>
@@ -401,6 +473,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
               <dt>Receipt commitment</dt><dd className="mono">{r.invoice.receiptCommitment ? short(r.invoice.receiptCommitment, 8) : "not bound"}</dd>
               <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
             </dl>
+            )}
           </section>
           {r.quote && (
             <section className="sd-panel">

@@ -11,6 +11,8 @@ export type InvoiceView = {
   description?: string; merchantName?: string | null;
   createdAt?: number | string; boundAt?: number | string; paidAt?: number | string; refundedAt?: number | string;
   paymentTx?: string; refundTx?: string; refundAmount?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string;
+  /** How the customer paid: the private pool, a Tsuke credit line (bridged from Robinhood by Chainlink CRE), or stocks. */
+  method?: "private" | "credit" | "stocks"; creditLineId?: `0x${string}`;
   [k: string]: unknown;
 };
 export type Webhook = { id: string; url: string; createdAt?: number | string; secret?: string };

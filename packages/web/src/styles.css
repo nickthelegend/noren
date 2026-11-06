@@ -789,3 +789,34 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-chart .now { fill: var(--sd-accent); stroke: #fff; stroke-width: 2; }
 .sd-bal-bar { display: flex; gap: 2px; }
 .sd-bal-bar i.b { background: #c4cad4; }
+
+/* ============================================================== dashboard: payment methods + Tsuke credit exposure */
+.sd-pm.credit .sd-pm-ic { background: #3b2410; color: #f6b27a; }
+.sd-pm.stocks .sd-pm-ic { background: #0f3324; color: #7fdcae; }
+.sd-linked { display: inline-flex; align-items: center; gap: 5px; color: var(--sd-text); font-weight: 500; }
+.sd-linked svg { width: 13px; height: 13px; color: var(--sd-muted); }
+.sd-methods { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 0; margin: 0 0 36px; border-top: 1px solid var(--sd-line); border-bottom: 1px solid var(--sd-line); }
+.sd-methods > div { padding: 18px 0 20px; min-width: 0; }
+.sd-methods > div + div { padding-left: 28px; border-left: 1px solid var(--sd-line); }
+.sd-methods > div:first-child { padding-right: 28px; }
+.sd-section-h.tight { margin: 0 0 12px; }
+.sd-section-h.tight h2 { font-size: 15px; }
+.sd-mix { display: flex; gap: 2px; height: 10px; border-radius: 99px; overflow: hidden; background: #eef0f3; }
+.sd-mix i { display: block; height: 100%; }
+.sd-mix i.private { background: #0b1022; } .sd-mix i.credit { background: #d9772f; } .sd-mix i.stocks { background: #1a7f52; }
+.sd-mix-l { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.sd-mix-l li { min-width: 0; }
+.sd-mix-l .sd-pm { font-size: 12.5px; color: var(--sd-muted); }
+.sd-mix-l b { display: block; margin-top: 6px; font: 500 18px var(--sans); letter-spacing: -.02em; color: var(--sd-ink); }
+.sd-mix-l b em { font-style: normal; font-size: 11px; color: var(--sd-faint); }
+.sd-mix-l small { display: block; font-size: 12px; color: var(--sd-faint); }
+.sd-exposure .sd-dl { font-size: 13px; }
+.sd-exposure .sd-dl dt, .sd-exposure .sd-dl dd { padding: 4px 0; }
+.sd-exposure p { margin: 10px 0 0; line-height: 1.5; }
+.sd-exposure code, .sd-methods code { font: 12px var(--mono); background: #f2f4f7; padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 1100px) {
+  .sd-methods { grid-template-columns: minmax(0, 1fr); }
+  .sd-methods > div:first-child { padding-right: 0; }
+  .sd-methods > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--sd-line); }
+}
+@media (max-width: 560px) { .sd-mix-l { grid-template-columns: minmax(0, 1fr); } .sd-exposure .sd-dl { grid-template-columns: minmax(0, 1fr) auto; } .sd-exposure .sd-dl dd { border-bottom: 0; justify-content: flex-end; } }

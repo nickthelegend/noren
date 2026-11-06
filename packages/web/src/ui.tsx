@@ -85,5 +85,8 @@ export const Icon = {
   receipt: () => <S><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z" /><path d="M9 8h6" /><path d="M9 12h6" /></S>,
   lock: () => <S><rect x="4.5" y="10.5" width="15" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" /></S>,
   menu: () => <S><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></S>,
+  layers: () => <S><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></S>,
+  chart: () => <S><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 14 4-4 3 3 5-6" /></S>,
+  gauge: () => <S><path d="M4.5 17a8.5 8.5 0 1 1 15 0" /><path d="m12 13 4-4" /></S>,
   clock: () => <S size={14}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></S>,
 };
