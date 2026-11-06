@@ -118,13 +118,31 @@ export function RaiseLimit({ w, u, nonce, onVerified }: { w: Wallet; u: Underwri
             <Task id="lock" open={open} setOpen={setOpen} mark="NVDA" done={r.secured > 0n}
               title="Lock collateral" sub={r.secured > 0n ? `Your deposits back ${usd(r.secured)} at ${ltv(r.ltvBps)} LTV` : `Deposit Stock Tokens or ETH in Earn: each $100 adds ${usd(lockAdd)} at your ${ltv(r.ltvBps)} LTV`}
               before={usd(r.total)} after={`${usd(r.total + lockAdd)}`} afterNote={`per $100 locked at ${ltv(r.ltvBps)}`} cta="Deposit">
-              <p className="nk-fine" style={{ margin: 0 }}>Collateral stays yours and earns in a 1inch Aqua maker vault; NorenBorrow lends against it at your tier's LTV, priced by Chainlink.</p>
+              <p className="nk-fine" style={{ margin: 0 }}>Limit = collateral value × your tier's LTV. Collateral stays yours and earns in a 1inch Aqua maker vault; NorenBorrow lends against it at your tier's LTV, priced by Chainlink.</p>
+              <LockCalc r={r} />
               <button type="button" className="nk-cta soft" onClick={() => { location.hash = "#/app/earn"; }}>Go to Earn</button>
             </Task>
           </ol>
         </>
       )}
     </section>
+  );
+}
+
+/** "Lock $X more": the new limit at today's LTV and at the top tier, from the contract's own tier table. */
+function LockCalc({ r }: { r: Rep }) {
+  const [add, setAdd] = useState(500);
+  const at = (bps: number) => (BigInt(add) * 1_000_000n * BigInt(bps)) / 10_000n;
+  const top = r.tiers[r.tiers.length - 1].ltvBps;
+  return (
+    <div className="nk-lockcalc" aria-label="Lock more collateral">
+      <div className="nk-band" role="group" aria-label="Collateral to add">{[100, 500, 1000, 5000].map((v) => <button key={v} type="button" aria-pressed={add === v} onClick={() => setAdd(v)}>+${v.toLocaleString("en-US")}</button>)}</div>
+      <dl className="nk-rows">
+        <dt>Limit now</dt><dd>{usd(r.total)}</dd>
+        <dt>Lock ${add.toLocaleString("en-US")} more at {ltv(r.ltvBps)}</dt><dd className="ok">{usd(r.total + at(r.ltvBps))}</dd>
+        {r.ltvBps < top && <><dt>Same, at the top tier ({ltv(top)})</dt><dd className="ok">{usd(r.caps[r.tiers.length - 1] + r.starter + at(top))}</dd></>}
+      </dl>
+    </div>
   );
 }
 
@@ -253,7 +271,7 @@ function ReclaimModal({ w, provider, onClose, onDone }: { w: Wallet; provider: P
     }, 3000);
     return () => { on = false; clearInterval(t); };
   }, [req, state]); // eslint-disable-line react-hooks/exhaustive-deps
-  const svg = useMemo(() => { if (!req) return ""; const q = qrcode(0, "M"); q.addData(req.requestUrl); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }, [req]);
+  const svg = useMemo(() => { if (!req) return ""; const q = qrcode(0, "L"); q.addData(req.requestUrl); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }, [req]);
   return (
     <motion.div className="nk-modal" role="dialog" aria-modal="true" aria-label={`Prove ${provider.name} with Reclaim`} onMouseDown={(e) => e.target === e.currentTarget && onClose()} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <motion.div className="nk-sheet nk-reclaim" {...pop}>
