@@ -86,7 +86,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
       <div className="nk-box">
         <span className="nk-l"><span>You can spend</span><span>{q ? `${q.termDays}-day line` : ""}</span></span>
         <div className="nk-row"><output className={q ? "" : "dim"}>{q ? usdc(q.limitUsdc6) : "0"}</output><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC", color: "#2775ca" }} />USDC</span></div>
-        <div className="nk-sub"><span>on Arc, after one Chainlink CRE run</span><span>{q?.needsAttestation ? `tier ${q.tier} attestation first` : ""}</span></div>
+        <div className="nk-sub"><span>on Arc, after one Chainlink CRE run</span><span>{q?.needsAttestation ? "estimate: the signed attestation sets the final terms" : ""}</span></div>
       </div>
       {qe ? <div className="nk-err">{qe}</div> : (
         <dl className="nk-rows">

@@ -93,7 +93,7 @@ export async function assertRobinhoodFork(rpcUrl: string) {
 }
 
 /** Gives `to` gas ETH, NVDA and USDG on the Robinhood fork by impersonating real mainnet holders. Returns the tx hashes. */
-export async function robinhoodFaucet(rpcUrl: string, to: Address, amounts = { nvda: '3', usdg: '120', eth: '1' }) {
+export async function robinhoodFaucet(rpcUrl: string, to: Address, amounts = { nvda: '6', usdg: '120', eth: '1' }) {
   await assertRobinhoodFork(rpcUrl);
   const client: any = createPublicClient({ transport: http(rpcUrl), cacheTime: 0 });
   await client.request({ method: 'anvil_setBalance', params: [to, toHex(parseUnits(amounts.eth, 18))] });

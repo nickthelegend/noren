@@ -101,6 +101,11 @@ export function creditActions(_cfg: Config, oc: Onchain) {
         const att = a.attestation;
         await send({ address: contract(), abi: creditAbi, functionName: "applyAttestation", args: [{ borrower: att.borrower as Address, tier: att.tier, limitUsdg: BigInt(att.limitUsdg), collateralRatioBps: att.collateralRatioBps, nonce: BigInt(att.nonce), expiry: BigInt(att.expiry) }, a.signature as Hex], chain });
       }
+      // The signed attestation, not the score, sets the terms (the 0G check or the reputation multiplier can change them),
+      // so price the line again from NorenCredit's on-chain terms before opening it.
+      const final = q.needsAttestation ? await this.quote(s, amount) : q;
+      if (final.limitUsdc6 !== q.limitUsdc6) say(`The signed terms lend ${final.ltvBps / 100}% of value: opening a ${(Number(final.limitUsdc6) / 1e6).toFixed(2)} USDC line.`);
+      q.limitUsdc6 = final.limitUsdc6;
       const raw = parseUnits(amount, 18);
       say(`Locking ${amount} ${s.sym} and opening the line on Robinhood…`);
       await send({ address: s.token, abi: erc20Abi, functionName: "approve", args: [contract(), raw], chain });
