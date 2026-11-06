@@ -16,6 +16,9 @@ local-fork:
       url: http://127.0.0.1:8811
     - chain-name: ethereum-testnet-sepolia-base-1
       url: http://127.0.0.1:8812
+    # Read-only: Chainlink EUR/USD for the USDC -> EURC route (cron price relay). Never written to.
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
 
 # Public testnets. Robinhood Testnet has no Chainlink stock feeds, so the Robinhood leg is fork-only.
 staging-settings:
@@ -26,3 +29,5 @@ staging-settings:
       url: https://rpc.testnet.chain.robinhood.com
     - chain-name: ethereum-testnet-sepolia-base-1
       url: https://sepolia.base.org
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com

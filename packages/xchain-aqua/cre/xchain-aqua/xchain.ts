@@ -23,6 +23,17 @@ export const messageEventAbi = parseAbi([
 ]);
 export const TOPIC_XCHAIN_MESSAGE = toEventSelector("XChainMessage(bytes32,uint64,address,bytes)");
 
+/** NorenArcActionRouter (packages/ccip) on Arc: AQUA_ORDER (kind 3) arrivals. */
+export const actionRouterAbi = parseAbi([
+  "event AquaOrderOpened(bytes32 indexed ref, address indexed beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bytes params)",
+  "function aquaOrders(bytes32 ref) view returns (address beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bool open, bytes params)",
+]);
+export const TOPIC_AQUA_ORDER_OPENED = toEventSelector("AquaOrderOpened(bytes32,address,address,uint256,bytes32,uint64,bytes)");
+export const relayedFeedAbi = parseAbi([
+  "function latestRound() view returns ((uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound))",
+  "function sourceFeed() view returns (address)",
+]);
+
 export const escrowAbi = parseAbi(["function orderStatus(bytes32 orderId) view returns (uint8)"]);
 export const settlerAbi = parseAbi(["function orderStatus(bytes32 orderId) view returns (uint8)"]);
 export const feedAbi = parseAbi([
@@ -34,7 +45,7 @@ export const ESCROW_STATUS = ["None", "Open", "Released", "Refundable", "Refunde
 /** NorenCrossChainSettler.Status */
 export const SETTLER_STATUS = ["None", "Filled", "Expired"] as const;
 
-export const KIND = { ORDER: 1, ORDER_DELIVERED: 2, FILLED: 3, EXPIRED: 4, PRICE: 5 } as const;
+export const KIND = { ORDER: 1, ORDER_DELIVERED: 2, FILLED: 3, EXPIRED: 4, PRICE: 5, ROUTER_ORDER: 6 } as const;
 
 const ORDER_TUPLE =
   "(uint64 srcChainId, address srcEscrow, uint64 dstChainId, address dstSettler, address taker, address tokenIn, uint256 amountIn, address tokenOut, uint256 minAmountOut, address recipient, address maker, bytes32 strategyHash, uint64 fillDeadline, uint64 refundAfter, uint256 nonce)";
@@ -42,6 +53,8 @@ const PRICE_TUPLE =
   "(uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound, uint8 decimals, uint256 uiMultiplier, address sourceFeed)";
 export const ORDER_PAYLOAD = parseAbiParameters(`uint8 kind, ${ORDER_TUPLE} order, ${PRICE_TUPLE} price`);
 export const ORDER_ONLY = parseAbiParameters(ORDER_TUPLE);
+export const PRICE_PAYLOAD = parseAbiParameters(`uint8 kind, address relayedFeed, ${PRICE_TUPLE} price`);
+export const ROUTER_ORDER_PAYLOAD = parseAbiParameters("uint8 kind, address actionRouter, bytes32 ref");
 export const SETTLEMENT_PAYLOAD = parseAbiParameters(
   "uint8 kind, bytes32 orderId, uint64 dstChainId, address dstSettler, address maker, address payout, uint256 amountIn, uint256 amountOut",
 );
@@ -60,7 +73,12 @@ export type ChainConfig = {
   /** NorenCrossChainSettler on this chain (Arc, the hub), or zero. */
   settler: Address;
   gasLimit: string;
+  /** Arc only: the Noren Arc action router whose AQUA_ORDERs the settler fills (optional). */
+  actionRouter?: Address;
 };
+
+/** A Chainlink feed on a CRE-readable chain, relayed on a schedule to a NorenRelayedFeed on Arc. */
+export type PriceRelay = { name: string; chainSelectorName: string; feed: Address; relayedFeed: Address };
 
 export type XChainConfig = {
   /** Trigger index i watches chains[i]: its escrow and settler XChainMessage events. */
@@ -68,6 +86,9 @@ export type XChainConfig = {
   /** Skip orders whose Chainlink round is older than this (the SwapVM instruction checks again on-chain). */
   maxPriceAgeSec: number;
   confidence: "SAFE" | "LATEST" | "FINALIZED";
+  /** Cron-relayed prices (the last trigger index), e.g. EUR/USD from Ethereum Sepolia for the USDC -> EURC route. */
+  prices?: PriceRelay[];
+  schedule?: string;
 };
 
 export function validateConfig(config: XChainConfig): void {
@@ -87,6 +108,10 @@ export function validateConfig(config: XChainConfig): void {
     if (!/^[0-9]+$/.test(c.gasLimit)) throw new Error(`config.chains[${c.name}].gasLimit must be a decimal string`);
   }
   if (!config.chains.some((c) => c.settler !== zeroAddress)) throw new Error("Setup required: no chain has a settler");
+  for (const p of config.prices ?? []) {
+    if (!isAddress(p.feed) || !isAddress(p.relayedFeed) || p.relayedFeed === zeroAddress) throw new Error(`config.prices[${p.name}] needs feed and relayedFeed`);
+  }
+  if ((config.prices ?? []).length > 0 && !config.schedule) throw new Error("config.schedule is required with config.prices");
   if (!Number.isInteger(config.maxPriceAgeSec) || config.maxPriceAgeSec <= 0) throw new Error("config.maxPriceAgeSec must be a positive integer");
   if (!["SAFE", "LATEST", "FINALIZED"].includes(config.confidence)) throw new Error("config.confidence must be SAFE, LATEST or FINALIZED");
 }
@@ -242,4 +267,42 @@ export function decideSettlement(source: ChainConfig, target: ChainConfig, msg: 
   if (escrowStatus !== 1) return { write: false, reason: `order ${s.orderId} is ${ESCROW_STATUS[escrowStatus] ?? escrowStatus} in the ${target.name} escrow, not Open` };
   const what = s.kind === KIND.FILLED ? `FILLED: release ${s.amountIn} to maker payout ${s.payout} (taker got ${s.amountOut})` : "EXPIRED: unlock the taker's refund";
   return { write: true, delivery: { target, receiver: target.escrow, report: msg.payload, summary: `${what} for order ${s.orderId} on ${target.name}` } };
+}
+
+// ---------------------------------------------------------------- Arc action router orders and relayed prices
+
+export function decodeRouterOrderLog(log: RawLog) {
+  if (log.topics[0]?.toLowerCase() !== TOPIC_AQUA_ORDER_OPENED) throw new Error("not an AquaOrderOpened log");
+  const ev = decodeEventLog({ abi: actionRouterAbi, data: log.data, topics: log.topics as [Hex, ...Hex[]] });
+  return { router: getAddress(log.address), ...ev.args };
+}
+
+/** An AQUA_ORDER the Arc action router holds: ask the settler (its aquaOperator) to fill it. */
+export function decideRouterOrder(arc: ChainConfig, router: Address, ref: Hex, open: boolean, summary: string): Decision {
+  if (!arc.actionRouter || !sameAddress(router, arc.actionRouter)) throw new Error(`AquaOrderOpened from ${router}, not the configured action router`);
+  if (!open) return { write: false, reason: `router order ${ref} is no longer open (filled or cancelled)` };
+  return {
+    write: true,
+    delivery: { target: arc, receiver: arc.settler, report: encodeAbiParameters(ROUTER_ORDER_PAYLOAD, [KIND.ROUTER_ORDER, router, ref]), summary },
+  };
+}
+
+export type Round = { roundId: bigint; answer: bigint; startedAt: bigint; updatedAt: bigint; answeredInRound: bigint };
+
+/** Relay a source round to the Arc NorenRelayedFeed if it is newer (the feed ignores older rounds anyway). */
+export function decidePrice(arc: ChainConfig, relay: PriceRelay, source: Round, decimals: number, relayed: Round, relayedSource: Address, nowSeconds: bigint, maxAge: number): Decision {
+  if (!sameAddress(relayedSource, relay.feed)) throw new Error(`relayed feed ${relay.relayedFeed} mirrors ${relayedSource}, not ${relay.feed}`);
+  if (source.answer <= 0n || source.updatedAt === 0n || source.answeredInRound < source.roundId) throw new Error(`${relay.name}: invalid Chainlink round ${source.roundId}`);
+  if (source.roundId <= relayed.roundId) return { write: false, reason: `${relay.name}: round ${source.roundId} already relayed` };
+  if (nowSeconds - source.updatedAt > BigInt(maxAge)) return { write: false, reason: `${relay.name}: round ${source.roundId} is ${nowSeconds - source.updatedAt}s old, not relaying a stale price` };
+  const price = { ...source, decimals, uiMultiplier: 10n ** 18n, sourceFeed: relay.feed };
+  return {
+    write: true,
+    delivery: {
+      target: arc,
+      receiver: arc.settler,
+      report: encodeAbiParameters(PRICE_PAYLOAD, [KIND.PRICE, relay.relayedFeed, price]),
+      summary: `PRICE ${relay.name}: round ${source.roundId} answer ${source.answer} updatedAt ${source.updatedAt} -> ${relay.relayedFeed}`,
+    },
+  };
 }

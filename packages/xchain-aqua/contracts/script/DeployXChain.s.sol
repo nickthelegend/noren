@@ -61,7 +61,7 @@ contract DeploySource is XChainDeployer {
 /// @notice The maker's own transactions on Arc: approve Aqua once, ship the canonical NorenOraclePeg
 /// order for each route, register it with the settler. One USDC wallet backs every strategy.
 /// env: XCHAIN_SETTLER, XCHAIN_ROUTES (bytes32[]), XCHAIN_IN_TOKENS (address[]), XCHAIN_ALLOC (uint256),
-///      XCHAIN_BID_BPS, XCHAIN_PAYOUT, XCHAIN_OUT
+///      XCHAIN_BID_BPS, XCHAIN_PAYOUT, XCHAIN_OUT; optional XCHAIN_OUT_TOKEN (default Arc USDC), XCHAIN_ASK_BPS
 contract MakerShip is XChainDeployer {
   function run() external {
     NorenCrossChainSettler s = NorenCrossChainSettler(vm.envAddress('XCHAIN_SETTLER'));
@@ -70,23 +70,24 @@ contract MakerShip is XChainDeployer {
     uint256 alloc = vm.envUint('XCHAIN_ALLOC');
     NorenCrossChainSettler.PegTerms memory t = NorenCrossChainSettler.PegTerms({
       bidSpreadBps: uint16(vm.envUint('XCHAIN_BID_BPS')),
-      askSpreadBps: 0,
+      askSpreadBps: uint16(vm.envOr('XCHAIN_ASK_BPS', uint256(0))),
       closedExtraBps: 300,
       minPriceUsd8: 0,
       maxPriceUsd8: 0,
       salt: 1
     });
     address payout = vm.envAddress('XCHAIN_PAYOUT');
+    address outToken = vm.envOr('XCHAIN_OUT_TOKEN', XC.ARC_USDC);
     vm.startBroadcast();
     (, address maker,) = vm.readCallers();
-    IERC20(XC.ARC_USDC).approve(XC.AQUA, type(uint256).max);
+    IERC20(outToken).approve(XC.AQUA, type(uint256).max);
     string memory k = 'maker';
     string memory out;
     for (uint256 i; i < routes.length; i++) {
       (ISwapVMRouter.Order memory o, bytes32 h) = s.buildOrder(maker, routes[i], t);
       address[] memory tokens = new address[](2);
       tokens[0] = inTokens[i];
-      tokens[1] = XC.ARC_USDC;
+      tokens[1] = outToken;
       uint256[] memory amounts = new uint256[](2);
       amounts[1] = alloc;
       require(IAquaShip(XC.AQUA).ship(address(s.router()), abi.encode(o), tokens, amounts) == h, 'strategy hash');

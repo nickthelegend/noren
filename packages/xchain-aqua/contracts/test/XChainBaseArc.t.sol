@@ -81,7 +81,7 @@ contract XChainBaseArcTest is XChainForkBase {
 
 /// @notice USDC that arrived on Arc through the Arc action router (CCTP V2 hook or CCIP, action kind
 /// 3 = AQUA_ORDER) buys EURC from the same maker at the Chainlink EUR/USD peg. The EUR/USD round is
-/// read from Arc mainnet (read-only) and relayed by a PRICE report.
+/// read from Ethereum Sepolia (read-only) and relayed by a PRICE report.
 contract XChainDeliveredTest is XChainForkBase {
   using Math for uint256;
 
@@ -89,12 +89,12 @@ contract XChainDeliveredTest is XChainForkBase {
   PriceRound internal eur;
 
   function setUp() public {
-    vm.createSelectFork(vm.envOr('ARC_MAINNET_RPC', string('https://arc-rpc.publicnode.com')));
-    assertEq(block.chainid, XC.ARC_MAINNET);
-    (eur.roundId, eur.answer, eur.startedAt, eur.updatedAt, eur.answeredInRound) = IAggregatorV3(XC.ARC_MAINNET_EUR_USD).latestRoundData();
-    eur.decimals = IAggregatorV3(XC.ARC_MAINNET_EUR_USD).decimals();
+    vm.createSelectFork(vm.envOr('SEPOLIA_RPC', string('https://ethereum-sepolia-rpc.publicnode.com')));
+    assertEq(block.chainid, XC.SEPOLIA);
+    (eur.roundId, eur.answer, eur.startedAt, eur.updatedAt, eur.answeredInRound) = IAggregatorV3(XC.SEPOLIA_EUR_USD).latestRoundData();
+    eur.decimals = IAggregatorV3(XC.SEPOLIA_EUR_USD).decimals();
     eur.uiMultiplier = 1e18;
-    eur.sourceFeed = XC.ARC_MAINNET_EUR_USD;
+    eur.sourceFeed = XC.SEPOLIA_EUR_USD;
     uint256 mainnetNow = block.timestamp;
 
     _setUpArc();
@@ -203,11 +203,11 @@ contract XChainActionRouterTest is XChainForkBase {
   PriceRound internal eur;
 
   function setUp() public {
-    vm.createSelectFork(vm.envOr('ARC_MAINNET_RPC', string('https://arc-rpc.publicnode.com')));
-    (eur.roundId, eur.answer, eur.startedAt, eur.updatedAt, eur.answeredInRound) = IAggregatorV3(XC.ARC_MAINNET_EUR_USD).latestRoundData();
+    vm.createSelectFork(vm.envOr('SEPOLIA_RPC', string('https://ethereum-sepolia-rpc.publicnode.com')));
+    (eur.roundId, eur.answer, eur.startedAt, eur.updatedAt, eur.answeredInRound) = IAggregatorV3(XC.SEPOLIA_EUR_USD).latestRoundData();
     eur.decimals = 8;
     eur.uiMultiplier = 1e18;
-    eur.sourceFeed = XC.ARC_MAINNET_EUR_USD;
+    eur.sourceFeed = XC.SEPOLIA_EUR_USD;
     uint256 mainnetNow = block.timestamp;
     _setUpArc();
     if (block.timestamp < mainnetNow) vm.warp(mainnetNow);

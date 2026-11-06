@@ -8,7 +8,7 @@ library XC {
   uint64 internal constant ROBINHOOD = 4663; // Robinhood Chain mainnet (local fork)
   uint64 internal constant ARC = 5042002; // Arc Testnet (local fork)
   uint64 internal constant BASE_SEPOLIA = 84532; // Base Sepolia (local fork)
-  uint64 internal constant ARC_MAINNET = 5042; // read-only source of the EUR/USD round
+  uint64 internal constant SEPOLIA = 11155111; // Ethereum Sepolia: source of the EUR/USD round (read-only)
 
   // ---------------------------------------------------------------- 1inch (official, Arc mainnet + Robinhood)
   address internal constant AQUA = 0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a;
@@ -38,8 +38,8 @@ library XC {
   // ---------------------------------------------------------------- Arc
   address internal constant ARC_USDC = 0x3600000000000000000000000000000000000000;
   address internal constant ARC_EURC = 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a;
-  /// @dev Chainlink EUR/USD on Arc mainnet (read-only source; no feeds on Arc Testnet).
-  address internal constant ARC_MAINNET_EUR_USD = 0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D;
+  /// @dev Chainlink EUR/USD on Ethereum Sepolia (no feeds on Arc Testnet; CRE reads Sepolia natively).
+  address internal constant SEPOLIA_EUR_USD = 0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910;
   /// @dev CRE simulation MockKeystoneForwarder on Arc Testnet (real contract on the forked chain).
   address internal constant ARC_FORWARDER = 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1;
 }

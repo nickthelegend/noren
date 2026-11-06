@@ -10646,6 +10646,45 @@ var KeyType;
   KeyType2[KeyType2["UNSPECIFIED"] = 0] = "UNSPECIFIED";
   KeyType2[KeyType2["ECDSA_EVM"] = 1] = "ECDSA_EVM";
 })(KeyType || (KeyType = {}));
+var file_capabilities_scheduler_cron_v1_trigger = /* @__PURE__ */ fileDesc("CixjYXBhYmlsaXRpZXMvc2NoZWR1bGVyL2Nyb24vdjEvdHJpZ2dlci5wcm90bxIeY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxIhoKBkNvbmZpZxIQCghzY2hlZHVsZRgBIAEoCSJHCgdQYXlsb2FkEjwKGHNjaGVkdWxlZF9leGVjdXRpb25fdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiNQoNTGVnYWN5UGF5bG9hZBIgChhzY2hlZHVsZWRfZXhlY3V0aW9uX3RpbWUYASABKAk6AhgBMvUBCgRDcm9uElwKB1RyaWdnZXISJi5jYXBhYmlsaXRpZXMuc2NoZWR1bGVyLmNyb24udjEuQ29uZmlnGicuY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxLlBheWxvYWQwARJzCg1MZWdhY3lUcmlnZ2VyEiYuY2FwYWJpbGl0aWVzLnNjaGVkdWxlci5jcm9uLnYxLkNvbmZpZxotLmNhcGFiaWxpdGllcy5zY2hlZHVsZXIuY3Jvbi52MS5MZWdhY3lQYXlsb2FkIgmIAgGKtRgCCAEwARoagrUYFggBEhJjcm9uLXRyaWdnZXJAMS4wLjBCzQEKImNvbS5jYXBhYmlsaXRpZXMuc2NoZWR1bGVyLmNyb24udjFCDFRyaWdnZXJQcm90b1ABogIDQ1NDqgIeQ2FwYWJpbGl0aWVzLlNjaGVkdWxlci5Dcm9uLlYxygIeQ2FwYWJpbGl0aWVzXFNjaGVkdWxlclxDcm9uXFYx4gIqQ2FwYWJpbGl0aWVzXFNjaGVkdWxlclxDcm9uXFYxXEdQQk1ldGFkYXRh6gIhQ2FwYWJpbGl0aWVzOjpTY2hlZHVsZXI6OkNyb246OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_tools_generator_v1alpha_cre_metadata]);
+var ConfigSchema2 = /* @__PURE__ */ messageDesc(file_capabilities_scheduler_cron_v1_trigger, 0);
+var PayloadSchema2 = /* @__PURE__ */ messageDesc(file_capabilities_scheduler_cron_v1_trigger, 1);
+
+class CronCapability {
+  static CAPABILITY_ID = "cron-trigger@1.0.0";
+  static CAPABILITY_NAME = "cron-trigger";
+  static CAPABILITY_VERSION = "1.0.0";
+  trigger(config) {
+    const capabilityId = CronCapability.CAPABILITY_ID;
+    return new CronTrigger(config, capabilityId, "Trigger");
+  }
+}
+
+class CronTrigger {
+  _capabilityId;
+  _method;
+  config;
+  constructor(config, _capabilityId, _method) {
+    this._capabilityId = _capabilityId;
+    this._method = _method;
+    this.config = config.$typeName ? config : fromJson(ConfigSchema2, config);
+  }
+  capabilityId() {
+    return this._capabilityId;
+  }
+  method() {
+    return this._method;
+  }
+  outputSchema() {
+    return PayloadSchema2;
+  }
+  configAsAny() {
+    return anyPack(ConfigSchema2, this.config);
+  }
+  adapt(rawOutput) {
+    return rawOutput;
+  }
+}
 var lookup = [];
 var revLookup = [];
 var code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -22676,6 +22715,15 @@ var messageEventAbi = parseAbi([
   "event XChainMessage(bytes32 indexed orderId, uint64 indexed toChainId, address indexed to, bytes payload)"
 ]);
 var TOPIC_XCHAIN_MESSAGE = toEventSelector("XChainMessage(bytes32,uint64,address,bytes)");
+var actionRouterAbi = parseAbi([
+  "event AquaOrderOpened(bytes32 indexed ref, address indexed beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bytes params)",
+  "function aquaOrders(bytes32 ref) view returns (address beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bool open, bytes params)"
+]);
+var TOPIC_AQUA_ORDER_OPENED = toEventSelector("AquaOrderOpened(bytes32,address,address,uint256,bytes32,uint64,bytes)");
+var relayedFeedAbi = parseAbi([
+  "function latestRound() view returns ((uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound))",
+  "function sourceFeed() view returns (address)"
+]);
 var escrowAbi = parseAbi(["function orderStatus(bytes32 orderId) view returns (uint8)"]);
 var settlerAbi = parseAbi(["function orderStatus(bytes32 orderId) view returns (uint8)"]);
 var feedAbi = parseAbi([
@@ -22683,11 +22731,13 @@ var feedAbi = parseAbi([
 ]);
 var ESCROW_STATUS = ["None", "Open", "Released", "Refundable", "Refunded"];
 var SETTLER_STATUS = ["None", "Filled", "Expired"];
-var KIND = { ORDER: 1, ORDER_DELIVERED: 2, FILLED: 3, EXPIRED: 4, PRICE: 5 };
+var KIND = { ORDER: 1, ORDER_DELIVERED: 2, FILLED: 3, EXPIRED: 4, PRICE: 5, ROUTER_ORDER: 6 };
 var ORDER_TUPLE = "(uint64 srcChainId, address srcEscrow, uint64 dstChainId, address dstSettler, address taker, address tokenIn, uint256 amountIn, address tokenOut, uint256 minAmountOut, address recipient, address maker, bytes32 strategyHash, uint64 fillDeadline, uint64 refundAfter, uint256 nonce)";
 var PRICE_TUPLE = "(uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound, uint8 decimals, uint256 uiMultiplier, address sourceFeed)";
 var ORDER_PAYLOAD = parseAbiParameters(`uint8 kind, ${ORDER_TUPLE} order, ${PRICE_TUPLE} price`);
 var ORDER_ONLY = parseAbiParameters(ORDER_TUPLE);
+var PRICE_PAYLOAD = parseAbiParameters(`uint8 kind, address relayedFeed, ${PRICE_TUPLE} price`);
+var ROUTER_ORDER_PAYLOAD = parseAbiParameters("uint8 kind, address actionRouter, bytes32 ref");
 var SETTLEMENT_PAYLOAD = parseAbiParameters("uint8 kind, bytes32 orderId, uint64 dstChainId, address dstSettler, address maker, address payout, uint256 amountIn, uint256 amountOut");
 function validateConfig(config) {
   if (!Array.isArray(config.chains) || config.chains.length === 0)
@@ -22713,6 +22763,12 @@ function validateConfig(config) {
   }
   if (!config.chains.some((c) => c.settler !== zeroAddress))
     throw new Error("Setup required: no chain has a settler");
+  for (const p of config.prices ?? []) {
+    if (!isAddress(p.feed) || !isAddress(p.relayedFeed) || p.relayedFeed === zeroAddress)
+      throw new Error(`config.prices[${p.name}] needs feed and relayedFeed`);
+  }
+  if ((config.prices ?? []).length > 0 && !config.schedule)
+    throw new Error("config.schedule is required with config.prices");
   if (!Number.isInteger(config.maxPriceAgeSec) || config.maxPriceAgeSec <= 0)
     throw new Error("config.maxPriceAgeSec must be a positive integer");
   if (!["SAFE", "LATEST", "FINALIZED"].includes(config.confidence))
@@ -22812,6 +22868,43 @@ function decideSettlement(source, target, msg, escrowStatus) {
   const what = s.kind === KIND.FILLED ? `FILLED: release ${s.amountIn} to maker payout ${s.payout} (taker got ${s.amountOut})` : "EXPIRED: unlock the taker's refund";
   return { write: true, delivery: { target, receiver: target.escrow, report: msg.payload, summary: `${what} for order ${s.orderId} on ${target.name}` } };
 }
+function decodeRouterOrderLog(log) {
+  if (log.topics[0]?.toLowerCase() !== TOPIC_AQUA_ORDER_OPENED)
+    throw new Error("not an AquaOrderOpened log");
+  const ev = decodeEventLog({ abi: actionRouterAbi, data: log.data, topics: log.topics });
+  return { router: getAddress(log.address), ...ev.args };
+}
+function decideRouterOrder(arc, router, ref, open, summary) {
+  if (!arc.actionRouter || !sameAddress(router, arc.actionRouter))
+    throw new Error(`AquaOrderOpened from ${router}, not the configured action router`);
+  if (!open)
+    return { write: false, reason: `router order ${ref} is no longer open (filled or cancelled)` };
+  return {
+    write: true,
+    delivery: { target: arc, receiver: arc.settler, report: encodeAbiParameters(ROUTER_ORDER_PAYLOAD, [KIND.ROUTER_ORDER, router, ref]), summary }
+  };
+}
+function decidePrice(arc, relay, source, decimals, relayed, relayedSource, nowSeconds, maxAge) {
+  if (!sameAddress(relayedSource, relay.feed))
+    throw new Error(`relayed feed ${relay.relayedFeed} mirrors ${relayedSource}, not ${relay.feed}`);
+  if (source.answer <= 0n || source.updatedAt === 0n || source.answeredInRound < source.roundId)
+    throw new Error(`${relay.name}: invalid Chainlink round ${source.roundId}`);
+  if (source.roundId <= relayed.roundId)
+    return { write: false, reason: `${relay.name}: round ${source.roundId} already relayed` };
+  if (nowSeconds - source.updatedAt > BigInt(maxAge))
+    return { write: false, reason: `${relay.name}: round ${source.roundId} is ${nowSeconds - source.updatedAt}s old, not relaying a stale price` };
+  const price = { ...source, decimals, uiMultiplier: 10n ** 18n, sourceFeed: relay.feed };
+  return {
+    write: true,
+    delivery: {
+      target: arc,
+      receiver: arc.settler,
+      report: encodeAbiParameters(PRICE_PAYLOAD, [KIND.PRICE, relay.relayedFeed, price]),
+      summary: `PRICE ${relay.name}: round ${source.roundId} answer ${source.answer} updatedAt ${source.updatedAt} -> ${relay.relayedFeed}`
+    }
+  };
+}
+var decimalsAbi = parseAbi(["function decimals() view returns (uint8)"]);
 var evmFor = (c) => {
   const network300 = getNetwork({ chainFamily: "evm", chainSelectorName: c.chainSelectorName, isTestnet: true });
   if (!network300)
@@ -22855,6 +22948,8 @@ var deliver = (runtime2, decision) => {
 var onMessage = (source) => (runtime2, log) => {
   const config = runtime2.config;
   validateConfig(config);
+  if (bytesToHex3(log.topics[0]).toLowerCase() === TOPIC_AQUA_ORDER_OPENED)
+    return onRouterOrder(runtime2, source, log);
   const msg = decodeMessageLog({ address: bytesToHex3(log.address), topics: log.topics.map((t) => bytesToHex3(t)), data: bytesToHex3(log.data) });
   const block = log.blockNumber ? protoBigIntToBigint(log.blockNumber) : null;
   runtime2.log(`XChainMessage on ${source.name} (tx ${bytesToHex3(log.txHash)} log ${log.index}${block ? ` block ${block}` : ""}): order ${msg.orderId} kind ${payloadKind(msg.payload)} to ${msg.to} on chain ${msg.toChainId}`);
@@ -22881,13 +22976,47 @@ var onMessage = (source) => (runtime2, log) => {
   }
   throw new Error(`unexpected payload kind ${kind}`);
 };
+var onRouterOrder = (runtime2, arc, log) => {
+  const ev = decodeRouterOrderLog({ address: bytesToHex3(log.address), topics: log.topics.map((t) => bytesToHex3(t)), data: bytesToHex3(log.data) });
+  runtime2.log(`AquaOrderOpened on ${arc.name} (tx ${bytesToHex3(log.txHash)} log ${log.index}): ref ${ev.ref} beneficiary ${ev.beneficiary} ${ev.amount} of ${ev.token} from source ${ev.source}`);
+  const data = read2(runtime2, evmFor(arc), ev.router, encodeFunctionData({ abi: actionRouterAbi, functionName: "aquaOrders", args: [ev.ref] }), LATEST_BLOCK_NUMBER);
+  const o2 = decodeFunctionResult({ abi: actionRouterAbi, functionName: "aquaOrders", data });
+  return deliver(runtime2, decideRouterOrder(arc, ev.router, ev.ref, o2[5], `ROUTER_ORDER ${ev.ref}: fill ${ev.amount} of ${ev.token} for ${ev.beneficiary} through the maker's strategy`));
+};
+var onPriceCron = (runtime2) => {
+  const config = runtime2.config;
+  validateConfig(config);
+  const arc = config.chains.find((c) => c.settler !== zeroAddress);
+  if (!arc)
+    throw new Error("Setup required: no settler chain");
+  const now = BigInt(Math.floor(runtime2.now().getTime() / 1000));
+  const results = [];
+  for (const relay of config.prices ?? []) {
+    const src = evmFor({ name: relay.name, chainSelectorName: relay.chainSelectorName, chainId: 1, escrow: zeroAddress, settler: zeroAddress, gasLimit: "0" });
+    const rd = read2(runtime2, src, relay.feed, encodeFunctionData({ abi: feedAbi, functionName: "latestRoundData" }), LAST_FINALIZED_BLOCK_NUMBER);
+    const r = decodeFunctionResult({ abi: feedAbi, functionName: "latestRoundData", data: rd });
+    const dd = read2(runtime2, src, relay.feed, encodeFunctionData({ abi: decimalsAbi, functionName: "decimals" }), LAST_FINALIZED_BLOCK_NUMBER);
+    const decimals = Number(decodeFunctionResult({ abi: decimalsAbi, functionName: "decimals", data: dd }));
+    const arcEvm = evmFor(arc);
+    const lr = read2(runtime2, arcEvm, relay.relayedFeed, encodeFunctionData({ abi: relayedFeedAbi, functionName: "latestRound" }), LATEST_BLOCK_NUMBER);
+    const relayed = decodeFunctionResult({ abi: relayedFeedAbi, functionName: "latestRound", data: lr });
+    const sf = read2(runtime2, arcEvm, relay.relayedFeed, encodeFunctionData({ abi: relayedFeedAbi, functionName: "sourceFeed" }), LATEST_BLOCK_NUMBER);
+    const relayedSource = decodeFunctionResult({ abi: relayedFeedAbi, functionName: "sourceFeed", data: sf });
+    runtime2.log(`Chainlink ${relay.name} ${relay.feed} on ${relay.chainSelectorName} (finalized): round ${r[0]} answer ${r[1]} updatedAt ${r[3]}; relayed round ${relayed.roundId}`);
+    const source = { roundId: r[0], answer: r[1], startedAt: r[2], updatedAt: r[3], answeredInRound: r[4] };
+    results.push(deliver(runtime2, decidePrice(arc, relay, source, decimals, relayed, relayedSource, now, config.maxPriceAgeSec)));
+  }
+  return `[${results.join(",")}]`;
+};
 var initWorkflow = (config) => {
   validateConfig(config);
-  return config.chains.map((c) => handler(evmFor(c).logTrigger(logTriggerConfig({
-    addresses: [c.escrow, c.settler].filter((a) => a !== zeroAddress),
-    topics: [[TOPIC_XCHAIN_MESSAGE]],
+  const logHandlers = config.chains.map((c) => handler(evmFor(c).logTrigger(logTriggerConfig({
+    addresses: [c.escrow, c.settler, c.actionRouter ?? zeroAddress].filter((a) => a !== zeroAddress),
+    topics: [c.actionRouter ? [TOPIC_XCHAIN_MESSAGE, TOPIC_AQUA_ORDER_OPENED] : [TOPIC_XCHAIN_MESSAGE]],
     confidence: config.confidence
   })), onMessage(c)));
+  const cron = (config.prices ?? []).length > 0 ? [handler(new CronCapability().trigger({ schedule: config.schedule }), onPriceCron)] : [];
+  return [...logHandlers, ...cron];
 };
 async function main() {
   const runner = await Runner.newRunner();
@@ -22895,6 +23024,7 @@ async function main() {
 }
 main().catch(sendErrorResponse);
 export {
+  onPriceCron,
   onMessage,
   main,
   initWorkflow

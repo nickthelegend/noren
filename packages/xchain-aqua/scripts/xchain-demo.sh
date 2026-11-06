@@ -22,7 +22,7 @@ WF="$CRE_DIR/xchain-aqua"
 [ -s "$XC_ROOT/../aqua/swapvm-ext/out/NorenAquaSwapVMRouter.sol/NorenAquaSwapVMRouter.json" ] || {
   echo "Setup required: (cd packages/aqua/swapvm-ext && forge build)" >&2; exit 1; }
 WORK="$XC_ROOT/.fork/demo"
-rm -rf "$WORK"; mkdir -p "$WORK"
+mkdir -p "$WORK"   # files in it are overwritten on every run
 
 NVDA=0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC
 NVDA_FEED=0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15
@@ -30,6 +30,10 @@ WETH=0x4200000000000000000000000000000000000006
 ETH_FEED=0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1
 BASE_FORWARDER=0x82300bd7c3958625581cc2F77bC6464dcEcDF3e5
 ARC_FORWARDER=0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1
+ARC_EURC=0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a
+SEPOLIA_EUR_USD=0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910
+ACTION_ROUTER=0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4   # NorenArcActionRouter, live on Arc Testnet (packages/ccip)
+CCIP_GATEWAY=0x55005e60b4d4Bed4156BC635B1342bC55d9B6247    # NorenCcipGateway, its registered CCIP rail
 MN="test test test test test test test test test test test junk"
 key() { cast wallet private-key --mnemonic "$MN" --mnemonic-index "$1"; }
 DEPLOYER_KEY=$(key 0); TAKER_KEY=$(key 1); MAKER_KEY=$(key 3)
@@ -44,15 +48,20 @@ send() { rpc=$1; shift; cast send --rpc-url "$rpc" --json "$@" | jq -r .transact
 bal() { cast call "$1" 'balanceOf(address)(uint256)' "$2" --rpc-url "$3" | first; }
 fmt() { python3 -c "import sys; print(f'{int(sys.argv[1])/10**int(sys.argv[2]):,.6f}'.rstrip('0').rstrip('.'))" "$1" "$2"; }
 step() { echo; echo "== $*"; }
-msg_index() { # position of the XChainMessage log inside the tx (CRE --evm-event-index)
-  cast receipt "$2" --json --rpc-url "$1" | jq --arg t "$(cast keccak 'XChainMessage(bytes32,uint64,address,bytes)')" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key'
+msg_index() { # position of the XChainMessage (or $3) log inside the tx (CRE --evm-event-index)
+  cast receipt "$2" --json --rpc-url "$1" | jq --arg t "$(cast keccak "${3:-XChainMessage(bytes32,uint64,address,bytes)}")" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key'
 }
 align_clock() { now=$(date +%s); ts=$(cast block latest --field timestamp --rpc-url "$1"); if [ "$ts" -lt "$now" ]; then cast rpc evm_setNextBlockTimestamp "$now" --rpc-url "$1" >/dev/null; cast rpc evm_mine --rpc-url "$1" >/dev/null; fi; }
-write_config() { # write_config <json array of chains>
-  jq -n --argjson chains "$1" '{chains: $chains, maxPriceAgeSec: 259200, confidence: "SAFE"}' >"$WF/config.local-fork.json"
+write_config() { # write_config <json array of chains> [json array of price relays]
+  jq -n --argjson chains "$1" --argjson prices "${2:-[]}" '{chains: $chains, maxPriceAgeSec: 259200, confidence: "SAFE", prices: $prices, schedule: "0 */10 * * * *"}' >"$WF/config.local-fork.json"
 }
-simulate() { # simulate <trigger> <tx> <rpc>
-  idx=$(msg_index "$3" "$2")
+simulate_cron() { # simulate_cron <trigger>
+  (cd "$CRE_DIR" && cre workflow simulate xchain-aqua --target local-fork --non-interactive --trigger-index "$1" -e "$WORK/fork.env" --broadcast) >"$WORK/sim.log" 2>&1 || {
+    cat "$WORK/sim.log" >&2; echo "cre workflow simulate (cron) failed" >&2; exit 1; }
+  grep -E '\[USER LOG\]' "$WORK/sim.log" | sed -E 's/.*\[USER LOG\] ?/   | /' || true
+}
+simulate() { # simulate <trigger> <tx> <rpc> [event signature]
+  idx=$(msg_index "$3" "$2" "${4:-}")
   (cd "$CRE_DIR" && cre workflow simulate xchain-aqua --target local-fork --non-interactive --trigger-index "$1" \
     --evm-tx-hash "$2" --evm-event-index "$idx" -e "$WORK/fork.env" --broadcast) >"$WORK/sim.log" 2>&1 || {
     cat "$WORK/sim.log" >&2; echo "cre workflow simulate failed" >&2; exit 1; }
@@ -87,7 +96,7 @@ step "Deploy on Arc: Noren SwapVM router (modified SwapVM: + NorenOraclePeg), se
 (cd "$XC_ROOT/contracts" && forge script script/DeployXChain.s.sol:DeployArc --rpc-url "$ARC" --private-key "$DEPLOYER_KEY" --broadcast >"$WORK/deploy-arc.log" 2>&1) || { tail -30 "$WORK/deploy-arc.log" >&2; exit 1; }
 D="$XC_ROOT/.fork/arc-deployment.json"
 SETTLER=$(jq -r .settler "$D"); ROUTER=$(jq -r .router "$D"); RNVDA=$(jq -r .rNVDA "$D"); RWETH=$(jq -r .rWETH "$D")
-NVDA_RELAYED=$(jq -r .nvdaUsdRelayed "$D"); ETH_RELAYED=$(jq -r .ethUsdRelayed "$D")
+NVDA_RELAYED=$(jq -r .nvdaUsdRelayed "$D"); ETH_RELAYED=$(jq -r .ethUsdRelayed "$D"); EUR_RELAYED=$(jq -r .eurUsdRelayed "$D")
 echo "   NorenAquaSwapVMRouter $ROUTER (AQUA() = $(cast call "$ROUTER" 'AQUA()(address)' --rpc-url "$ARC"))"
 echo "   NorenCrossChainSettler $SETTLER; receipts rNVDA $RNVDA, rWETH $RWETH"
 echo "   relayed feeds: NVDA/USD $NVDA_RELAYED, ETH/USD $ETH_RELAYED"
@@ -111,6 +120,11 @@ write_config "$(jq -n --arg e "$RH_ESCROW" --arg s "$SETTLER" '[
   {name: "robinhood", chainSelectorName: "robinhood-testnet", chainId: 4663, escrow: $e, settler: "0x0000000000000000000000000000000000000000", gasLimit: "1500000"},
   {name: "arc", chainSelectorName: "arc-testnet", chainId: 5042002, escrow: "0x0000000000000000000000000000000000000000", settler: $s, gasLimit: "3000000"}]')"
 
+step "0. Noren SDK quote (quoteCrossChainSwap): 2 NVDA on Robinhood -> USDC on Arc from this maker"
+(cd "$XC_ROOT" && NODE_NO_WARNINGS=1 pnpm exec tsx scripts/sdk-quote.ts "$RH" "$ARC" "$RH_ESCROW" "$SETTLER" $NVDA "$NVDA_STRAT" 2000000000000000000) >"$WORK/quote1.json" || { cat "$WORK/quote1.json" >&2; exit 1; }
+QUOTE1=$(jq -r .amountOut "$WORK/quote1.json")
+echo "   quote $(fmt "$QUOTE1" 6) USDC at NVDA/USD $(fmt "$(jq -r .priceUsd8 "$WORK/quote1.json")" 8), spread $(jq -r .spreadBps "$WORK/quote1.json") bps, round age $(jq -r .priceAgeSec "$WORK/quote1.json") s (max $(jq -r .maxAgeSec "$WORK/quote1.json")), maker can pay: $(jq -r .makerCanPay "$WORK/quote1.json")"
+
 step "1. Robinhood: taker locks 2 NVDA in the escrow (the escrow reads Chainlink NVDA/USD in the same tx)"
 NOW=$(cast block latest --field timestamp --rpc-url "$RH")
 O1=$(order_tuple 4663 "$RH_ESCROW" $NVDA 2000000000000000000 "$NVDA_STRAT" $((NOW + 1800)) $((NOW + 9000)) 1)
@@ -129,15 +143,17 @@ FILL1=$(written); [ -n "$FILL1" ] || { echo "CRE did not write the fill" >&2; ex
 check_forwarded "$ARC" "$FILL1" $ARC_FORWARDER
 [ "$(cast call "$SETTLER" 'orderStatus(bytes32)(uint8)' "$ID1" --rpc-url "$ARC")" = 1 ] || { echo "order not filled on Arc" >&2; cast receipt "$FILL1" --rpc-url "$ARC" >&2; exit 1; }
 PAID1=$(( $(bal $ARC_USDC "$TAKER" "$ARC") - T_USDC0 ))
-echo "   taker +$(fmt $PAID1 6) USDC on Arc; maker USDC $(fmt "$M_USDC0" 6) -> $(fmt "$(bal $ARC_USDC "$MAKER" "$ARC")" 6); rNVDA supply $(cast call "$RNVDA" 'totalSupply()(uint256)' --rpc-url "$ARC" | first) (burned in the fill)"
+[ "$PAID1" = "$QUOTE1" ] || { echo "fill $PAID1 != SDK quote $QUOTE1" >&2; exit 1; }
+echo "   taker +$(fmt $PAID1 6) USDC on Arc (= the SDK quote); maker USDC $(fmt "$M_USDC0" 6) -> $(fmt "$(bal $ARC_USDC "$MAKER" "$ARC")" 6); rNVDA supply $(cast call "$RNVDA" 'totalSupply()(uint256)' --rpc-url "$ARC" | first) (burned in the fill)"
 echo "   relayed NVDA/USD on Arc: $(cast call "$NVDA_RELAYED" 'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url "$ARC" | sed -n '1p;2p' | awk '{printf "%s ", $1}')(round, answer 8 dp)"
 
 step "3. CRE (trigger 1, log on Arc) -> Robinhood escrow: FILLED, release the NVDA to the maker"
+P_NVDA0=$(bal $NVDA "$PAYOUT" "$RH")
 simulate 1 "$FILL1" "$ARC"
 REL1=$(written); [ -n "$REL1" ] || { echo "CRE did not write the release" >&2; exit 1; }
 check_forwarded "$RH" "$REL1" $RH_FORWARDER
-[ "$(bal $NVDA "$PAYOUT" "$RH")" = 2000000000000000000 ] || { echo "maker payout did not receive 2 NVDA" >&2; exit 1; }
-echo "   maker payout $PAYOUT received $(fmt "$(bal $NVDA "$PAYOUT" "$RH")" 18) NVDA on Robinhood; escrow status $(cast call "$RH_ESCROW" 'orderStatus(bytes32)(uint8)' "$ID1" --rpc-url "$RH") (2 = Released)"
+[ $(( $(bal $NVDA "$PAYOUT" "$RH") - P_NVDA0 )) = 2000000000000000000 ] || { echo "maker payout did not receive 2 NVDA" >&2; exit 1; }
+echo "   maker payout $PAYOUT received +$(fmt $(( $(bal $NVDA "$PAYOUT" "$RH") - P_NVDA0 )) 18) NVDA on Robinhood; escrow status $(cast call "$RH_ESCROW" 'orderStatus(bytes32)(uint8)' "$ID1" --rpc-url "$RH") (2 = Released)"
 
 step "4. Replay: the same Robinhood log again. The workflow sees the order Filled on Arc and skips"
 simulate 0 "$OPEN1" "$RH"
@@ -176,9 +192,10 @@ echo "   Base Sepolia fork $BASE (fork block $BASE_FORK_BLOCK)"
   forge script script/DeployXChain.s.sol:DeploySource --rpc-url "$BASE" --private-key "$DEPLOYER_KEY" --broadcast >"$WORK/base.log" 2>&1) || { tail -30 "$WORK/base.log" >&2; exit 1; }
 BASE_ESCROW=$(jq -r .escrow "$XC_ROOT/.fork/base-escrow.json")
 echo "   NorenCrossChainEscrow on Base fork $BASE_ESCROW; setEscrow tx $(send "$ARC" "$SETTLER" 'setEscrow(uint64,address)' 84532 "$BASE_ESCROW" --private-key "$DEPLOYER_KEY")"
-write_config "$(jq -n --arg e "$BASE_ESCROW" --arg s "$SETTLER" '[
-  {name: "arc", chainSelectorName: "arc-testnet", chainId: 5042002, escrow: "0x0000000000000000000000000000000000000000", settler: $s, gasLimit: "3000000"},
-  {name: "base", chainSelectorName: "ethereum-testnet-sepolia-base-1", chainId: 84532, escrow: $e, settler: "0x0000000000000000000000000000000000000000", gasLimit: "1500000"}]')"
+write_config "$(jq -n --arg e "$BASE_ESCROW" --arg s "$SETTLER" --arg r "$ACTION_ROUTER" '[
+  {name: "arc", chainSelectorName: "arc-testnet", chainId: 5042002, escrow: "0x0000000000000000000000000000000000000000", settler: $s, gasLimit: "3000000", actionRouter: $r},
+  {name: "base", chainSelectorName: "ethereum-testnet-sepolia-base-1", chainId: 84532, escrow: $e, settler: "0x0000000000000000000000000000000000000000", gasLimit: "1500000"}]')" \
+  "$(jq -n --arg f "$SEPOLIA_EUR_USD" --arg rf "$EUR_RELAYED" '[{name: "EUR/USD", chainSelectorName: "ethereum-testnet-sepolia", feed: $f, relayedFeed: $rf}]')"
 
 step "6. Base Sepolia: taker wraps 0.5 ETH and locks 0.5 WETH against the SAME maker's WETH strategy"
 WRAP=$(send "$BASE" $WETH 'deposit()' --value 0.5ether --private-key "$TAKER_KEY")
@@ -201,23 +218,70 @@ PAID3=$(( $(bal $ARC_USDC "$TAKER" "$ARC") - T_USDC1 ))
 echo "   taker +$(fmt $PAID3 6) USDC on Arc; maker USDC $(fmt "$M_USDC1" 6) -> $(fmt "$(bal $ARC_USDC "$MAKER" "$ARC")" 6)"
 
 step "8. CRE (trigger 0, log on Arc) -> Base escrow: FILLED, release the WETH to the maker"
+P_WETH0=$(bal $WETH "$PAYOUT" "$BASE")   # Anvil account 5 already holds some real Base Sepolia WETH
 simulate 0 "$FILL3" "$ARC"
 REL3=$(written); [ -n "$REL3" ] || { echo "CRE did not write the Base release" >&2; exit 1; }
 check_forwarded "$BASE" "$REL3" $BASE_FORWARDER
-[ "$(bal $WETH "$PAYOUT" "$BASE")" = 500000000000000000 ] || { echo "maker payout did not receive 0.5 WETH" >&2; exit 1; }
-echo "   maker payout $PAYOUT received $(fmt "$(bal $WETH "$PAYOUT" "$BASE")" 18) WETH on Base Sepolia"
+[ $(( $(bal $WETH "$PAYOUT" "$BASE") - P_WETH0 )) = 500000000000000000 ] || { echo "maker payout did not receive 0.5 WETH" >&2; exit 1; }
+echo "   maker payout $PAYOUT received +$(fmt $(( $(bal $WETH "$PAYOUT" "$BASE") - P_WETH0 )) 18) WETH on Base Sepolia"
 
-step "Result: one Arc maker, orders from two chains"
+step "9. CRE cron (trigger 2): relay Chainlink EUR/USD from Ethereum Sepolia (read-only) to Arc for the USDC -> EURC route"
+simulate_cron 2
+PRICE_TX=$(written); [ -n "$PRICE_TX" ] || { echo "CRE did not relay EUR/USD" >&2; exit 1; }
+check_forwarded "$ARC" "$PRICE_TX" $ARC_FORWARDER
+echo "   relayed EUR/USD on Arc: $(cast call "$EUR_RELAYED" 'latestRoundData()(uint80,int256,uint256,uint256,uint80)' --rpc-url "$ARC" | sed -n '1p;2p' | awk '{printf "%s ", $1}')(round, answer 8 dp)"
+
+step "10. The same maker ships a third strategy: sell EURC for USDC at Chainlink EUR/USD + 40 bps"
+# Fork-only: give the maker 2,000 EURC by writing its FiatToken balance slot (mapping at slot 9).
+cast rpc anvil_setStorageAt $ARC_EURC "$(cast index address "$MAKER" 9)" "$(cast to-uint256 2000000000)" --rpc-url "$ARC" >/dev/null
+[ "$(bal $ARC_EURC "$MAKER" "$ARC")" = 2000000000 ] || { echo "could not fund the maker with EURC on the fork" >&2; exit 1; }
+(cd "$XC_ROOT/contracts" && XCHAIN_SETTLER=$SETTLER XCHAIN_ROUTES="$(jq -r .eurcRoute "$D")" XCHAIN_IN_TOKENS="$ARC_USDC" XCHAIN_OUT_TOKEN=$ARC_EURC \
+  XCHAIN_ALLOC=2000000000 XCHAIN_BID_BPS=0 XCHAIN_ASK_BPS=40 XCHAIN_PAYOUT="$MAKER" XCHAIN_OUT=../.fork/maker-eurc.json \
+  forge script script/DeployXChain.s.sol:MakerShip --rpc-url "$ARC" --private-key "$MAKER_KEY" --broadcast >"$WORK/maker-eurc.log" 2>&1) || { tail -30 "$WORK/maker-eurc.log" >&2; exit 1; }
+EURC_STRAT=$(jq -r '."0"' "$XC_ROOT/.fork/maker-eurc.json")
+echo "   EURC strategy $EURC_STRAT (maker holds $(fmt "$(bal $ARC_EURC "$MAKER" "$ARC")" 6) EURC; fork-only balance)"
+
+step "11. An AQUA_ORDER lands in the LIVE NorenArcActionRouter (forked from Arc Testnet): 250 USDC from Base Sepolia for EURC"
+ROUTER_OWNER=$(cast call $ACTION_ROUTER 'owner()(address)' --rpc-url "$ARC")
+for a in "$ROUTER_OWNER" $CCIP_GATEWAY; do cast rpc anvil_setBalance "$a" 0x56BC75E2D63100000 --rpc-url "$ARC" >/dev/null; cast rpc anvil_impersonateAccount "$a" --rpc-url "$ARC" >/dev/null; done
+OPER_TX=$(cast send $ACTION_ROUTER 'setAquaOperator(address)' "$SETTLER" --unlocked --from "$ROUTER_OWNER" --rpc-url "$ARC" --json | jq -r .transactionHash)
+TRANS_TX=$(send "$ARC" "$SETTLER" 'setTransport(address,bool)' $ACTION_ROUTER true --private-key "$DEPLOYER_KEY")
+echo "   fork-only setup: router owner (impersonated) setAquaOperator(settler) $OPER_TX; settler.setTransport(router) $TRANS_TX"
+NOW=$(cast block latest --field timestamp --rpc-url "$ARC")
+REF=$(cast keccak "base-sepolia-aqua-order-$NOW")
+PARAMS=$(cast abi-encode 'f((uint64,address,uint256,address,address,bytes32,uint64,uint256))' "(84532,$ARC_EURC,1,$TAKER,$MAKER,$EURC_STRAT,$((NOW + 600)),1)")
+ACTION=$(cast abi-encode 'f(uint8,address,bytes32,bytes)' 3 "$TAKER" "$REF" "$PARAMS")
+cast send $ARC_USDC 'mint(address,uint256)' $ACTION_ROUTER 250000000 --rpc-url "$ARC" --private-key "$DEPLOYER_KEY" >/dev/null
+LAND_TX=$(cast send $ACTION_ROUTER 'execute(bytes32,bytes32,uint64,address,address,uint256,bytes)' "$(cast keccak CCIP)" "$(cast keccak "msg-$REF")" 84532 "$TAKER" $ARC_USDC 250000000 "$ACTION" \
+  --unlocked --from $CCIP_GATEWAY --rpc-url "$ARC" --json | jq -r .transactionHash)
+for a in "$ROUTER_OWNER" $CCIP_GATEWAY; do cast rpc anvil_stopImpersonatingAccount "$a" --rpc-url "$ARC" >/dev/null; done
+echo "   router.execute tx $LAND_TX (fork: the rail's delivery is played by impersonating the live NorenCcipGateway and minting 250 shim USDC to the router)"
+echo "   router holds ref $REF open: $(cast call $ACTION_ROUTER 'aquaOrders(bytes32)(address,address,uint256,bytes32,uint64,bool,bytes)' "$REF" --rpc-url "$ARC" | sed -n 6p)"
+
+step "12. CRE (trigger 0, AquaOrderOpened on Arc) -> settler: take the held USDC and fill against the maker's EURC strategy"
+T_EURC0=$(bal $ARC_EURC "$TAKER" "$ARC")
+simulate 0 "$LAND_TX" "$ARC" 'AquaOrderOpened(bytes32,address,address,uint256,bytes32,uint64,bytes)'
+FILL4=$(written); [ -n "$FILL4" ] || { echo "CRE did not write the router fill" >&2; exit 1; }
+check_forwarded "$ARC" "$FILL4" $ARC_FORWARDER
+[ "$(cast call $ACTION_ROUTER 'aquaOrders(bytes32)(address,address,uint256,bytes32,uint64,bool,bytes)' "$REF" --rpc-url "$ARC" | sed -n 6p)" = false ] || { echo "router order still open" >&2; exit 1; }
+GOT4=$(( $(bal $ARC_EURC "$TAKER" "$ARC") - T_EURC0 ))
+[ "$GOT4" -gt 0 ] || { echo "no EURC delivered" >&2; exit 1; }
+echo "   taker +$(fmt $GOT4 6) EURC on Arc; router order closed (filled); maker EURC $(fmt "$(bal $ARC_EURC "$MAKER" "$ARC")" 6)"
+
+step "Result: one Arc maker, orders from every chain"
 echo "   maker wallet on Arc: 20,000 USDC -> $(fmt "$(bal $ARC_USDC "$MAKER" "$ARC")" 6) USDC (paid $(fmt $((PAID1 + PAID3)) 6) to takers)"
-echo "   maker received: 2 NVDA on Robinhood Chain + 0.5 WETH on Base Sepolia, released by the escrows after CRE reported each fill"
+echo "   maker received: 2 NVDA on Robinhood Chain + 0.5 WETH on Base Sepolia (released by the escrows after CRE reported each fill)"
+echo "   and 250 USDC on Arc for $(fmt $GOT4 6) EURC, from an AQUA_ORDER that arrived through the Arc action router"
 echo "   NVDA strategy fills $(cast call "$SETTLER" 'strategy(bytes32)((address,bytes32,address,bool,uint32,uint256,uint256,bytes))' "$NVDA_STRAT" --rpc-url "$ARC" | tr -d '()' | tr ',' '\n' | sed -n 5p | tr -d ' '), WETH strategy fills $(cast call "$SETTLER" 'strategy(bytes32)((address,bytes32,address,bool,uint32,uint256,uint256,bytes))' "$WETH_STRAT" --rpc-url "$ARC" | tr -d '()' | tr ',' '\n' | sed -n 5p | tr -d ' ')"
 jq -n --arg arc "$ARC_FORK_BLOCK" --arg rh "$RH_SNAPSHOT_BLOCK" --arg base "$BASE_FORK_BLOCK" --arg settler "$SETTLER" --arg router "$ROUTER" \
   --arg rhEscrow "$RH_ESCROW" --arg baseEscrow "$BASE_ESCROW" --arg o1 "$OPEN1" --arg f1 "$FILL1" --arg r1 "$REL1" --arg o2 "$OPEN2" --arg e2 "$EXP2" --arg u2 "$UNL2" --arg rf2 "$REF2" \
   --arg o3 "$OPEN3" --arg f3 "$FILL3" --arg r3 "$REL3" --arg p1 "$PAID1" --arg p3 "$PAID3" \
+  --arg price "$PRICE_TX" --arg land "$LAND_TX" --arg f4 "$FILL4" --arg got4 "$GOT4" --arg ref "$REF" \
   '{note: "LOCAL FORKS ONLY (Arc Testnet fork, Robinhood mainnet snapshot, Base Sepolia fork). Hashes do not exist on any public chain.",
     forkBlocks: {arc: $arc, robinhoodSnapshot: $rh, baseSepolia: $base}, settler: $settler, router: $router, robinhoodEscrow: $rhEscrow, baseEscrow: $baseEscrow,
     nvda: {open: $o1, arcFill: $f1, robinhoodRelease: $r1, usdcPaid6: $p1}, expiry: {open: $o2, arcExpire: $e2, robinhoodUnlock: $u2, refund: $rf2},
-    weth: {open: $o3, arcFill: $f3, baseRelease: $r3, usdcPaid6: $p3}}' >"$XC_ROOT/.fork/xchain-demo.json"
+    weth: {open: $o3, arcFill: $f3, baseRelease: $r3, usdcPaid6: $p3},
+    actionRouter: {eurUsdRelay: $price, ref: $ref, routerExecute: $land, arcFill: $f4, eurcOut6: $got4}}' >"$XC_ROOT/.fork/xchain-demo.json"
 echo
 echo "== PASS. Forks stop now. Tx hashes: packages/xchain-aqua/.fork/xchain-demo.json"
 } 2>&1 | tee "$XC_ROOT/.fork/xchain-demo.txt"

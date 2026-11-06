@@ -2,6 +2,9 @@
 import { describe, expect, test } from "bun:test";
 import { encodeAbiParameters, encodeEventTopics, getAddress, type Address, type Hex } from "viem";
 import {
+  decidePrice,
+  decideRouterOrder,
+  payloadKind,
   decideOrder,
   decideSettlement,
   decodeMessageLog,
@@ -149,4 +152,28 @@ describe("settlements (Arc settler -> escrow)", () => {
 test("config needs a settler and real addresses", () => {
   expect(() => validateConfig({ ...config, chains: [rh] })).toThrow("no chain has a settler");
   expect(() => validateConfig({ ...config, chains: [{ ...rh, escrow: A(0) }, arc] })).toThrow("Setup required");
+});
+
+describe("Arc action router orders and relayed prices", () => {
+  const ROUTER = A(0x407);
+  const arcWithRouter = { ...arc, actionRouter: ROUTER };
+  const relay = { name: "EUR/USD", chainSelectorName: "ethereum-testnet-sepolia", feed: A(0xe0), relayedFeed: A(0xe1) };
+  const src = { roundId: 7n, answer: 112_150_000n, startedAt: NOW - 100n, updatedAt: NOW - 100n, answeredInRound: 7n };
+  const none = { roundId: 0n, answer: 0n, startedAt: 0n, updatedAt: 0n, answeredInRound: 0n };
+
+  test("an open AQUA_ORDER becomes a ROUTER_ORDER report for the settler", () => {
+    const d = decideRouterOrder(arcWithRouter, ROUTER, `0x${"cd".repeat(32)}`, true, "x");
+    expect(d.write && d.delivery.receiver === SETTLER && payloadKind(d.delivery.report) === KIND.ROUTER_ORDER).toBe(true);
+    const closed = decideRouterOrder(arcWithRouter, ROUTER, `0x${"cd".repeat(32)}`, false, "x");
+    expect(closed.write).toBe(false);
+    expect(() => decideRouterOrder(arcWithRouter, A(0xbad), `0x${"cd".repeat(32)}`, true, "x")).toThrow("not the configured action router");
+  });
+
+  test("relays a newer fresh round, skips relayed or stale ones", () => {
+    const d = decidePrice(arc, relay, src, 8, none, relay.feed, NOW, 90_000);
+    expect(d.write && payloadKind(d.delivery.report) === KIND.PRICE).toBe(true);
+    expect(decidePrice(arc, relay, src, 8, src, relay.feed, NOW, 90_000).write).toBe(false);
+    expect(decidePrice(arc, relay, { ...src, updatedAt: NOW - 100_000n }, 8, none, relay.feed, NOW, 90_000).write).toBe(false);
+    expect(() => decidePrice(arc, relay, src, 8, none, A(0xbad), NOW, 90_000)).toThrow("mirrors");
+  });
 });

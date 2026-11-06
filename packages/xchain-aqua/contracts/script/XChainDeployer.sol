@@ -48,7 +48,7 @@ abstract contract XChainDeployer is Script {
     a.rWeth = new NorenEscrowReceipt('Noren escrow receipt: WETH on Base Sepolia', 'rWETH', 18, XC.BASE_SEPOLIA, XC.BASE_WETH, s);
     a.nvdaUsd = new NorenRelayedFeed(s, 8, XC.ROBINHOOD, XC.NVDA_USD, 'NVDA / USD (Chainlink on Robinhood Chain 4663, relayed by CRE)');
     a.ethUsd = new NorenRelayedFeed(s, 8, XC.BASE_SEPOLIA, XC.BASE_ETH_USD, 'ETH / USD (Chainlink on Base Sepolia 84532, relayed by CRE)');
-    a.eurUsd = new NorenRelayedFeed(s, 8, XC.ARC_MAINNET, XC.ARC_MAINNET_EUR_USD, 'EUR / USD (Chainlink on Arc mainnet 5042, relayed by CRE)');
+    a.eurUsd = new NorenRelayedFeed(s, 8, XC.SEPOLIA, XC.SEPOLIA_EUR_USD, 'EUR / USD (Chainlink on Ethereum Sepolia 11155111, relayed by CRE)');
 
     // Stock Token: 24/5 feed, uiMultiplier, 25 h open age, 3 days in the closed window (as NorenAssetOracle).
     a.settler.setRoute(XC.ROBINHOOD, XC.NVDA, _route(address(a.rNvda), XC.ARC_USDC, false, true, address(a.nvdaUsd), 90_000, 259_200, 0x03));
