@@ -332,7 +332,7 @@ function BagPage() {
 }
 
 // ---------------- Order confirmation ----------------
-const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, settled to USDC', credit: 'Noren · Pay in 3 on credit' };
+const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, paid in USDG on Robinhood Chain', credit: 'Noren · Pay in 3 on credit' };
 const short = (s: string, n = 6) => s.length > 2 * n + 2 ? `${s.slice(0, n + 2)}…${s.slice(-n)}` : s;
 function OrderPage({ id }: { id: string }) {
   const [order, setOrder] = useState<any>(null);
@@ -354,7 +354,7 @@ function OrderPage({ id }: { id: string }) {
     <section className="section order">
       <p className="eyebrow">Order {order.id}</p>
       <h1>{paid ? <>Thank you. <em>It's yours.</em></> : order.status === 'awaiting_payment' ? <>Waiting for <em>payment</em></> : <>Order <em>{order.status.replace('_', ' ')}</em></>}</h1>
-      <p className="lede">{paid ? 'Your payment settled on Arc through Noren. We are wrapping your dress in tissue now.' : order.status === 'awaiting_payment' ? 'This page updates the moment Noren confirms the payment.' : 'This order was not paid.'}</p>
+      <p className="lede">{paid ? (order.method === 'stocks' ? 'Your payment settled through Noren: your shares were sold and Aubelle received USDG on Robinhood Chain. We are wrapping your dress in tissue now.' : 'Your payment settled on Arc through Noren. We are wrapping your dress in tissue now.') : order.status === 'awaiting_payment' ? 'This page updates the moment Noren confirms the payment.' : 'This order was not paid.'}</p>
       <div className="order-grid">
         <div className="order-card">
           <div className={`status status-${order.status}`}><i aria-hidden />{paid ? 'Paid' : order.status === 'awaiting_payment' ? 'Awaiting payment' : order.status.replace('_', ' ')}</div>
