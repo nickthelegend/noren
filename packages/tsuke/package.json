@@ -1,0 +1,30 @@
+{
+  "name": "@noren/tsuke",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./sdk": "./sdk/src/index.ts",
+    "./underwriter": "./underwriter/src/index.ts"
+  },
+  "scripts": {
+    "build:contracts": "cd contracts && forge build",
+    "fork": "sh scripts/fork.sh",
+    "test:contracts": "sh scripts/test-fork.sh",
+    "deploy:fork": "sh scripts/deploy-fork.sh",
+    "underwriter": "tsx underwriter/src/server.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "probe": "tsx scripts/probe-eips.ts"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.1.0",
+    "viem": "2.51.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}
