@@ -7,15 +7,15 @@ import {IERC20Permit} from '@oz/token/ERC20/extensions/IERC20Permit.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 import {Math} from '@oz/utils/math/Math.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
-import {TsukeOracle} from './TsukeOracle.sol';
-import {ITsukeVault} from './interfaces/ITsukeVault.sol';
+import {NorenAssetOracle} from './NorenAssetOracle.sol';
+import {INorenVault} from './interfaces/INorenVault.sol';
 import {IWETH} from './interfaces/IWETH.sol';
 
-/// @title TsukeGateway
+/// @title NorenGateway
 /// @notice Merchants post USDG invoices; customers pay them with USDG, ETH or a Stock Token.
 /// Non-USDG payments go to the vault as inventory at the Chainlink price plus a spread and the
-/// vault pays the merchant the full invoice in USDG. TsukeCredit settles invoices for Pay in 4.
-contract TsukeGateway is Ownable2Step, ReentrancyGuard {
+/// vault pays the merchant the full invoice in USDG. NorenCredit settles invoices for Pay in 4.
+contract NorenGateway is Ownable2Step, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using Math for uint256;
 
@@ -41,8 +41,8 @@ contract TsukeGateway is Ownable2Step, ReentrancyGuard {
 
   IERC20 public immutable usdg;
   IWETH public immutable weth;
-  TsukeOracle public immutable oracle;
-  ITsukeVault public immutable vault;
+  NorenAssetOracle public immutable oracle;
+  INorenVault public immutable vault;
   address public credit;
   mapping(address asset => uint16) public spreadBps;
   mapping(bytes32 key => Invoice) internal _invoices;
@@ -73,7 +73,7 @@ contract TsukeGateway is Ownable2Step, ReentrancyGuard {
   error ReceivedShort(uint256 expected, uint256 received);
   error BadConfig();
 
-  constructor(address owner_, IERC20 usdg_, IWETH weth_, TsukeOracle oracle_, ITsukeVault vault_) Ownable(owner_) {
+  constructor(address owner_, IERC20 usdg_, IWETH weth_, NorenAssetOracle oracle_, INorenVault vault_) Ownable(owner_) {
     usdg = usdg_;
     weth = weth_;
     oracle = oracle_;
@@ -161,7 +161,7 @@ contract TsukeGateway is Ownable2Step, ReentrancyGuard {
     return _pay(invoiceId, merchant, asset, maxAssetIn);
   }
 
-  /// @notice Called by TsukeCredit when a Pay-in-4 plan funds the invoice.
+  /// @notice Called by NorenCredit when a Pay-in-4 plan funds the invoice.
   function settleByCredit(address merchant, bytes32 invoiceId, address borrower) external returns (uint256 amountUsdg) {
     if (msg.sender != credit) revert NotCredit();
     Invoice storage inv = _invoices[_key(merchant, invoiceId)];
@@ -226,7 +226,7 @@ contract TsukeGateway is Ownable2Step, ReentrancyGuard {
     address priced = asset == NATIVE_ETH ? address(weth) : asset;
     if (!oracle.isSupported(priced)) revert AssetNotAccepted(asset);
     uint256 usd8 = oracle.usdgToUsd8(amountUsdg, Math.Rounding.Ceil);
-    TsukeOracle.Price memory p;
+    NorenAssetOracle.Price memory p;
     (assetIn, p) = oracle.assetForUsd8(priced, usd8, spreadBps[priced]);
     return (assetIn, p.usd8, p.marketClosed);
   }

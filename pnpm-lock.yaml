@@ -115,7 +115,7 @@ importers:
         specifier: 2.51.3
         version: 2.51.3(typescript@5.9.3)
 
-  packages/tsuke:
+  packages/robinhood:
     dependencies:
       '@openzeppelin/contracts':
         specifier: 5.1.0

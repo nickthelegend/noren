@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {TsukeBase} from './TsukeBase.sol';
-import {TsukeOracle} from '../src/TsukeOracle.sol';
+import {RobinhoodBase} from './RobinhoodBase.sol';
+import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
 import {IAggregatorV3} from '../src/interfaces/IAggregatorV3.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
-contract TsukeOracleTest is TsukeBase {
+contract NorenAssetOracleTest is RobinhoodBase {
   function test_liveFeedsPriceEveryConfiguredAsset() public view {
     address[] memory list = oracle.assets();
     assertEq(list.length, 10);
@@ -15,7 +15,7 @@ contract TsukeOracleTest is TsukeBase {
       (address feed,,,,,) = oracle.assetConfig(list[i]);
       (, int256 answer,, uint256 updatedAt,) = IAggregatorV3(feed).latestRoundData();
       uint8 dec = IAggregatorV3(feed).decimals();
-      TsukeOracle.Price memory p = oracle.price(list[i]);
+      NorenAssetOracle.Price memory p = oracle.price(list[i]);
       assertEq(p.usd8, uint256(answer) * 1e8 / 10 ** dec, 'normalised to 8 decimals from live decimals()');
       assertEq(p.updatedAt, updatedAt);
       assertGt(p.usd8, 0);
@@ -45,7 +45,7 @@ contract TsukeOracleTest is TsukeBase {
 
   function test_assetForUsd8RoundsUpWithSpread() public view {
     uint256 usd8 = 100e8;
-    (uint256 amt, TsukeOracle.Price memory p) = oracle.assetForUsd8(RH.WETH, usd8, 30);
+    (uint256 amt, NorenAssetOracle.Price memory p) = oracle.assetForUsd8(RH.WETH, usd8, 30);
     assertGe(oracle.valueUsd8(RH.WETH, amt), usd8 * 10_030 / 10_000 - 1);
     assertEq(p.marketClosed, false, 'ETH trades 24/7');
   }
@@ -53,7 +53,7 @@ contract TsukeOracleTest is TsukeBase {
   function test_staleEthPriceReverts() public {
     (,,, uint256 updatedAt,) = IAggregatorV3(RH.FEED_ETH).latestRoundData();
     vm.warp(updatedAt + RH.MAX_AGE_OPEN + 1);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.StalePrice.selector, RH.WETH, updatedAt, uint256(RH.MAX_AGE_OPEN)));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.StalePrice.selector, RH.WETH, updatedAt, uint256(RH.MAX_AGE_OPEN)));
     oracle.price(RH.WETH);
   }
 
@@ -61,12 +61,12 @@ contract TsukeOracleTest is TsukeBase {
     // Saturday 12:00 UTC after the fork: stock feeds are frozen since the fork, inside the closed window.
     vm.warp(_nextAt(6, 12));
     assertTrue(oracle.marketClosed(block.timestamp));
-    TsukeOracle.Price memory p = oracle.price(RH.TSLA);
+    NorenAssetOracle.Price memory p = oracle.price(RH.TSLA);
     assertTrue(p.marketClosed);
     assertGt(block.timestamp - p.updatedAt, RH.MAX_AGE_OPEN, 'older than the open-market limit');
     (,,, uint256 ethUpdated,) = IAggregatorV3(RH.FEED_ETH).latestRoundData();
     if (block.timestamp - ethUpdated > RH.MAX_AGE_OPEN) {
-      vm.expectRevert(abi.encodeWithSelector(TsukeOracle.StalePrice.selector, RH.WETH, ethUpdated, uint256(RH.MAX_AGE_OPEN)));
+      vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.StalePrice.selector, RH.WETH, ethUpdated, uint256(RH.MAX_AGE_OPEN)));
       oracle.price(RH.WETH);
     }
   }
@@ -76,7 +76,7 @@ contract TsukeOracleTest is TsukeBase {
     vm.warp(_nextAt(1, 7));
     assertFalse(oracle.marketClosed(block.timestamp));
     (,,, uint256 updatedAt,) = IAggregatorV3(RH.FEED_TSLA).latestRoundData();
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.StalePrice.selector, RH.TSLA, updatedAt, uint256(RH.MAX_AGE_OPEN)));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.StalePrice.selector, RH.TSLA, updatedAt, uint256(RH.MAX_AGE_OPEN)));
     oracle.price(RH.TSLA);
   }
 
@@ -109,26 +109,26 @@ contract TsukeOracleTest is TsukeBase {
     oracle.setRiskParams(0, 500); // zero tolerance: the live 0.9999x USDG price is outside the band
     uint256 live = oracle.price(RH.USDG).usd8;
     if (live != 1e8) {
-      vm.expectRevert(abi.encodeWithSelector(TsukeOracle.UsdgDepeg.selector, live));
+      vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.UsdgDepeg.selector, live));
       oracle.usdgPrice();
     }
   }
 
   function test_unsupportedAssetReverts() public {
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AssetNotSupported.selector, address(0xBEEF)));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AssetNotSupported.selector, address(0xBEEF)));
     oracle.price(address(0xBEEF));
   }
 
   function test_disabledAssetReverts() public {
     vm.prank(owner);
     oracle.disableAsset(RH.SPY);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AssetNotSupported.selector, RH.SPY));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AssetNotSupported.selector, RH.SPY));
     oracle.price(RH.SPY);
   }
 
   function test_badConfigRejected() public {
     vm.startPrank(owner);
-    vm.expectRevert(TsukeOracle.BadConfig.selector);
+    vm.expectRevert(NorenAssetOracle.BadConfig.selector);
     oracle.setAsset(RH.TSLA, RH.FEED_TSLA, 2 days, 1 days, true, true); // closed < open
     vm.expectRevert(); // not a feed
     oracle.setAsset(RH.TSLA, RH.USDG, 1 days, 1 days, true, true);
@@ -139,12 +139,12 @@ contract TsukeOracleTest is TsukeBase {
 
   function test_checkTransferableReportsBlocklistAndPause() public {
     _block(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AccountBlocked.selector, RH.NVDA, customer));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AccountBlocked.selector, RH.NVDA, customer));
     oracle.checkTransferable(RH.NVDA, customer, address(vault));
     vm.prank(RH.STOCK_PAUSER);
     (bool ok,) = RH.NVDA.call(abi.encodeWithSignature('pause()'));
     assertTrue(ok);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AssetPaused.selector, RH.NVDA));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AssetPaused.selector, RH.NVDA));
     oracle.checkTransferable(RH.NVDA, merchant, address(vault));
   }
 }

@@ -2,12 +2,12 @@
 pragma solidity 0.8.28;
 
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
-import {TsukeBase, IStockAdmin, IRegistryAdmin, IPermitToken} from './TsukeBase.sol';
+import {RobinhoodBase, IStockAdmin, IRegistryAdmin, IPermitToken} from './RobinhoodBase.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
-/// @notice Observes the real Robinhood Chain token behaviour Tsuke has to handle.
-contract RobinhoodBehaviourTest is TsukeBase {
+/// @notice Observes the real Robinhood Chain token behaviour Noren has to handle.
+contract RobinhoodBehaviourTest is RobinhoodBase {
   function test_usdgSupportsEip2612Permit() public {
     _fund(RH.USDG, customer, 50e6);
     uint256 nonce = IPermitToken(RH.USDG).nonces(customer);

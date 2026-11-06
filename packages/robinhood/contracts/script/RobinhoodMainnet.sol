@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {TsukeOracle} from '../src/TsukeOracle.sol';
+import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
 
 /// @notice Robinhood Chain mainnet (chain 4663) addresses, verified over RPC on 2026-11-06.
 library RobinhoodMainnet {
@@ -41,7 +41,7 @@ library RobinhoodMainnet {
   uint32 internal constant MAX_AGE_OPEN = 86_400 + 3_600;
   uint32 internal constant MAX_AGE_CLOSED_STOCK = 3 days;
 
-  function configureOracle(TsukeOracle o) internal {
+  function configureOracle(NorenAssetOracle o) internal {
     o.setAsset(USDG, FEED_USDG, MAX_AGE_OPEN, MAX_AGE_OPEN, false, false);
     o.setAsset(WETH, FEED_ETH, MAX_AGE_OPEN, MAX_AGE_OPEN, false, false);
     o.setAsset(TSLA, FEED_TSLA, MAX_AGE_OPEN, MAX_AGE_CLOSED_STOCK, true, true);

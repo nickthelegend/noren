@@ -6,9 +6,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UPSTREAM="${ROBINHOOD_RPC:-https://rpc.mainnet.chain.robinhood.com}"
-PORT="${TSUKE_FORK_PORT:-8720}"
+PORT="${NOREN_RH_FORK_PORT:-8720}"
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
-  echo "Port $PORT is already in use; stop that process or set TSUKE_FORK_PORT (8720-8729)." >&2
+  echo "Port $PORT is already in use; stop that process or set NOREN_RH_FORK_PORT (8720-8729)." >&2
   exit 1
 fi
 BLOCK="${FORK_BLOCK:-$(( $(cast block-number --rpc-url "$UPSTREAM") - 20 ))}"

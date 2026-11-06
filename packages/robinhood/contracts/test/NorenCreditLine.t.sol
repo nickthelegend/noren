@@ -3,14 +3,14 @@ pragma solidity 0.8.28;
 
 import {Vm} from 'forge-std/Vm.sol';
 import {IERC165} from '@oz/utils/introspection/IERC165.sol';
-import {TsukeBase} from './TsukeBase.sol';
-import {TsukeCredit} from '../src/TsukeCredit.sol';
+import {RobinhoodBase} from './RobinhoodBase.sol';
+import {NorenCredit} from '../src/NorenCredit.sol';
 import {IReceiver} from '../src/interfaces/IReceiver.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
 /// @notice The Arc credit line: CreditLineOpened out, CRE onReport in.
-contract TsukeCreditLineTest is TsukeBase {
+contract NorenCreditLineTest is RobinhoodBase {
   uint256 internal constant LIMIT = 500e6; // 500 USDC on Arc
   uint256 internal col;
   bytes32 internal lineId;
@@ -42,7 +42,7 @@ contract TsukeCreditLineTest is TsukeBase {
     uint256 value = oracle.riskValueUsd8(RH.TSLA, col);
     bytes32 expectedId = keccak256(abi.encode(block.chainid, address(credit), customer, uint256(0)));
     vm.expectEmit(true, true, false, true, address(credit));
-    emit TsukeCredit.CreditLineOpened(customer, expectedId, LIMIT, expiry, value);
+    emit NorenCredit.CreditLineOpened(customer, expectedId, LIMIT, expiry, value);
     bytes32 id = _open();
     assertEq(id, expectedId);
     assertEq(tsla.balanceOf(address(credit)), col);
@@ -55,18 +55,18 @@ contract TsukeCreditLineTest is TsukeBase {
 
   function test_eventSignatureMatchesBridgeInterface() public pure {
     assertEq(
-      TsukeCredit.CreditLineOpened.selector,
+      NorenCredit.CreditLineOpened.selector,
       keccak256('CreditLineOpened(address,bytes32,uint256,uint64,uint256)')
     );
-    assertEq(TsukeCredit.CreditLineClosed.selector, keccak256('CreditLineClosed(bytes32)'));
+    assertEq(NorenCredit.CreditLineClosed.selector, keccak256('CreditLineClosed(bytes32)'));
   }
 
   function test_lineRejectsOverLimitAndBadExpiry() public {
     vm.startPrank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.OverLimit.selector, 2_001e6, 2_000e6));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.OverLimit.selector, 2_001e6, 2_000e6));
     credit.openCreditLine(RH.TSLA, col, 2_001e6, expiry);
     uint64 tooLong = uint64(block.timestamp + 91 days);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.BadExpiry.selector, tooLong));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadExpiry.selector, tooLong));
     credit.openCreditLine(RH.TSLA, col, LIMIT, tooLong);
     vm.stopPrank();
   }
@@ -79,16 +79,16 @@ contract TsukeCreditLineTest is TsukeBase {
 
   function test_onlyForwarderCanReport() public {
     _open();
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.NotForwarder.selector, address(this)));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.NotForwarder.selector, address(this)));
     credit.onReport('', abi.encode(lineId, uint256(1), uint256(0), uint64(block.timestamp)));
   }
 
   function test_reportUpdatesArcUtilisation() public {
     _open();
     vm.expectEmit(true, false, false, true, address(credit));
-    emit TsukeCredit.ArcUtilisationUpdated(lineId, 120e6, 20e6, uint64(block.timestamp));
+    emit NorenCredit.ArcUtilisationUpdated(lineId, 120e6, 20e6, uint64(block.timestamp));
     _report(120e6, 20e6, uint64(block.timestamp));
-    TsukeCredit.Line memory l = credit.line(lineId);
+    NorenCredit.Line memory l = credit.line(lineId);
     assertEq(l.drawn, 120e6);
     assertEq(l.repaid, 20e6);
     assertEq(credit.lineOutstanding(lineId), 100e6);
@@ -99,10 +99,10 @@ contract TsukeCreditLineTest is TsukeBase {
     uint64 t = uint64(block.timestamp);
     _report(100e6, 0, t);
     vm.prank(forwarder);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.StaleReport.selector, t, t));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.StaleReport.selector, t, t));
     credit.onReport('', abi.encode(lineId, uint256(0), uint256(0), t)); // replay with same asOf
     vm.prank(forwarder);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.StaleReport.selector, t - 1, t));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.StaleReport.selector, t - 1, t));
     credit.onReport('', abi.encode(lineId, uint256(0), uint256(0), t - 1)); // older report
   }
 
@@ -110,30 +110,30 @@ contract TsukeCreditLineTest is TsukeBase {
     _open();
     uint64 future = uint64(block.timestamp + 301);
     vm.prank(forwarder);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.FutureReport.selector, future));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.FutureReport.selector, future));
     credit.onReport('', abi.encode(lineId, uint256(0), uint256(0), future));
   }
 
   function test_unknownLineRejected() public {
     bytes32 bogus = keccak256('nope');
     vm.prank(forwarder);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.UnknownLine.selector, bogus));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.UnknownLine.selector, bogus));
     credit.onReport('', abi.encode(bogus, uint256(0), uint256(0), uint64(block.timestamp)));
   }
 
   function test_workflowPolicyChecksMetadata() public {
     _open();
-    bytes32 wf = keccak256('tsuke-bridge');
+    bytes32 wf = keccak256('noren-bridge');
     address wfOwner = makeAddr('workflowOwner');
     vm.prank(owner);
     credit.setWorkflowPolicy(wf, wfOwner);
-    bytes memory good = abi.encodePacked(wf, bytes10('tsukebrdge'), wfOwner, bytes2('01'));
-    bytes memory bad = abi.encodePacked(keccak256('other'), bytes10('tsukebrdge'), wfOwner, bytes2('01'));
+    bytes memory good = abi.encodePacked(wf, bytes10('norenbridg'), wfOwner, bytes2('01'));
+    bytes memory bad = abi.encodePacked(keccak256('other'), bytes10('norenbridg'), wfOwner, bytes2('01'));
     bytes memory report = abi.encode(lineId, uint256(1e6), uint256(0), uint64(block.timestamp));
     vm.startPrank(forwarder);
-    vm.expectRevert(TsukeCredit.BadWorkflow.selector);
+    vm.expectRevert(NorenCredit.BadWorkflow.selector);
     credit.onReport(bad, report);
-    vm.expectRevert(TsukeCredit.BadWorkflow.selector);
+    vm.expectRevert(NorenCredit.BadWorkflow.selector);
     credit.onReport('', report);
     credit.onReport(good, report);
     vm.stopPrank();
@@ -155,23 +155,23 @@ contract TsukeCreditLineTest is TsukeBase {
     vm.prank(customer);
     credit.closeCreditLine(lineId); // step 1: stop the line
     Vm.Log[] memory logs = vm.getRecordedLogs();
-    assertEq(logs[0].topics[0], TsukeCredit.CreditLineClosed.selector);
+    assertEq(logs[0].topics[0], NorenCredit.CreditLineClosed.selector);
     assertEq(logs[0].topics[1], lineId);
     // Early withdrawal attempt: no report since the close yet
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.AwaitingArcReport.selector, t0, t0 + 60));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.AwaitingArcReport.selector, t0, t0 + 60));
     credit.closeCreditLine(lineId);
     // Report after the close still shows debt: collateral stays
     vm.warp(t0 + 120);
     _report(200e6, 150e6, t0 + 120);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.DebtOutstanding.selector, 50e6));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.DebtOutstanding.selector, 50e6));
     credit.closeCreditLine(lineId);
     assertEq(tsla.balanceOf(customer), 0);
     // Final repayment on Arc reaches Robinhood through CRE and settles the line automatically
     vm.warp(t0 + 180);
     _report(200e6, 200e6, t0 + 180);
-    assertEq(uint8(credit.line(lineId).status), uint8(TsukeCredit.LineStatus.Closed));
+    assertEq(uint8(credit.line(lineId).status), uint8(NorenCredit.LineStatus.Closed));
     assertEq(tsla.balanceOf(customer), col, 'collateral returned');
     (,,, uint256 avail) = credit.creditTerms(customer);
     assertEq(avail, 2_000e6, 'limit released');
@@ -182,7 +182,7 @@ contract TsukeCreditLineTest is TsukeBase {
 
   function test_onlyBorrowerCanClose() public {
     _open();
-    vm.expectRevert(TsukeCredit.NotBorrower.selector);
+    vm.expectRevert(NorenCredit.NotBorrower.selector);
     credit.closeCreditLine(lineId);
   }
 
@@ -208,15 +208,15 @@ contract TsukeCreditLineTest is TsukeBase {
     assertEq(vault.idleUsdg(), idle + owed, 'treasury receives the outstanding Arc debt');
     assertEq(tsla.balanceOf(liquidator), seized);
     assertEq(tsla.balanceOf(customer), col - seized);
-    assertEq(uint8(credit.line(lineId).status), uint8(TsukeCredit.LineStatus.Liquidated));
+    assertEq(uint8(credit.line(lineId).status), uint8(NorenCredit.LineStatus.Liquidated));
     Vm.Log[] memory logs = vm.getRecordedLogs();
     bool closedSeen;
     for (uint256 i; i < logs.length; ++i) {
-      if (logs[i].topics[0] == TsukeCredit.CreditLineClosed.selector) closedSeen = true;
+      if (logs[i].topics[0] == NorenCredit.CreditLineClosed.selector) closedSeen = true;
     }
     assertTrue(closedSeen, 'CreditLineClosed tells the bridge to zero the Arc limit');
     vm.prank(forwarder);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.LineNotActive.selector, TsukeCredit.LineStatus.Liquidated));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.LineNotActive.selector, NorenCredit.LineStatus.Liquidated));
     credit.onReport('', abi.encode(lineId, uint256(0), uint256(0), uint64(block.timestamp)));
   }
 

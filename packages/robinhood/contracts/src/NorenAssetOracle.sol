@@ -7,14 +7,14 @@ import {Math} from '@oz/utils/math/Math.sol';
 import {IAggregatorV3} from './interfaces/IAggregatorV3.sol';
 import {IRobinhoodStockToken, IRobinhoodRegistry} from './interfaces/IRobinhoodStockToken.sol';
 
-/// @title TsukeOracle
-/// @notice Prices Tsuke assets from Chainlink Data Feeds on Robinhood Chain with the Data Feeds
+/// @title NorenAssetOracle
+/// @notice Prices Noren assets from Chainlink Data Feeds on Robinhood Chain with the Data Feeds
 /// safety rules: feed decimals() read live on every call, answer > 0, a complete round,
 /// no future timestamps, and a per-asset maximum age. Stock feeds stop while US markets are
 /// closed, so stock assets get a longer maximum age inside the weekend/holiday window and a
 /// haircut on new risk taken during that window. Stock Token amounts are converted to shares
 /// with the token's live uiMultiplier().
-contract TsukeOracle is Ownable2Step {
+contract NorenAssetOracle is Ownable2Step {
   using Math for uint256;
 
   uint256 internal constant BPS = 10_000;

@@ -2,11 +2,11 @@
 pragma solidity 0.8.28;
 
 import {Math} from '@oz/utils/math/Math.sol';
-import {TsukeBase} from './TsukeBase.sol';
-import {TsukeVault} from '../src/TsukeVault.sol';
+import {RobinhoodBase} from './RobinhoodBase.sol';
+import {NorenVault} from '../src/NorenVault.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
-contract TsukeVaultTest is TsukeBase {
+contract NorenVaultTest is RobinhoodBase {
   function test_lpDepositAndRedeemAtPar() public view {
     assertEq(vault.totalAssets(), 100_000e6);
     assertEq(vault.convertToAssets(vault.balanceOf(lp)), 100_000e6);
@@ -24,13 +24,13 @@ contract TsukeVaultTest is TsukeBase {
   }
 
   function test_onlyModulesDisburse() public {
-    vm.expectRevert(abi.encodeWithSelector(TsukeVault.NotModule.selector, address(this)));
+    vm.expectRevert(abi.encodeWithSelector(NorenVault.NotModule.selector, address(this)));
     vault.disburse(address(this), 1e6);
   }
 
   function test_disburseCappedByIdle() public {
     vm.prank(address(gateway));
-    vm.expectRevert(abi.encodeWithSelector(TsukeVault.InsufficientLiquidity.selector, 100_001e6, 100_000e6));
+    vm.expectRevert(abi.encodeWithSelector(NorenVault.InsufficientLiquidity.selector, 100_001e6, 100_000e6));
     vault.disburse(merchant, 100_001e6);
   }
 
@@ -62,7 +62,7 @@ contract TsukeVaultTest is TsukeBase {
     _fund(RH.USDG, customer, expected);
     vm.startPrank(customer);
     usdg.approve(address(vault), expected);
-    vm.expectRevert(abi.encodeWithSelector(TsukeVault.Slippage.selector, expected, expected - 1));
+    vm.expectRevert(abi.encodeWithSelector(NorenVault.Slippage.selector, expected, expected - 1));
     vault.buyInventory(RH.NVDA, 2e18, expected - 1);
     uint256 paid = vault.buyInventory(RH.NVDA, 2e18, expected);
     vm.stopPrank();
@@ -72,7 +72,7 @@ contract TsukeVaultTest is TsukeBase {
   }
 
   function test_cannotBuyUsdgAsInventory() public {
-    vm.expectRevert(abi.encodeWithSelector(TsukeVault.NotInventory.selector, RH.USDG));
+    vm.expectRevert(abi.encodeWithSelector(NorenVault.NotInventory.selector, RH.USDG));
     vault.buyInventory(RH.USDG, 1e6, 1e6);
   }
 
@@ -80,7 +80,7 @@ contract TsukeVaultTest is TsukeBase {
     vm.expectRevert();
     vault.setModule(address(this), true);
     vm.prank(owner);
-    vm.expectRevert(TsukeVault.BadConfig.selector);
+    vm.expectRevert(NorenVault.BadConfig.selector);
     vault.setInventorySpread(1_001);
   }
 }

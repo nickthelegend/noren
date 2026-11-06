@@ -2,14 +2,14 @@
 pragma solidity 0.8.28;
 
 import {Math} from '@oz/utils/math/Math.sol';
-import {TsukeBase} from './TsukeBase.sol';
-import {TsukeCredit} from '../src/TsukeCredit.sol';
-import {TsukeGateway} from '../src/TsukeGateway.sol';
+import {RobinhoodBase} from './RobinhoodBase.sol';
+import {NorenCredit} from '../src/NorenCredit.sol';
+import {NorenGateway} from '../src/NorenGateway.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
 /// @notice Underwriting and Pay in 4 on the Robinhood mainnet fork.
-contract TsukeCreditTest is TsukeBase {
+contract NorenCreditTest is RobinhoodBase {
   bytes32 internal constant INV = keccak256('bnpl-1');
   uint128 internal constant PRICE = 400e6; // 400 USDG purchase
 
@@ -20,8 +20,8 @@ contract TsukeCreditTest is TsukeBase {
 
   // ------------------------------------------------------------ attestations
 
-  function _att(address b, uint8 tier, uint256 limit, uint16 ratio) internal view returns (TsukeCredit.Attestation memory) {
-    return TsukeCredit.Attestation(b, tier, limit, ratio, credit.attestationNonce(b), uint64(block.timestamp + 30 days));
+  function _att(address b, uint8 tier, uint256 limit, uint16 ratio) internal view returns (NorenCredit.Attestation memory) {
+    return NorenCredit.Attestation(b, tier, limit, ratio, credit.attestationNonce(b), uint64(block.timestamp + 30 days));
   }
 
   function test_applyAttestationSetsTerms() public {
@@ -35,14 +35,14 @@ contract TsukeCreditTest is TsukeBase {
   }
 
   function test_attestationDigestMatchesEip712() public view {
-    TsukeCredit.Attestation memory a = _att(customer, 3, 2_500e6, 13_000);
+    NorenCredit.Attestation memory a = _att(customer, 3, 2_500e6, 13_000);
     bytes32 structHash = keccak256(
       abi.encode(credit.ATTESTATION_TYPEHASH(), a.borrower, a.tier, a.limitUsdg, a.collateralRatioBps, a.nonce, a.expiry)
     );
     bytes32 domain = keccak256(
       abi.encode(
         keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-        keccak256('TsukeCredit'),
+        keccak256('NorenCredit'),
         keccak256('1'),
         block.chainid,
         address(credit)
@@ -53,49 +53,49 @@ contract TsukeCreditTest is TsukeBase {
 
   function test_rejectsSignatureFromWrongKey() public {
     (, uint256 mallory) = makeAddrAndKey('mallory');
-    TsukeCredit.Attestation memory a = _att(customer, 4, 1_000_000e6, 12_000);
+    NorenCredit.Attestation memory a = _att(customer, 4, 1_000_000e6, 12_000);
     bytes memory sig = _sign(mallory, a);
-    vm.expectRevert(TsukeCredit.BadSignature.selector);
+    vm.expectRevert(NorenCredit.BadSignature.selector);
     credit.applyAttestation(a, sig);
   }
 
   function test_rejectsTamperedAttestation() public {
-    TsukeCredit.Attestation memory a = _att(customer, 1, 250e6, 15_000);
+    NorenCredit.Attestation memory a = _att(customer, 1, 250e6, 15_000);
     bytes memory sig = _sign(underwriterKey, a);
     a.limitUsdg = 250_000e6; // borrower edits the limit after signing
-    vm.expectRevert(TsukeCredit.BadSignature.selector);
+    vm.expectRevert(NorenCredit.BadSignature.selector);
     credit.applyAttestation(a, sig);
   }
 
   function test_rejectsReplayedAttestation() public {
-    TsukeCredit.Attestation memory a = _att(customer, 4, 5_000e6, 12_500);
+    NorenCredit.Attestation memory a = _att(customer, 4, 5_000e6, 12_500);
     bytes memory sig = _sign(underwriterKey, a);
     credit.applyAttestation(a, sig);
     // A later downgrade is applied, then the borrower tries to replay the old generous one.
     _attest(customer, 1, 100e6, 15_000);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.BadNonce.selector, 2, 0));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadNonce.selector, 2, 0));
     credit.applyAttestation(a, sig);
   }
 
   function test_rejectsExpiredAttestation() public {
-    TsukeCredit.Attestation memory a = _att(customer, 2, 1_000e6, 14_000);
+    NorenCredit.Attestation memory a = _att(customer, 2, 1_000e6, 14_000);
     a.expiry = uint64(block.timestamp + 10);
     bytes memory sig = _sign(underwriterKey, a);
     vm.warp(vm.getBlockTimestamp() + 11);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.AttestationExpired.selector, a.expiry));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.AttestationExpired.selector, a.expiry));
     credit.applyAttestation(a, sig);
   }
 
   function test_rejectsRatioBelowOnChainFloor() public {
-    TsukeCredit.Attestation memory a = _att(customer, 4, 1_000e6, 11_500); // floor is 12_000
+    NorenCredit.Attestation memory a = _att(customer, 4, 1_000e6, 11_500); // floor is 12_000
     bytes memory sig = _sign(underwriterKey, a);
-    vm.expectRevert(TsukeCredit.BadAttestation.selector);
+    vm.expectRevert(NorenCredit.BadAttestation.selector);
     credit.applyAttestation(a, sig);
   }
 
   function test_rejectsMalformedSignature() public {
-    TsukeCredit.Attestation memory a = _att(customer, 2, 1_000e6, 14_000);
-    vm.expectRevert(TsukeCredit.BadSignature.selector);
+    NorenCredit.Attestation memory a = _att(customer, 2, 1_000e6, 14_000);
+    vm.expectRevert(NorenCredit.BadSignature.selector);
     credit.applyAttestation(a, hex'1234');
   }
 
@@ -135,8 +135,8 @@ contract TsukeCreditTest is TsukeBase {
     assertEq(vault.idleUsdg(), idle - PRICE * 9_700 / 10_000);
     assertEq(vault.receivablesUsdg(), PRICE);
     assertEq(nvda.balanceOf(address(credit)), col);
-    assertEq(uint8(gateway.invoice(merchant, INV).status), uint8(TsukeGateway.Status.Paid));
-    TsukeCredit.Plan memory p = credit.plan(planId);
+    assertEq(uint8(gateway.invoice(merchant, INV).status), uint8(NorenGateway.Status.Paid));
+    NorenCredit.Plan memory p = credit.plan(planId);
     assertEq(p.principal, PRICE);
     assertEq(p.borrower, customer);
     (,,, uint256 avail) = credit.creditTerms(customer);
@@ -148,7 +148,7 @@ contract TsukeCreditTest is TsukeBase {
   function test_noAttestationNoCredit() public {
     _prepare(10e18);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.NoCredit.selector, customer));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.NoCredit.selector, customer));
     credit.openPlan(INV, merchant, RH.NVDA, 10e18);
   }
 
@@ -156,7 +156,7 @@ contract TsukeCreditTest is TsukeBase {
     _attest(customer, 1, 300e6, 15_000);
     _prepare(10e18);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.OverLimit.selector, PRICE, 300e6));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.OverLimit.selector, PRICE, 300e6));
     credit.openPlan(INV, merchant, RH.NVDA, 10e18);
   }
 
@@ -167,7 +167,7 @@ contract TsukeCreditTest is TsukeBase {
     uint256 value = oracle.riskValueUsd8(RH.NVDA, col);
     uint256 required = Math.mulDiv(oracle.usdgToUsd8(PRICE, Math.Rounding.Ceil), 14_000, 10_000, Math.Rounding.Ceil);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.InsufficientCollateral.selector, value, required));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.InsufficientCollateral.selector, value, required));
     credit.openPlan(INV, merchant, RH.NVDA, col);
   }
 
@@ -185,7 +185,7 @@ contract TsukeCreditTest is TsukeBase {
     }
     vm.stopPrank();
     assertEq(nvda.balanceOf(customer), col, 'collateral returned');
-    assertEq(uint8(credit.plan(planId).status), uint8(TsukeCredit.PlanStatus.Repaid));
+    assertEq(uint8(credit.plan(planId).status), uint8(NorenCredit.PlanStatus.Repaid));
     (uint32 onTime, uint32 late, uint32 completed, uint32 clean,) = credit.history(customer);
     assertEq(onTime, 4);
     assertEq(late, 0);
@@ -218,9 +218,9 @@ contract TsukeCreditTest is TsukeBase {
     vm.startPrank(customer);
     usdg.approve(address(credit), PRICE);
     credit.repay(planId, 3);
-    vm.expectRevert(TsukeCredit.NothingToClaim.selector);
+    vm.expectRevert(NorenCredit.NothingToClaim.selector);
     credit.claim(RH.NVDA);
-    vm.expectRevert(TsukeCredit.NothingDue.selector);
+    vm.expectRevert(NorenCredit.NothingDue.selector);
     credit.repay(planId, 2); // cannot overpay past installment 4
     vm.stopPrank();
     assertEq(nvda.balanceOf(address(credit)), col);
@@ -228,7 +228,7 @@ contract TsukeCreditTest is TsukeBase {
     (bool overdue, bool under) = credit.planLiquidatable(planId);
     assertFalse(overdue || under);
     vm.prank(liquidator);
-    vm.expectRevert(TsukeCredit.NotLiquidatable.selector);
+    vm.expectRevert(NorenCredit.NotLiquidatable.selector);
     credit.liquidatePlan(planId);
   }
 
@@ -298,7 +298,7 @@ contract TsukeCreditTest is TsukeBase {
   function test_healthyPlanNotLiquidatable() public {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 planId = _openPlan(_nvdaFor(PRICE, 14_000));
-    vm.expectRevert(TsukeCredit.NotLiquidatable.selector);
+    vm.expectRevert(NorenCredit.NotLiquidatable.selector);
     credit.liquidatePlan(planId);
   }
 
@@ -353,14 +353,14 @@ contract TsukeCreditTest is TsukeBase {
     _attest(customer, 2, 1_000e6, 14_000);
     vm.deal(customer, 1 ether);
     vm.prank(customer);
-    vm.expectRevert(TsukeCredit.BadValue.selector);
+    vm.expectRevert(NorenCredit.BadValue.selector);
     credit.openPlan{value: 1 ether}(INV, merchant, address(0), 2 ether);
   }
 
   function test_usdgNotAcceptedAsCollateral() public {
     _attest(customer, 2, 1_000e6, 14_000);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeCredit.CollateralNotAccepted.selector, RH.USDG));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.CollateralNotAccepted.selector, RH.USDG));
     credit.openPlan(INV, merchant, RH.USDG, 1_000e6);
   }
 
@@ -403,16 +403,16 @@ contract TsukeCreditTest is TsukeBase {
     vm.startPrank(liquidator);
     usdg.approve(address(credit), PRICE);
     credit.liquidatePlan(planId);
-    vm.expectRevert(TsukeCredit.PlanNotActive.selector);
+    vm.expectRevert(NorenCredit.PlanNotActive.selector);
     credit.repay(planId, 1);
     vm.stopPrank();
   }
 
   function test_paramsGuarded() public {
-    TsukeCredit.Params memory p = _params(INTERVAL, GRACE);
+    NorenCredit.Params memory p = _params(INTERVAL, GRACE);
     p.liquidationThresholdBps = 9_000; // below 100% would allow under-collateralised credit
     vm.prank(owner);
-    vm.expectRevert(TsukeCredit.BadConfig.selector);
+    vm.expectRevert(NorenCredit.BadConfig.selector);
     credit.setParams(p);
     vm.expectRevert();
     credit.setUnderwriter(address(this));
