@@ -33,7 +33,7 @@
 .nk-tab-l { position: relative; }
 .nk-right { justify-self: end; display: flex; align-items: center; gap: 10px; }
 .nk-prof { position: relative; }
-.nk-chip { appearance: none; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px 0 6px; border-radius: var(--nk-pill); border: 1px solid var(--nk-hair); background: var(--nk-card); color: var(--nk-ink); font: 400 13px/1 var(--nk-mono); cursor: pointer; transition: border-color .15s; }
+.nk-chip { appearance: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px 0 6px; border-radius: var(--nk-pill); border: 1px solid var(--nk-hair); background: var(--nk-card); color: var(--nk-ink); font: 400 13px/1 var(--nk-mono); cursor: pointer; transition: border-color .15s; }
 .nk-chip:hover { border-color: var(--nk-hair-2); }
 .nk-ava { width: 32px; height: 32px; border-radius: 50%; background: conic-gradient(from 200deg, var(--nk-ai), var(--nk-kaki), #e9c98f, var(--nk-ai)); }
 .nk-nets { display: inline-flex; gap: 6px; }

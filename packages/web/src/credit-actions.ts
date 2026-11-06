@@ -80,7 +80,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       const needsAttestation = ratio === 0;
       if (needsAttestation) {
         const u = await this.underwrite();
-        if (u.tierIndex < 0) throw new Error(`Declined by the underwriter (score ${u.score} of 100). See the factors under "Your credit score".`);
+        if (u.tierIndex < 0) throw new Error(`Declined by the underwriter (score ${u.score} of 100). See the factors under "Reputation".`);
         ratio = u.ltvBps; available = u.limitUsdg; tier = u.tierIndex + 1;
       }
       const byCollateral = (value8 / 100n) * 10_000n / BigInt(ratio); // usd8 → usdc6 at $1, divided by the ratio

@@ -74,6 +74,8 @@ Fork transaction hashes vanish when the fork stops, so the numbers above are rep
 
 | Noren Merchant | Noren app |
 |---|---|
+| ![Noren Merchant: store sign-up with Sign-In with Ethereum](docs/img/merchant-onboarding.png) | ![Noren app: Swap, best execution between a 1inch Aqua maker and Uniswap v4](docs/img/app-swap.png) |
+| ![Noren app: Earn, deposit vaults that back Aqua makers](docs/img/app-earn.png) | ![Noren app: Credit, a fresh wallet declined honestly by the history underwriter](docs/img/app-credit.png) |
 | ![Noren Merchant home: payment methods, credit-line exposure, recent payments](docs/img/dashboard.png) | ![Noren app: stock on Robinhood, credit score, line bridged to Arc by Chainlink CRE](docs/img/app.png) |
 | ![A pay-with-stocks payment filled by a 1inch Aqua maker](docs/img/payment-stock.png) | ![Checkout, pay with stocks: Chainlink price, filled by an Aqua maker](docs/img/checkout-stocks.png) |
 | ![A pay-later payment in Noren Merchant](docs/img/payment-credit.png) | ![Checkout, pay later in 3 parts](docs/img/checkout-methods.png) |
