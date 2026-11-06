@@ -106,7 +106,8 @@ export function creditActions(_cfg: Config, oc: Onchain) {
      */
     async schedule(line: Line): Promise<{ due: number; amount: bigint; paid: boolean }[]> {
       if (line.drawn === 0n) return [];
-      const start = Math.floor(Date.now() / 1000), span = Math.max(86400, line.expiry - start);
+      // Lines from the Noren app run 30 days, so the plan spans the line's own term (stable across reloads).
+      const span = 30 * 86400, start = line.expiry - span;
       const part = line.drawn / 4n, parts = [part, part, part, line.drawn - part * 3n];
       let covered = line.repaid;
       return parts.map((amount, i) => { const paid = covered >= amount; covered = paid ? covered - amount : 0n; return { due: start + Math.round((span * (i + 1)) / 4), amount, paid }; });
