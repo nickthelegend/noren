@@ -3,13 +3,13 @@ pragma solidity 0.8.28;
 
 import {Vm} from 'forge-std/Vm.sol';
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
-import {TsukeBase, IStockAdmin} from './TsukeBase.sol';
-import {TsukeOracle} from '../src/TsukeOracle.sol';
-import {TsukeGateway} from '../src/TsukeGateway.sol';
+import {RobinhoodBase, IStockAdmin} from './RobinhoodBase.sol';
+import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
+import {NorenGateway} from '../src/NorenGateway.sol';
 import {IAggregatorV3} from '../src/interfaces/IAggregatorV3.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
-contract TsukeGatewayTest is TsukeBase {
+contract NorenGatewayTest is RobinhoodBase {
   bytes32 internal constant INV = keccak256('inv-1');
   uint128 internal constant AMOUNT = 250e6; // 250 USDG
 
@@ -26,7 +26,7 @@ contract TsukeGatewayTest is TsukeBase {
     vm.stopPrank();
     assertEq(paid, AMOUNT);
     assertEq(usdg.balanceOf(merchant), AMOUNT);
-    assertEq(uint8(gateway.invoice(merchant, INV).status), uint8(TsukeGateway.Status.Paid));
+    assertEq(uint8(gateway.invoice(merchant, INV).status), uint8(NorenGateway.Status.Paid));
   }
 
   function test_payWithUsdgPermit() public {
@@ -60,7 +60,7 @@ contract TsukeGatewayTest is TsukeBase {
     Vm.Log[] memory logs = vm.getRecordedLogs();
     bool seen;
     for (uint256 i; i < logs.length; ++i) {
-      if (logs[i].topics[0] == TsukeGateway.InvoicePaid.selector) seen = true;
+      if (logs[i].topics[0] == NorenGateway.InvoicePaid.selector) seen = true;
     }
     assertTrue(seen, 'InvoicePaid emitted');
   }
@@ -90,7 +90,7 @@ contract TsukeGatewayTest is TsukeBase {
     _fund(RH.NVDA, customer, q);
     vm.startPrank(customer);
     nvda.approve(address(gateway), q);
-    vm.expectRevert(abi.encodeWithSelector(TsukeGateway.Slippage.selector, q, q - 1));
+    vm.expectRevert(abi.encodeWithSelector(NorenGateway.Slippage.selector, q, q - 1));
     gateway.pay(INV, merchant, RH.NVDA, q - 1);
     vm.stopPrank();
   }
@@ -100,7 +100,7 @@ contract TsukeGatewayTest is TsukeBase {
     vm.startPrank(customer);
     usdg.approve(address(gateway), 2 * uint256(AMOUNT));
     gateway.pay(INV, merchant, RH.USDG, AMOUNT);
-    vm.expectRevert(abi.encodeWithSelector(TsukeGateway.InvoiceNotOpen.selector, TsukeGateway.Status.Paid));
+    vm.expectRevert(abi.encodeWithSelector(NorenGateway.InvoiceNotOpen.selector, NorenGateway.Status.Paid));
     gateway.pay(INV, merchant, RH.USDG, AMOUNT);
     vm.stopPrank();
   }
@@ -114,13 +114,13 @@ contract TsukeGatewayTest is TsukeBase {
   function test_cancelledInvoiceReverts() public {
     vm.prank(merchant);
     gateway.cancelInvoice(INV);
-    vm.expectRevert(abi.encodeWithSelector(TsukeGateway.InvoiceNotOpen.selector, TsukeGateway.Status.Cancelled));
+    vm.expectRevert(abi.encodeWithSelector(NorenGateway.InvoiceNotOpen.selector, NorenGateway.Status.Cancelled));
     gateway.pay(INV, merchant, RH.USDG, AMOUNT);
   }
 
   function test_duplicateInvoiceIdRejected() public {
     vm.prank(merchant);
-    vm.expectRevert(TsukeGateway.InvoiceExists.selector);
+    vm.expectRevert(NorenGateway.InvoiceExists.selector);
     gateway.createInvoice(INV, 1e6, uint64(block.timestamp + 1 hours));
   }
 
@@ -131,7 +131,7 @@ contract TsukeGatewayTest is TsukeBase {
     nvda.approve(address(gateway), q);
     _block(customer);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AccountBlocked.selector, RH.NVDA, customer));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AccountBlocked.selector, RH.NVDA, customer));
     gateway.pay(INV, merchant, RH.NVDA, q);
   }
 
@@ -141,12 +141,12 @@ contract TsukeGatewayTest is TsukeBase {
     vm.prank(RH.STOCK_PAUSER);
     IStockAdmin(RH.NVDA).pause();
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.AssetPaused.selector, RH.NVDA));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AssetPaused.selector, RH.NVDA));
     gateway.pay(INV, merchant, RH.NVDA, q);
   }
 
   function test_unsupportedAssetRejected() public {
-    vm.expectRevert(abi.encodeWithSelector(TsukeGateway.AssetNotAccepted.selector, address(0xBEEF)));
+    vm.expectRevert(abi.encodeWithSelector(NorenGateway.AssetNotAccepted.selector, address(0xBEEF)));
     gateway.quote(merchant, INV, address(0xBEEF));
   }
 
@@ -157,7 +157,7 @@ contract TsukeGatewayTest is TsukeBase {
     gateway.createInvoice(keccak256('late'), AMOUNT, uint64(block.timestamp + 1 hours));
     vm.deal(customer, 1 ether);
     vm.prank(customer);
-    vm.expectRevert(abi.encodeWithSelector(TsukeOracle.StalePrice.selector, RH.USDG, updatedAt, uint256(RH.MAX_AGE_OPEN)));
+    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.StalePrice.selector, RH.USDG, updatedAt, uint256(RH.MAX_AGE_OPEN)));
     gateway.pay{value: 1 ether}(keccak256('late'), merchant, address(0), 1 ether);
   }
 
@@ -174,14 +174,14 @@ contract TsukeGatewayTest is TsukeBase {
   }
 
   function test_onlyCreditCanSettle() public {
-    vm.expectRevert(TsukeGateway.NotCredit.selector);
+    vm.expectRevert(NorenGateway.NotCredit.selector);
     gateway.settleByCredit(merchant, INV, customer);
   }
 
   function test_ethValueRejectedForTokenPayments() public {
     vm.deal(customer, 1 ether);
     vm.prank(customer);
-    vm.expectRevert(TsukeGateway.BadValue.selector);
+    vm.expectRevert(NorenGateway.BadValue.selector);
     gateway.pay{value: 1}(INV, merchant, RH.USDG, AMOUNT);
   }
 
@@ -192,7 +192,7 @@ contract TsukeGatewayTest is TsukeBase {
 
 import {Math} from '@oz/utils/math/Math.sol';
 
-contract TsukeGatewayUsdgNoFeedTest is TsukeBase {
+contract NorenGatewayUsdgNoFeedTest is RobinhoodBase {
   function test_usdgPaymentDoesNotNeedAFreshFeed() public {
     (,,, uint256 updatedAt,) = IAggregatorV3(RH.FEED_USDG).latestRoundData();
     vm.warp(updatedAt + RH.MAX_AGE_OPEN + 1);

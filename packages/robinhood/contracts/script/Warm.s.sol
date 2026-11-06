@@ -4,10 +4,10 @@ pragma solidity 0.8.28;
 import {Script, console2} from 'forge-std/Script.sol';
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
 import {Math} from '@oz/utils/math/Math.sol';
-import {TsukeOracle} from '../src/TsukeOracle.sol';
-import {TsukeVault} from '../src/TsukeVault.sol';
-import {TsukeGateway} from '../src/TsukeGateway.sol';
-import {TsukeCredit} from '../src/TsukeCredit.sol';
+import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
+import {NorenVault} from '../src/NorenVault.sol';
+import {NorenGateway} from '../src/NorenGateway.sol';
+import {NorenCredit} from '../src/NorenCredit.sol';
 import {RobinhoodMainnet as RH} from './RobinhoodMainnet.sol';
 
 interface IPermit {
@@ -26,22 +26,22 @@ contract Warm is Script {
   bytes32 internal constant PERMIT_TYPEHASH =
     keccak256('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)');
 
-  TsukeOracle oracle;
-  TsukeVault vault;
-  TsukeGateway gateway;
-  TsukeCredit credit;
+  NorenAssetOracle oracle;
+  NorenVault vault;
+  NorenGateway gateway;
+  NorenCredit credit;
   address customer;
   address merchant;
   address forwarder;
   address owner;
 
   function run() external {
-    oracle = TsukeOracle(vm.envAddress('TSUKE_ORACLE'));
-    vault = TsukeVault(vm.envAddress('TSUKE_VAULT'));
-    gateway = TsukeGateway(payable(vm.envAddress('TSUKE_GATEWAY')));
-    credit = TsukeCredit(payable(vm.envAddress('TSUKE_CREDIT')));
+    oracle = NorenAssetOracle(vm.envAddress('NOREN_RH_ORACLE'));
+    vault = NorenVault(vm.envAddress('NOREN_RH_VAULT'));
+    gateway = NorenGateway(payable(vm.envAddress('NOREN_RH_GATEWAY')));
+    credit = NorenCredit(payable(vm.envAddress('NOREN_RH_CREDIT')));
     customer = vm.addr(CUSTOMER_KEY);
-    merchant = vm.envAddress('TSUKE_MERCHANT');
+    merchant = vm.envAddress('NOREN_RH_MERCHANT');
     forwarder = credit.forwarder();
     owner = credit.owner();
 
@@ -63,7 +63,7 @@ contract Warm is Script {
     }
 
     // Underwriting
-    TsukeCredit.Attestation memory a = TsukeCredit.Attestation(
+    NorenCredit.Attestation memory a = NorenCredit.Attestation(
       customer, 3, 2_500e6, 13_000, credit.attestationNonce(customer), uint64(block.timestamp + 30 days)
     );
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(UNDERWRITER_KEY, credit.hashAttestation(a));

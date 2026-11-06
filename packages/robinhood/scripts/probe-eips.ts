@@ -1,5 +1,5 @@
 // Probe which signature/account EIPs Robinhood Chain actually supports.
-//   pnpm --filter @noren/tsuke probe            (needs the fork on 8720 for the fork half)
+//   pnpm --filter @noren/robinhood probe            (needs the fork on 8720 for the fork half)
 // Read-only against mainnet: eth_call / eth_estimateGas only, nothing is broadcast to mainnet.
 // The EIP-7702 authorisation is signed by a throwaway key generated in memory for this run.
 import {
@@ -16,7 +16,7 @@ import {
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 const MAINNET_RPC = process.env.ROBINHOOD_RPC ?? 'https://rpc.mainnet.chain.robinhood.com';
-const FORK_RPC = process.env.TSUKE_RPC ?? 'http://127.0.0.1:8720';
+const FORK_RPC = process.env.NOREN_RH_RPC ?? 'http://127.0.0.1:8720';
 const USDG: Address = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
 const NVDA: Address = '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
 const WETH: Address = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
@@ -134,7 +134,7 @@ async function main() {
     arbOSVersionRaw: arbos?.toString() ?? 'ArbSys not available',
     eip2612: { usdg: await probePermit(USDG), nvda: await probePermit(NVDA) },
     eip7702: { mainnetEstimate: await probe7702Mainnet(), fork: await probe7702Fork() },
-    eip8141: 'Not available on Robinhood Chain: frame transactions exist only on an EF devnet, so Tsuke does not use them.',
+    eip8141: 'Not available on Robinhood Chain: frame transactions exist only on an EF devnet, so Noren does not use them.',
   };
   console.log(JSON.stringify(result, null, 2));
 }

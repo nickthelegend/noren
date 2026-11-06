@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-/// @notice The parts of the Robinhood Chain Stock Token (beacon proxy) that Tsuke reads.
+/// @notice The parts of the Robinhood Chain Stock Token (beacon proxy) that Noren reads.
 /// Selectors were read from the live implementation behind beacon
 /// 0xe10b6f6B275de231345c20D14Ab812db62151b00 on chain 4663.
 interface IRobinhoodStockToken {

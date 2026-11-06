@@ -10,15 +10,15 @@ import {EIP712} from '@oz/utils/cryptography/EIP712.sol';
 import {IERC165} from '@oz/utils/introspection/IERC165.sol';
 import {Math} from '@oz/utils/math/Math.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
-import {TsukeOracle} from './TsukeOracle.sol';
-import {TsukeGateway} from './TsukeGateway.sol';
+import {NorenAssetOracle} from './NorenAssetOracle.sol';
+import {NorenGateway} from './NorenGateway.sol';
 import {IReceiver} from './interfaces/IReceiver.sol';
-import {ITsukeVault, ITsukeReceivables} from './interfaces/ITsukeVault.sol';
+import {INorenVault, INorenReceivables} from './interfaces/INorenVault.sol';
 import {IWETH} from './interfaces/IWETH.sol';
 
-/// @title TsukeCredit
+/// @title NorenCredit
 /// @notice Collateralised Pay in 4 and an Arc credit line on Robinhood Chain.
-/// - Credit terms come from an EIP-712 attestation signed by the Tsuke underwriter
+/// - Credit terms come from an EIP-712 attestation signed by the Noren underwriter
 ///   (borrower, tier, limit, collateral ratio, nonce, expiry) and move with on-chain repayment
 ///   history: two clean plans lift the tier one step, each late installment drops it one,
 ///   each liquidation drops it two.
@@ -26,7 +26,7 @@ import {IWETH} from './interfaces/IWETH.sol';
 ///   (minus the merchant fee), and the borrower repays four USDG installments.
 /// - Arc credit line: collateral locked here backs a USDC line on Arc. A Chainlink CRE workflow
 ///   carries CreditLineOpened to Arc and reports Arc utilisation back through onReport.
-contract TsukeCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, ITsukeReceivables {
+contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INorenReceivables {
   using SafeERC20 for IERC20;
   using Math for uint256;
 
@@ -123,9 +123,9 @@ contract TsukeCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, ITsuke
 
   IERC20 public immutable usdg;
   IWETH public immutable weth;
-  TsukeOracle public immutable oracle;
-  ITsukeVault public immutable vault;
-  TsukeGateway public immutable gateway;
+  NorenAssetOracle public immutable oracle;
+  INorenVault public immutable vault;
+  NorenGateway public immutable gateway;
 
   address public underwriter;
   address public forwarder;
@@ -201,13 +201,13 @@ contract TsukeCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, ITsuke
     address owner_,
     IERC20 usdg_,
     IWETH weth_,
-    TsukeOracle oracle_,
-    ITsukeVault vault_,
-    TsukeGateway gateway_,
+    NorenAssetOracle oracle_,
+    INorenVault vault_,
+    NorenGateway gateway_,
     address underwriter_,
     address forwarder_,
     Params memory params_
-  ) Ownable(owner_) EIP712('TsukeCredit', '1') {
+  ) Ownable(owner_) EIP712('NorenCredit', '1') {
     usdg = usdg_;
     weth = weth_;
     oracle = oracle_;
@@ -575,7 +575,7 @@ contract TsukeCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, ITsuke
     return _linesOf[borrower];
   }
 
-  /// @inheritdoc ITsukeReceivables
+  /// @inheritdoc INorenReceivables
   function receivablesUsdg() external view returns (uint256) {
     return planOutstanding;
   }

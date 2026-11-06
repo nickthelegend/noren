@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Deploy Tsuke to the local Robinhood mainnet fork (port 8720) and seed demo balances.
+# Deploy Noren to the local Robinhood mainnet fork (port 8720) and seed demo balances.
 # Uses Anvil's published dev keys, which are only acceptable on a disposable local fork.
-# Prints the addresses and writes packages/tsuke/.fork/deployment.json.
+# Prints the addresses and writes packages/robinhood/.fork/deployment.json.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PORT="${TSUKE_FORK_PORT:-8720}"
+PORT="${NOREN_RH_FORK_PORT:-8720}"
 RPC="http://127.0.0.1:$PORT"
 case "$RPC" in http://127.0.0.1:*) ;; *) echo "Refusing: deploy-fork only targets a local fork" >&2; exit 1;; esac
 [ "$(cast chain-id --rpc-url "$RPC" 2>/dev/null)" = 4663 ] || { echo "Start the fork first: sh scripts/fork.sh" >&2; exit 1; }
@@ -15,10 +15,10 @@ OWNER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 OWNER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 CUSTOMER=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 MERCHANT=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
-FORWARDER="${TSUKE_FORWARDER:-0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f}"
-UNDERWRITER="${TSUKE_UNDERWRITER:-0xa0Ee7A142d267C1f36714E4a8F75612F20a79720}"
-INTERVAL="${TSUKE_INSTALLMENT_INTERVAL:-1209600}"
-GRACE="${TSUKE_GRACE:-259200}"
+FORWARDER="${NOREN_RH_FORWARDER:-0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f}"
+UNDERWRITER="${NOREN_RH_UNDERWRITER:-0xa0Ee7A142d267C1f36714E4a8F75612F20a79720}"
+INTERVAL="${NOREN_RH_INSTALLMENT_INTERVAL:-1209600}"
+GRACE="${NOREN_RH_GRACE:-259200}"
 POOL_MANAGER=0x8366a39CC670B4001A1121B8F6A443A643e40951
 USDG=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
 NVDA=0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC
@@ -30,11 +30,11 @@ for a in "$OWNER" "$CUSTOMER" "$MERCHANT" "$FORWARDER" "$UNDERWRITER"; do
 done
 
 cd "$ROOT/contracts"
-OUT="$(TSUKE_OWNER=$OWNER TSUKE_UNDERWRITER=$UNDERWRITER TSUKE_FORWARDER=$FORWARDER \
-  TSUKE_INSTALLMENT_INTERVAL=$INTERVAL TSUKE_GRACE=$GRACE \
+OUT="$(NOREN_RH_OWNER=$OWNER NOREN_RH_UNDERWRITER=$UNDERWRITER NOREN_RH_FORWARDER=$FORWARDER \
+  NOREN_RH_INSTALLMENT_INTERVAL=$INTERVAL NOREN_RH_GRACE=$GRACE \
   forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC" --broadcast --private-key "$OWNER_KEY" 2>&1)" || { echo "$OUT" >&2; exit 1; }
 pick() { sed -nE "s/.*$1[[:space:]]+(0x[[:xdigit:]]{40}).*/\1/p" <<<"$OUT" | tail -1; }
-ORACLE=$(pick TSUKE_ORACLE); VAULT=$(pick TSUKE_VAULT); GATEWAY=$(pick TSUKE_GATEWAY); CREDIT=$(pick TSUKE_CREDIT)
+ORACLE=$(pick NOREN_RH_ORACLE); VAULT=$(pick NOREN_RH_VAULT); GATEWAY=$(pick NOREN_RH_GATEWAY); CREDIT=$(pick NOREN_RH_CREDIT)
 [ -n "$CREDIT" ] || { echo "$OUT" >&2; exit 1; }
 DEPLOY_BLOCK=$(cast block-number --rpc-url "$RPC")
 

@@ -9,23 +9,23 @@ import {ERC4626} from '@oz/token/ERC20/extensions/ERC4626.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 import {Math} from '@oz/utils/math/Math.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
-import {TsukeOracle} from './TsukeOracle.sol';
-import {ITsukeVault, ITsukeReceivables} from './interfaces/ITsukeVault.sol';
+import {NorenAssetOracle} from './NorenAssetOracle.sol';
+import {INorenVault, INorenReceivables} from './interfaces/INorenVault.sol';
 
-/// @title TsukeVault
-/// @notice USDG liquidity for Tsuke. LPs deposit USDG for shares (ERC-4626). Approved modules
+/// @title NorenVault
+/// @notice USDG liquidity for Noren. LPs deposit USDG for shares (ERC-4626). Approved modules
 /// (the gateway and the credit contract) draw USDG to pay merchants. The vault keeps the
 /// assets customers pay with (ETH as WETH, Stock Tokens) as inventory and sells it back to
 /// anyone at the Chainlink price plus a spread. NAV = idle USDG + receivables + inventory
-/// valued by TsukeOracle. Withdrawals are limited to idle USDG.
-contract TsukeVault is ERC4626, Ownable2Step, ReentrancyGuard, ITsukeVault {
+/// valued by NorenAssetOracle. Withdrawals are limited to idle USDG.
+contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
   using SafeERC20 for IERC20;
   using Math for uint256;
 
   uint256 internal constant BPS = 10_000;
 
-  TsukeOracle public immutable oracle;
-  ITsukeReceivables public credit;
+  NorenAssetOracle public immutable oracle;
+  INorenReceivables public credit;
   mapping(address module => bool) public isModule;
   /// @notice Spread charged when the vault sells inventory back (bps over the oracle price).
   uint16 public inventorySpreadBps = 50;
@@ -42,8 +42,8 @@ contract TsukeVault is ERC4626, Ownable2Step, ReentrancyGuard, ITsukeVault {
   error Slippage(uint256 required, uint256 max);
   error BadConfig();
 
-  constructor(address owner_, IERC20 usdg_, TsukeOracle oracle_)
-    ERC20('Tsuke Vault USDG', 'tsUSDG')
+  constructor(address owner_, IERC20 usdg_, NorenAssetOracle oracle_)
+    ERC20('Noren Vault USDG', 'nvUSDG')
     ERC4626(usdg_)
     Ownable(owner_)
   {
@@ -58,7 +58,7 @@ contract TsukeVault is ERC4626, Ownable2Step, ReentrancyGuard, ITsukeVault {
     emit ModuleSet(module, allowed);
   }
 
-  function setCredit(ITsukeReceivables credit_) external onlyOwner {
+  function setCredit(INorenReceivables credit_) external onlyOwner {
     credit = credit_;
     emit CreditSet(address(credit_));
   }
@@ -71,7 +71,7 @@ contract TsukeVault is ERC4626, Ownable2Step, ReentrancyGuard, ITsukeVault {
 
   // ---------------------------------------------------------------- modules
 
-  /// @inheritdoc ITsukeVault
+  /// @inheritdoc INorenVault
   function disburse(address to, uint256 amountUsdg) external nonReentrant {
     if (!isModule[msg.sender]) revert NotModule(msg.sender);
     uint256 idle = idleUsdg();
@@ -87,7 +87,7 @@ contract TsukeVault is ERC4626, Ownable2Step, ReentrancyGuard, ITsukeVault {
   function buyInventory(address invAsset, uint256 amount, uint256 maxUsdgIn) external nonReentrant returns (uint256 usdgIn) {
     if (invAsset == asset() || !oracle.isSupported(invAsset)) revert NotInventory(invAsset);
     oracle.checkTransferable(invAsset, address(this), msg.sender);
-    TsukeOracle.Price memory p = oracle.price(invAsset);
+    NorenAssetOracle.Price memory p = oracle.price(invAsset);
     uint256 usd8 = oracle.valueUsd8(invAsset, amount);
     uint256 gross = BPS + inventorySpreadBps + (p.marketClosed ? oracle.closedHaircutBps() : 0);
     usdgIn = oracle.usd8ToUsdg(usd8.mulDiv(gross, BPS, Math.Rounding.Ceil), Math.Rounding.Ceil);

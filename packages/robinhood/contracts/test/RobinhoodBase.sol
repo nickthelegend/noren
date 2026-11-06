@@ -3,11 +3,11 @@ pragma solidity 0.8.28;
 
 import {Test} from 'forge-std/Test.sol';
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
-import {TsukeOracle} from '../src/TsukeOracle.sol';
-import {TsukeVault} from '../src/TsukeVault.sol';
-import {TsukeGateway} from '../src/TsukeGateway.sol';
-import {TsukeCredit} from '../src/TsukeCredit.sol';
-import {ITsukeVault} from '../src/interfaces/ITsukeVault.sol';
+import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
+import {NorenVault} from '../src/NorenVault.sol';
+import {NorenGateway} from '../src/NorenGateway.sol';
+import {NorenCredit} from '../src/NorenCredit.sol';
+import {INorenVault} from '../src/interfaces/INorenVault.sol';
 import {IWETH} from '../src/interfaces/IWETH.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
@@ -33,14 +33,14 @@ interface IPermitToken {
 /// @notice Shared fixture. Runs only against a fork of Robinhood Chain mainnet (chain 4663):
 /// real USDG, WETH, Stock Tokens and Chainlink feeds. Balances come from impersonating a real
 /// holder (the Uniswap v4 PoolManager), never from deal() on a token.
-abstract contract TsukeBase is Test {
+abstract contract RobinhoodBase is Test {
   bytes32 internal constant PERMIT_TYPEHASH =
     keccak256('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)');
 
-  TsukeOracle internal oracle;
-  TsukeVault internal vault;
-  TsukeGateway internal gateway;
-  TsukeCredit internal credit;
+  NorenAssetOracle internal oracle;
+  NorenVault internal vault;
+  NorenGateway internal gateway;
+  NorenCredit internal credit;
 
   IERC20 internal usdg = IERC20(RH.USDG);
   IWETH internal weth = IWETH(RH.WETH);
@@ -65,11 +65,11 @@ abstract contract TsukeBase is Test {
     (customer, customerKey) = makeAddrAndKey('customer');
     (underwriter, underwriterKey) = makeAddrAndKey('underwriter');
 
-    oracle = new TsukeOracle(owner, RH.USDG);
-    vault = new TsukeVault(owner, usdg, oracle);
-    gateway = new TsukeGateway(owner, usdg, weth, oracle, ITsukeVault(address(vault)));
-    credit = new TsukeCredit(
-      owner, usdg, weth, oracle, ITsukeVault(address(vault)), gateway, underwriter, forwarder, _params(INTERVAL, GRACE)
+    oracle = new NorenAssetOracle(owner, RH.USDG);
+    vault = new NorenVault(owner, usdg, oracle);
+    gateway = new NorenGateway(owner, usdg, weth, oracle, INorenVault(address(vault)));
+    credit = new NorenCredit(
+      owner, usdg, weth, oracle, INorenVault(address(vault)), gateway, underwriter, forwarder, _params(INTERVAL, GRACE)
     );
 
     vm.startPrank(owner);
@@ -91,8 +91,8 @@ abstract contract TsukeBase is Test {
     vm.stopPrank();
   }
 
-  function _params(uint32 interval, uint32 grace) internal pure returns (TsukeCredit.Params memory) {
-    return TsukeCredit.Params({
+  function _params(uint32 interval, uint32 grace) internal pure returns (NorenCredit.Params memory) {
+    return NorenCredit.Params({
       installmentInterval: interval,
       gracePeriod: grace,
       liquidationThresholdBps: 11_000,
@@ -115,7 +115,7 @@ abstract contract TsukeBase is Test {
   }
 
   function _attest(address borrower, uint8 tier, uint256 limit, uint16 ratio) internal {
-    TsukeCredit.Attestation memory a = TsukeCredit.Attestation({
+    NorenCredit.Attestation memory a = NorenCredit.Attestation({
       borrower: borrower,
       tier: tier,
       limitUsdg: limit,
@@ -126,7 +126,7 @@ abstract contract TsukeBase is Test {
     credit.applyAttestation(a, _sign(underwriterKey, a));
   }
 
-  function _sign(uint256 key, TsukeCredit.Attestation memory a) internal view returns (bytes memory) {
+  function _sign(uint256 key, NorenCredit.Attestation memory a) internal view returns (bytes memory) {
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, credit.hashAttestation(a));
     return abi.encodePacked(r, s, v);
   }
