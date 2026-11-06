@@ -16,6 +16,7 @@ import {IReceiver} from './interfaces/IReceiver.sol';
 import {INorenVault, INorenReceivables} from './interfaces/INorenVault.sol';
 import {INorenLiquidity} from './interfaces/IAquaSwapVM.sol';
 import {IWETH} from './interfaces/IWETH.sol';
+import {NorenShareLines, INorenShareVault} from './libraries/NorenShareLines.sol';
 
 /// @title NorenCredit
 /// @notice Collateralised Pay in 3 and an Arc credit line on Robinhood Chain.
@@ -36,6 +37,16 @@ import {IWETH} from './interfaces/IWETH.sol';
 ///   (or cure the missed installments) and the rest stays locked for the borrower.
 /// - Arc credit line: collateral locked here backs a USDC line on Arc. A Chainlink CRE workflow
 ///   carries CreditLineOpened to Arc and reports Arc utilisation back through onReport.
+/// - Share-backed lines: a line may lock Noren deposit-vault shares (nNVDA, nETH, ...) instead of the
+///   raw asset. The shares stay an Aqua maker position and keep earning fees; the limit is the shares'
+///   Chainlink value times the borrower's tier LTV (`maxCreditLimit`). Anyone may repay the line from
+///   that yield only (`harvestLineToRepay`); with nothing owed the borrower may take it
+///   (`claimLineYield`). Liquidation redeems only the shares it needs and sells them to Aqua makers.
+/// @notice The part of NorenReputation that NorenCredit reads.
+interface INorenReputationLtv {
+  function ltvOf(address account) external view returns (uint16);
+}
+
 contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INorenReceivables {
   using SafeERC20 for IERC20;
   using Math for uint256;
@@ -162,6 +173,15 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   uint256 public lineNonce;
   uint256 public planOutstanding;
   uint256 public badDebtUsdg;
+  /// @notice Noren deposit vaults as credit-line collateral: 0 = never accepted, 1 = new lines may lock
+  /// its shares, 2 = no new lines (open lines keep being valued through the vault).
+  mapping(address shareVault => uint8) public shareVaultStatus;
+  /// @notice Per share-backed line: fee index, unharvested yield (as of the last settlement), and what
+  /// yield repaid on Robinhood (Arc USDC credited, USDG paid). Live figures: NorenCreditLens.lineYield.
+  mapping(bytes32 lineId => NorenShareLines.Yield) public lineYieldState;
+  /// @notice NorenReputation: when set, a borrower's collateral ratio is never below 1 / its on-chain
+  /// reputation LTV (66 -> 70 -> 75 -> 80%), so the credit limit rises with recorded attestations.
+  INorenReputationLtv public reputation;
 
   event UnderwriterSet(address indexed underwriter);
   event ForwarderSet(address indexed forwarder);
@@ -195,6 +215,17 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     uint256 indexed planId, address indexed borrower, uint256 seized, uint256 repaidUsdg, uint256 collateralLeft, uint256 outstandingUsdg, bool closed
   );
   /// @notice positionId = bytes32(planId) for plans, the lineId for Arc lines.
+  event ShareCollateralSet(address indexed shareVault, bool accepted);
+  event ReputationSet(address indexed reputation);
+  /// @notice Yield from a share-backed line's shares repaid `creditUsdc6` of its Arc debt on Robinhood
+  /// (`paidUsdg` USDG to the vault, `shares` left the line); `outstandingUsdc6` is what remains.
+  event LineYieldRepaid(
+    bytes32 indexed lineId, address indexed caller, uint256 paidUsdg, uint256 creditUsdc6, uint256 shares, uint256 outstandingUsdc6
+  );
+  /// @notice The borrower took `yieldUsdg` of yield (as USDG, or in kind) out of the line's shares.
+  event LineYieldClaimed(bytes32 indexed lineId, address indexed borrower, uint256 yieldUsdg, uint256 shares);
+  /// @notice Settlement returned yield payments the Arc repayments made unnecessary.
+  event LineYieldRefunded(bytes32 indexed lineId, address indexed borrower, uint256 usdg);
   event CollateralSoldToMakers(
     bytes32 indexed positionId, address indexed collateral, uint256 sold, uint256 bonus, uint256 returned, uint256 proceedsUsdg
   );
@@ -226,6 +257,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   error NoLiquidity();
   error NotAuction();
   error BadReport(uint256 drawnUsdc6, uint256 repaidUsdc6);
+  error NoYield();
 
   constructor(
     address owner_,
@@ -272,6 +304,20 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     if (a == address(0) || dutchAuction != address(0)) revert BadConfig();
     dutchAuction = a;
     emit DutchAuctionSet(a);
+  }
+
+  /// @notice Accept (or stop accepting) a NorenDepositVault's shares as credit-line collateral. Lines
+  /// already open keep being valued through the vault. Only accept vaults whose asset NorenAssetOracle
+  /// supports (the vault's constructor requires it); disabling the asset should come with accepted = false. The vault must allow this contract as a
+  /// harvester (`setHarvesterAllowed`) for the yield to be paid out in USDG.
+  function setShareCollateral(address shareVault, bool accepted) external onlyOwner {
+    shareVaultStatus[shareVault] = accepted ? 1 : 2;
+    emit ShareCollateralSet(shareVault, accepted);
+  }
+
+  function setReputation(INorenReputationLtv r) external onlyOwner {
+    reputation = r;
+    emit ReputationSet(address(r));
   }
 
   function setWorkflowPolicy(bytes32 workflowId, address workflowOwner) external onlyOwner {
@@ -347,6 +393,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     int256 ratio = int256(uint256(p.ratioBps)) - delta * 1_000;
     int256 floor = int256(uint256(minCollateralRatioBps()));
     ratioBps = uint16(uint256(ratio < floor ? floor : ratio));
+
     limitUsdg = p.limitUsdg * uint256(100 + 25 * delta) / 100;
     uint256 used = creditUsed[borrower];
     availableUsdg = limitUsdg > used ? limitUsdg - used : 0;
@@ -362,7 +409,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     nonReentrant
     returns (uint256 planId)
   {
-    address c = _intakeAsset(collateral, collateralAmount);
+    address c = _intakeAsset(collateral, collateralAmount, false);
     uint256 principal = gateway.openAmount(merchant, invoiceId);
     (, , uint16 ratioBps, uint256 available) = creditTerms(msg.sender);
     if (ratioBps == 0) revert NoCredit(msg.sender);
@@ -490,14 +537,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   /// @notice Repay a liquidatable plan's whole outstanding USDG to the vault and take collateral
   /// worth the debt plus liquidationBonusBps. The rest of the collateral goes back to the borrower.
   function liquidatePlan(uint256 planId) external nonReentrant returns (uint256 seized) {
-    Plan storage p = _plans[planId];
-    (bool overdue, bool under) = planLiquidatable(planId);
-    if (!overdue && !under) revert NotLiquidatable();
-    uint256 outstanding = p.principal - p.repaid;
-    p.status = PlanStatus.Liquidated;
-    planOutstanding -= outstanding;
-    creditUsed[p.borrower] -= outstanding;
-    history[p.borrower].defaults += 1;
+    (Plan storage p, uint256 outstanding) = _startPlanLiquidation(planId);
     uint256 pay;
     uint256 bad;
     (pay, seized, bad) = _seize(p.collateral, p.collateralAmount, oracle.usdgToUsd8(outstanding, Math.Rounding.Ceil), outstanding);
@@ -513,14 +553,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   /// collateral worth liquidationBonusBps of the debt, and the rest goes back to the borrower.
   /// Underwater collateral is sold whole (after the bonus share) and the shortfall is bad debt.
   function liquidatePlanViaAqua(uint256 planId) external nonReentrant returns (uint256 proceeds) {
-    Plan storage p = _plans[planId];
-    (bool overdue, bool under) = planLiquidatable(planId);
-    if (!overdue && !under) revert NotLiquidatable();
-    uint256 outstanding = p.principal - p.repaid;
-    p.status = PlanStatus.Liquidated;
-    planOutstanding -= outstanding;
-    creditUsed[p.borrower] -= outstanding;
-    history[p.borrower].defaults += 1;
+    (Plan storage p, uint256 outstanding) = _startPlanLiquidation(planId);
     uint256 seized;
     uint256 bad;
     (proceeds, seized, bad) = _sellToMakers(bytes32(planId), p.collateral, p.collateralAmount, outstanding, p.borrower);
@@ -582,12 +615,15 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     nonReentrant
     returns (bytes32 lineId)
   {
-    address c = _intakeAsset(collateral, collateralAmount);
+    address c = _intakeAsset(collateral, collateralAmount, true);
     if (expiry <= block.timestamp || expiry > block.timestamp + params.maxLineDuration) revert BadExpiry(expiry);
     (, , uint16 ratioBps, uint256 available) = creditTerms(msg.sender);
     if (ratioBps == 0) revert NoCredit(msg.sender);
     if (limitUsdc6 == 0 || limitUsdc6 > available) revert OverLimit(limitUsdc6, available);
-    uint256 valueUsd8 = oracle.riskValueUsd8(c, collateralAmount);
+    INorenReputationLtv rep = reputation;
+    // The on-chain reputation tier caps the line's LTV: ratio >= 1 / ltv (rounded up).
+    if (address(rep) != address(0)) ratioBps = uint16(Math.max(ratioBps, (BPS * BPS).ceilDiv(rep.ltvOf(msg.sender))));
+    uint256 valueUsd8 = _value(c, collateralAmount, true);
     uint256 requiredUsd8 = (limitUsdc6 * USDC6_TO_USD8).mulDiv(ratioBps, BPS, Math.Rounding.Ceil);
     if (valueUsd8 < requiredUsd8) revert InsufficientCollateral(valueUsd8, requiredUsd8);
 
@@ -606,6 +642,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     });
     _linesOf[msg.sender].push(lineId);
     creditUsed[msg.sender] += limitUsdc6;
+    if (shareVaultStatus[c] != 0) lineYieldState[lineId].feeIndex = INorenShareVault(c).feesPerShare();
     _pullCollateral(collateral, c, collateralAmount);
     emit CreditLineOpened(msg.sender, lineId, limitUsdc6, expiry, valueUsd8);
   }
@@ -632,7 +669,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     l.repaid = repaid;
     l.asOf = asOf;
     emit ArcUtilisationUpdated(lineId, drawn, repaid, asOf);
-    if (l.status == LineStatus.Closing && repaid >= drawn && asOf >= l.closeRequestedAt) _settleLine(lineId, l);
+    if (l.status == LineStatus.Closing && lineOutstanding(lineId) == 0 && asOf >= l.closeRequestedAt) _settleLine(lineId, l);
   }
 
   /// @notice First call: stop the line (CreditLineClosed tells the bridge to zero the Arc limit).
@@ -649,7 +686,8 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     }
     if (l.status != LineStatus.Closing) revert LineNotActive(l.status);
     if (l.asOf < l.closeRequestedAt) revert AwaitingArcReport(l.asOf, l.closeRequestedAt);
-    if (l.drawn > l.repaid) revert DebtOutstanding(l.drawn - l.repaid);
+    uint256 out = lineOutstanding(lineId);
+    if (out != 0) revert DebtOutstanding(out);
     _settleLine(lineId, l);
   }
 
@@ -660,9 +698,11 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     return (l.drawn, l.repaid, l.asOf);
   }
 
+  /// @notice Arc debt (USDC, 6 decimals) less what share yield already repaid on Robinhood.
   function lineOutstanding(bytes32 lineId) public view returns (uint256) {
     Line storage l = _lines[lineId];
-    return l.drawn > l.repaid ? l.drawn - l.repaid : 0;
+    uint256 paid = l.repaid + lineYieldState[lineId].paidUsdc6;
+    return l.drawn > paid ? l.drawn - paid : 0;
   }
 
   /// @notice Outstanding Arc debt past the line's expiry plus grace, or collateral value below
@@ -673,20 +713,14 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     uint256 out = lineOutstanding(lineId);
     if (out == 0) return (false, false);
     pastDue = block.timestamp > uint256(l.expiry) + params.gracePeriod;
-    undercollateralised = oracle.valueUsd8(l.collateral, l.collateralAmount)
+    undercollateralised = _value(l.collateral, l.collateralAmount, false)
       < (out * USDC6_TO_USD8).mulDiv(params.liquidationThresholdBps, BPS);
   }
 
   /// @notice Pay a liquidatable line's outstanding Arc debt in USDG to the vault (the Robinhood-side
   /// treasury that settles with the Arc pool) and take collateral worth the debt plus the bonus.
   function liquidateLine(bytes32 lineId) external nonReentrant returns (uint256 seized) {
-    Line storage l = _lines[lineId];
-    (bool pastDue, bool under) = lineLiquidatable(lineId);
-    if (!pastDue && !under) revert NotLiquidatable();
-    uint256 out = lineOutstanding(lineId);
-    l.status = LineStatus.Liquidated;
-    creditUsed[l.borrower] -= l.limitUsdc;
-    history[l.borrower].defaults += 1;
+    (Line storage l, uint256 out) = _startLineLiquidation(lineId);
     uint256 debtUsd8 = out * USDC6_TO_USD8;
     uint256 debtUsdg = oracle.usd8ToUsdg(debtUsd8, Math.Rounding.Ceil);
     uint256 pay;
@@ -702,20 +736,48 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
 
   /// @notice liquidateLine() with the collateral sold to Aqua makers (see liquidatePlanViaAqua).
   function liquidateLineViaAqua(bytes32 lineId) external nonReentrant returns (uint256 proceeds) {
-    Line storage l = _lines[lineId];
-    (bool pastDue, bool under) = lineLiquidatable(lineId);
-    if (!pastDue && !under) revert NotLiquidatable();
-    uint256 out = lineOutstanding(lineId);
-    l.status = LineStatus.Liquidated;
-    creditUsed[l.borrower] -= l.limitUsdc;
-    history[l.borrower].defaults += 1;
+    (Line storage l, uint256 out) = _startLineLiquidation(lineId);
     uint256 debtUsdg = oracle.usd8ToUsdg(out * USDC6_TO_USD8, Math.Rounding.Ceil);
     uint256 seized;
     uint256 bad;
-    (proceeds, seized, bad) = _sellToMakers(lineId, l.collateral, l.collateralAmount, debtUsdg, l.borrower);
+    if (shareVaultStatus[l.collateral] != 0) {
+      // Share collateral: redeem only the shares the debt needs, sell their asset part to makers.
+      (proceeds, seized, bad) =
+        NorenShareLines.liquidate(claimable, INorenShareVault(l.collateral), l.collateralAmount, debtUsdg, l.borrower, lineId);
+    } else {
+      (proceeds, seized, bad) = _sellToMakers(lineId, l.collateral, l.collateralAmount, debtUsdg, l.borrower);
+    }
     badDebtUsdg += bad;
     emit CreditLineLiquidated(lineId, l.borrower, msg.sender, proceeds, seized, bad);
     emit CreditLineClosed(lineId);
+  }
+
+  // ================================================================ share-backed lines
+
+  /// @notice Repay a share-backed line's outstanding Arc debt with the Aqua maker fees its locked
+  /// shares earned since it opened (or the last harvest). Anyone may call it; the caller gets nothing.
+  /// Only yield leaves the line (shares worth the yield at Chainlink), the USDG goes to the vault (the
+  /// Robinhood-side treasury that settles with the Arc pool) and counts against `lineOutstanding`.
+  /// Reverts NothingDue with no debt, NoYield with nothing earned, and InsufficientCollateral if the
+  /// line's collateral ratio would drop.
+  function harvestLineToRepay(bytes32 lineId) external nonReentrant returns (uint256 shares) {
+    Line storage l = _shareLine(lineId);
+    uint256 out = lineOutstanding(lineId);
+    if (out == 0) revert NothingDue();
+    shares = NorenShareLines.yieldAction(lineYieldState[lineId], INorenShareVault(l.collateral), l.collateralAmount, out, 0, lineId);
+    l.collateralAmount -= shares;
+  }
+
+  /// @notice Borrower only, with nothing outstanding: take the line's unharvested yield (in USDG when
+  /// the vault holds it, otherwise the yield shares' asset and USDG in kind). The shares left must
+  /// still back the whole limit at the strictest tier ratio (`minCollateralRatioBps`).
+  function claimLineYield(bytes32 lineId) external nonReentrant returns (uint256 shares) {
+    Line storage l = _shareLine(lineId);
+    if (l.borrower != msg.sender) revert NotBorrower();
+    uint256 out = lineOutstanding(lineId);
+    if (out != 0) revert DebtOutstanding(out);
+    shares = NorenShareLines.yieldAction(lineYieldState[lineId], INorenShareVault(l.collateral), l.collateralAmount, 0, l.limitUsdc, lineId);
+    l.collateralAmount -= shares;
   }
 
   // ================================================================ views
@@ -756,7 +818,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
 
   // ================================================================ internal
 
-  function _intakeAsset(address collateral, uint256 amount) internal view returns (address c) {
+  function _intakeAsset(address collateral, uint256 amount, bool allowShares) internal view returns (address c) {
     if (amount == 0) revert BadValue();
     if (collateral == address(0)) {
       if (msg.value != amount) revert BadValue();
@@ -764,6 +826,11 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     } else {
       if (msg.value != 0) revert BadValue();
       c = collateral;
+    }
+    if (shareVaultStatus[c] != 0) {
+      // Deposit-vault shares: lines only (plans are sold by the Dutch auction in the raw asset).
+      if (!allowShares || shareVaultStatus[c] != 1) revert CollateralNotAccepted(collateral);
+      return c;
     }
     if (c == address(usdg) || !oracle.isSupported(c)) revert CollateralNotAccepted(collateral);
     oracle.checkTransferable(c, msg.sender, address(this));
@@ -779,6 +846,42 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     }
   }
 
+  /// @dev Chainlink value (USD, 8 decimals) of `amount` of collateral `c`: through the deposit vault
+  /// for shares (asset and USDG they redeem in kind), straight from the oracle otherwise.
+  function _value(address c, uint256 amount, bool risk) internal view returns (uint256) {
+    if (shareVaultStatus[c] != 0) return INorenShareVault(c).sharesValueUsd8(amount, risk);
+    return risk ? oracle.riskValueUsd8(c, amount) : oracle.valueUsd8(c, amount);
+  }
+
+  /// @dev Shared start of liquidatePlan / liquidatePlanViaAqua: require liquidatable, close the plan.
+  function _startPlanLiquidation(uint256 planId) internal returns (Plan storage p, uint256 outstanding) {
+    p = _plans[planId];
+    (bool overdue, bool under) = planLiquidatable(planId);
+    if (!overdue && !under) revert NotLiquidatable();
+    outstanding = p.principal - p.repaid;
+    p.status = PlanStatus.Liquidated;
+    planOutstanding -= outstanding;
+    creditUsed[p.borrower] -= outstanding;
+    history[p.borrower].defaults += 1;
+  }
+
+  /// @dev Shared start of liquidateLine / liquidateLineViaAqua: require liquidatable, close the line.
+  function _startLineLiquidation(bytes32 lineId) internal returns (Line storage l, uint256 out) {
+    l = _lines[lineId];
+    (bool pastDue, bool under) = lineLiquidatable(lineId);
+    if (!pastDue && !under) revert NotLiquidatable();
+    out = lineOutstanding(lineId);
+    l.status = LineStatus.Liquidated;
+    creditUsed[l.borrower] -= l.limitUsdc;
+    history[l.borrower].defaults += 1;
+  }
+
+  function _shareLine(bytes32 lineId) internal view returns (Line storage l) {
+    l = _lines[lineId];
+    if (l.status != LineStatus.Open && l.status != LineStatus.Closing) revert LineNotActive(l.status);
+    if (shareVaultStatus[l.collateral] == 0) revert CollateralNotAccepted(l.collateral);
+  }
+
   /// @dev Collateral for debt plus bonus, capped at all collateral; when capped the liquidator
   /// pays only what the collateral covers at the bonus discount and the rest is bad debt.
   function _seize(address c, uint256 collateralAmount, uint256 debtUsd8, uint256 debtUsdg)
@@ -787,7 +890,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     returns (uint256 pay, uint256 seized, uint256 bad)
   {
     uint256 bonus = params.liquidationBonusBps;
-    uint256 valueUsd8 = oracle.valueUsd8(c, collateralAmount);
+    uint256 valueUsd8 = _value(c, collateralAmount, false);
     uint256 claimUsd8 = debtUsd8.mulDiv(BPS + bonus, BPS);
     if (claimUsd8 < valueUsd8) {
       seized = collateralAmount.mulDiv(claimUsd8, valueUsd8);
@@ -827,6 +930,10 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     // Only a line that was used and repaid in full counts as clean: closing an unused line must not
     // lift the borrower's tier (creditTerms) for free.
     if (l.drawn != 0) h.clean += 1;
+    // Yield payments the Arc repayments made unnecessary go back to the borrower.
+    if (lineYieldState[lineId].paidUsdc6 != 0) {
+      NorenShareLines.refundOnSettle(lineYieldState[lineId], l.drawn > l.repaid ? l.drawn - l.repaid : 0, l.borrower, lineId);
+    }
     _sendOrCredit(l.collateral, l.borrower, l.collateralAmount);
     emit CreditLineSettled(lineId, l.borrower, l.collateralAmount);
   }

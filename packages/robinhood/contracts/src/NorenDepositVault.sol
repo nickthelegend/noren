@@ -59,8 +59,10 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   /// existed when it was booked.
   uint256 internal _feeAcc;
   uint256 internal _feesCheckpointed;
-  /// @notice The only address allowed to call `harvestUsdg` (NorenBorrow, for loans repaid by yield).
+  /// @notice The primary address allowed to call `harvestUsdg` (NorenBorrow, for loans repaid by yield).
   address public harvester;
+  /// @notice Further owner-approved harvesters (NorenCredit, for credit lines backed by these shares).
+  mapping(address account => bool) public isHarvester;
 
   struct Stats {
     uint256 assetBalance; // raw asset units held
@@ -81,6 +83,7 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   event StrategyDocked(bytes32 indexed strategyHash);
   event RedeemedInKind(address indexed caller, address indexed receiver, address indexed owner, uint256 shares, uint256 assets, uint256 usdgOut);
   event HarvesterSet(address indexed harvester);
+  event HarvesterAllowed(address indexed harvester, bool allowed);
   event YieldHarvested(address indexed owner, address indexed receiver, uint256 shares, uint256 usdgOut);
 
   error NotSupported(address asset);
@@ -148,6 +151,12 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   function setHarvester(address h) external onlyOwner {
     harvester = h;
     emit HarvesterSet(h);
+  }
+
+  /// @notice Allow or revoke an additional harvester (NorenCredit for share-backed credit lines).
+  function setHarvesterAllowed(address h, bool allowed) external onlyOwner {
+    isHarvester[h] = allowed;
+    emit HarvesterAllowed(h, allowed);
   }
 
   // ---------------------------------------------------------------- ERC-4626
@@ -220,7 +229,7 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   /// USDG the vault already holds. Used to take a loan's realised fee yield out without a sale.
   /// Reverts when the vault holds less USDG than requested.
   function harvestUsdg(uint256 usdgAmount, address receiver, address owner_) external nonReentrant returns (uint256 shares) {
-    if (msg.sender != harvester || msg.sender == address(0)) revert NotHarvester();
+    if ((msg.sender != harvester || msg.sender == address(0)) && !isHarvester[msg.sender]) revert NotHarvester();
     if (usdgAmount == 0) revert ZeroShares();
     uint256 held = usdg.balanceOf(address(this));
     if (usdgAmount > held) revert NotEnoughUsdg(usdgAmount, held);
