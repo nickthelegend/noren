@@ -10,7 +10,7 @@
   "scripts": {
     "build": "cd contracts && forge build",
     "test:contracts": "sh scripts/test-forks.sh",
-    "demo": "sh scripts/xchain-demo.sh",
+    "demo": "bash scripts/xchain-demo.sh",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

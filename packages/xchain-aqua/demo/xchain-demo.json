@@ -1,0 +1,37 @@
+{
+  "note": "LOCAL FORKS ONLY (Arc Testnet fork, Robinhood mainnet snapshot, Base Sepolia fork). Hashes do not exist on any public chain.",
+  "forkBlocks": {
+    "arc": "71024000",
+    "robinhoodSnapshot": "107409664",
+    "baseSepolia": "55219643"
+  },
+  "settler": "0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2",
+  "router": "0xf709BC334F835855Ce8F467151D1722482a7032e",
+  "robinhoodEscrow": "0x9505E8B8546cC9015B2c015826d25821CC48C153",
+  "baseEscrow": "0xbF19B3D355E22ba29c44286Df471a22d9532870d",
+  "nvda": {
+    "open": "0x976b6e9f334fd3715cf822d44f46749399cd4a376b723118c03c2cb1de289c8b",
+    "arcFill": "0x1e3310a19e801af29e7e2a61da07bebecdebf266ad745d9a7bd67a36f112a489",
+    "robinhoodRelease": "0x6863b4e6ea972a7a93ea6c2c2f556ad9b360fce45669a0d77a45bf75080d700c",
+    "usdcPaid6": "367612302"
+  },
+  "expiry": {
+    "open": "0x375b4e65207ed1f8ee7c193a90c17b85ecef916fef384d7845c068917bc39b3e",
+    "arcExpire": "0xddcd1226a243974f2bac1cab0d428b22a1e602deb51a8f92cdfc1396a259a423",
+    "robinhoodUnlock": "0xccfb363f903f13fe6aa3982cfe4860a8c34519d49d89ebd8d4b978445cfed789",
+    "refund": "0xb7efab10b338f1fa78d67a10d36a3e224cb9461c544c1f6ab3370a5096d2feb8"
+  },
+  "weth": {
+    "open": "0x61638ce6e0fa7f76efb9bedec7641f28ec161ba1a8fc879b956a6f5f5077fe62",
+    "arcFill": "0x72440bc84361325d0f3f678fdf1e32a48702f1346e4c5c1d38f8358548c68684",
+    "baseRelease": "0xa6166b6495a0339e0f34605b1ea3960c91586eb56b38a5df58d9fc2cc19df2d1",
+    "usdcPaid6": "1115063719"
+  },
+  "actionRouter": {
+    "eurUsdRelay": "0x84fc6c72d41673baa3bb8cdddd2ee0258fd39cd4fa7f90c9bb4e7d898d2139de",
+    "ref": "0x0a80358e68c980f468ee41239e693b41a52f210ab9fa8f12159151a81b7ee31d",
+    "routerExecute": "0xac86c98992e9a69f34d3c7f6857fc74b2cd81a7e0670c25f286836f443a59f8b",
+    "arcFill": "0x1585538f052dbb6114f5dd365a2eb05f3ee615d4cfc376757e252209bfefd635",
+    "eurcOut6": "222020698"
+  }
+}

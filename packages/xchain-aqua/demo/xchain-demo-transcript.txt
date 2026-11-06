@@ -1,0 +1,124 @@
+Noren cross-chain 1inch Aqua: one Arc maker, orders from every chain (2026-11-06 11:48 UTC)
+LOCAL FORKS ONLY. Every tx hash below exists only on a local Anvil fork.
+
+== Start the Arc Testnet fork and the warmed Robinhood mainnet snapshot
+   Arc Testnet fork http://127.0.0.1:8810 (fork block 71024000). 1inch Aqua and SwapVM are not deployed on Arc Testnet,
+   and 1inch's deployers (Aqua 0x71481c3b…abe7, router 0xaa710bd4…6dd7) have no code there, so the fork gets
+   the OFFICIAL bytecode copied from Arc mainnet at the official addresses (fork only):
+     Aqua   0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a codehash 0x720bc02d220db318164dc3bade86eec1f3655bdc00fc1174de7d816a95c341f8 (= Arc mainnet, = Robinhood Chain)
+     router 0x111111338c5091E8440b67B168bAe16a668AC0De codehash 0x294d0117c44096acd4f3be344f03039ece923758a5bd5c77fac496df0edbcb3a (= Arc mainnet)
+   Robinhood Chain mainnet snapshot http://127.0.0.1:8811 (block 107409664, chain 4663): real NVDA Stock Token and Chainlink NVDA/USD
+
+== Deploy on Arc: Noren SwapVM router (modified SwapVM: + NorenOraclePeg), settler, escrow receipts, relayed Chainlink feeds
+   NorenAquaSwapVMRouter 0xf709BC334F835855Ce8F467151D1722482a7032e (AQUA() = 0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a)
+   NorenCrossChainSettler 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2; receipts rNVDA 0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe, rWETH 0x8620A7579c232bBf2E7104E614D3fE0835f9cd66
+   relayed feeds: NVDA/USD 0x88f41D1C371Eb802d8c00440A30B3Fb3e1C39fA2, ETH/USD 0x2e95C0755C2849967495C903bEBA14945998ed5e
+   maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906 holds 20,000 USDC on Arc (fork-only ForkUSDC shim at 0x3600000000000000000000000000000000000000)
+
+== Maker ships two Chainlink-pegged Aqua strategies from ONE USDC wallet: NVDA (Robinhood) and WETH (Base Sepolia)
+   maker tx 0x10695524bd94b016278f88dcda1f52c3ca10b3103d4435ed4a7f193c3b880a50
+   maker tx 0x937cf5bea4e24544facdb12cd38e59e83888b6fdaa96afdd67c654e39362ead8
+   maker tx 0x317e65e4754f45a6a73e5b44e33846a429e0e951842739018f87b6363bec82d9
+   maker tx 0x22b1f6978d3eb5940fe7342afe5fba4d9bc13100897cf799ab89dafdfcd7340a
+   maker tx 0x06398754755602a3a47e0efcfeb5c6461edde123a4346cdbd500ef3d45a13157
+   NVDA strategy 0x6b8bef064d2b7886af49f7492a35aff7f2d6a51cd05f92e8e00ee3133cf801a8, WETH strategy 0x7a464525f58c14a5b12112461dcfc17b0d60b008cd1ad6339964f44be4290974; 15,000 USDC Aqua allocation each, bid 50 bps, payout 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc
+
+== Deploy the Robinhood escrow (NVDA + Chainlink NVDA/USD) and trust it on Arc
+   NorenCrossChainEscrow on Robinhood fork 0x9505E8B8546cC9015B2c015826d25821CC48C153; setEscrow tx 0x893d60cddc66920ff4a3c5390422083ba1ae90be3d42fd91e76a22c9acd8b51b
+
+== 0. Noren SDK quote (quoteCrossChainSwap): 2 NVDA on Robinhood -> USDC on Arc from this maker
+   quote 367.612302 USDC at NVDA/USD 184.586716, spread 50 bps, round age 15617 s (max 90000), maker can pay: true
+
+== 1. Robinhood: taker locks 2 NVDA in the escrow (the escrow reads Chainlink NVDA/USD in the same tx)
+   open tx 0x976b6e9f334fd3715cf822d44f46749399cd4a376b723118c03c2cb1de289c8b, order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6
+   taker NVDA 20 -> 18, escrow holds 2 NVDA
+   Chainlink NVDA/USD on Robinhood: 18446744073709553179 18458671611 1793950110 (round, answer 8 dp, updatedAt)
+
+== 2. CRE (trigger 0, log on Robinhood) -> Arc settler: re-read the round, check the order, fill through the maker's Aqua strategy
+   | XChainMessage on robinhood (tx 0x976b6e9f334fd3715cf822d44f46749399cd4a376b723118c03c2cb1de289c8b log 3 block 107409670): order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6 kind 1 to 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2 on chain 5042002
+   | Chainlink 0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 on robinhood at block 107409670: round 18446744073709553179 answer 18458671611 updatedAt 1793950110 (15621s old)
+   | Report: ORDER 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6: 2000000000000000000 of 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC on robinhood for >= 1 of 0x3600000000000000000000000000000000000000 on arc, maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906, price round 18446744073709553179 answer 18458671611
+   | Delivered to arc 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2: tx 0x1e3310a19e801af29e7e2a61da07bebecdebf266ad745d9a7bd67a36f112a489
+   forwarder tx 0x1e3310a19e801af29e7e2a61da07bebecdebf266ad745d9a7bd67a36f112a489 (status true, block 71024009, gas 589898)
+   taker +367.612302 USDC on Arc (= the SDK quote); maker USDC 20,000 -> 19,632.387698; rNVDA supply 0 (burned in the fill)
+   relayed NVDA/USD on Arc: 18446744073709553179 18458671611 (round, answer 8 dp)
+
+== 3. CRE (trigger 1, log on Arc) -> Robinhood escrow: FILLED, release the NVDA to the maker
+   | XChainMessage on arc (tx 0x1e3310a19e801af29e7e2a61da07bebecdebf266ad745d9a7bd67a36f112a489 log 14 block 71024009): order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6 kind 3 to 0x9505E8B8546cC9015B2c015826d25821CC48C153 on chain 4663
+   | Report: FILLED: release 2000000000000000000 to maker payout 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc (taker got 367612302) for order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6 on robinhood
+   | Delivered to robinhood 0x9505E8B8546cC9015B2c015826d25821CC48C153: tx 0x6863b4e6ea972a7a93ea6c2c2f556ad9b360fce45669a0d77a45bf75080d700c
+   forwarder tx 0x6863b4e6ea972a7a93ea6c2c2f556ad9b360fce45669a0d77a45bf75080d700c (status true, block 107409671, gas 140204)
+   maker payout 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc received +2 NVDA on Robinhood; escrow status 2 (2 = Released)
+
+== 4. Replay: the same Robinhood log again. The workflow sees the order Filled on Arc and skips
+   | XChainMessage on robinhood (tx 0x976b6e9f334fd3715cf822d44f46749399cd4a376b723118c03c2cb1de289c8b log 3 block 107409670): order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6 kind 1 to 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2 on chain 5042002
+   | Chainlink 0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 on robinhood at block 107409670: round 18446744073709553179 answer 18458671611 updatedAt 1793950110 (15632s old)
+   | No write: order 0x9ed058179eec3a078ca06eab5c3ec6fbc507d6c814cf3be864a36230e76d3bf6 is already Filled on arc
+   (and a forced replay through the forwarder would revert AlreadySettled; see the Foundry tests)
+
+== 5. Timeout path: a second order is never filled. After its deadline anyone expires it on Arc, CRE unlocks the refund
+   open tx 0x375b4e65207ed1f8ee7c193a90c17b85ecef916fef384d7845c068917bc39b3e (1 NVDA, fill deadline in 40 seconds), order 0xa655e9bbde2049af8809be17a0fec14c442cebc7ad4703b26843dd2291c6982c
+   (nobody relays it; waiting 45 s of real time until the deadline has passed on every clock)
+   | XChainMessage on robinhood (tx 0x375b4e65207ed1f8ee7c193a90c17b85ecef916fef384d7845c068917bc39b3e log 3 block 107409673): order 0xa655e9bbde2049af8809be17a0fec14c442cebc7ad4703b26843dd2291c6982c kind 1 to 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2 on chain 5042002
+   | Chainlink 0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15 on robinhood at block 107409673: round 18446744073709553179 answer 18458671611 updatedAt 1793950110 (15681s old)
+   | No write: order 0xa655e9bbde2049af8809be17a0fec14c442cebc7ad4703b26843dd2291c6982c passed its fill deadline 1793965782; anyone can call expire(order) on arc so the taker can refund
+   expire tx on Arc 0xddcd1226a243974f2bac1cab0d428b22a1e602deb51a8f92cdfc1396a259a423 (status 2, 2 = Expired)
+   | XChainMessage on arc (tx 0xddcd1226a243974f2bac1cab0d428b22a1e602deb51a8f92cdfc1396a259a423 log 1 block 71024011): order 0xa655e9bbde2049af8809be17a0fec14c442cebc7ad4703b26843dd2291c6982c kind 4 to 0x9505E8B8546cC9015B2c015826d25821CC48C153 on chain 4663
+   | Report: EXPIRED: unlock the taker's refund for order 0xa655e9bbde2049af8809be17a0fec14c442cebc7ad4703b26843dd2291c6982c on robinhood
+   | Delivered to robinhood 0x9505E8B8546cC9015B2c015826d25821CC48C153: tx 0xccfb363f903f13fe6aa3982cfe4860a8c34519d49d89ebd8d4b978445cfed789
+   forwarder tx 0xccfb363f903f13fe6aa3982cfe4860a8c34519d49d89ebd8d4b978445cfed789 (status true, block 107409674, gas 81729)
+   refund tx 0xb7efab10b338f1fa78d67a10d36a3e224cb9461c544c1f6ab3370a5096d2feb8: taker NVDA +1
+   (Robinhood fork stopped; Arc fork keeps running with the maker's state)
+
+== Start the Base Sepolia fork and deploy its escrow (WETH + Chainlink ETH/USD on Base Sepolia)
+   Base Sepolia fork http://127.0.0.1:8812 (fork block 55219643)
+   NorenCrossChainEscrow on Base fork 0xbF19B3D355E22ba29c44286Df471a22d9532870d; setEscrow tx 0xe692d8246e0ee7c3aa61da0ccf6981d7fcc8dfc8373a7acd987ff4df887d373c
+
+== 6. Base Sepolia: taker wraps 0.5 ETH and locks 0.5 WETH against the SAME maker's WETH strategy
+   wrap tx 0x706cb217154d9c0cdc87f676a11e6d61289786c36c92bcc35b2de3523ee73070, open tx 0x61638ce6e0fa7f76efb9bedec7641f28ec161ba1a8fc879b956a6f5f5077fe62, order 0xaa81ad1659d6e54672ee5ba316aad6fa8314101cb6b3f477e24716bc1705fc8d; escrow holds 0.5 WETH
+   Chainlink ETH/USD on Base Sepolia: 18446744073709842550 224133410946 (round, answer 8 dp)
+
+== 7. CRE (trigger 1, log on Base) -> Arc settler: fill from the same maker wallet
+   | XChainMessage on base (tx 0x61638ce6e0fa7f76efb9bedec7641f28ec161ba1a8fc879b956a6f5f5077fe62 log 2 block 55219650): order 0xaa81ad1659d6e54672ee5ba316aad6fa8314101cb6b3f477e24716bc1705fc8d kind 1 to 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2 on chain 5042002
+   | Chainlink 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1 on base at block 55219650: round 18446744073709842550 answer 224133410946 updatedAt 1793965396 (419s old)
+   | Report: ORDER 0xaa81ad1659d6e54672ee5ba316aad6fa8314101cb6b3f477e24716bc1705fc8d: 500000000000000000 of 0x4200000000000000000000000000000000000006 on base for >= 1 of 0x3600000000000000000000000000000000000000 on arc, maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906, price round 18446744073709842550 answer 224133410946
+   | Delivered to arc 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2: tx 0x72440bc84361325d0f3f678fdf1e32a48702f1346e4c5c1d38f8358548c68684
+   forwarder tx 0x72440bc84361325d0f3f678fdf1e32a48702f1346e4c5c1d38f8358548c68684 (status true, block 71024013, gas 564951)
+   taker +1,115.063719 USDC on Arc; maker USDC 19,632.387698 -> 18,517.323979
+
+== 8. CRE (trigger 0, log on Arc) -> Base escrow: FILLED, release the WETH to the maker
+   | XChainMessage on arc (tx 0x72440bc84361325d0f3f678fdf1e32a48702f1346e4c5c1d38f8358548c68684 log 13 block 71024013): order 0xaa81ad1659d6e54672ee5ba316aad6fa8314101cb6b3f477e24716bc1705fc8d kind 3 to 0xbF19B3D355E22ba29c44286Df471a22d9532870d on chain 84532
+   | Report: FILLED: release 500000000000000000 to maker payout 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc (taker got 1115063719) for order 0xaa81ad1659d6e54672ee5ba316aad6fa8314101cb6b3f477e24716bc1705fc8d on base
+   | Delivered to base 0xbF19B3D355E22ba29c44286Df471a22d9532870d: tx 0xa6166b6495a0339e0f34605b1ea3960c91586eb56b38a5df58d9fc2cc19df2d1
+   forwarder tx 0xa6166b6495a0339e0f34605b1ea3960c91586eb56b38a5df58d9fc2cc19df2d1 (status true, block 55219651, gas 98751)
+   maker payout 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc received +0.5 WETH on Base Sepolia
+
+== 9. CRE cron (trigger 2): relay Chainlink EUR/USD from Ethereum Sepolia (read-only) to Arc for the USDC -> EURC route
+   | Chainlink EUR/USD 0x1a81afB8146aeFfCFc5E50e8479e826E7D55b910 on ethereum-testnet-sepolia (finalized): round 18446744073709554407 answer 112153500 updatedAt 1793927772; relayed round 0
+   | Report: PRICE EUR/USD: round 18446744073709554407 answer 112153500 updatedAt 1793927772 -> 0x0EaAefAEa0a15ECf4653b9948f5d27A22be3880e
+   | Delivered to arc 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2: tx 0x84fc6c72d41673baa3bb8cdddd2ee0258fd39cd4fa7f90c9bb4e7d898d2139de
+   forwarder tx 0x84fc6c72d41673baa3bb8cdddd2ee0258fd39cd4fa7f90c9bb4e7d898d2139de (status true, block 71024014, gas 195700)
+   relayed EUR/USD on Arc: 18446744073709554407 112153500 (round, answer 8 dp)
+
+== 10. The same maker ships a third strategy: sell EURC for USDC at Chainlink EUR/USD + 40 bps
+   EURC strategy 0xd025b635e38d9e8566be9409309bf0fba87c43ce85e10de491330a2a876a0de4 (maker holds 2,000 EURC; fork-only balance)
+
+== 11. An AQUA_ORDER lands in the LIVE NorenArcActionRouter (forked from Arc Testnet): 250 USDC from Base Sepolia for EURC
+   fork-only setup: router owner (impersonated) setAquaOperator(settler) 0xbae5dbe52d6c9298024de94fefeed70b996c2875d30eea9cac863f5b5f62dcd4; settler.setTransport(router) 0xbcaf6599c7d8fd41ae1d21f97bb75fa880593faefaea8531fa98ba2e34c06993
+   router.execute tx 0xac86c98992e9a69f34d3c7f6857fc74b2cd81a7e0670c25f286836f443a59f8b (fork: the rail's delivery is played by impersonating the live NorenCcipGateway and minting 250 shim USDC to the router)
+   router holds ref 0x0a80358e68c980f468ee41239e693b41a52f210ab9fa8f12159151a81b7ee31d open: true
+
+== 12. CRE (trigger 0, AquaOrderOpened on Arc) -> settler: take the held USDC and fill against the maker's EURC strategy
+   | AquaOrderOpened on arc (tx 0xac86c98992e9a69f34d3c7f6857fc74b2cd81a7e0670c25f286836f443a59f8b log 0): ref 0x0a80358e68c980f468ee41239e693b41a52f210ab9fa8f12159151a81b7ee31d beneficiary 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 250000000 of 0x3600000000000000000000000000000000000000 from source 84532
+   | Report: ROUTER_ORDER 0x0a80358e68c980f468ee41239e693b41a52f210ab9fa8f12159151a81b7ee31d: fill 250000000 of 0x3600000000000000000000000000000000000000 for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 through the maker's strategy
+   | Delivered to arc 0xB38f4094908bd77baeD4c02De3398fBD80bcF3E2: tx 0x1585538f052dbb6114f5dd365a2eb05f3ee615d4cfc376757e252209bfefd635
+   forwarder tx 0x1585538f052dbb6114f5dd365a2eb05f3ee615d4cfc376757e252209bfefd635 (status true, block 71024022, gas 510515)
+   taker +222.020698 EURC on Arc; router order closed (filled); maker EURC 1,777.979302
+
+== Result: one Arc maker, orders from every chain
+   maker wallet on Arc: 20,000 USDC -> 18,767.323979 USDC (paid 1,482.676021 to takers)
+   maker received: 2 NVDA on Robinhood Chain + 0.5 WETH on Base Sepolia (released by the escrows after CRE reported each fill)
+   and 250 USDC on Arc for 222.020698 EURC, from an AQUA_ORDER that arrived through the Arc action router
+   NVDA strategy fills 1, WETH strategy fills 1
+
+== PASS. Forks stop now. Tx hashes: packages/xchain-aqua/.fork/xchain-demo.json

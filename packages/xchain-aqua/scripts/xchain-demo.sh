@@ -1,5 +1,5 @@
-#!/bin/sh
-# Noren cross-chain 1inch Aqua, end to end on local forks, every hop through `cre workflow simulate --broadcast`.
+#!/usr/bin/env bash
+# Run with bash. Noren cross-chain 1inch Aqua, end to end on local forks, every hop through `cre workflow simulate --broadcast`.
 #
 # "One Arc maker, orders from every chain": one maker keeps USDC in its own wallet on Arc and ships
 # Chainlink-pegged Aqua strategies (SwapVM NorenOraclePeg). Takers on two other chains lock tokens in
@@ -75,8 +75,7 @@ order_tuple() { # order_tuple <srcChain> <escrow> <tokenIn> <amountIn> <strategy
   echo "($1,$2,5042002,$SETTLER,$TAKER,$3,$4,$ARC_USDC,1,$TAKER,$MAKER,$5,$6,$7,$8)"
 }
 
-{
-trap stop_forks EXIT INT TERM
+exec > >(tee "$XC_ROOT/.fork/xchain-demo.txt") 2>&1
 echo "Noren cross-chain 1inch Aqua: one Arc maker, orders from every chain ($(date -u '+%Y-%m-%d %H:%M UTC'))"
 echo "LOCAL FORKS ONLY. Every tx hash below exists only on a local Anvil fork."
 
@@ -284,5 +283,3 @@ jq -n --arg arc "$ARC_FORK_BLOCK" --arg rh "$RH_SNAPSHOT_BLOCK" --arg base "$BAS
     actionRouter: {eurUsdRelay: $price, ref: $ref, routerExecute: $land, arcFill: $f4, eurcOut6: $got4}}' >"$XC_ROOT/.fork/xchain-demo.json"
 echo
 echo "== PASS. Forks stop now. Tx hashes: packages/xchain-aqua/.fork/xchain-demo.json"
-} 2>&1 | tee "$XC_ROOT/.fork/xchain-demo.txt"
-grep -q '^== PASS' "$XC_ROOT/.fork/xchain-demo.txt" || { echo "demo FAILED (see the transcript above)" >&2; exit 1; }
