@@ -11,7 +11,7 @@ import { parseAmount } from "./tokens";
 import { TxLink } from "../tx";
 import { Copy } from "../ui";
 import { Mark } from "../logos";
-import { CCTP_CHAINS, CCTP_RUNS, CHAIN_MARK, KIND_LABEL, SOURCE_CHAINS, shortChain, type CctpChainKey, type SourceChainKey } from "../crosschain";
+import { CCTP_CHAINS, CCTP_RUNS, CHAIN_MARK, runLabel, SOURCE_CHAINS, shortChain, type CctpChainKey, type SourceChainKey } from "../crosschain";
 import { fmt6, fmtGas, useCctpFlow, useFastFee, useSourceBalances, type Flow } from "../cctp-flow";
 
 export function CctpCard({ w }: { w: Wallet }) {
@@ -131,7 +131,7 @@ export function RecentCctp() {
         {runs.map((r) => (
           <li key={r.burnTx}>
             <Mark id={CHAIN_MARK[r.from]} size={28} />
-            <div><b>{shortChain(r.from)} → Arc · {fmt6(r.minted)} USDC</b><small>{KIND_LABEL[r.kind] ?? r.kind}{r.events.includes("InvoicePaid") ? " · InvoicePaid" : ""}</small></div>
+            <div><b>{shortChain(r.from)} → Arc · {fmt6(r.minted)} USDC</b><small>{runLabel(r)}</small></div>
             <div className="r"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></div>
           </li>
         ))}

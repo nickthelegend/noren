@@ -35,6 +35,8 @@ export const CCTP_RUNS: CctpRun[] = (liveRuns as { runs: RawRun[] }).runs.map((r
   const ids = [...r.network.matchAll(/\((\d+), (?:CCTP )?domain/g)].map((m) => Number(m[1]));
   return { from: byChainId(ids[0]).key, to: byChainId(ids[1]).key, kind: r.kind, amount: BigInt(r.amountUsdc6), minted: BigInt(r.mintedUsdc6), burnTx: hashOf(r.burnTx), mintTx: hashOf(r.mintTx), events: r.events ?? [] };
 });
+/** What a recorded run did on Arc, from its events (a PAY_INVOICE through hook v1 had no router, so no InvoicePaid). */
+export const runLabel = (r: CctpRun) => r.kind === "pay-invoice" ? (r.events.includes("InvoicePaid") ? "Invoice paid on arrival" : "Invoice hook v1: USDC to the beneficiary") : (KIND_LABEL[r.kind] ?? r.kind);
 export const KIND_LABEL: Record<string, string> = { plain: "USDC to a wallet", "pay-invoice": "Invoice paid on arrival", "aqua-order": "Aqua order opened", "earn-deposit": "Earn deposit", "credit-line": "Credit line", "pay-on-credit": "Paid on credit" };
 
 /** Chainlink CCIP messages Noren sent on public testnets (docs/CCIP.md, Live runs). Status is read from ccip.chain.link. */

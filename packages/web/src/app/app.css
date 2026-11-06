@@ -314,3 +314,4 @@ li[data-done="true"] .nk-check { background: var(--nk-ok); border-color: var(--n
 .nk-pill.fork { color: var(--nk-kaki-ink); border-color: rgba(217, 119, 47, .35); background: var(--nk-kaki-wash); }
 @media (max-width: 420px) { .nk-runs li { grid-template-columns: auto minmax(0, 1fr); } .nk-runs .r { grid-column: 2; flex-direction: row; align-items: center; gap: 12px; } }
 .nk-card-h + .nk-toggle { margin: 0 0 10px; }
+@media (max-width: 480px) { .nk-card-h { flex-wrap: wrap; } .nk-card-h > .nk-pill { order: -1; } }

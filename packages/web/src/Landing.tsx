@@ -98,7 +98,7 @@ const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: str
 
 /** Real public-testnet transactions (docs/LIVE.md, docs/CCTP.md, docs/CCIP.md), linked to their explorers. */
 const pick = (re: RegExp) => LIVE.e2e.steps.find((x) => re.test(x.step))?.tx;
-const cctpIn = (from: string, kind: string) => CCTP_RUNS.find((r) => r.from === from && r.to === "arc-testnet" && r.kind === kind);
+const cctpIn = (from: string, kind: string) => CCTP_RUNS.find((r) => r.from === from && r.to === "arc-testnet" && r.kind === kind && (kind !== "pay-invoice" || r.events.includes("InvoicePaid")));
 const LIVE_STRIP: { t: string; d: string; href: string; marks: string[] }[] = [
   { t: "Private payment on Arc", d: "2.50 USDC, no payer address in the tx", href: `${LIVE.explorer}/tx/${pick(/^pay \d/i)}`, marks: ["KOHAKU", "ARC"] },
   { t: "Refund into a shielded inbox", d: "1.00 USDC back, still private", href: `${LIVE.explorer}/tx/${pick(/^refund \d/i)}`, marks: ["ARC"] },
