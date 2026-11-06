@@ -1,0 +1,19 @@
+{
+  "recordedAt": "2026-11-06T07:47:52.183Z",
+  "status": "completed",
+  "appId": "074b59c4-98ec-44d4-908e-92f5d97d462b",
+  "webUrl": "https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b",
+  "deployments": [],
+  "filesChanged": [
+    "contracts/test/noren/NorenStack.t.sol",
+    "src/App.tsx",
+    "src/components/Card.tsx",
+    "src/components/Header.tsx",
+    "src/components/MerchantCard.tsx",
+    "src/components/PaymentsFeed.tsx",
+    "src/components/PoolCard.tsx",
+    "src/hooks/useNorenScan.ts",
+    "src/lib/noren.ts"
+  ],
+  "verifiedOnChain": false
+}
