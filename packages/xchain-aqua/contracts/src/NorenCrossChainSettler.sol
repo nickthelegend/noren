@@ -175,6 +175,7 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
   /// @notice The payload for the source chain. CRE's log trigger delivers it verbatim.
   event XChainMessage(bytes32 indexed orderId, uint64 indexed toChainId, address indexed to, bytes payload);
   event PriceRelayed(address indexed feed, uint80 roundId, int256 answer, uint256 updatedAt, bool stored);
+  event MaxSpreadSet(uint16 bps);
 
   error BadConfig();
   error UnknownRoute(bytes32 routeKey);
@@ -197,6 +198,7 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
   error BadMessage(uint8 kind);
   error ZeroAddress();
   error RouterOrderNotOpen(address actionRouter, bytes32 ref);
+  error WrongDecimals(uint8 got, uint8 expected);
 
   constructor(address owner_, address forwarder_, IAqua aqua_, ISwapVMRouter router_) Ownable(owner_) {
     if (forwarder_ == address(0) || address(aqua_) == address(0) || router_.AQUA() != address(aqua_)) revert BadConfig();
@@ -548,6 +550,8 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
     NorenRelayedFeed f = NorenRelayedFeed(feed);
     if (f.writer() != address(this)) revert WrongFeed(feed, address(0));
     if (p.sourceFeed != f.sourceFeed()) revert WrongFeed(p.sourceFeed, f.sourceFeed());
+    // The relayed feed's decimals are fixed at deploy; a round in other units would misprice every fill.
+    if (p.decimals != f.decimals()) revert WrongDecimals(p.decimals, f.decimals());
     stored = f.relay(
       NorenRelayedFeed.Round({
         roundId: p.roundId,
@@ -599,6 +603,7 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
   function setMaxSpread(uint16 bps) external onlyOwner {
     if (bps >= 2_000) revert BadConfig();
     maxSpreadBps = bps;
+    emit MaxSpreadSet(bps);
   }
 
   function setForwarder(address f) external onlyOwner {
