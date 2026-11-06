@@ -1,11 +1,10 @@
 # ETHGlobal Mumbai submission: Noren
 
 > **Nick, before you press submit:**
-> 1. Fast-forward GitHub `main` to `v3` (or make `v3` the default branch). Judges and the AI screener read the default branch, and `main` is 321 commits behind.
-> 2. Make the Arc Studio app shareable and check it in a private window.
-> 3. Paste the demo video link.
-> 4. Pick the partner prizes: **1inch, Chainlink, Arc**.
-> 5. Update the GitHub repo description. It still says "Private checkout for merchants on Arc…".
+> 1. Make the Arc Studio app shareable and check it in a private window (on Nov 7 03:05 IST it still redirected to the Circle sign-in).
+> 2. Paste the demo video link.
+> 3. Pick the partner prizes: **1inch, Chainlink, Arc**.
+> 4. Update the GitHub repo description. It still says "Private checkout for merchants on Arc…". Optionally set the homepage to https://noren-app-beta.vercel.app.
 
 ## Project name
 Noren
@@ -29,7 +28,9 @@ Merchants accept stablecoins, stocks or credit — privately. DEX + stablecoin p
 
 **Three surfaces, one product.** Noren Merchant (payment links priced in 9 currencies by Chainlink, refunds, webhooks, balances, credit exposure). The Noren app (one balance, Pay, Send privately, Bridge, Swap, Earn, Borrow, Credit). The Noren SDK (`createNoren`, `verifyWebhook`, `shield`, `proveInvoicePayment`).
 
-**What's live.** On public testnets: the Arc contracts and a private payment, refund and P2P send; a credit line drawn into the pool and paid privately; CRE writes; CCTP from Base, Arbitrum, Ethereum Sepolia and Robinhood testnet into Arc; 10 CCIP messages; and swaps on Arc from the app. On local forks: the Robinhood side, because Robinhood testnet has no Chainlink feeds. The README has every link, and all of them were checked on-chain.
+**What's live.** A hosted demo: the Noren app and landing at https://noren-app-beta.vercel.app, Noren Merchant and the hosted checkout at https://noren-merchant.vercel.app, and the Aubelle demo shop at https://noren-shop.vercel.app. Frontends are on Vercel, backends on a VPS. Arc is the public Arc testnet, and the Robinhood side is a Robinhood Chain · mainnet snapshot (an Anvil node with real mainnet state; no real money). Hosted, the private checkout runs on public Arc testnet (a hosted end-to-end payment: `0x38b8ce96…b0f5`), Bridge and Swap work, and stock payments run on the snapshot. Pay later and Pay in 3 need the CRE credit bridge, which runs in the CRE CLI simulator, so they work on the local stack only. Visitors fund the app's test key from the Circle faucet (Arc Testnet USDC).
+
+Also on public testnets: the Arc contracts and a private payment, refund and P2P send; a credit line drawn into the pool and paid privately; CRE writes; CCTP from Base, Arbitrum, Ethereum Sepolia and Robinhood testnet into Arc; 10 CCIP messages; and swaps on Arc from the app. The README has every link, and all 135 transaction links, 32 addresses and 10 CCIP messages were re-checked on-chain on Nov 7.
 
 ## How it's made
 
@@ -46,9 +47,9 @@ Merchants accept stablecoins, stocks or credit — privately. DEX + stablecoin p
 - **Chainlink CCIP 2.0.** `NorenCcipGateway` runs on Arc, Base Sepolia, Ethereum Sepolia and Robinhood testnet. `NorenCcipHub` sits on Base Sepolia, because Robinhood has no lane to Arc. `NorenArcActionRouter` on Arc is the one router that both CCIP and CCTP land in. Messages carry a Noren envelope, with replay, out-of-order and failed-message (`retryFailed`) handling. These are tested on forks of the real CCIP 2.0 Router, OnRamp and OffRamp.
 - **Circle CCTP V2 on Arc.** `NorenArcHook` is the `destinationCaller` of every Noren burn, so only Noren can finish it. It mints through MessageTransmitterV2 and hands PAY_INVOICE, AQUA_ORDER, SHIELD and CREDIT_LINE actions to the router. `@noren/cctp` (`bridgeToArc`, `burnFromArc`) drives the app's Bridge tab.
 - **Chainlink Data Feeds.** Arc mainnet fiat feeds price the invoices, and `NorenRateOracle.verifyQuote` re-checks each quote at its own round IDs. Robinhood stock, ETH and USDG feeds value collateral (`NorenAssetOracle`) and peg the makers.
-- **Robinhood Chain (mainnet snapshot).**
+- **Robinhood Chain · mainnet snapshot.**
   - `NorenCredit`: EIP-712 credit attestations from a history underwriter, tiers that move with repayments, Pay in 3, liquidation.
-  - `NorenGateway`: pay with stocks, ETH or USDG.
+  - `NorenGateway`: pay with stocks, ETH or USDG. Ten assets pay at checkout: SPY, MSFT, AMZN, GOOGL, META, TSLA, AAPL, NVDA, ETH and USDG, each stock and ETH filled by its own Aqua maker (a fork test pays an invoice with all ten). QQQ and COIN have Chainlink feeds on Robinhood Chain but no verified Stock Token address, so they are not accepted.
   - `NorenBorrow` / `NorenReputation`: LTV from 66% up to 80%.
 
   These run against the real Stock Tokens, USDG and Chainlink feeds.
@@ -56,10 +57,10 @@ Merchants accept stablecoins, stocks or credit — privately. DEX + stablecoin p
 - **0G Private Computer.** TeeML mode, a strict JSON schema, policy caps, and our own checks of the enclave signature and the TDX quote. The request ID is shown next to the decision.
 - **Web.** React + Vite: the landing page, Noren Merchant, the Noren app and the hosted checkout. Sign-in with a wallet, a browser wallet (EIP-6963) or Privy.
 - **Hacky bits.**
-  - CRE knows only Robinhood *testnet*, so we serve a mainnet snapshot as chain 46630 and install testnet's simulation forwarder on it.
-  - A fork of Robinhood's public RPC dies after about 10 minutes, so we load a warmed state dump.
+  - CRE knows only Robinhood *testnet*, so on the local stack we serve the Robinhood Chain · mainnet snapshot as chain 46630 and install testnet's simulation forwarder on it.
+  - A fork of Robinhood's public RPC dies after about 10 minutes, so we load a warmed state dump (the Robinhood Chain · mainnet snapshot, also what the hosted demo serves).
   - Anvil's signer keeps the old chain id after `anvil_setChainId`, so the merchant's Robinhood transactions are sent as an impersonated account.
-- **Tests.** **605 passed, 1 skipped, 0 failed, across 21 suites** (TESTING.md has every command): `pnpm test` 142, Robinhood fork 158, SwapVM 27, CRE 76, CCTP 24, CCIP 32, `NorenCreditLine` 62, `NorenRateOracle` 22, cross-chain Aqua 39, `pnpm e2e` 9 plus 5/5 attacks reverted. `pnpm e2e:credit` passes 8/8 steps in 26–31 s.
+- **Tests.** **656 passed, 1 skipped, 0 failed, across 21 suites** (TESTING.md has every command; 18 suites re-run on Nov 7): `pnpm test` 155, Robinhood fork 188 (incl. paying with each of the 10 assets), SwapVM 27, CRE 76, CCTP 27, CCIP 37 + 2 live, `NorenCreditLine` 62, `NorenRateOracle` 22, cross-chain Aqua 39, `pnpm e2e` 9 plus 5/5 attacks reverted. `pnpm e2e:credit` passes 8/8 steps in 26–31 s.
 - **AI usage.** Claude (Anthropic) and Codex wrote and reviewed most of the code, tests and docs, as coordinated agents on separate branches. On-chain claims were checked against the chains. ChatGPT made the icon and illustrations; Google Gemini (Veo) made the landing film.
 
 ## Partner prizes (3)
@@ -72,14 +73,14 @@ Noren's lending pools are Aqua makers. `NorenVault` (lender pool) and `NorenDepo
 - earns the spread on fills (stock payments, cross-chain orders, swaps where it beats Uniswap);
 - buys liquidated collateral in partial Dutch auctions.
 
-`harvestToRepay` repays a loan from those fees. On the fork, 500.000001 USDG of debt fell to 497.055664 after two real fills.
+`harvestToRepay` repays a loan from those fees. On a local fork of Robinhood Chain mainnet, 500.000001 USDG of debt fell to 497.055664 after two real fills.
 
-We added two SwapVM opcodes: `NorenOraclePeg` (34) and `NorenDutchDecay` (35), with 27 tests. The official Aqua registry runs on the Robinhood fork. Aqua v1.0.0, unmodified, runs on Arc testnet, with live swaps there:
+We added two SwapVM opcodes: `NorenOraclePeg` (34) and `NorenDutchDecay` (35), with 27 tests. The official Aqua registry runs on the Robinhood Chain · mainnet snapshot. Aqua v1.0.0, unmodified, runs on Arc testnet, with live swaps there:
 - direct swap: `explorer.testnet.arc.io/tx/0xc7dfd911…`
 - from the app: `0x12df0a9c…`
 - cross-chain fills from CCTP burns on Arbitrum and Ethereum Sepolia: `0xe6dab620…`, `0x243cc90e…`
 
-The history is 331 commits since Nov 6 03:57 IST. **Verify in 2 min:** README → Sponsor integrations → 1inch row (source lines and tx links); `docs/AQUA-LIVE.md`.
+The history is 400+ commits on `main` since Nov 6 03:57 IST. **Verify in 2 min:** README → Sponsor integrations → 1inch row (source lines and tx links); `docs/AQUA-LIVE.md`.
 
 ### 2. Chainlink: Best workflow with CRE, and Best use of CCIP 2.0
 *CRE requirement: "a CRE Workflow that's used as an orchestration layer … integrate at least one blockchain with an external API … a successful simulation (via the CRE CLI) … meaningfully used."*
@@ -116,6 +117,7 @@ One unsecured starter line per human, with Selfie Check. IDKit 4 server-signed r
 Also eligible, but not picked: EF Best CROPS App (README § CROPS; privacy comes from the invoice-bound proof) and 0G Private Computer (the sealed credit check, [docs/0G.md](docs/0G.md)).
 
 ## Links
-- Repo: https://github.com/nickthelegend/noren (branch `v3` until `main` is fast-forwarded)
+- Repo: https://github.com/nickthelegend/noren (`main`)
+- Live demo: https://noren-app-beta.vercel.app (app + landing) · https://noren-merchant.vercel.app (Noren Merchant + checkout) · https://noren-shop.vercel.app (Aubelle shop)
 - Demo video: _(paste)_
 - Arc Studio: https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b _(make shareable)_
