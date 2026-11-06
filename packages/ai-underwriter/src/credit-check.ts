@@ -82,7 +82,12 @@ export async function creditCheck(input: CreditFeatures, opts: CreditCheckOption
     trustMode: 'private', teeVerified: completion.teeVerified, billingNeuron: completion.billingNeuron, usage: completion.usage,
     responseFormat: completion.responseFormat, network: cfg.network,
   }
-  if (completion.teeVerified !== true) return refuse(`0G did not verify the provider's TEE signature (tee_verified=${completion.teeVerified})`, base)
+  // The Router's check is tee_verified. `false` means it checked and the signature failed: always refuse.
+  // `null` means the Router did not check (seen for some TeeML providers): accept only if OUR independent check fully
+  // verifies the enclave signature, the quote binding and a TeeML provider record. Never accept an unproven decision.
+  if (completion.teeVerified === false) return refuse('0G reported the provider TEE signature as invalid (tee_verified=false)', base)
+  const routerUnverified = completion.teeVerified !== true
+  if (routerUnverified && opts.independentVerification === false) return refuse(`0G did not verify the provider's TEE signature (tee_verified=${completion.teeVerified}) and independent verification is off`, base)
 
   const independent = opts.independentVerification === false ? { status: 'skipped' as const } : await verifyIndependently({ provider: completion.provider, chatId: completion.chatId, content: completion.content }, cfg.network)
   const evidence: ZgEvidence = { ...base, independent }
@@ -90,6 +95,7 @@ export async function creditCheck(input: CreditFeatures, opts: CreditCheckOption
   if (independent.status === 'verified' || independent.status === 'partial') {
     if (independent.service.verifiability !== 'TeeML') return refuse(`Provider is ${independent.service.verifiability}, not TeeML (sealed)`, evidence)
   }
+  if (routerUnverified && independent.status !== 'verified') return refuse(`0G did not verify the provider's TEE signature (tee_verified=${completion.teeVerified}) and Noren's independent check was ${independent.status}, not fully verified`, evidence)
 
   let decision: CreditDecision
   try { decision = enforcePolicy(parseDecision(completion.content), features, opts) } catch (e) { return refuse(message(e), evidence) }
