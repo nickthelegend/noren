@@ -89,10 +89,14 @@ run(async () => {
       const { createReclaimHandler, missingReclaimEnv } = await import('../packages/server/src/reclaim.ts');
       const reclaimGaps = missingReclaimEnv(process.env);
       if (reclaimGaps.length) missing.push(`Reclaim: ${reclaimGaps.join(', ')} (Nick creates the app at dev.reclaimprotocol.org; docs/RECLAIM.md)`);
-      // A verified proof's kind + commitment goes on NorenReputation (recordAttestation, once the contract has it).
-      const reclaim = createReclaimHandler({ env: process.env, storeFile: resolve('data/reclaim-proofs.json'), onchain: robinhood?.reputation ? { rpcUrl: robinhoodRpc, reputation: robinhood.reputation as `0x${string}` } : undefined });
+      // Private on-chain reputation: each verified proof's kind + salted commitment goes on NorenReputation.recordAttestation.
+      const onchain = robinhood?.reputation ? { rpcUrl: robinhoodRpc, reputation: robinhood.reputation as `0x${string}` } : undefined;
+      const reclaim = createReclaimHandler({ env: process.env, storeFile: resolve('data/reclaim-proofs.json'), onchain });
+      const att = await import('../packages/server/src/attestations.ts');
+      const attStore = resolve('data/attestations.json');
+      const attestations = att.createAttestationHandler({ target: onchain && robinhood ? { ...onchain, credit: robinhood.credit, borrow: robinhood.borrow, fromBlock: robinhood.deployBlock } : undefined, storeFile: attStore });
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
-      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, reclaim, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
+      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, reclaim, attestations, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
       const gaps = w.missingSettings(config);
@@ -108,13 +112,11 @@ run(async () => {
           const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: w.httpTriggerPayload(r) });
           const tx = /updated on [a-z-]+: tx (0x[0-9a-f]{64})/.exec(out)?.[1];
           if (!tx) throw new Error('CRE human-starter run wrote nothing');
-          // The reputation milestone: NorenReputation.verifyHuman with an EIP-712 VerifiedHuman attestation. On the fork the
-          // attester is Anvil account #7 (deploy-fork.sh's worldIdSigner); a failure here never undoes the starter line.
-          if (robinhood?.reputation) {
-            const { recordVerifiedHuman } = await import('../packages/robinhood/sdk/src/earn.ts');
-            const d = JSON.parse((await import('node:fs')).readFileSync(resolve('packages/robinhood/.fork/deployment.json'), 'utf8'));
-            await recordVerifiedHuman({ publicClient: createPublicClient({ transport: http(robinhoodRpc) }) as any, addresses: { ...d, rpcUrl: robinhoodRpc }, account: r.borrower, nullifier: r.nullifierHash })
-              .then((x: any) => console.log(`World ID: NorenReputation.verifyHuman ${x.tx}; tier ${x.reputation.tier}, LTV ${x.after.ltvBps / 100}%`))
+          // The reputation: a private World ID attestation (kind 0, the nullifier behind a salted commitment) recorded by the
+          // attester on NorenReputation. A failure here never undoes the starter line.
+          if (onchain) {
+            await att.recordWorldId(onchain, attStore, r.borrower, r.nullifierHash)
+              .then((x) => console.log(x.status === 'recorded' ? `World ID: NorenReputation.recordAttestation (kind 0) ${x.tx}` : `World ID: not recorded on-chain: ${x.reason}`))
               .catch((e: any) => console.error(`World ID: reputation attestation failed: ${String(e.message).slice(0, 200)}`));
           }
           return { txHash: tx as `0x${string}` };
@@ -122,7 +124,7 @@ run(async () => {
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
       const worldId = w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }));
-      return [xchainOrders, reclaim, worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
+      return [xchainOrders, reclaim, attestations, worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
@@ -160,7 +162,7 @@ run(async () => {
           if (!process.env.ZG_PC_API_KEY) missing.push('0G credit check: ZG_PC_API_KEY is not set (Nick creates it on 0G Private Computer); checks are refused until then');
         } catch (e: any) { missing.push(`0G credit check failed to start: ${e.message}`); }
       }
-      if (robinhood) Object.assign(pub, { reputation: robinhood.reputation ?? null, borrow: robinhood.borrow ?? null, depositVaults: robinhood.depositVaults ?? [], aquaLiquidity: robinhood.liquidity ?? null, dutchAuction: robinhood.dutchAuction ?? null, aqua: robinhood.aqua ?? null, creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
+      if (robinhood) Object.assign(pub, { creditLens: robinhood.creditLens ?? null, reputation: robinhood.reputation ?? null, borrow: robinhood.borrow ?? null, depositVaults: robinhood.depositVaults ?? [], aquaLiquidity: robinhood.liquidity ?? null, dutchAuction: robinhood.dutchAuction ?? null, aqua: robinhood.aqua ?? null, creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
       pub.robinhoodChainId = Number(await rh.getChainId());
       return { liquidity: robinhood?.liquidity, rateOracle: pub.rateOracle as Address | undefined, bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
     },

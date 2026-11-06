@@ -15,7 +15,10 @@ export type Factor = { label: string; value: string; note?: string; points?: num
 export type ReclaimBoost = { verified: boolean; provider?: string; points: number; maxPoints: number; decidedBy: string; ifVerified: { score: number; tier: number; limitUsdg: bigint; collateralRatioBps: number } };
 export type Underwriting = { score: number; tier: string; tierIndex: number; tiers: { name: string }[]; ltvBps: number; limitUsdg: bigint; factors: Factor[]; signer: string; onchainTier?: number; expires?: number; reclaim?: ReclaimBoost };
 export type AiCheck = { status: "approved" | "declined" | "refused"; tier?: number; limitUsdg?: number; collateralRatioBps?: number; rationale?: string; riskFlags?: string[]; requestId?: string; teeVerified?: boolean | null; independent?: string; verifiability?: string; provider?: string; model?: string; reason?: string; setupRequired?: boolean };
-export type Quote = { collateral8: bigint; ltvBps: number; limitUsdc6: bigint; termDays: number; liquidation8?: bigint; tier: number; needsAttestation: boolean };
+export type Quote = { collateral8: bigint; ltvBps: number; limitUsdc6: bigint; termDays: number; liquidation8?: bigint; tier: number; needsAttestation: boolean; repLtvBps?: number };
+/** Something NorenCredit takes as line collateral: a Stock Token, or Earn deposit-vault shares (nNVDA, nETH…) that keep earning Aqua fees. */
+export type Collateral = { sym: string; token: Address; decimals: number; balance: bigint; kind: "stock" | "shares"; price8?: bigint; underlying?: Address };
+export type LineYield = { pendingUsdg: bigint; paidUsdc6: bigint; paidUsdg: bigint; outstandingUsdc6: bigint; shares: bigint; sym: string };
 export type Position = { live: boolean; closed: boolean; limit: bigint; expiry: number; drawn: bigint; repaid: bigint; updatedAt: number; available: bigint };
 
 const creditAbi = parseAbi([
@@ -23,8 +26,17 @@ const creditAbi = parseAbi([
   "function params() view returns (uint32 installmentInterval, uint32 gracePeriod, uint16 liquidationThresholdBps, uint16 liquidationBonusBps, uint16 merchantFeeBps, uint32 maxLineDuration, uint32 reportSkew)",
   "function applyAttestation((address borrower,uint8 tier,uint256 limitUsdg,uint16 collateralRatioBps,uint256 nonce,uint64 expiry) a, bytes signature)",
   "function openCreditLine(address collateral, uint256 collateralAmount, uint256 limitUsdc6, uint64 expiry) payable returns (bytes32)",
+  "function shareVaultStatus(address) view returns (uint8)",
+  "function line(bytes32) view returns ((address borrower, address collateral, uint64 expiry, uint64 asOf, uint64 closeRequestedAt, uint8 status, uint256 collateralAmount, uint256 limitUsdc, uint256 drawn, uint256 repaid))",
+  "function lineOutstanding(bytes32) view returns (uint256)",
+  "function harvestLineToRepay(bytes32 lineId) returns (uint256 shares)",
+  "function claimLineYield(bytes32 lineId) returns (uint256 shares)",
 ]);
-const oracleAbi = parseAbi(["function riskValueUsd8(address asset, uint256 amount) view returns (uint256)"]);
+const lensAbi = parseAbi([
+  "function maxCreditLimit(address borrower, address collateral, uint256 amount) view returns (uint256 limitUsdc6, uint256 valueUsd8, uint16 ltvBps)",
+  "function lineYield(bytes32 lineId) view returns (uint256 pendingUsdg, uint256 paidUsdc6, uint256 paidUsdg)",
+]);
+const repLtvAbi = parseAbi(["function ltvOf(address) view returns (uint16)"]);
 const TIERS = ["Declined", "Tier 1", "Tier 2", "Tier 3", "Tier 4"].map((name) => ({ name }));
 const setup = (what: string) => new Error(`Setup required: ${what}`);
 const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -73,48 +85,102 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       const e = d.evidence ?? {};
       return { status: d.status, tier: d.decision?.tier, limitUsdg: d.decision?.limitUsdg, collateralRatioBps: d.decision?.collateralRatioBps, rationale: d.decision?.rationale, riskFlags: d.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, independent: e.independent?.status, verifiability: e.independent?.service?.verifiability, provider: e.provider, model: e.model, at: d.decidedAt ?? d.at };
     },
-    /** What locking `amount` of a Stock Token would give, from NorenCredit's own terms and NorenAssetOracle's risk value. */
-    async quote(s: Holding, amount: string): Promise<Quote> {
+    /** Every collateral this wallet can lock on NorenCredit: Stock Tokens it holds and Earn deposit-vault shares (nNVDA…). */
+    async collaterals(): Promise<Collateral[]> {
       const { pub } = oc.robinhood();
-      if (!c?.stockOracle) throw setup("NorenAssetOracle isn't deployed on the Robinhood fork (packages/robinhood)");
-      const raw = parseUnits(amount, 18);
-      const [t, p, value8] = await Promise.all([terms(), pub.readContract({ address: contract(), abi: creditAbi, functionName: "params" }), pub.readContract({ address: c.stockOracle, abi: oracleAbi, functionName: "riskValueUsd8", args: [s.token, raw] })]);
-      let ratio = Number(t[2]), available = t[3], tier = Number(t[0]);
-      const needsAttestation = ratio === 0;
-      if (needsAttestation) {
-        const u = await this.underwrite();
-        if (u.tierIndex < 0) throw new Error(`Declined by the underwriter (score ${u.score} of 100). See the factors under "Reputation".`);
-        ratio = u.ltvBps; available = u.limitUsdg; tier = u.tierIndex + 1;
-      }
-      const byCollateral = (value8 / 100n) * 10_000n / BigInt(ratio); // usd8 → usdc6 at $1, divided by the ratio
-      const limitUsdc6 = byCollateral < available ? byCollateral : available;
-      const liquidation8 = raw > 0n ? (limitUsdc6 * 100n * BigInt(p[2]) / 10_000n) * 10n ** 18n / raw : undefined;
-      return { collateral8: value8, ltvBps: Math.round(1e8 / ratio), limitUsdc6, termDays: 30, liquidation8, tier, needsAttestation };
+      const stocks: Collateral[] = (oc.credit ? (await oc.holdings()).stocks : []).map((s) => ({ sym: s.sym, token: s.token, decimals: 18, balance: s.balance, kind: "stock" as const, price8: s.price8 }));
+      const vaults = (c?.depositVaults as { asset: Address; vault: Address }[] | undefined) ?? [];
+      const shares = await Promise.all(vaults.map(async (v) => {
+        const [sym, dec, bal, status] = await Promise.all([
+          pub.readContract({ address: v.vault, abi: erc20Abi, functionName: "symbol" }),
+          pub.readContract({ address: v.vault, abi: erc20Abi, functionName: "decimals" }),
+          pub.readContract({ address: v.vault, abi: erc20Abi, functionName: "balanceOf", args: [oc.address] }),
+          pub.readContract({ address: contract(), abi: creditAbi, functionName: "shareVaultStatus", args: [v.vault] }).catch(() => 0),
+        ]);
+        return { sym, token: v.vault, decimals: Number(dec), balance: bal, kind: "shares" as const, underlying: v.asset, accepted: Number(status) === 1 };
+      }));
+      return [...shares.filter((s) => s.accepted), ...stocks];
     },
-    /** Attest if needed, then lock the shares and open the line on Robinhood. The CRE bridge takes it to Arc. */
-    async open(s: Holding, amount: string, say: (step: string) => void = () => {}): Promise<{ text: string; hash: Hex }> {
+    /**
+     * What locking `amount` of a collateral gives: NorenCreditLens.maxCreditLimit (its risk value x the tier LTV, capped by
+     * the on-chain reputation tier and the available credit), the same arithmetic NorenCredit.openCreditLine checks. When
+     * no attestation is applied yet, or the reputation tier now allows more than the applied one, it says so and estimates.
+     */
+    async quote(s: Collateral, amount: string): Promise<Quote> {
+      const { pub } = oc.robinhood();
+      if (!c?.creditLens) throw setup("NorenCreditLens isn't in this stack's config (rebuild the Robinhood snapshot: sh packages/robinhood/scripts/fork-snapshot.sh)");
+      const raw = parseUnits(amount, s.decimals);
+      const [[limitUsdc6, value8, lensLtv], t, p, repLtv] = await Promise.all([
+        pub.readContract({ address: c.creditLens as Address, abi: lensAbi, functionName: "maxCreditLimit", args: [oc.address, s.token, raw] }),
+        terms(),
+        pub.readContract({ address: contract(), abi: creditAbi, functionName: "params" }),
+        c.reputation ? pub.readContract({ address: c.reputation as Address, abi: repLtvAbi, functionName: "ltvOf", args: [oc.address] }) : Promise.resolve(0),
+      ]);
+      const appliedLtv = Number(t[2]) ? Math.floor(1e8 / Number(t[2])) : 0;
+      // Re-attest when there are no terms yet, or the on-chain reputation tier lends more than the applied terms do.
+      const needsAttestation = Number(t[2]) === 0 || (Number(repLtv) > 0 && appliedLtv + 1 < Math.min(Number(repLtv), 8000));
+      let ltvBps = Number(lensLtv), limit = limitUsdc6;
+      if (needsAttestation) {
+        // Estimate: the reputation tier's LTV on the risk value (the underwriter signs it for secured lines; see attest.ts).
+        ltvBps = Math.min(Number(repLtv) || 6600, 8000);
+        limit = (value8 / 100n) * BigInt(ltvBps) / 10_000n;
+      }
+      const liquidation8 = s.kind === "stock" && raw > 0n ? (limit * 100n * BigInt(p[2]) / 10_000n) * 10n ** 18n / raw : undefined;
+      return { collateral8: value8, ltvBps, limitUsdc6: limit, termDays: 30, liquidation8, tier: Number(t[0]), needsAttestation, repLtvBps: Number(repLtv) };
+    },
+    /** Attest if needed, then lock the collateral and open the line on Robinhood. The CRE bridge takes it to Arc. */
+    async open(s: Collateral, amount: string, say: (step: string) => void = () => {}): Promise<{ text: string; hash: Hex }> {
       const { pub, wallet, chain } = oc.robinhood();
       const q = await this.quote(s, amount);
       const send = async (req: Parameters<typeof wallet.writeContract>[0]) => { const h = await wallet.writeContract(req); const r = await pub.waitForTransactionReceipt({ hash: h }); if (r.status !== "success") throw new Error(`${req.functionName} reverted: ${h}`); return h; };
       if (q.needsAttestation) {
-        say("Asking the underwriter: it reads this wallet's Robinhood Chain history (about 30 s)…");
+        say("Asking the underwriter: it reads this wallet's history and on-chain reputation (about 30 s)…");
         const a = await getJson(`${c!.underwriterUrl}/attest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ borrower: oc.address }) });
         if (a.declined) throw new Error(`Declined by the underwriter: ${a.reason}`);
-        say(`Signed: tier ${a.attestation.tier} (${a.decisionSource ?? "underwriter"}). Applying the EIP-712 attestation on NorenCredit…`);
+        say(`Signed: tier ${a.attestation.tier}, ${(1e4 / a.attestation.collateralRatioBps * 100).toFixed(0)}% LTV (${a.decisionSource ?? "underwriter"}). Applying the EIP-712 attestation on NorenCredit…`);
         const att = a.attestation;
         await send({ address: contract(), abi: creditAbi, functionName: "applyAttestation", args: [{ borrower: att.borrower as Address, tier: att.tier, limitUsdg: BigInt(att.limitUsdg), collateralRatioBps: att.collateralRatioBps, nonce: BigInt(att.nonce), expiry: BigInt(att.expiry) }, a.signature as Hex], chain });
       }
-      // The signed attestation, not the score, sets the terms (the 0G check or the reputation multiplier can change them),
-      // so price the line again from NorenCredit's on-chain terms before opening it.
-      const final = q.needsAttestation ? await this.quote(s, amount) : q;
-      if (final.limitUsdc6 !== q.limitUsdc6) say(`The signed terms lend ${final.ltvBps / 100}% of value: opening a ${(Number(final.limitUsdc6) / 1e6).toFixed(2)} USDC line.`);
-      q.limitUsdc6 = final.limitUsdc6;
-      const raw = parseUnits(amount, 18);
-      say(`Locking ${amount} ${s.sym} and opening the line on Robinhood…`);
+      // The line is sized from NorenCreditLens.maxCreditLimit after the terms are on-chain, never from an estimate.
+      const raw = parseUnits(amount, s.decimals);
+      const [max] = await pub.readContract({ address: c!.creditLens as Address, abi: lensAbi, functionName: "maxCreditLimit", args: [oc.address, s.token, raw] });
+      const limit = (max / 10_000n) * 10_000n; // whole cents
+      if (limit === 0n) throw new Error("NorenCreditLens.maxCreditLimit allows no line for this collateral yet");
+      say(`Locking ${amount} ${s.sym} and opening a ${(Number(limit) / 1e6).toFixed(2)} USDC line on Robinhood…`);
       await send({ address: s.token, abi: erc20Abi, functionName: "approve", args: [contract(), raw], chain });
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
-      const h = await send({ address: contract(), abi: creditAbi, functionName: "openCreditLine", args: [s.token, raw, q.limitUsdc6, expiry], chain });
-      return { text: `Locked ${amount} ${s.sym} and opened a ${(Number(q.limitUsdc6) / 1e6).toFixed(2)} USDC line on Robinhood`, hash: h };
+      const h = await send({ address: contract(), abi: creditAbi, functionName: "openCreditLine", args: [s.token, raw, limit, expiry], chain });
+      return { text: `Locked ${amount} ${s.sym} and opened a ${(Number(limit) / 1e6).toFixed(2)} USDC line on Robinhood`, hash: h };
+    },
+    /** A share-backed line's yield (NorenCreditLens.lineYield) and what NorenCredit still counts as owed on Robinhood. */
+    async lineYield(lineId: Hex): Promise<LineYield | null> {
+      const { pub } = oc.robinhood();
+      if (!c?.creditLens) return null;
+      const l = await pub.readContract({ address: contract(), abi: creditAbi, functionName: "line", args: [lineId] });
+      const isShares = Number(await pub.readContract({ address: contract(), abi: creditAbi, functionName: "shareVaultStatus", args: [l.collateral] }).catch(() => 0)) !== 0;
+      if (!isShares) return null;
+      const [[pendingUsdg, paidUsdc6, paidUsdg], outstanding, sym] = await Promise.all([
+        pub.readContract({ address: c.creditLens as Address, abi: lensAbi, functionName: "lineYield", args: [lineId] }),
+        pub.readContract({ address: contract(), abi: creditAbi, functionName: "lineOutstanding", args: [lineId] }),
+        pub.readContract({ address: l.collateral, abi: erc20Abi, functionName: "symbol" }),
+      ]);
+      return { pendingUsdg, paidUsdc6, paidUsdg, outstandingUsdc6: outstanding, shares: l.collateralAmount, sym };
+    },
+    /** Anyone: put a share-backed line's yield toward what it owes (NorenCredit.harvestLineToRepay). */
+    async harvest(lineId: Hex): Promise<Hex> {
+      const { pub, wallet, chain } = oc.robinhood();
+      await pub.simulateContract({ account: wallet.account!, address: contract(), abi: creditAbi, functionName: "harvestLineToRepay", args: [lineId] });
+      const h = await wallet.writeContract({ address: contract(), abi: creditAbi, functionName: "harvestLineToRepay", args: [lineId], chain, account: wallet.account! });
+      if ((await pub.waitForTransactionReceipt({ hash: h })).status !== "success") throw new Error(`harvestLineToRepay reverted: ${h}`);
+      return h;
+    },
+    /** Borrower, nothing owed: take the yield (NorenCredit.claimLineYield). */
+    async claim(lineId: Hex): Promise<Hex> {
+      const { pub, wallet, chain } = oc.robinhood();
+      await pub.simulateContract({ account: wallet.account!, address: contract(), abi: creditAbi, functionName: "claimLineYield", args: [lineId] });
+      const h = await wallet.writeContract({ address: contract(), abi: creditAbi, functionName: "claimLineYield", args: [lineId], chain, account: wallet.account! });
+      if ((await pub.waitForTransactionReceipt({ hash: h })).status !== "success") throw new Error(`claimLineYield reverted: ${h}`);
+      return h;
     },
     arcLine: (lineId: Hex): Promise<Position> => oc.arcLine(lineId),
     /**

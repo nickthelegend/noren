@@ -1,4 +1,4 @@
-import { createWalletClient, hashTypedData, http, type Address, type Hex, type PublicClient } from 'viem'
+import { createWalletClient, hashTypedData, http, parseAbi, type Address, type Hex, type PublicClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { norenCreditAbi, norenReputationAbi } from '../../sdk/src/abi.js'
 import { ACCOUNT_AGE_TYPES } from '../../sdk/src/earn.js'
@@ -120,4 +120,25 @@ export async function reputationMultiplierBps(publicClient: PublicClient, reputa
   if (!reputation) return { bps: 10_000, source: 'none: NorenReputation not deployed' }
   const bps = await publicClient.readContract({ address: reputation, abi: norenReputationAbi, functionName: 'limitMultiplierOf', args: [borrower] })
   return { bps: Number(bps), source: `NorenReputation ${reputation}` }
+}
+
+/**
+ * Fully secured lines (Stock Tokens or deposit-vault shares locked on NorenCredit): the on-chain reputation tier sets the
+ * LTV, not the history score. NorenCredit already caps a line at the reputation tier's LTV; this lets the signed terms
+ * reach it. The collateral ratio becomes the better of the decided one and the reputation tier's (1 / LTV, never under
+ * 125%), and the limit at least what the wallet's Earn deposits back at that LTV (NorenBorrow.securedCapacityUsdg).
+ * Read-only; returns null when NorenReputation or NorenBorrow isn't deployed.
+ */
+export async function securedTerms(client: PublicClient, reputation: Address | undefined, borrow: Address | undefined, borrower: Address) {
+  if (!reputation) return null
+  const ltvBps = Number(await client.readContract({ address: reputation, abi: parseAbi(['function ltvOf(address) view returns (uint16)']), functionName: 'ltvOf', args: [borrower] }))
+  const ratioBps = Math.max(12_500, Math.ceil(100_000_000 / ltvBps))
+  const capacityUsdg = borrow ? ((await client.readContract({ address: borrow, abi: parseAbi(['function securedCapacityUsdg(address who, uint16 ltvBps) view returns (uint256)']), functionName: 'securedCapacityUsdg', args: [borrower, ltvBps] })) as bigint) : 0n
+  return { ltvBps, ratioBps, capacityUsdg }
+}
+
+export function withSecured<T extends { tier: number; limitUsdg: bigint; collateralRatioBps: number }>(t: T, s: Awaited<ReturnType<typeof securedTerms>>): T {
+  if (!s) return t
+  const capacity = (s.capacityUsdg / 1_000_000n) * 1_000_000n
+  return { ...t, collateralRatioBps: Math.min(t.collateralRatioBps, s.ratioBps), limitUsdg: capacity > t.limitUsdg ? capacity : t.limitUsdg }
 }

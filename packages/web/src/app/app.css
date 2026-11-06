@@ -591,3 +591,9 @@ a.nk-way:hover { border-color: var(--nk-hair-2); background: var(--nk-box); }
 .nk-reclaim-copy { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font: 600 14px/1 var(--nk-sans); color: var(--nk-ai); }
 .nk-lockcalc { margin: 10px 0 0; }
 .nk-lockcalc .nk-band { margin-bottom: 8px; }
+.nk-earning { margin-left: 2px; padding: 3px 6px; border-radius: var(--nk-pill); background: var(--nk-ok-wash); color: var(--nk-ok); font: 400 10px/1 var(--nk-mono); }
+.nk-yield { margin-top: 6px; }
+.nk-onchain { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.nk-onchain li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--nk-ok-wash); }
+.nk-onchain b { display: block; font: 700 14px/1.2 var(--nk-sans); text-transform: capitalize; }
+.nk-onchain small { display: block; font: 500 12px/1.3 var(--nk-sans); color: var(--nk-ok); }

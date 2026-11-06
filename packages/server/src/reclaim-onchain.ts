@@ -1,45 +1,58 @@
 /**
- * On-chain, private reputation for verified off-chain facts. After the Noren server verifies a Reclaim proof it
- * records only the proof TYPE and a commitment on NorenReputation:
- *   commitment = keccak256(abi.encode(uint8 kind, string proofId, bytes32 salt))
- * The salt stays off-chain in the 0600 proof store, so the chain sees "this wallet proved a credit score" and nothing
- * that identifies the proof or the person. The attester is the existing World ID attester key (NOREN_WORLD_ATTESTER_KEY;
- * on a local fork only, Anvil's published key #7 that deploy-fork.sh made the attester).
+ * On-chain, private reputation: NorenReputation.recordAttestation(borrower, kind, commitment, boostBps).
+ * After the Noren server verifies a proof off-chain (a Reclaim zkTLS proof, World ID, or repayments it read on-chain)
+ * it records only the proof KIND and a commitment:
+ *   commitment = keccak256(abi.encode(uint8 kind, bytes32 proofId, bytes32 salt))   (= NorenReputation.commitmentFor)
+ * The salt stays off-chain (the 0600 proof store), so the chain learns "this wallet proved a credit score" and nothing
+ * that identifies the proof or the person.
  *
- * `recordAttestation(borrower, kind, commitment, boostBps)` lands on NorenReputation with the contracts-audit branch.
- * Until the deployed contract has it, this returns { status: 'unavailable', reason } and the UI says so; nothing is
- * faked, and the proof still counts on the history underwriter's score.
+ * Weights are public, so every kind uses ONE fixed boostBps: 10,000 (the full MAX_KIND_POINTS = 25 points). A per-proof
+ * weight would leak something about the proof (for example how high a score was); a fixed one reveals only the kind.
+ * With 25 points per kind the ladder reads: any 2 kinds → 70% LTV, plus World ID → 75%, plus an on-chain repayment
+ * attestation (and 100 points) → 80%.
+ *
+ * The attester must be NorenCredit.underwriter() or NorenReputation.attester(). The server uses the underwriter key
+ * (NOREN_RH_UNDERWRITER_KEY; on a local fork only, Anvil's published key #9 that deploy-fork.sh made the underwriter).
  */
 import { randomBytes } from 'node:crypto';
-import { createPublicClient, createWalletClient, encodeAbiParameters, http, keccak256, parseAbi, toHex, type Address, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, encodeAbiParameters, http, keccak256, parseAbi, toBytes, toHex, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { ReclaimGroup } from './reclaim-providers.ts';
 
-/** Attestation kinds Noren writes (1-4 Reclaim groups; 0 is World ID, recorded by verifyHuman today). */
-export const ATTESTATION_KIND: Record<ReclaimGroup, number> = { 'credit-score': 1, kyc: 2, balance: 3, identity: 4 };
-/** The limit boost each kind asks for, in bps; NorenReputation caps it. Mirrors the score points (15/8/8/3). */
-export const KIND_BOOST_BPS: Record<ReclaimGroup, number> = { 'credit-score': 1_500, kyc: 800, balance: 800, identity: 300 };
+/** NorenReputation attestation kinds (KIND_* constants). */
+export const KIND = { worldId: 0, creditScore: 1, kyc: 2, balance: 3, identity: 4, onchainRepayment: 5 } as const;
+export type KindName = keyof typeof KIND;
+export const GROUP_KIND: Record<ReclaimGroup, KindName> = { 'credit-score': 'creditScore', kyc: 'kyc', balance: 'balance', identity: 'identity' };
+/** One fixed public weight for every kind (bps of MAX_KIND_POINTS): reveals nothing beyond the kind. */
+export const FIXED_BOOST_BPS = 10_000;
+/** Kept for the Reclaim group mapping; every group records FIXED_BOOST_BPS. */
+export const ATTESTATION_KIND: Record<ReclaimGroup, number> = { 'credit-score': KIND.creditScore, kyc: KIND.kyc, balance: KIND.balance, identity: KIND.identity };
 
 export const reputationAttestationAbi = parseAbi([
   'function recordAttestation(address borrower, uint8 kind, bytes32 commitment, uint16 boostBps)',
+  'function attestationsOf(address account) view returns (uint8 tier, uint256 kinds, uint8 count)',
+  'event AttestationRecorded(address indexed borrower, uint8 indexed kind, bytes32 commitment)',
 ]);
-/** Anvil's published dev key #7, the fork's World ID attester (packages/robinhood deploy-fork.sh). Fork only. */
-const FORK_ATTESTER_KEY = '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356' as Hex;
+/** Anvil's published dev key #9, the fork's NorenCredit.underwriter() (packages/robinhood deploy-fork.sh). Fork only. */
+const FORK_UNDERWRITER_KEY = '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6' as Hex;
 
 export type OnchainRecord = { status: 'recorded'; tx: Hex; kind: number; commitment: Hex; boostBps: number } | { status: 'unavailable'; reason: string };
 export type OnchainTarget = { rpcUrl: string; reputation: Address; attesterKey?: Hex };
 
+/** A proof identifier as bytes32: a 0x…64-hex identifier as is (Reclaim's), anything else hashed. */
+export const proofIdBytes32 = (id: string): Hex => (/^0x[0-9a-fA-F]{64}$/.test(id) ? (id.toLowerCase() as Hex) : keccak256(toBytes(id)));
 export const commitmentOf = (kind: number, proofId: string, salt: Hex): Hex =>
-  keccak256(encodeAbiParameters([{ type: 'uint8' }, { type: 'string' }, { type: 'bytes32' }], [kind, proofId, salt]));
+  keccak256(encodeAbiParameters([{ type: 'uint8' }, { type: 'bytes32' }, { type: 'bytes32' }], [kind, proofIdBytes32(proofId), salt]));
 export const newSalt = (): Hex => toHex(randomBytes(32));
 
 const loopback = (url: string) => { try { return ['127.0.0.1', 'localhost'].includes(new URL(url).hostname); } catch { return false; } };
 
-export async function recordOnchain(target: OnchainTarget | undefined, borrower: Address, group: ReclaimGroup, proofId: string, salt: Hex): Promise<OnchainRecord> {
+/** Record one kind for `borrower`. Simulates first; a revert comes back as { status: 'unavailable', reason }. */
+export async function recordKind(target: OnchainTarget | undefined, borrower: Address, kindName: KindName, proofId: string, salt: Hex): Promise<OnchainRecord> {
   if (!target) return { status: 'unavailable', reason: 'Setup required: no NorenReputation on this stack (pnpm dev:all with packages/robinhood)' };
-  const key = target.attesterKey ?? (process.env.NOREN_WORLD_ATTESTER_KEY as Hex | undefined) ?? (loopback(target.rpcUrl) ? FORK_ATTESTER_KEY : undefined);
-  if (!key) return { status: 'unavailable', reason: 'Setup required: NOREN_WORLD_ATTESTER_KEY' };
-  const kind = ATTESTATION_KIND[group], boostBps = KIND_BOOST_BPS[group];
+  const key = target.attesterKey ?? (process.env.NOREN_RH_UNDERWRITER_KEY as Hex | undefined) ?? (loopback(target.rpcUrl) ? FORK_UNDERWRITER_KEY : undefined);
+  if (!key) return { status: 'unavailable', reason: 'Setup required: NOREN_RH_UNDERWRITER_KEY (the attester)' };
+  const kind = KIND[kindName], boostBps = FIXED_BOOST_BPS;
   const commitment = commitmentOf(kind, proofId, salt);
   const account = privateKeyToAccount(key);
   const pub = createPublicClient({ transport: http(target.rpcUrl) });
@@ -47,9 +60,8 @@ export async function recordOnchain(target: OnchainTarget | undefined, borrower:
     await pub.simulateContract({ account, address: target.reputation, abi: reputationAttestationAbi, functionName: 'recordAttestation', args: [borrower, kind, commitment, boostBps] });
   } catch (e: any) {
     const m = String(e?.shortMessage ?? e?.message ?? e);
-    // No such function on the deployed NorenReputation: the contracts-audit change isn't on this stack yet.
-    if (/reverted|execution reverted|function selector|0x$/i.test(m) && !/Unauthorized|NotAttester|BadSignature/i.test(m))
-      return { status: 'unavailable', reason: 'NorenReputation on this stack has no recordAttestation yet (it lands with the contracts-audit branch); the proof counts on the history score meanwhile' };
+    if (/KindAlreadyRecorded/.test(m)) return { status: 'unavailable', reason: `this wallet already has a ${kindName} attestation on-chain (one per kind)` };
+    if (/NotAttester/.test(m)) return { status: 'unavailable', reason: 'the server key is not NorenReputation\'s attester on this stack' };
     return { status: 'unavailable', reason: `recordAttestation would revert: ${m.slice(0, 160)}` };
   }
   const wallet = createWalletClient({ account, transport: http(target.rpcUrl) });
@@ -58,3 +70,7 @@ export async function recordOnchain(target: OnchainTarget | undefined, borrower:
   if (r.status !== 'success') return { status: 'unavailable', reason: `recordAttestation reverted: ${tx}` };
   return { status: 'recorded', tx, kind, commitment, boostBps };
 }
+
+/** Reclaim proofs: the group decides the kind. */
+export const recordOnchain = (target: OnchainTarget | undefined, borrower: Address, group: ReclaimGroup, proofId: string, salt: Hex) =>
+  recordKind(target, borrower, GROUP_KIND[group], proofId, salt);

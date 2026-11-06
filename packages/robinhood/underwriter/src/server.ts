@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { appendDecision, toStoredDecision } from '@noren/ai-underwriter'
 import { createPublicClient, http, isAddress, type Address } from 'viem'
 import { loadForkDeployment } from '../../sdk/src/node.js'
-import { reputationMultiplierBps, signAccountAge, signAttestation } from './attest.js'
+import { reputationMultiplierBps, securedTerms, signAccountAge, signAttestation, withSecured } from './attest.js'
 import { decideTerms } from './decide.js'
 import { readWalletHistory } from './history.js'
 import { offchainProofOf } from './reclaim.js'
@@ -73,10 +73,12 @@ const server = createServer(async (req, res) => {
       // Reputation milestones (World ID, on-time repayments, repaid loans) scale the attested limit.
       const reputation = (process.env.NOREN_RH_REPUTATION as Address | undefined) ?? (deployment as { reputation?: Address } | undefined)?.reputation
       const multiplier = await reputationMultiplierBps(client, reputation, borrower)
-      const terms = { ...decision.terms, limitUsdg: (decision.terms.limitUsdg * BigInt(multiplier.bps)) / 10_000n }
+      const scaled = { ...decision.terms, limitUsdg: (decision.terms.limitUsdg * BigInt(multiplier.bps)) / 10_000n }
+      const secured = await securedTerms(client, reputation, (deployment as { borrow?: Address } | undefined)?.borrow ?? (process.env.NOREN_RH_BORROW as Address | undefined), borrower)
+      const terms = withSecured(scaled, secured)
       const signed = await signAttestation({ borrower, terms, credit, chainId: await client.getChainId(), publicClient: client })
       if (decision.logEntry) console.log(serialize({ attestationLog: decision.logEntry, borrower, signed: !signed.declined }))
-      return send(200, { decisionSource: decision.source, decision, reputationMultiplier: { ...multiplier, baseLimitUsdg: decision.terms.limitUsdg }, ...signed })
+      return send(200, { decisionSource: decision.source, decision, reputationMultiplier: { ...multiplier, baseLimitUsdg: decision.terms.limitUsdg }, secured, ...signed })
     }
     if (req.method === 'POST' && req.url === '/attest-age') {
       let raw = ''
