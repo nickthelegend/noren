@@ -983,3 +983,26 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-credit-empty p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
 .co-credit-empty b { color: var(--ink); }
 @media (max-width: 560px) { .co-methods { grid-template-columns: minmax(0, 1fr); } .co-plan { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ============================================================== landing: Tsuke section */
+.lp-flow { list-style: none; margin: 44px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hair-2); counter-reset: f; }
+.lp-flow li { position: relative; padding: 24px 24px 8px 0; border-right: 1px solid var(--hair); }
+.lp-flow li + li { padding-left: 24px; }
+.lp-flow li:last-child { border-right: 0; }
+.lp-flow li:not(:last-child)::after { content: ""; position: absolute; top: -5px; right: -5px; width: 9px; height: 9px; border-radius: 50%; background: var(--kaki); box-shadow: 0 0 0 4px var(--linen); }
+.lp-flow span { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--kaki-2); }
+.lp-flow b { display: block; margin-top: 14px; font: 500 21px/1.2 var(--sans); letter-spacing: -.03em; color: var(--ai); }
+.lp-flow p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--muted); }
+.lp-honest { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 40px; }
+.lp-honest > div { padding: 22px 24px; border-radius: 14px; background: var(--white); border: 1px solid var(--hair); }
+.lp-honest > div + div { background: var(--paper); border-style: dashed; border-color: rgba(217, 119, 47, .45); }
+.lp-honest h3 { margin: 0 0 10px; font: 600 15px var(--sans); letter-spacing: -.02em; color: var(--ink); }
+.lp-honest ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.lp-honest li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.lp-honest li svg { margin-top: 3px; width: 14px; height: 14px; color: var(--moss); }
+.lp-honest > div + div li svg { color: var(--kaki-2); }
+.lp-honest b { color: var(--ink); }
+.lp-tsuke-cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
+.lp-tsuke-cta span { font-size: 12.5px; color: var(--faint); }
+@media (max-width: 900px) { .lp-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lp-flow li:nth-child(2) { border-right: 0; } .lp-flow li:nth-child(3) { padding-left: 0; } .lp-flow li:nth-child(2)::after { display: none; } .lp-honest { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .lp-flow { grid-template-columns: minmax(0, 1fr); } .lp-flow li { padding: 22px 0 12px !important; border-right: 0; border-bottom: 1px solid var(--hair); } .lp-flow li::after { display: none; } .lp-honest > div { padding: 18px; } }

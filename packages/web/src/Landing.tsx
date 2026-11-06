@@ -257,6 +257,42 @@ export function Landing() {
         </ol>
       </section>
 
+      {/* ---------------------------------------------------------------- tsuke */}
+      <section className="lp-sec lp-tsuke" id="tsuke">
+        <div className="lp-head" data-reveal>
+          <span className="lx-tag mono">■ Tsuke <span lang="ja">ツケ</span>, the shop tab</span>
+          <h2>Pay with stocks. <em>Pay later.</em></h2>
+          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in four parts. The merchant is paid in full, upfront. A Chainlink CRE workflow keeps the two chains in step.</p>
+        </div>
+        <ol className="lp-flow" data-reveal>
+          {[
+            ["Robinhood Chain", "Lock stock", "An underwriter reads your wallet's on-chain history (age, activity, stock held, past repayments) and signs an EIP-712 score. TsukeCredit checks it and values your Stock Tokens with Chainlink feeds."],
+            ["Chainlink CRE", "Bridge the line", "A log trigger on CreditLineOpened runs a CRE workflow that writes your limit to Arc. Draws and repayments on Arc flow back the same way."],
+            ["Arc", "Pay any checkout", "Choose “Tsuke credit” on the hosted checkout. NorenCreditLine pays the merchant in USDC from the credit pool, within your limit."],
+            ["Arc → Robinhood", "Repay in four", "Pay four USDC installments. Repaying on time raises your tier; a missed part or a price drop makes the position liquidatable."],
+          ].map(([chain, t, d], i) => <li key={t}><span className="mono">{String(i + 1).padStart(2, "0")} · {chain}</span><b>{t}</b><p>{d}</p></li>)}
+        </ol>
+        <div className="lp-honest" data-reveal>
+          <div>
+            <h3>Real</h3>
+            <ul>
+              <li><Icon.check /> Robinhood Chain's Stock Token and Chainlink feed contracts, with mainnet state</li>
+              <li><Icon.check /> The CRE workflow code, run by the CRE CLI, writing through Chainlink's forwarder contract</li>
+              <li><Icon.check /> Our contracts call those real contracts directly; nothing in between is mocked</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Not real yet</h3>
+            <ul>
+              <li><Icon.x /> Both chains run as local Anvil forks: no real stock or money moves. Robinhood's testnet has no Chainlink feeds, so we fork mainnet.</li>
+              <li><Icon.x /> The workflow runs in the CRE simulator, not on a Chainlink DON.</li>
+              <li><Icon.x /> Paying on credit is <b>not private</b>: the line is tied to your Robinhood wallet.</li>
+            </ul>
+          </div>
+        </div>
+        <div className="lp-tsuke-cta" data-reveal><a className="lx-btn dark" href="#/credit">Open a tab</a><span className="mono">Runs locally: pnpm dev:all</span></div>
+      </section>
+
       {/* ---------------------------------------------------------------- proof */}
       <section className="lp-sec">
         <div className="lp-proof" data-reveal>
