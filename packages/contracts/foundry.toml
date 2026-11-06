@@ -10,3 +10,7 @@ cbor_metadata = false
 
 [profile.default.lint]
 exclude_lints = ['unsafe-typecast']
+
+[profile.fork]
+test = 'fork-test'
+via_ir = true
