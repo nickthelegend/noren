@@ -10,7 +10,7 @@ import "./landing.css";
 
 /** Honest status of each piece. Flip a value here when its branch lands. */
 type Status = "live" | "key" | "wip" | "quotes" | "testnet";
-const STATUS: Record<Status, string> = { live: "Live on fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
+const STATUS: Record<Status, string> = { live: "Runs on local fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
 const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
@@ -78,9 +78,9 @@ const POWERS: Power[] = [
     d: "Lock your Earn receipt shares and borrow USDG at your reputation LTV (66% up to 80%), with the health factor and liquidation price from Chainlink. Or lock Stock Tokens for a USDC line on Arc, opened by a CRE workflow.",
     m: "2 NVDA locked = $371.41 collateral" },
   { k: "human", t: "Credit for real humans", s: ["live"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
-    d: "No stock? Verify with World ID (production, Selfie Check in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
+    d: "No stock? Verify with World ID (production; verified for real with an Orb credential in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
   { k: "bridge", t: "From any chain", s: ["testnet", "live"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
-    d: "Bring USDC to Arc from 10 chains with Circle CCTP, or pay an invoice on arrival. Robinhood Chain ⇄ Arc both ways from the app. Sell stock on Robinhood and get USDC on Arc from a 1inch Aqua maker, with Chainlink CRE carrying the order. Swaps go to Uniswap v4 unless Noren's Aqua maker quotes better.",
+    d: "Bring USDC to Arc with Circle CCTP from 10 supported chains (live runs from Base, Arbitrum, Ethereum Sepolia and Robinhood), or pay an invoice on arrival. Robinhood Chain ⇄ Arc both ways from the app. Sell stock on Robinhood and get USDC on Arc from a 1inch Aqua maker, with Chainlink CRE carrying the order. Swaps go to Uniswap v4 unless Noren's Aqua maker quotes better.",
     m: "Base Sepolia → Arc: invoice paid on arrival" },
 ];
 
@@ -125,7 +125,7 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
   { v: "4.5–7.4", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "590", l: "tests passing across 22 suites, forks and live testnets included" },
+  { v: "605", l: "tests passing across 21 suites, forks and live testnets included" },
 ];
 
 function useReveal() {
