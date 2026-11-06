@@ -35,7 +35,7 @@ export function readableError(error: any): string {
   return raw.includes('Setup required') ? raw : 'Transaction rejected: ' + raw.slice(0, 180);
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
-/** Tsuke credit: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
+/** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
 export type CreditOptions = { creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
@@ -87,7 +87,7 @@ export function createMerchantServer(options: ServerOptions): Server {
   function emit(type: string, row: RecordRow) { const message = `event: ${type}\ndata: ${jsonBigints({ invoiceId: row.invoice.invoiceId, paymentTx: row.paymentTx, refundTx: row.refundTx })}\n\n`; for (const l of listeners) l.write(message); }
   async function body(req: any) { let s = ''; for await (const chunk of req) { s += chunk; if (s.length > 100_000) throw new Error('Request too large'); } return s ? JSON.parse(s) : {}; }
   function send(res: any, status: number, value: unknown) { res.writeHead(status, { 'content-type': 'application/json' }); res.end(jsonBigints(value)); }
-  // Tsuke credit: a Drawn log on NorenCreditLine that matches an open invoice settles it. Mismatches are logged, never settled.
+  // Pay later: a Drawn log on NorenCreditLine that matches an open invoice settles it. Mismatches are logged, never settled.
   const creditWatch = options.credit?.creditLine ? watchCreditDraws({ rpcUrl: options.rpcUrl, creditLine: options.credit.creditLine, fromBlock: options.credit.fromBlock, onError: e => console.error('Credit watcher:', e.message), onDraw: async draw => {
     await ready;
     const row = rows.get(draw.invoiceId.toLowerCase());
@@ -98,7 +98,7 @@ export function createMerchantServer(options: ServerOptions): Server {
     const receipt = await publicClient.getTransactionReceipt({ hash: draw.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
-  // Pay with stock: the invoice is mirrored on TsukeGateway (Robinhood) and settles when its InvoicePaid log appears.
+  // Pay with stock: the invoice is mirrored on NorenGateway (Robinhood) and settles when its InvoicePaid log appears.
   const rh = options.credit?.robinhoodRpc ? createPublicClient({ transport: http(options.credit.robinhoodRpc), cacheTime: 0 }) as any : undefined;
   const stockWatch = rh && options.credit?.gateway && merchantAddress ? watchStockPayments({ rpcUrl: options.credit.robinhoodRpc!, gateway: options.credit.gateway, merchant: merchantAddress, fromBlock: options.credit.robinhoodFromBlock, onError: e => console.error('Stock watcher:', e.message), onPaid: async p => {
     await ready;
@@ -109,9 +109,16 @@ export function createMerchantServer(options: ServerOptions): Server {
     const receipt = await rh.getTransactionReceipt({ hash: p.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
-  /** Mirrors a Noren invoice onto TsukeGateway as the merchant (USDC and USDG both have 6 decimals). Idempotent. */
+  /** Mirrors a Noren invoice onto NorenGateway as the merchant (USDC and USDG both have 6 decimals). Idempotent. */
+  const mirroring = new Map<string, Promise<unknown>>();
+  /** One mirror per invoice at a time: a second request waits for the first instead of racing it into InvoiceExists. */
+  function mirrorOnce(row: RecordRow) {
+    const key = row.invoice.invoiceId.toLowerCase();
+    const p = (mirroring.get(key) ?? Promise.resolve()).catch(() => {}).then(() => mirrorOnRobinhood(row));
+    mirroring.set(key, p); return p;
+  }
   async function mirrorOnRobinhood(row: RecordRow) {
-    if (!rh || !options.credit?.gateway) throw new Error('Setup required: TsukeGateway is not deployed on the Robinhood fork (pnpm dev:all with packages/tsuke)');
+    if (!rh || !options.credit?.gateway) throw new Error('Setup required: NorenGateway is not deployed on the Robinhood fork (pnpm dev:all with packages/robinhood)');
     if (!merchantAddress) throw new Error('Setup required: merchant key missing');
     const gateway = options.credit.gateway, id = row.invoice.invoiceId;
     const existing = await rh.readContract({ address: gateway, abi: gatewayAbi, functionName: 'invoice', args: [merchantAddress, id] });
@@ -121,7 +128,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (options.localUnlockedMerchant) hash = await rh.request({ method: 'eth_sendTransaction', params: [{ from: merchantAddress, to: gateway, data }] });
       else hash = await createWalletClient({ account: account as any, transport: http(options.credit.robinhoodRpc!) }).sendTransaction({ to: gateway, data, chain: null } as any);
       const receipt = await rh.waitForTransactionReceipt({ hash });
-      if (receipt.status !== 'success') throw new Error(`TsukeGateway.createInvoice reverted: ${hash}`);
+      if (receipt.status !== 'success') throw new Error(`NorenGateway.createInvoice reverted: ${hash}`);
     }
     return { gateway, merchant: merchantAddress, invoiceId: id, amountUsdg: row.invoice.amount.toString(), expiry: row.invoice.expiry.toString() };
   }
@@ -209,7 +216,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (req.method === 'POST' && match[2] === 'robinhood') {
         if (row.status !== 'draft' && row.status !== 'open') throw new Error(`InvoiceNotOpen: invoice is ${row.status}`);
         if ((await publicClient.getBlock()).timestamp > row.invoice.expiry) throw new Error('Expired: invoice has expired');
-        return send(res, 200, await mirrorOnRobinhood(row));
+        return send(res, 200, await mirrorOnce(row));
       }
       if (req.method === 'POST' && match[2] === 'bind') {
         if (row.status !== 'draft') throw new Error('InvoiceAlreadyBound: invoice is immutable');
@@ -230,7 +237,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (req.method === 'POST' && match[2] === 'refund') {
         if (!authorized(req)) return send(res, 401, { error: 'Merchant bearer token required' });
         if (row.status !== 'paid') throw new Error('Invoice is not paid or has already been refunded');
-        if (row.method === 'credit' || row.method === 'stocks') throw new Error(`RefundUnsupported: this invoice was paid ${row.method === 'credit' ? 'with Tsuke credit' : 'with Stock Tokens on Robinhood Chain'}, not from the private pool`);
+        if (row.method === 'credit' || row.method === 'stocks') throw new Error(`RefundUnsupported: this invoice was paid ${row.method === 'credit' ? 'on credit (pay later)' : 'with Stock Tokens on Robinhood Chain'}, not from the private pool`);
         const amount = BigInt((await body(req)).amount); if (amount <= 0n || amount > row.invoice.amount) throw new Error('RefundTooLarge: amount must be positive and at most invoice amount');
         const approval = await wallet.writeContract({ address: options.deployment.usdc, abi: usdcAbi, functionName: 'approve', args: [options.deployment.checkout, amount] });
         const approved = await publicClient.waitForTransactionReceipt({ hash: approval }); if (approved.status !== 'success') throw new Error('Approval reverted');

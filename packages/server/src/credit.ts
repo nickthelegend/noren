@@ -1,5 +1,5 @@
 /**
- * Tsuke credit on the merchant server.
+ * Pay later and pay with stocks, on the merchant server.
  * - Watches NorenCreditLine `Drawn` logs on Arc and settles the matching Noren invoice (method "credit").
  * - A Robinhood-fork faucet that moves real Stock Tokens and USDG from mainnet holders by impersonation (Anvil only).
  * The NorenCreditLine ABI here is the fixed interface in NOREN-AGENTS-CONTEXT.md, not a guess.
@@ -108,9 +108,9 @@ export async function robinhoodFaucet(rpcUrl: string, to: Address, amounts = { n
   return out;
 }
 
-/* ------------------------------------------------------------------ Pay with stock: TsukeGateway on Robinhood */
+/* ------------------------------------------------------------------ Pay with stock: NorenGateway on Robinhood */
 
-/** TsukeGateway (packages/tsuke): a merchant invoice in USDG that a customer pays with USDG, ETH or a Stock Token. */
+/** NorenGateway (packages/robinhood): a merchant invoice in USDG that a customer pays with USDG, ETH or a Stock Token. */
 export const gatewayAbi = parseAbi([
   'function createInvoice(bytes32 invoiceId, uint128 amountUsdg, uint64 expiry)',
   'function invoice(address merchant, bytes32 invoiceId) view returns ((uint128 amountUsdg, uint64 expiry, uint8 status, address payer, address asset, uint256 assetIn))',

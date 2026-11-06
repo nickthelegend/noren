@@ -1,30 +1,33 @@
 /**
- * Tsuke (ツケ): the customer's credit page. Stock Tokens on a Robinhood Chain fork back a credit line that a Chainlink CRE
- * workflow mirrors onto Arc, where it pays Noren invoices. Every number on this page is read from one of the two forks
+ * The Noren app: the customer's side of Noren. Private balance, stocks, the credit line ("pay later") and repayments.
+ * Stock Tokens on a Robinhood Chain fork back a credit line that a Chainlink CRE workflow mirrors onto Arc, where it
+ * pays Noren invoices. Every number on this page is read from one of the two forks
  * (or the underwriter's signed attestation); anything not yet deployed shows "Setup required".
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, short, usdc } from "./api";
 import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
-import { STOCKS, usd8, units, type Holding, type Line, type Tsuke } from "./tsuke";
-import { tsukeActions, type Quote, type Underwriting, type Position } from "./tsuke-actions";
+import { STOCKS, usd8, units, type Holding, type Line, type Onchain } from "./onchain";
+import { creditActions, type Quote, type Underwriting, type Position } from "./credit-actions";
 
 const ago = (t: number) => { const s = Math.max(0, Math.floor(Date.now() / 1000) - t); return s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 const day = (t: number) => new Date(t * 1000).toLocaleDateString([], { month: "short", day: "numeric" });
 
-export function Credit() {
+export function NorenApp() {
   const { cfg, err } = useConfig();
-  const [tk, setTk] = useState<Tsuke | null>(null);
+  const [tk, setTk] = useState<Onchain | null>(null);
   const [hold, setHold] = useState<{ stocks: Holding[]; usdg: bigint; eth: bigint } | null>(null);
   const [holdErr, setHoldErr] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[] | null>(null);
   const [linesErr, setLinesErr] = useState<string | null>(null);
   const [arcUsdc, setArcUsdc] = useState<bigint | null>(null);
+  const [priv, setPriv] = useState<{ approved: bigint; pending: bigint } | null>(null);
+  const [privErr, setPrivErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
 
-  useEffect(() => { if (cfg) import("./tsuke").then((m) => setTk(m.makeTsuke(cfg))).catch((e) => setNote({ t: msgOf(e), bad: true })); }, [cfg]);
-  const actions = useMemo(() => (tk && cfg ? tsukeActions(cfg, tk) : null), [tk, cfg]);
+  useEffect(() => { if (cfg) import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setNote({ t: msgOf(e), bad: true })); }, [cfg]);
+  const actions = useMemo(() => (tk && cfg ? creditActions(cfg, tk) : null), [tk, cfg]);
 
   const load = useCallback(async () => {
     if (!tk) return;
@@ -33,13 +36,20 @@ export function Credit() {
     tk.arcUsdc().then(setArcUsdc).catch(() => setArcUsdc(null));
   }, [tk]);
   useEffect(() => { load(); const t = setInterval(load, 5000); return () => clearInterval(t); }, [load]);
+  // The private balance comes from the same in-browser Kohaku wallet the checkout uses (loaded lazily: it carries the prover).
+  useEffect(() => {
+    if (!cfg) return;
+    let on = true, timer: ReturnType<typeof setInterval> | undefined;
+    import("./wallet").then((m) => { const w = m.makeWallet(cfg); const read = () => w.balances().then((b) => on && (setPriv(b), setPrivErr(null))).catch((e) => on && setPrivErr(msgOf(e))); read(); timer = setInterval(read, 10000); }).catch((e) => setPrivErr(msgOf(e)));
+    return () => { on = false; if (timer) clearInterval(timer); };
+  }, [cfg]);
 
   const run = async (key: string, f: () => Promise<string | void>) => {
     setBusy(key); setNote(null);
     try { const t = await f(); if (t) setNote({ t }); await load(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
   };
 
-  if (err) return <div className="tk-page"><Setup err={err} /></div>;
+  if (err) return <div className="na-page"><Setup err={err} /></div>;
   const credit = tk?.credit ?? null;
   const live = lines?.filter((l) => !l.closed) ?? [];
   const line = live[live.length - 1];
@@ -47,42 +57,43 @@ export function Credit() {
   const collateral8 = hold?.stocks.reduce((a, s) => a + s.value8, 0n) ?? 0n;
 
   return (
-    <div className="tk-page">
-      <header className="tk-top">
+    <div className="na-page">
+      <header className="na-top">
         <a className="site-brand" href="#/"><Logo /><span>Noren</span></a>
-        <span className="tk-crumb"><span>/</span><b>Tsuke</b><span className="tk-jp" lang="ja">ツケ</span></span>
-        <nav className="tk-chains mono" aria-label="Networks">
+        <span className="na-crumb"><span>/</span><b>App</b></span>
+        <nav className="na-chains mono" aria-label="Networks">
           <span title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} />Robinhood fork</span>
           <span title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} />Arc fork</span>
         </nav>
-        <span className="tk-who mono" title="Test key kept in this browser; same address on both chains">{tk ? short(tk.address, 6) : "…"}</span>
+        <span className="na-who mono" title="Test key kept in this browser; same address on both chains">{tk ? short(tk.address, 6) : "…"}</span>
       </header>
 
-      <main className="tk-main">
-        <section className="tk-intro">
-          <span className="eyebrow">Pay later, backed by your stock</span>
-          <h1>Your <em>tab</em>, on stocks you keep.</h1>
-          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in four parts. A Chainlink CRE workflow keeps both chains in step.</p>
+      <main className="na-main">
+        <section className="na-intro">
+          <span className="eyebrow">Noren app</span>
+          <h1>Pay privately. Pay with stocks. <em>Pay later.</em></h1>
+          <p>Your private balance, your stock and your credit line in one place. Lock Stock Tokens on Robinhood Chain to get a USDC credit line on Arc, then pay any Noren checkout with it and repay when you like. A Chainlink CRE workflow keeps both chains in step.</p>
         </section>
 
-        <section className="tk-strip" aria-label="Your credit line">
+        <section className="na-strip" aria-label="Your balances and credit line">
+          <div><span>Private balance</span><b><i>$</i>{priv ? usdc(priv.approved) : "–"}</b><small>{privErr ? "Couldn't read the pool" : priv ? (priv.pending > 0n ? `+${usdc(priv.pending)} being screened` : "USDC in the privacy pool, Arc") : "Loading…"}</small></div>
           <div><span>Credit limit</span><b><i>$</i>{line ? usdc(line.limit) : "0.00"}</b><small>{line ? `Opened on Robinhood · expires ${day(line.expiry)}` : lines ? "No line yet" : linesErr ? "Setup required" : "Loading…"}</small></div>
           <div><span>Available on Arc</span><b><i>$</i>{line ? usdc(line.limit > owed ? line.limit - owed : 0n) : "0.00"}</b><small>Spend it at any Noren checkout</small></div>
           <div><span>Owed</span><b className={owed > 0n ? "kaki" : ""}><i>$</i>{usdc(owed)}</b><small>{line ? `${usdc(line.drawn)} drawn · ${usdc(line.repaid)} repaid` : "Nothing drawn"}</small></div>
           <div><span>Stock you hold</span><b><i>$</i>{hold ? usd8(collateral8) : "–"}</b><small>At live Chainlink prices on the fork</small></div>
         </section>
 
-        {note && <p className={note.bad ? "err tk-note" : "note tk-note"} role="status">{note.t}</p>}
+        {note && <p className={note.bad ? "err na-note" : "note na-note"} role="status">{note.t}</p>}
 
-        <div className="tk-grid">
-          <div className="tk-col">
+        <div className="na-grid">
+          <div className="na-col">
             <Panel n="1" title="Your stock on Robinhood Chain" sub="Real Stock Token contracts and Chainlink feeds, on a local fork of mainnet">
               {holdErr ? <SetupLine text={holdErr} /> : !hold ? <Skel rows={3} /> : (
                 <>
-                  <ul className="tk-hold">
+                  <ul className="na-hold">
                     {hold.stocks.filter((s) => s.balance > 0n || s.sym === "NVDA" || s.sym === "TSLA").map((s) => (
                       <li key={s.sym}>
-                        <span className="tk-tick" aria-hidden>{s.sym.slice(0, 1)}</span>
+                        <span className="na-tick" aria-hidden>{s.sym.slice(0, 1)}</span>
                         <div><b>{s.sym}</b><small>{s.name}</small></div>
                         <div className="r"><b className="num">{units(s.balance, 18)}</b><small>shares</small></div>
                         <div className="r"><b className="num">${usd8(s.price8)}</b><small title="Chainlink round updatedAt">{ago(s.updatedAt)}</small></div>
@@ -90,56 +101,56 @@ export function Credit() {
                       </li>
                     ))}
                   </ul>
-                  <div className="tk-hold-f">
+                  <div className="na-hold-f">
                     <span>USDG <b className="num">{units(hold.usdg, 6, 2)}</b></span>
                     <span>ETH <b className="num">{units(hold.eth, 18, 4)}</b></span>
                     <button className="btn line sm" disabled={!!busy} onClick={() => run("faucet", async () => { const r = await api.robinhoodFaucet(tk!.address); return `Fork faucet: 3 NVDA and 120 USDG moved from real mainnet holders (tx ${short(r.NVDA, 6)}).`; })}>
                       {busy === "faucet" ? <><span className="spin" /> Moving tokens…</> : "Get test stock"}
                     </button>
                   </div>
-                  <p className="tk-fine">Fork faucet: impersonates real holders on your local Anvil fork. Nothing touches mainnet.</p>
+                  <p className="na-fine">Fork faucet: impersonates real holders on your local Anvil fork. Nothing touches mainnet.</p>
                 </>
               )}
             </Panel>
 
-            <Panel n="2" title="Lock stock, open a tab" sub="TsukeCredit on Robinhood Chain">
+            <Panel n="2" title="Lock stock, open a credit line" sub="NorenCredit on Robinhood Chain">
               {actions ? <LockForm actions={actions} hold={hold} busy={busy} run={run} hasLine={!!line} /> : <Skel rows={2} />}
             </Panel>
 
-            <Panel n="4" title="Repay in four" sub="USDC on Arc; the CRE workflow carries each repayment back to Robinhood">
-              {!line ? <p className="tk-empty">Your installment plan appears after your first credit payment.</p> : <Installments line={line} tk={tk!} actions={actions} arcUsdc={arcUsdc} busy={busy} run={run} />}
+            <Panel n="4" title="Repay" sub="USDC on Arc; the CRE workflow carries each repayment back to Robinhood">
+              {!line ? <p className="na-empty">Your repayment plan appears after your first pay-later payment.</p> : <Installments line={line} tk={tk!} actions={actions} arcUsdc={arcUsdc} busy={busy} run={run} />}
             </Panel>
           </div>
 
-          <div className="tk-col">
+          <div className="na-col">
             <Panel title="Your credit score" sub="From this wallet's Robinhood Chain history, signed with EIP-712">
               {actions ? <Score actions={actions} /> : <Skel rows={3} />}
             </Panel>
             <Panel n="3" title="Bridged to Arc by Chainlink CRE" sub="CreditLineOpened on Robinhood → workflow → NorenCreditLine on Arc">
               {linesErr ? <SetupLine text={linesErr} /> : !lines ? <Skel rows={2} /> : <Bridge line={line} actions={actions} />}
             </Panel>
-            <Panel title="Spend it">
-              <p className="tk-p">Open any Noren payment link and choose <b>Pay with Tsuke credit</b>. The merchant is paid in full, upfront, from the Arc credit pool. Paying on credit is <b>not private</b>: the line is tied to your Robinhood wallet. For a private payment, use your shielded balance instead.</p>
+            <Panel title="Pay later at any Noren checkout">
+              <p className="na-p">Open any Noren payment link and choose <b>Pay later</b>. The merchant is paid in full, upfront, from the Arc credit pool. Paying on credit is <b>not private</b>: the line is tied to your Robinhood wallet. For a private payment, use your shielded balance instead.</p>
               {line && line.draws.length > 0 && (
-                <ul className="tk-draws">{line.draws.map((d) => <li key={d.tx}><span className="mono">{short(d.invoiceId, 6)}</span><span>to <span className="mono">{short(d.merchant, 4)}</span></span><b className="num">{usdc(d.amount)} USDC</b></li>)}</ul>
+                <ul className="na-draws">{line.draws.map((d) => <li key={d.tx}><span className="mono">{short(d.invoiceId, 6)}</span><span>to <span className="mono">{short(d.merchant, 4)}</span></span><b className="num">{usdc(d.amount)} USDC</b></li>)}</ul>
               )}
             </Panel>
           </div>
         </div>
-        <p className="tk-foot">Test networks only. Robinhood Chain and Arc run as local Anvil forks; prices come from the real Chainlink feeds at the fork block. The CRE workflow runs in the CRE CLI simulator.</p>
+        <p className="na-foot">Test networks only. Robinhood Chain and Arc run as local Anvil forks; prices come from the real Chainlink feeds at the fork block. The CRE workflow runs in the CRE CLI simulator.</p>
       </main>
     </div>
   );
 }
 
 function Panel({ n, title, sub, children }: { n?: string; title: string; sub?: string; children: React.ReactNode }) {
-  return <section className="tk-panel"><header>{n && <span className="tk-n">{n}</span>}<div><h2>{title}</h2>{sub && <p>{sub}</p>}</div></header>{children}</section>;
+  return <section className="na-panel"><header>{n && <span className="na-n">{n}</span>}<div><h2>{title}</h2>{sub && <p>{sub}</p>}</div></header>{children}</section>;
 }
-const Skel = ({ rows }: { rows: number }) => <div className="tk-skel">{Array.from({ length: rows }, (_, i) => <i key={i} />)}</div>;
-const SetupLine = ({ text }: { text: string }) => <div className="tk-setup"><span className="eyebrow">Setup required</span><p>{text.replace(/^Setup required:\s*/, "")}</p></div>;
+const Skel = ({ rows }: { rows: number }) => <div className="na-skel">{Array.from({ length: rows }, (_, i) => <i key={i} />)}</div>;
+const SetupLine = ({ text }: { text: string }) => <div className="na-setup"><span className="eyebrow">Setup required</span><p>{text.replace(/^Setup required:\s*/, "")}</p></div>;
 
 /* ------------------------------------------------------------------ score gauge */
-function Score({ actions }: { actions: ReturnType<typeof tsukeActions> }) {
+function Score({ actions }: { actions: ReturnType<typeof creditActions> }) {
   const [u, setU] = useState<Underwriting | null>(null);
   const [e, setE] = useState<string | null>(null);
   useEffect(() => { let on = true; actions.underwrite().then((x) => on && setU(x)).catch((x) => on && setE(msgOf(x))); return () => { on = false; }; }, [actions]);
@@ -148,19 +159,19 @@ function Score({ actions }: { actions: ReturnType<typeof tsukeActions> }) {
   const segs = u.tiers.length, R = 70, cx = 90, cy = 86, gap = 4;
   const arc = (i: number) => { const a0 = Math.PI + (i * Math.PI) / segs + (gap / R) / 2, a1 = Math.PI + ((i + 1) * Math.PI) / segs - (gap / R) / 2; const p = (a: number) => `${cx + R * Math.cos(a)},${cy + R * Math.sin(a)}`; return `M${p(a0)} A${R},${R} 0 0 1 ${p(a1)}`; };
   return (
-    <div className="tk-score">
-      <div className="tk-gauge">
+    <div className="na-score">
+      <div className="na-gauge">
         <svg viewBox="0 0 180 100" role="img" aria-label={`Tier ${u.tier} of ${segs}`}>{u.tiers.map((t, i) => <path key={t.name} d={arc(i)} className={i <= u.tierIndex ? `on t${i}` : ""} />)}</svg>
         <div><b>{u.tier}</b><small>{u.ltvBps / 100}% of collateral value</small></div>
       </div>
-      <ul className="tk-factors">{u.factors.map((f) => <li key={f.label}><span>{f.label}</span><b className="num">{f.value}</b>{f.note && <small>{f.note}</small>}</li>)}</ul>
-      <p className="tk-fine">Signed by underwriter <span className="mono">{short(u.signer, 4)}</span>{u.expires ? ` · valid until ${new Date(u.expires * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. TsukeCredit checks the signature on-chain; a better history means less collateral.</p>
+      <ul className="na-factors">{u.factors.map((f) => <li key={f.label}><span>{f.label}</span><b className="num">{f.value}</b>{f.note && <small>{f.note}</small>}</li>)}</ul>
+      <p className="na-fine">Signed by underwriter <span className="mono">{short(u.signer, 4)}</span>{u.expires ? ` · valid until ${new Date(u.expires * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. NorenCredit checks the signature on-chain; a better history means less collateral.</p>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ lock form (order-panel layout) */
-function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<typeof tsukeActions>; hold: { stocks: Holding[] } | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void; hasLine: boolean }) {
+function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<typeof creditActions>; hold: { stocks: Holding[] } | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void; hasLine: boolean }) {
   const owned = hold?.stocks.filter((s) => s.balance > 0n) ?? [];
   const [sym, setSym] = useState("NVDA");
   const [amt, setAmt] = useState("1");
@@ -176,18 +187,18 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
   if (!hold) return <Skel rows={2} />;
   const tooMuch = s ? Number(amt) > Number(s.balance) / 1e18 : true;
   return (
-    <div className="tk-order">
-      <div className="tk-legs">
-        <label className="tk-leg"><span>You lock</span>
+    <div className="na-order">
+      <div className="na-legs">
+        <label className="na-leg"><span>You lock</span>
           <div><input inputMode="decimal" value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Shares to lock" />
             <select value={sym} onChange={(e) => setSym(e.target.value)} aria-label="Stock Token">{(owned.length ? owned : STOCKS.slice(0, 1)).map((x) => <option key={x.sym}>{x.sym}</option>)}</select></div>
           <small>{s ? `${units(s.balance, 18)} available` : ""}</small>
         </label>
-        <span className="tk-knob" aria-hidden><Icon.arrow /></span>
-        <div className="tk-leg out"><span>You can spend</span><div><b className="num">{q ? usdc(q.limitUsdc6) : "–"}</b><em>USDC on Arc</em></div><small>{q ? `${q.installments} installments · ${q.termDays} days` : qe ? "" : " "}</small></div>
+        <span className="na-knob" aria-hidden><Icon.arrow /></span>
+        <div className="na-leg out"><span>You can spend</span><div><b className="num">{q ? usdc(q.limitUsdc6) : "–"}</b><em>USDC on Arc</em></div><small>{q ? `${q.installments} installments · ${q.termDays} days` : qe ? "" : " "}</small></div>
       </div>
       {qe ? <SetupLine text={qe} /> : (
-        <dl className="tk-rows">
+        <dl className="na-rows">
           <dt>Chainlink price</dt><dd>{s ? `$${usd8(s.price8)} · ${ago(s.updatedAt)}` : "–"}</dd>
           <dt>Collateral value</dt><dd>{q ? `$${usd8(q.collateral8)}` : "–"}</dd>
           <dt>Your tier allows</dt><dd>{q ? `${q.ltvBps / 100}% of value` : "–"}</dd>
@@ -195,14 +206,14 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
         </dl>
       )}
       <button className="btn kaki full lg" disabled={!!busy || !q || tooMuch || hasLine} onClick={() => run("lock", () => actions.open(s!, amt))}>
-        {busy === "lock" ? <><span className="spin" /> Locking on Robinhood…</> : hasLine ? "You have an open tab" : tooMuch ? `Not enough ${sym}` : <>Lock {amt || 0} {sym} and open a tab</>}
+        {busy === "lock" ? <><span className="spin" /> Locking on Robinhood…</> : hasLine ? "You have an open credit line" : tooMuch ? `Not enough ${sym}` : <>Lock {amt || 0} {sym} and open a credit line</>}
       </button>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ bridge status */
-function Bridge({ line, actions }: { line?: Line; actions: ReturnType<typeof tsukeActions> | null }) {
+function Bridge({ line, actions }: { line?: Line; actions: ReturnType<typeof creditActions> | null }) {
   const [pos, setPos] = useState<Position | null>(null);
   useEffect(() => { if (!line || !actions) return; let on = true; actions.arcLine(line.lineId).then((p) => on && setPos(p)).catch(() => on && setPos(null)); return () => { on = false; }; }, [line?.lineId, line?.drawn, actions]); // eslint-disable-line react-hooks/exhaustive-deps
   const steps: [string, string, boolean][] = [
@@ -210,26 +221,26 @@ function Bridge({ line, actions }: { line?: Line; actions: ReturnType<typeof tsu
     ["Chainlink CRE workflow", line ? (pos?.live ? "log trigger fired, report signed and written" : "waiting for the workflow to report…") : "Listens for CreditLineOpened", !!pos?.live],
     ["Live on Arc: NorenCreditLine", pos?.live ? `limit ${usdc(pos.limit)} USDC · line ${short(line!.lineId, 4)}` : "Not yet", !!pos?.live],
   ];
-  return <ol className="tk-bridge">{steps.map(([t, d, on], i) => <li key={t} data-on={on} data-now={!on && (i === 0 || steps[i - 1][2])}><i>{on ? <Icon.check /> : i + 1}</i><div><b>{t}</b><span>{d}</span></div></li>)}</ol>;
+  return <ol className="na-bridge">{steps.map(([t, d, on], i) => <li key={t} data-on={on} data-now={!on && (i === 0 || steps[i - 1][2])}><i>{on ? <Icon.check /> : i + 1}</i><div><b>{t}</b><span>{d}</span></div></li>)}</ol>;
 }
 
 /* ------------------------------------------------------------------ installments */
-function Installments({ line, tk, actions, arcUsdc, busy, run }: { line: Line; tk: Tsuke; actions: ReturnType<typeof tsukeActions> | null; arcUsdc: bigint | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void }) {
+function Installments({ line, tk, actions, arcUsdc, busy, run }: { line: Line; tk: Onchain; actions: ReturnType<typeof creditActions> | null; arcUsdc: bigint | null; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void }) {
   const [plan, setPlan] = useState<{ due: number; amount: bigint; paid: boolean }[] | null>(null);
   const [pe, setPe] = useState<string | null>(null);
   useEffect(() => { if (!actions) return; actions.schedule(line).then(setPlan).catch((e) => setPe(msgOf(e))); }, [actions, line.lineId, line.drawn, line.repaid]); // eslint-disable-line react-hooks/exhaustive-deps
   const owed = line.drawn - line.repaid;
   const next = plan?.find((p) => !p.paid);
   return (
-    <div className="tk-inst">
-      {pe ? <SetupLine text={pe} /> : !plan ? <Skel rows={2} /> : plan.length === 0 ? <p className="tk-empty">Nothing drawn yet.</p> : (
-        <ol>{plan.map((p, i) => <li key={i} data-paid={p.paid}><span className="tk-n sm">{i + 1}</span><span>{day(p.due)}</span><b className="num">{usdc(p.amount)} USDC</b><em>{p.paid ? "Paid" : p === next ? "Next" : "Scheduled"}</em></li>)}</ol>
+    <div className="na-inst">
+      {pe ? <SetupLine text={pe} /> : !plan ? <Skel rows={2} /> : plan.length === 0 ? <p className="na-empty">Nothing drawn yet.</p> : (
+        <ol>{plan.map((p, i) => <li key={i} data-paid={p.paid}><span className="na-n sm">{i + 1}</span><span>{day(p.due)}</span><b className="num">{usdc(p.amount)} USDC</b><em>{p.paid ? "Paid" : p === next ? "Next" : "Scheduled"}</em></li>)}</ol>
       )}
-      <div className="tk-repay">
+      <div className="na-repay">
         <span>Arc USDC <b className="num">{arcUsdc === null ? "–" : usdc(arcUsdc)}</b></span>
         {arcUsdc !== null && next && arcUsdc < next.amount && <button className="btn line sm" disabled={!!busy} onClick={() => run("arcfaucet", async () => { await api.faucet(tk.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arcfaucet" ? <><span className="spin" /> Sending…</> : "Get test USDC"}</button>}
-        <button className="btn ink sm" disabled={!!busy || owed <= 0n || !next || (arcUsdc ?? 0n) < (next?.amount ?? 0n)} onClick={() => run("repay", async () => { const h = await tk.repay(line.lineId, next!.amount > owed ? owed : next!.amount); return `Repaid ${usdc(next!.amount > owed ? owed : next!.amount)} USDC on Arc (tx ${short(h, 6)}). The CRE workflow reports it to TsukeCredit.`; })}>
-          {busy === "repay" ? <><span className="spin" /> Repaying…</> : next ? `Pay installment · ${usdc(next.amount > owed ? owed : next.amount)} USDC` : "All paid"}
+        <button className="btn ink sm" disabled={!!busy || owed <= 0n || !next || (arcUsdc ?? 0n) < (next?.amount ?? 0n)} onClick={() => run("repay", async () => { const h = await tk.repay(line.lineId, next!.amount > owed ? owed : next!.amount); return `Repaid ${usdc(next!.amount > owed ? owed : next!.amount)} USDC on Arc (tx ${short(h, 6)}). The CRE workflow reports it to NorenCredit.`; })}>
+          {busy === "repay" ? <><span className="spin" /> Repaying…</> : next ? `Repay · ${usdc(next.amount > owed ? owed : next.amount)} USDC` : "All paid"}
         </button>
       </div>
     </div>

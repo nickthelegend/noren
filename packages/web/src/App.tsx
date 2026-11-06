@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Landing } from "./Landing";
 import { Dashboard } from "./Dashboard";
 import { Checkout } from "./Checkout";
-import { Credit } from "./Credit";
+import { NorenApp } from "./NorenApp";
 import { Icon, Logo, useRoute } from "./ui";
 
 export function App() {
   const route = useRoute();
   if (route.page === "dashboard") return <Dashboard tab={route.tab} sub={route.sub} />;
   if (route.page === "pay") return <Checkout id={route.id} />;
-  if (route.page === "credit") return <Credit />;
+  if (route.page === "app") return <NorenApp />;
   return <Site />;
 }
 
@@ -23,8 +23,8 @@ function Site() {
         <nav className="mono">
           <a href="#/" className="hide-s">Home</a>
           <a href="#developers" className="hide-s">Developers</a>
-          <a href="#/credit" className="hide-s">Tsuke credit</a>
-          <a href="#/dashboard">Dashboard</a>
+          <a href="#/app" className="hide-s">Noren app</a>
+          <a href="#/dashboard">Noren Merchant</a>
           <a href="https://github.com/nickthelegend/noren" target="_blank" rel="noreferrer" className="hide-s">GitHub</a>
         </nav>
         <a className="lx-btn light sm" href="#/dashboard">Start <Icon.arrow /></a>

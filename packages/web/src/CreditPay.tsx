@@ -1,15 +1,15 @@
 /**
- * The hosted checkout's third method: pay a Noren invoice from a Tsuke credit line on Arc.
+ * The hosted checkout's third method: pay a Noren invoice later, from a credit line on Arc.
  * The browser calls NorenCreditLine.payInvoice; the merchant server sees the Drawn log and marks the invoice paid.
  */
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
 import { payoutOf } from "./kit";
-import type { Line, Tsuke } from "./tsuke";
+import type { Line, Onchain } from "./onchain";
 
 export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: InvoiceView; shop: string; onPaid: () => void }) {
-  const [tk, setTk] = useState<Tsuke | null>(null);
+  const [tk, setTk] = useState<Onchain | null>(null);
   const [lines, setLines] = useState<Line[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [gas, setGas] = useState<bigint | null>(null);
@@ -17,7 +17,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
 
-  useEffect(() => { import("./tsuke").then((m) => setTk(m.makeTsuke(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
+  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
   const load = useCallback(async () => {
     if (!tk) return;
     try { setLines(await tk.lines()); setErr(null); } catch (e) { setErr(msgOf(e)); }
@@ -34,8 +34,8 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   if (!lines) return <div className="co-setup quiet"><span className="spin xs" /> Reading your credit line on Robinhood and Arc…</div>;
   if (!line) return (
     <div className="co-credit-empty">
-      <p><b>You don't have a tab yet.</b> Lock Stock Tokens on Robinhood Chain to open a credit line. It reaches Arc through a Chainlink CRE workflow in a few seconds.</p>
-      <a className="btn line full" href="#/credit">Open a tab with your stock <Icon.arrow /></a>
+      <p><b>You don't have a credit line yet.</b> Lock Stock Tokens on Robinhood Chain to open a credit line. It reaches Arc through a Chainlink CRE workflow in a few seconds.</p>
+      <a className="btn line full" href="#/app">Open a credit line in the Noren app <Icon.arrow /></a>
     </div>
   );
 
@@ -57,7 +57,8 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
         <div><span>Available credit</span><b>{usdc(available)}<em>USDC</em></b></div>
         <div><span>Line</span><b className="mono sm">{short(line.lineId, 4)}</b><small className="faint">limit {usdc(line.limit)}</small></div>
       </div>
-      <ol className="co-plan" aria-label="Repayment plan">
+      <p className="co-plan-h">Suggested: repay in four parts before the line expires on {new Date(line.expiry * 1000).toLocaleDateString([], { month: "short", day: "numeric" })}. Any amount, any time.</p>
+      <ol className="co-plan" aria-label="Suggested repayment plan">
         {[part, part, part, last].map((v, i) => <li key={i}><i>{i + 1}</i><span>{i === 0 ? "First" : i === 3 ? "Last" : `Part ${i + 1}`}</span><b className="num">{usdc(v)}</b></li>)}
       </ol>
       <div className="co-privacy light">

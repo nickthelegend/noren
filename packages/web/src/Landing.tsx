@@ -257,19 +257,19 @@ export function Landing() {
         </ol>
       </section>
 
-      {/* ---------------------------------------------------------------- tsuke */}
-      <section className="lp-sec lp-tsuke" id="tsuke">
+      {/* ---------------------------------------------------------------- pay with stocks, pay later */}
+      <section className="lp-sec lp-credit" id="pay-later">
         <div className="lp-head" data-reveal>
-          <span className="lx-tag mono">■ Tsuke <span lang="ja">ツケ</span>, the shop tab</span>
+          <span className="lx-tag mono">■ In the Noren app</span>
           <h2>Pay with stocks. <em>Pay later.</em></h2>
-          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in four parts. The merchant is paid in full, upfront. A Chainlink CRE workflow keeps the two chains in step.</p>
+          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. The merchant is paid in full, upfront. A Chainlink CRE workflow keeps the two chains in step.</p>
         </div>
         <ol className="lp-flow" data-reveal>
           {[
-            ["Robinhood Chain", "Lock stock", "An underwriter reads your wallet's on-chain history (age, activity, stock held, past repayments) and signs an EIP-712 score. TsukeCredit checks it and values your Stock Tokens with Chainlink feeds."],
+            ["Robinhood Chain", "Lock stock", "An underwriter reads your wallet's on-chain history (age, activity, stock held, past repayments) and signs an EIP-712 score. NorenCredit checks it and values your Stock Tokens with Chainlink feeds."],
             ["Chainlink CRE", "Bridge the line", "A log trigger on CreditLineOpened runs a CRE workflow that writes your limit to Arc. Draws and repayments on Arc flow back the same way."],
-            ["Arc", "Pay any checkout", "Choose “Tsuke credit” on the hosted checkout. NorenCreditLine pays the merchant in USDC from the credit pool, within your limit."],
-            ["Arc → Robinhood", "Repay in four", "Pay four USDC installments. Repaying on time raises your tier; a missed part or a price drop makes the position liquidatable."],
+            ["Arc", "Pay any checkout", "Choose “Pay later” on the hosted checkout. NorenCreditLine pays the merchant in USDC from the credit pool, within your limit."],
+            ["Arc → Robinhood", "Repay", "Repay in USDC on Arc, in parts or at once. Each repayment flows back to Robinhood through CRE. Debt left after expiry, or a price drop, makes the line liquidatable."],
           ].map(([chain, t, d], i) => <li key={t}><span className="mono">{String(i + 1).padStart(2, "0")} · {chain}</span><b>{t}</b><p>{d}</p></li>)}
         </ol>
         <div className="lp-honest" data-reveal>
@@ -290,7 +290,7 @@ export function Landing() {
             </ul>
           </div>
         </div>
-        <div className="lp-tsuke-cta" data-reveal><a className="lx-btn dark" href="#/credit">Open a tab</a><span className="mono">Runs locally: pnpm dev:all</span></div>
+        <div className="lp-credit-cta" data-reveal><a className="lx-btn dark" href="#/app">Open the Noren app</a><span className="mono">Runs locally: pnpm dev:all</span></div>
       </section>
 
       {/* ---------------------------------------------------------------- proof */}

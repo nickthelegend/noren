@@ -1,7 +1,7 @@
 /**
- * Tsuke (ツケ, the shop tab) in the browser. Reads go straight to the two local forks:
- * - Robinhood Chain mainnet fork: real Stock Tokens, real Chainlink feeds, TsukeCredit.
- * - Arc testnet fork: NorenCreditLine, which the Chainlink CRE workflow keeps in step with TsukeCredit.
+ * Pay with stocks and pay later, in the browser. Reads go straight to the two local forks:
+ * - Robinhood Chain mainnet fork: real Stock Tokens, real Chainlink feeds, NorenCredit.
+ * - Arc testnet fork: NorenCreditLine, which the Chainlink CRE workflow keeps in step with NorenCredit.
  * The customer's key is the same test key the private checkout uses (kept in this browser), so one address is the
  * borrower on both chains. Nothing here is simulated: if a contract isn't deployed, calls fail and the UI says so.
  */
@@ -14,7 +14,7 @@ export type CreditCfg = {
   creditLine: Address | null; robinhoodRpc: string | null;
   /** First block worth scanning on the Robinhood fork (the fork point), as a decimal string. */
   robinhoodFromBlock?: string; arcFromBlock?: string;
-  tsuke?: Address; underwriterUrl?: string; gateway?: Address | null;
+  creditContract?: Address; underwriterUrl?: string; gateway?: Address | null;
   /** 4663, or 46630 when dev:all runs the mainnet fork under Robinhood testnet's id for the CRE simulator. */
   robinhoodChainId?: number; [k: string]: unknown;
 };
@@ -34,7 +34,7 @@ export const USDG: Address = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 export const USDG_FEED: Address = "0x61B7e5650328764B076A108EFF5fa7282a1B9aD2";
 
 const feedAbi = parseAbi(["function latestRoundData() view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)"]);
-export const tsukeEvents = {
+export const creditEvents = {
   opened: parseAbiItem("event CreditLineOpened(address indexed borrower, bytes32 indexed lineId, uint256 limitUsdc6, uint64 expiry, uint256 collateralValueUsd8)"),
   closed: parseAbiItem("event CreditLineClosed(bytes32 indexed lineId)"),
 };
@@ -65,7 +65,7 @@ function customerKey(): Hex {
 export type Holding = { sym: string; name: string; token: Address; balance: bigint; price8: bigint; updatedAt: number; value8: bigint };
 export type Line = { lineId: Hex; limit: bigint; expiry: number; collateral8: bigint; openedTx: Hex; openedBlock: bigint; closed: boolean; drawn: bigint; repaid: bigint; draws: { amount: bigint; invoiceId: Hex; merchant: Address; tx: Hex }[] };
 
-export function makeTsuke(cfg: Config) {
+export function makeOnchain(cfg: Config) {
   const credit = creditOf(cfg);
   const account = privateKeyToAccount(customerKey());
   const arcChain = localFork(cfg.rpcUrl);
@@ -100,10 +100,10 @@ export function makeTsuke(cfg: Config) {
     async lines(): Promise<Line[]> {
       const c = need();
       const fromRh = credit?.robinhoodFromBlock ? BigInt(credit.robinhoodFromBlock) : undefined;
-      if (!credit?.tsuke) throw new Error("Setup required: TsukeCredit isn't deployed on the Robinhood fork (packages/tsuke)");
-      const opened = await c.getLogs({ address: credit.tsuke, event: tsukeEvents.opened, args: { borrower: account.address }, fromBlock: fromRh ?? "earliest", toBlock: "latest" });
+      if (!credit?.creditContract) throw new Error("Setup required: NorenCredit isn't deployed on the Robinhood fork (packages/robinhood)");
+      const opened = await c.getLogs({ address: credit.creditContract, event: creditEvents.opened, args: { borrower: account.address }, fromBlock: fromRh ?? "earliest", toBlock: "latest" });
       if (!opened.length) return [];
-      const closed = await c.getLogs({ address: credit.tsuke, event: tsukeEvents.closed, fromBlock: fromRh ?? "earliest", toBlock: "latest" });
+      const closed = await c.getLogs({ address: credit.creditContract, event: creditEvents.closed, fromBlock: fromRh ?? "earliest", toBlock: "latest" });
       const closedIds = new Set(closed.map((l) => l.args.lineId!.toLowerCase()));
       const fromArc = credit.arcFromBlock ? BigInt(credit.arcFromBlock) : BigInt(cfg.deployment.deploymentBlock);
       const creditLine = credit.creditLine;
@@ -131,7 +131,7 @@ export function makeTsuke(cfg: Config) {
       if (r.status !== "success") throw new Error(`payInvoice reverted: ${hash}`);
       return { hash, gasUsed: r.gasUsed };
     },
-    /** Arc: repays the line in USDC (approve, then repay). The CRE workflow carries the Repaid log back to TsukeCredit. */
+    /** Arc: repays the line in USDC (approve, then repay). The CRE workflow carries the Repaid log back to NorenCredit. */
     async repay(lineId: Hex, amount: bigint) {
       const creditLine = credit?.creditLine;
       if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
@@ -146,7 +146,7 @@ export function makeTsuke(cfg: Config) {
       if ((await arc.waitForTransactionReceipt({ hash })).status !== "success") throw new Error(`repay reverted: ${hash}`);
       return hash;
     },
-    /** Robinhood: what `asset` it takes to pay a TsukeGateway invoice now (Chainlink price plus the vault's spread). */
+    /** Robinhood: what `asset` it takes to pay a NorenGateway invoice now (Chainlink price plus the vault's spread). */
     async stockQuote(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address) {
       const c = need();
       const [assetIn, priceUsd8, marketClosed] = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "quote", args: [merchant, invoiceId, asset] });
@@ -166,7 +166,7 @@ export function makeTsuke(cfg: Config) {
       await c.simulateContract({ account, address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, asset, max] });
       const hash = await w.writeContract({ address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, asset, max], chain });
       const r = await c.waitForTransactionReceipt({ hash });
-      if (r.status !== "success") throw new Error(`TsukeGateway.pay reverted: ${hash}`);
+      if (r.status !== "success") throw new Error(`NorenGateway.pay reverted: ${hash}`);
       return hash;
     },
     /** Arc: the line as NorenCreditLine sees it (written by the CRE bridge). live = the bridge has delivered it. */
@@ -184,6 +184,6 @@ export function makeTsuke(cfg: Config) {
     arcUsdc: () => arc.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),
   };
 }
-export type Tsuke = ReturnType<typeof makeTsuke>;
+export type Onchain = ReturnType<typeof makeOnchain>;
 export const usd8 = (v: bigint, dp = 2) => (Number(v) / 1e8).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 export const units = (v: bigint, decimals: number, dp = 4) => (Number(v) / 10 ** decimals).toLocaleString("en-US", { maximumFractionDigits: dp });

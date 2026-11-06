@@ -1,17 +1,17 @@
 /**
- * Hosted checkout, "Pay with stock": the merchant server mirrors the invoice onto TsukeGateway on Robinhood Chain,
+ * Hosted checkout, "Pay with stock": the merchant server mirrors the invoice onto NorenGateway on Robinhood Chain,
  * the customer pays it with a Stock Token at the Chainlink price plus the vault's spread, and the vault pays the
  * merchant USDG. The merchant server sees InvoicePaid and settles the Noren invoice.
  */
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
-import { usd8, units, type Holding, type Tsuke } from "./tsuke";
+import { usd8, units, type Holding, type Onchain } from "./onchain";
 
 type Mirror = Awaited<ReturnType<typeof api.mirrorOnRobinhood>>;
 
 export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: InvoiceView; shop: string; onPaid: () => void }) {
-  const [tk, setTk] = useState<Tsuke | null>(null);
+  const [tk, setTk] = useState<Onchain | null>(null);
   const [mirror, setMirror] = useState<Mirror | null>(null);
   const [hold, setHold] = useState<Holding[] | null>(null);
   const [eth, setEth] = useState<bigint | null>(null);
@@ -22,7 +22,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
 
-  useEffect(() => { import("./tsuke").then((m) => setTk(m.makeTsuke(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
+  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
   useEffect(() => {
     let on = true;
     // The server mirrors once per invoice (it serialises concurrent calls), so a double effect in dev mode is harmless.
@@ -63,7 +63,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   return (
     <div className="co-credit">
       <div className="co-stock-pick" role="radiogroup" aria-label="Stock Token">
-        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} onClick={() => setSym(h.sym)}><span className="tk-tick sm" aria-hidden>{h.sym[0]}</span><span><b>{h.sym}</b><small>{units(h.balance, 18)} held</small></span></button>)}
+        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} onClick={() => setSym(h.sym)}><span className="na-tick sm" aria-hidden>{h.sym[0]}</span><span><b>{h.sym}</b><small>{units(h.balance, 18)} held</small></span></button>)}
       </div>
       <dl className="co-quote">
         <dt>You pay</dt><dd><b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
@@ -73,13 +73,13 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
       </dl>
       <div className="co-privacy light">
         <Icon.chart />
-        <p><b>Not private.</b> The payment comes from your Robinhood wallet. Tsuke's vault buys your shares at the Chainlink price and pays {shop} in USDG.</p>
+        <p><b>Not private.</b> The payment comes from your Robinhood wallet. Noren's stock vault buys your shares at the Chainlink price and pays {shop} in USDG.</p>
       </div>
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn kaki full xl" disabled={!!busy || !!tx || !enough || eth === 0n} onClick={pay}>
         {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {q ? units(q.assetIn, 18, 4) : ""} {sym}</>}
       </button>
-      <p className="faint sm center">TsukeGateway.pay on a local Robinhood Chain fork, signed by your test key in this browser.</p>
+      <p className="faint sm center">NorenGateway.pay on a local Robinhood Chain fork, signed by your test key in this browser.</p>
     </div>
   );
 }

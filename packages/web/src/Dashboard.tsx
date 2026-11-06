@@ -3,7 +3,7 @@ import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type Nor
 import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
-import { creditLineAbi, creditOf } from "./tsuke";
+import { creditLineAbi, creditOf } from "./onchain";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings";
 type Quote = { currency: string; fiatAmount: string; usdcAmount: string; rate?: string; quotedAt?: number | string; fiatUsd?: Feed; usdcUsd?: Feed };
@@ -25,7 +25,7 @@ const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = 
 
 type Method = "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
-const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Kohaku pool", "Zero-knowledge withdrawal from the privacy pool", Icon.shield], credit: ["Tsuke credit", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Stock Tokens", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
+const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Kohaku pool", "Zero-knowledge withdrawal from the privacy pool", Icon.shield], credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Stock Tokens", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
 const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}><span className="sd-pm-ic"><I /></span>{t}</span>; };
 const Who = ({ r }: { r: Row }) => r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
@@ -242,7 +242,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
-        {!credit?.creditLine ? <p className="sd-muted">Setup required: Tsuke credit isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, TsukeCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
           <>
             <dl className="sd-dl">
               <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
@@ -251,7 +251,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
               <dt>Owed to the credit pool</dt><dd className="num"><b>{exp ? `${fmt(Math.max(0, exp.drawn - exp.repaid))} USDC` : "…"}</b></dd>
               <dt>Your exposure</dt><dd><b>0.00 USDC</b> · paid upfront</dd>
             </dl>
-            <p className="sd-muted sm">Drawn and repaid amounts are summed from <code>Drawn</code> and <code>Repaid</code> logs on NorenCreditLine <span className="mono">{short(credit.creditLine ?? "", 6)}</span>. Collateral sits in TsukeCredit on Robinhood Chain.</p>
+            <p className="sd-muted sm">Drawn and repaid amounts are summed from <code>Drawn</code> and <code>Repaid</code> logs on NorenCreditLine <span className="mono">{short(credit.creditLine ?? "", 6)}</span>. Collateral sits in NorenCredit on Robinhood Chain.</p>
           </>
         )}
       </div>
@@ -402,10 +402,10 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
   const credit = r.method === "credit", stock = r.method === "stocks";
   const steps: [string, number | string | undefined, ReactNode, boolean][] = stock ? [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
-    ["Paid with Stock Tokens on Robinhood Chain, USDG received", r.paidAt, r.paymentTx ? <><span className="mono" title="Local Robinhood Chain fork">{short(r.paymentTx, 8)}</span> · TsukeGateway.pay, gas paid by the customer</> : null, settled(r)],
+    ["Paid with Stock Tokens on Robinhood Chain, USDG received", r.paidAt, r.paymentTx ? <><span className="mono" title="Local Robinhood Chain fork">{short(r.paymentTx, 8)}</span> · NorenGateway.pay, gas paid by the customer</> : null, settled(r)],
   ] : credit ? [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
-    ["Paid from a Tsuke credit line, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
+    ["Paid later from a credit line, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
   ] : [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
     ["Customer opened the link and bound the invoice", r.boundAt, "Private refund inbox and receipt commitment fixed in the invoice", !!r.invoice.receiptCommitment],
@@ -462,7 +462,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             <h2>Payment method</h2>
             {stock && r.stock ? (
               <dl className="sd-dl">
-                <dt>Type</dt><dd>Stock Tokens, sold to Tsuke's vault</dd>
+                <dt>Type</dt><dd>Stock Tokens, sold to Noren's stock vault</dd>
                 <dt>Shares</dt><dd className="num">{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd>{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
@@ -471,7 +471,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
               </dl>
             ) : credit ? (
               <dl className="sd-dl">
-                <dt>Type</dt><dd>Tsuke credit line</dd>
+                <dt>Type</dt><dd>Credit line (pay later)</dd>
                 <dt>Line ID</dt><dd className="mono">{short(r.creditLineId, 8)} {r.creditLineId && <Copy text={r.creditLineId} />}</dd>
                 <dt>Collateral</dt><dd>Stock Tokens on Robinhood Chain</dd>
                 <dt>Bridged by</dt><dd>Chainlink CRE workflow</dd>

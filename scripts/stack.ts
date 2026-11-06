@@ -1,5 +1,5 @@
 /**
- * The local Noren stack, shared by `pnpm dev:stack` (Arc fork only) and `pnpm dev:all` (Arc + Robinhood + Tsuke + CRE).
+ * The local Noren stack, shared by `pnpm dev:stack` (Arc fork only) and `pnpm dev:all` (Arc + Robinhood + credit line + CRE).
  * Every chain is a local Anvil fork; nothing here sends a public transaction.
  */
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';

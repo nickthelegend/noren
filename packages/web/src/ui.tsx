@@ -19,13 +19,13 @@ export type Route =
   | { page: "home" }
   | { page: "dashboard"; tab: "home" | "balances" | "payments" | "links" | "developers" | "settings"; sub?: string }
   | { page: "pay"; id: string }
-  | { page: "credit" };
+  | { page: "app" };
 export function useRoute(): Route {
   const [hash, setHash] = useState(() => location.hash);
   useEffect(() => { const on = () => { setHash(location.hash); window.scrollTo(0, 0); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
   const m = /^#\/pay\/(0x[0-9a-fA-F]{64})/.exec(hash);
   if (m) return { page: "pay", id: m[1] };
-  if (/^#\/(credit|tsuke)\b/.test(hash)) return { page: "credit" };
+  if (/^#\/(app|credit)\b/.test(hash)) return { page: "app" };
   const d = /^#\/(dashboard|merchant)(?:\/(balances|payments|links|developers|settings))?(?:\/([\w-]+))?/.exec(hash);
   if (d) return { page: "dashboard", tab: (d[2] as never) ?? "home", sub: d[3] };
   return { page: "home" };

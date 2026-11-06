@@ -127,14 +127,14 @@ export function Checkout({ id }: { id: string }) {
                   <dt>You paid</dt><dd>{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} shares at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
                   <dt>Private</dt><dd>no: paid from your Robinhood wallet</dd>
                 </> : view?.method === "credit" ? <>
-                  <dt>Paid from</dt><dd>Tsuke credit line <span className="mono">{short(view.creditLineId, 4)}</span></dd>
+                  <dt>Paid from</dt><dd>Credit line <span className="mono">{short(view.creditLineId, 4)}</span></dd>
                   <dt>Private</dt><dd>no: the line is tied to your Robinhood wallet</dd>
                 </> : <>
                   <dt>Your address in it</dt><dd className="unk">none</dd>
                   <dt>Refund inbox</dt><dd>{inbox ? `${usdc(inbox.approved + inbox.pending)} USDC` : "…"}</dd>
                 </>}
               </dl>
-              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain from Tsuke's vault, which now holds your shares.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool. Repay in four parts on <a href="#/credit">your Tsuke page</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
+              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain from Noren's stock vault, which now holds your shares.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool. Repay it in the <a href="#/app">Noren app</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
             </div>
           ) : expired ? (
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
@@ -144,7 +144,7 @@ export function Checkout({ id }: { id: string }) {
               <div className="co-methods" role="tablist" aria-label="Payment method">
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /><span><b>Private balance</b><small>Kohaku pool · zero-knowledge</small></span></button>
                 <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Stock</b><small>Sell shares at the Chainlink price</small></span></button>
-                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Tsuke credit</b><small>Backed by your stock · pay later</small></span></button>
+                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay later</b><small>Credit line backed by your stock</small></span></button>
               </div>
               {method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
               <div className="co-bal">
