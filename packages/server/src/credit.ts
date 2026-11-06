@@ -75,10 +75,12 @@ export const ROBINHOOD = {
 };
 
 const isLoopback = (url: string) => { try { return ['127.0.0.1', 'localhost'].includes(new URL(url).hostname); } catch { return false; } };
+/** Hosted demo: the one Robinhood snapshot RPC the operator named (an Anvil node with no upstream, so no real funds). */
+const isNamedSnapshot = (url: string) => !!process.env.NOREN_RH_SNAPSHOT_RPC && url === process.env.NOREN_RH_SNAPSHOT_RPC;
 
 /** Refuses anything but a loopback Anvil fork of Robinhood Chain mainnet. */
 export async function assertRobinhoodFork(rpcUrl: string) {
-  if (!isLoopback(rpcUrl)) throw new Error('Setup required: the Robinhood faucet needs a loopback Anvil fork RPC');
+  if (!isLoopback(rpcUrl) && !isNamedSnapshot(rpcUrl)) throw new Error('Setup required: the Robinhood faucet needs a loopback Anvil fork RPC or the hosted snapshot (NOREN_RH_SNAPSHOT_RPC)');
   const rpc = async (method: string) => { const r = await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: [] }) }); const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result; };
   const chain = Number(BigInt(await rpc('eth_chainId')));
   // 46630 is accepted because the CRE simulator only knows Robinhood *testnet*: dev:all runs the mainnet fork under that id.

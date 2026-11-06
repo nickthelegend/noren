@@ -40,6 +40,8 @@ export function readableError(error: any): string {
   return raw.includes('Setup required') ? raw : 'Transaction rejected: ' + raw.slice(0, 180);
 }
 export type ServerOptions = { /** Privy app ID for "Sign in with Privy" (defaults to PRIVY_APP_ID); tokens are checked against Privy's public JWKS, no app secret. */ privyAppId?: string; deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
+  /** Hosted demo on the public Arc testnet: GET /config without dev endpoints, gas for new stores from a capped hot key, and the Robinhood snapshot faucet. */
+  hosted?: { aspUrl: string; robinhoodRpcPublic?: string; storeFunderKey?: Hex; storeGasWei?: bigint; maxStores?: number; robinhoodFaucet?: boolean };
   /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
   mounts?: ((req: any, res: any) => Promise<boolean>)[];
   /** "Send privately": relay Kohaku withdrawals to any address (GET /private/relayer, POST /private/send). */
@@ -217,8 +219,18 @@ export function createMerchantServer(options: ServerOptions): Server {
         const p = principal(req); if (!p || p.kind !== 'session') return send(res, 401, { error: 'Session required' });
         const b = await body(req), name = validName(b.name), payout = validPayout(b.payout);
         const relayerKey = `0x${randomBytes(32).toString('hex')}` as Hex, merchant = privateKeyToAccount(relayerKey).address;
-        try { await assertLocalFork(options.rpcUrl, options.deployment.chainId); await publicClient.request({ method: 'anvil_setBalance', params: [merchant, toHex(10n ** 18n)] }); }
-        catch { throw new Error(`Setup required: fund the store's merchant account ${merchant} with Arc gas`); }
+        if (options.hosted?.storeFunderKey && !options.dev) {
+          // Hosted demo: a hot testnet key sends each new store's relayer a little Arc gas (native USDC), capped per owner and in total.
+          const owned = stores.filter(s => s.owner.toLowerCase() === p.address.toLowerCase()).length;
+          if (owned >= 2) throw new Error('StoreLimit: this demo funds at most 2 stores per wallet');
+          if (stores.length >= (options.hosted.maxStores ?? 25)) throw new Error('Setup required: the hosted demo has funded its maximum number of stores; run Noren locally (pnpm dev:all)');
+          const funder: any = createWalletClient({ chain, account: privateKeyToAccount(options.hosted.storeFunderKey), transport: http(options.rpcUrl) });
+          const gasTx = await funder.sendTransaction({ to: merchant, value: options.hosted.storeGasWei ?? 50_000_000_000_000_000n });
+          if ((await publicClient.waitForTransactionReceipt({ hash: gasTx })).status !== 'success') throw new Error(`Store gas transfer reverted: ${gasTx}`);
+        } else {
+          try { await assertLocalFork(options.rpcUrl, options.deployment.chainId); await publicClient.request({ method: 'anvil_setBalance', params: [merchant, toHex(10n ** 18n)] }); }
+          catch { throw new Error(`Setup required: fund the store's merchant account ${merchant} with Arc gas`); }
+        }
         const relayer: any = createWalletClient({ chain, account: privateKeyToAccount(relayerKey), transport: http(options.rpcUrl) });
         const registerTx = await relayer.writeContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'registerMerchant', args: [payout] });
         const receipt = await publicClient.waitForTransactionReceipt({ hash: registerTx }); if (receipt.status !== 'success') throw new Error('Merchant registration reverted');
@@ -237,6 +249,7 @@ export function createMerchantServer(options: ServerOptions): Server {
         if (req.method === 'DELETE' && storeRoute[2]) { const key = store.keys.find(k => k.id === storeRoute[2]); if (!key) return send(res, 404, { error: 'Key not found' }); key.revokedAt = Math.floor(Date.now() / 1000); await saveStores(); return send(res, 200, { revoked: true }); }
         return send(res, 405, { error: 'Method not allowed' });
       }
+      if (req.method === 'GET' && path === '/config' && options.hosted && !options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.hosted.aspUrl, deployment: options.deployment, merchant: merchantAddress, hosted: true, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.hosted.robinhoodRpcPublic ?? null, gateway: options.credit.gateway ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, gateway: options.credit.gateway ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/credit/bridge') { if (!options.credit?.bridgeLog) throw new Error('Setup required: the CRE credit bridge relay is not running (pnpm dev:all with packages/cre-bridge)'); return send(res, 200, options.credit.bridgeLog()); }
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);
@@ -262,7 +275,7 @@ export function createMerchantServer(options: ServerOptions): Server {
           return send(res, 200, { gasTx, usdcTx: hash });
         } catch (e) { faucetUsed.delete(target); throw e; }
       }
-      if (req.method === 'POST' && path === '/dev/robinhood-faucet' && options.dev) {
+      if (req.method === 'POST' && path === '/dev/robinhood-faucet' && (options.dev || options.hosted?.robinhoodFaucet)) {
         if (!options.credit?.robinhoodRpc) throw new Error('Setup required: start the Robinhood fork with pnpm dev:all');
         const address = (await body(req)).address as string;
         if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error('Invalid faucet address');
