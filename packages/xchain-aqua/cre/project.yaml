@@ -1,0 +1,28 @@
+# CRE project settings for Noren cross-chain Aqua (orders from Robinhood Chain and Base to Arc makers).
+#
+# Local forks started by scripts/forks.sh:
+#   127.0.0.1:8810  Anvil fork of Arc Testnet (5042002): real arc-testnet MockKeystoneForwarder
+#                   0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1; official Aqua bytecode installed from Arc mainnet.
+#   127.0.0.1:8811  warmed Robinhood Chain MAINNET snapshot (4663), addressed through CRE's
+#                   "robinhood-testnet" selector (the simulator does not compare chain ids, as
+#                   packages/cre-bridge found). The robinhood-testnet MockKeystoneForwarder
+#                   0x0b93082D9b3C7C97fAcd250082899BAcf3af3885 is copied in from Robinhood Testnet.
+#   127.0.0.1:8812  Anvil fork of Base Sepolia (84532): real MockKeystoneForwarder 0x82300bd7…f3e5.
+local-fork:
+  rpcs:
+    - chain-name: arc-testnet
+      url: http://127.0.0.1:8810
+    - chain-name: robinhood-testnet
+      url: http://127.0.0.1:8811
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: http://127.0.0.1:8812
+
+# Public testnets. Robinhood Testnet has no Chainlink stock feeds, so the Robinhood leg is fork-only.
+staging-settings:
+  rpcs:
+    - chain-name: arc-testnet
+      url: https://rpc.testnet.arc.io
+    - chain-name: robinhood-testnet
+      url: https://rpc.testnet.chain.robinhood.com
+    - chain-name: ethereum-testnet-sepolia-base-1
+      url: https://sepolia.base.org
