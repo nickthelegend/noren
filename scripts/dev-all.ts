@@ -54,6 +54,8 @@ run(async () => {
     }
   }
   const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
+  // Fork only: a repaid loan counts as a reputation milestone after 15 minutes instead of a day, so the film can show it.
+  if (robinhood?.borrow) await forkLoanMilestone(robinhoodRpc, robinhood.borrow).then(() => console.log('NorenBorrow (fork): a loan counts as repaid-loan milestone after 15 min')).catch((e) => missing.push(`NorenBorrow fork params: ${e.message}`));
 
   let settle: { desk: Address; deployBlock: bigint; keeper: any; relay?: ReturnType<typeof startSettlementRelay> } | undefined;
   if (has('packages/bridge-settlement/src/NorenSettlementDesk.sol')) {
@@ -87,7 +89,13 @@ run(async () => {
           if (!tx) throw new Error('CRE human-starter run wrote nothing');
           // The reputation milestone: NorenReputation.verifyHuman with an EIP-712 VerifiedHuman attestation. On the fork the
           // attester is Anvil account #7 (deploy-fork.sh's worldIdSigner); a failure here never undoes the starter line.
-          if (robinhood?.reputation) await attestHuman(robinhoodRpc, robinhood.reputation, r.borrower, r.nullifierHash).then((h) => console.log(`World ID: NorenReputation.verifyHuman ${h}`)).catch((e) => console.error(`World ID: reputation attestation failed: ${e.message}`));
+          if (robinhood?.reputation) {
+            const { recordVerifiedHuman } = await import('../packages/robinhood/sdk/src/earn.ts');
+            const d = JSON.parse((await import('node:fs')).readFileSync(resolve('packages/robinhood/.fork/deployment.json'), 'utf8'));
+            await recordVerifiedHuman({ publicClient: createPublicClient({ transport: http(robinhoodRpc) }) as any, addresses: { ...d, rpcUrl: robinhoodRpc }, account: r.borrower, nullifier: r.nullifierHash })
+              .then((x: any) => console.log(`World ID: NorenReputation.verifyHuman ${x.tx}; tier ${x.reputation.tier}, LTV ${x.after.ltvBps / 100}%`))
+              .catch((e: any) => console.error(`World ID: reputation attestation failed: ${String(e.message).slice(0, 200)}`));
+          }
           return { txHash: tx as `0x${string}` };
         },
       };
@@ -162,21 +170,16 @@ async function startShop() {
   console.log('Demo shop Aubelle: http://127.0.0.1:8780 (pays through this Noren server)');
 }
 
-/** Signs VerifiedHuman(account, nullifierHash, expiry) as the fork's World ID attester and records it on NorenReputation. */
-async function attestHuman(rpc: string, reputation: Address, account: Address, nullifierHash: `0x${string}`) {
+/** Anvil #0 owns the fork deployment (public dev key): NorenBorrow.setParams with a 15-minute milestone age. */
+async function forkLoanMilestone(rpc: string, borrow: Address) {
   const { createWalletClient, parseAbi: abi } = await import('viem');
   const { mnemonicToAccount } = await import('viem/accounts');
   const c: any = createPublicClient({ transport: http(rpc), cacheTime: 0 });
-  const signer = mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 7 }), sender = mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 0 });
-  const rep = abi(['function hashVerifiedHuman(address account, bytes32 nullifierHash, uint64 expiry) view returns (bytes32)', 'function verifyHuman(address account, bytes32 nullifierHash, uint64 expiry, bytes signature)', 'function worldIdSigner() view returns (address)']);
-  if (((await c.readContract({ address: reputation, abi: rep, functionName: 'worldIdSigner' })) as string).toLowerCase() !== signer.address.toLowerCase()) throw new Error('NorenReputation.worldIdSigner is not the fork attester');
-  const expiry = BigInt(Number((await c.getBlock()).timestamp) + 3600);
-  const digest = await c.readContract({ address: reputation, abi: rep, functionName: 'hashVerifiedHuman', args: [account, nullifierHash, expiry] });
-  const signature = await signer.sign({ hash: digest });
+  const a = abi(['function setParams(uint16 liqLtv, uint16 bonus, uint16 rate, uint256 minPrincipal, uint32 minAge)', 'function liquidationLtvBps() view returns (uint16)', 'function liquidationBonusBps() view returns (uint16)', 'function borrowRateBps() view returns (uint16)', 'function minMilestonePrincipal() view returns (uint256)']);
+  const [liq, bonus, rate, minP] = await Promise.all(['liquidationLtvBps', 'liquidationBonusBps', 'borrowRateBps', 'minMilestonePrincipal'].map((f) => c.readContract({ address: borrow, abi: a, functionName: f })));
   const chain = { id: Number(await c.getChainId()), name: 'Robinhood (local)', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } } as const;
-  const hash = await createWalletClient({ account: sender, chain, transport: http(rpc) }).writeContract({ address: reputation, abi: rep, functionName: 'verifyHuman', args: [account, nullifierHash, expiry, signature] });
-  if ((await c.waitForTransactionReceipt({ hash })).status !== 'success') throw new Error(`verifyHuman reverted: ${hash}`);
-  return hash;
+  const hash = await createWalletClient({ account: mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 0 }), chain, transport: http(rpc) }).writeContract({ address: borrow, abi: a, functionName: 'setParams', args: [liq, bonus, rate, minP, 900] });
+  if ((await c.waitForTransactionReceipt({ hash })).status !== 'success') throw new Error(`setParams reverted: ${hash}`);
 }
 
 /** <main checkout>/.env when this is a git worktree (git rev-parse --git-common-dir), else null. */

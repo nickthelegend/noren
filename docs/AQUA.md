@@ -159,7 +159,7 @@ The attacks covered:
 sh packages/aqua/scripts/aqua-demo.sh     # port 8760, ~2 min, stops its anvil on exit
 ```
 
-The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). Highlights from it (all hashes are **fork** transactions, block 107370002, not mainnet):
+The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). It was recorded before NorenLiquidity gained its ask side (`bestAskForAsset`, `buyFromMakers`), when the fork deployed it at `0xF19E8291e051c543690e5A7B8B3A4A1b41e9f992`; the current deploy puts it at `0xb5D2237d8e79Fb6A0f16ecD02F435CE7063b49EC`. Apps read the address from `packages/robinhood/.fork/deployment.json`, never from the transcript. Highlights from it (all hashes are **fork** transactions, block 107370002, not mainnet):
 
 - Maker ships 4 strategies, e.g. `Aqua.ship` `0x8d14b67e…c760` and `NorenLiquidity.register` `0x670763f5…b2d9`.
 - A 250 USDG invoice paid with 1.359921 NVDA (`0x4c8e15d8…3e5d`): merchant +250 USDG, maker −250 USDG and +1.359921 NVDA, maker fee 1.25 USDG.

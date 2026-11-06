@@ -12,6 +12,8 @@ import { TOKENS, fmtUnits, parseAmount } from "./tokens";
 import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import { SWAPVM_ATTRIBUTION } from "./SwapTab";
 
+/** Length of the observed window. Yield is shown as fees earned in a window, never as a projected APY. */
+const span = (since: number) => { const s = Math.max(1, Math.floor(Date.now() / 1000) - since); return s < 3600 ? `${Math.round(s / 60)} min` : s < 172800 ? `${(s / 3600).toFixed(1)} h` : `${Math.round(s / 86400)} days`; };
 const symOf = (a: Address) => TOKENS.find((t) => t.address.toLowerCase() === a.toLowerCase())?.sym ?? shortHex(a, 4);
 
 export function EarnTab({ w }: { w: Wallet }) {
@@ -95,7 +97,7 @@ export function EarnTab({ w }: { w: Wallet }) {
                 return (
                   <button key={r.vault} role="radio" aria-checked={r.vault === v.vault} className="nk-route" data-best={r.vault === v.vault} onClick={() => setSel(r.vault)} style={{ cursor: "pointer" }}>
                     {t ? <Coin t={t} /> : <span className="nk-route-i">{r.sym.slice(0, 2)}</span>}
-                    <div><b>{r.shareSym} · {r.sym} vault</b><small>{r.stats.fills > 0n ? `${r.stats.fills} maker fills · ${fmtUnits(r.stats.feesUsdg, 6, 2)} USDG earned` : "No maker fills yet, so no yield yet"}</small></div>
+                    <div><b>{r.shareSym} · {r.sym} vault</b><small>{r.stats.fills > 0n ? `${fmtUnits(r.stats.feesUsdg, 6, 2)} USDG earned from ${r.stats.fills} fill${r.stats.fills === 1n ? "" : "s"}${r.stats.firstDepositAt > 0n ? ` in ${span(Number(r.stats.firstDepositAt))}` : ""}` : "No maker fills yet, so no yield yet"}</small></div>
                     <div className="r"><b>{r.stats.priced ? `$${fmtUnits(r.stats.navUsd8, 8, 0)}` : "–"}</b><small>NAV</small></div>
                   </button>
                 );

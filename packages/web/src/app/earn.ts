@@ -112,3 +112,16 @@ export async function readVaults(w: Wallet, list: { asset: Address; vault: Addre
   }));
 }
 export { maxUint256 };
+
+/** The credit-limit ladder: what this wallet's deposits are worth at each reputation tier's LTV (live reads of
+ *  NorenBorrow.securedCapacityUsdg), and which tier it has reached. No number here is precomputed. */
+export async function readLadder(w: Wallet, reputation: Address, borrow: Address) {
+  const { pub } = w.oc.robinhood();
+  const me = w.oc.address;
+  const capAbi = parseAbi(["function securedCapacityUsdg(address who, uint16 ltvBps) view returns (uint256)"]);
+  const b = await pub.readContract({ address: reputation, abi: reputationAbi, functionName: "breakdownOf", args: [me] });
+  const tiers = await Promise.all([0, 1, 2, 3].map((t) => pub.readContract({ address: reputation, abi: reputationAbi, functionName: "tierTable", args: [t] })));
+  const caps = await Promise.all(tiers.map((t) => pub.readContract({ address: borrow, abi: capAbi, functionName: "securedCapacityUsdg", args: [me, t.ltvBps] })));
+  const label = ["Deposits only", "+ World ID", "+ three on-time Pay-in-3 installments", "+ a repaid loan"];
+  return { tier: b.tier, points: b.points, verifiedHuman: b.verifiedHuman, steps: tiers.map((t, i) => ({ tier: i, label: label[i], ltvBps: t.ltvBps, minPoints: t.minPoints, capUsdg: caps[i], reached: b.tier >= i })) };
+}

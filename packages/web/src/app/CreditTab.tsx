@@ -11,6 +11,9 @@ import type { Wallet } from "./NorenApp";
 import { rhSdk, type Positions } from "./rh";
 import { Card, SetupCard, Skel, Spin } from "./kit";
 import { useReputation } from "./reputation";
+import { readLadder } from "./earn";
+import type { Address } from "viem";
+import { fmtUnits } from "./tokens";
 import { CreditLineCard } from "./CreditLine";
 
 export function CreditTab({ w }: { w: Wallet }) {
@@ -51,6 +54,8 @@ export function CreditTab({ w }: { w: Wallet }) {
         </div>
       </Card>
 
+      <Ladder w={w} nonce={verified} />
+
       <Card title="Milestones" sub={rep.source}>
         <div className="nk-pad">
           {rep.error ? <SetupCard title="Reputation milestones aren't live on this stack" text={rep.error} /> : !rep.items ? <Skel rows={3} /> : (
@@ -70,6 +75,34 @@ export function CreditTab({ w }: { w: Wallet }) {
         <div className="nk-pad"><AiDecision actions={actions} /></div>
       </Card>
     </div>
+  );
+}
+
+/** Live credit-limit ladder: the same deposits at each reputation tier's LTV. */
+function Ladder({ w, nonce }: { w: Wallet; nonce: number }) {
+  const rep = w.oc.credit?.reputation as Address | undefined, borrow = w.oc.credit?.borrow as Address | undefined;
+  const [l, setL] = useState<Awaited<ReturnType<typeof readLadder>> | null>(null);
+  const [e, setE] = useState<string | null>(null);
+  useEffect(() => { if (!rep || !borrow) return; let on = true; readLadder(w, rep, borrow).then((x) => on && (setL(x), setE(null))).catch((x) => on && setE(msgOf(x))); return () => { on = false; }; }, [w.tick, nonce, rep, borrow]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!rep || !borrow) return null;
+  const base = l?.steps[0].capUsdg ?? 0n;
+  return (
+    <Card title="Your credit limit grows with reputation" sub="Your deposits at each tier's loan-to-value, read live from NorenBorrow" pill={l ? <span className="nk-pill">{l.points.toString()} pts</span> : undefined}>
+      <div className="nk-pad">
+        {e ? <div className="nk-err">{e}</div> : !l ? <Skel rows={4} /> : base === 0n ? <SetupCard title="No deposits yet" text="Deposit stock or ETH in Earn: your borrowing limit is those deposits at your tier's loan-to-value (66% to 80%)." /> : (
+          <ul className="nk-items" aria-label="Credit limit by reputation tier">
+            {l.steps.map((s) => (
+              <li key={s.tier} data-done={s.reached}>
+                <span className="nk-check">{s.reached ? "✓" : s.tier + 1}</span>
+                <div><b>{s.label}</b><small>{(s.ltvBps / 100).toFixed(0)}% LTV{s.tier > 0 ? ` · ${s.minPoints} points` : ""}{s.tier === l.tier ? " · you are here" : ""}</small></div>
+                <span className="r"><b>${fmtUnits(s.capUsdg, 6, 2)}</b><small>{s.tier > 0 && base > 0n ? `+${((Number(s.capUsdg - base) / Number(base)) * 100).toFixed(1)}%` : "USDG"}</small></span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="nk-fine">Without World ID the limit stops at 70%. On this fork a loan counts as a repaid-loan milestone after 15 minutes (production: a day).</p>
+      </div>
+    </Card>
   );
 }
 
