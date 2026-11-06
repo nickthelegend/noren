@@ -1,10 +1,26 @@
 # Test results
 
+## Private credit (branch `private-credit`, Nov 6 2026)
+
+`private-credit` is `final` (1670f26) plus `film-v2` plus "Pay later, privately" ([docs/PRIVACY.md](docs/PRIVACY.md#private-credit-pay-later-privately)). It adds one suite, **15 fork tests**, so the total below becomes **589 passed**. The suites the change touches were rerun on its HEAD:
+
+| Suite | Command | Result |
+|---|---|---|
+| `NorenCreditLine.drawToPool` against the live Arc Entrypoint and USDC pool (Arc testnet fork, USDC shim): lands as a pool deposit under the borrower's precommitment, debt equal to a `payInvoice` draw, limit, non-borrower, expired, frozen, paused, blocklisted borrower, bad / reused precommitment, below the 1 USDC pool minimum, pool insufficient, off until `setPrivacyPool`, ragequit guards | `cd packages/arc-credit && FOUNDRY_PROFILE=fork forge test` | **15 passed** (new) |
+| `NorenCreditLine` unit (unchanged behaviour of `payInvoice`, reports, repay) | `cd packages/arc-credit && forge test` | **47 passed** |
+| Offline suites (server incl. the pool-draw skip) | `pnpm test` | **136 passed**, 20 files |
+| CRE credit bridge | `bun test` in packages/cre-bridge/credit-bridge | **31 passed** |
+| Web typecheck and production build | `cd packages/web && pnpm exec tsc --noEmit -p . && pnpm exec vite build` | pass |
+| Pay later, privately end to end on an Arc testnet fork (CRE simulator opens the line, `drawToPool`, ASP, private 0.40 USDC payment) | `pnpm exec tsx scripts/live/private-credit-live.ts --fork` | pass: borrower and credit line absent from the payment tx, 0.60 USDC left private, debt 1.00 USDC |
+| Same run on the **public Arc testnet** | `pnpm exec tsx scripts/live/private-credit-live.ts` | pass, 10 txs, [record](scripts/live/private-credit-runs.json), payment tx [0xf3b78257…](https://explorer.testnet.arc.io/tx/0xf3b782579b4f8076d220085df9d192eaccd0336eb20b974a689993e1fc02723a) |
+
+**Browser (the real app on `pnpm dev:all`, 1440 and 375 px):** locked 1 NVDA for a 125.70 USDC line (CRE to Arc in 4.5 s), paid a 24.00 USDC and a 0.40 USDC invoice with **Pay later, privately** (draw, compliance check, proof 1.17 s / 1.00 s, relay); Noren Merchant shows **Customer: Private**; the Noren app shows the 24.00 USDC debt and **Repay** labelled Public, and a repay of 8.00 USDC went through. No horizontal overflow at 375 px. Screenshots: `docs/img/private-credit-*.jpg`.
+
 ## Final integrated build (branch `final`, Nov 6 2026)
 
 `final` is `app-dex` plus `ui-polish`, `cctp-bridge`, `xchain-aqua`, `ccip`, `aqua-live`, `privacy`, `film` and `dutch-liquidation`. Every suite below ran on its final HEAD, one at a time. Forks are local Anvil nodes; "live" suites read public testnets.
 
-**574 tests pass, 0 fail, 1 skipped** (a weekend-window SwapVM test that skips itself while US markets are open), plus the two end-to-end runs and the browser check. After the `dutch-liquidation` merge, the suites it touches were rerun (SwapVM, Robinhood fork incl. `NorenDutch`, Robinhood SDK fork tests on a rebuilt snapshot); the rest are from the run before it, on code that merge doesn't change. `pnpm e2e`, `pnpm e2e:credit` and the browser check were not rerun after it (a film recording owned the dev stack).
+**574 tests pass, 0 fail, 1 skipped** (589 with the private-credit fork suite above) (a weekend-window SwapVM test that skips itself while US markets are open), plus the two end-to-end runs and the browser check. After the `dutch-liquidation` merge, the suites it touches were rerun (SwapVM, Robinhood fork incl. `NorenDutch`, Robinhood SDK fork tests on a rebuilt snapshot); the rest are from the run before it, on code that merge doesn't change. `pnpm e2e`, `pnpm e2e:credit` and the browser check were not rerun after it (a film recording owned the dev stack).
 
 | Suite | Command | Result |
 |---|---|---|

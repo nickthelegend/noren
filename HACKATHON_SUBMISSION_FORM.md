@@ -57,7 +57,7 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 
   | Suite | Result |
   |---|---|
-  | All suites on the final build (TESTING.md) | **574 passed**, 0 failed, 1 weekend-only skip |
+  | All suites on the final build (TESTING.md) | **589 passed**, 0 failed, 1 weekend-only skip |
   | `pnpm test` | 136 offline tests |
   | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 47.6 s |
   | `pnpm e2e:credit` | 8/8 steps in 30.3 s; CRE Robinhood→Arc in 6.0 s |

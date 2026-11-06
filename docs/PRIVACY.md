@@ -20,6 +20,7 @@ Swaps and bridges are **not** private. They are public on-chain like anywhere el
 | **Refunds** | `NorenCheckout.refund` deposits into the customer's shielded refund inbox, under a precommitment the customer bound to the invoice. | The merchant refunds without ever learning a wallet. |
 | **Send privately (P2P)** | `Entrypoint.relay`: a withdrawal whose processooor is the Entrypoint, relayed by Noren's server (`POST /private/send`). | The recipient, merchant or person. The tx is sent by Noren's relayer, and the USDC comes from the Entrypoint. |
 | **Arrive private** | Action `SHIELD` on the CCTP rail: the bridged USDC is deposited straight into the pool under the user's precommitment (`NorenShieldSink`). | No public USDC balance on Arc ever holds the money, so later payments can't be traced to the bridged wallet's balance. |
+| **Pay later, privately** | `NorenCreditLine.drawToPool`: a credit draw is deposited straight into the pool under the borrower's precommitment, then the invoice is paid with `NorenCheckout.pay` (see [Private credit](#private-credit-pay-later-privately)). | The merchant, and anyone reading the payment tx. The lender still knows its borrower. |
 
 In both live payments below, the traveller's address appears in neither the tx sender, the tx input nor any log. The run checks this with `appearsIn` in `scripts/live/private-live.ts`.
 
@@ -30,7 +31,7 @@ In both live payments below, the traveller's address appears in neither the tx s
 - **Deposits.** Every pool deposit is public: depositor, amount and label. For an "arrive private" deposit, the sink's `Shielded` event names the source sender and the beneficiary. Privacy starts *after* the deposit. It is the link from a deposit to a later payment that is hidden.
 - **Amounts.** A withdrawal's value is a public signal, so the merchant and the chain see how much was paid. Unusual amounts and timing can narrow down which deposit paid.
 - **The anonymity set on testnet is small.** The live pool holds a handful of deposits made by Noren's own test runs. An observer could guess the payer from timing alone. Privacy grows with the pool's crowd. The checkout shows the current anonymity set and warns when it is thin.
-- **Pay with USDC, pay with stocks, pay later, and paying from another chain** are public payments. The checkout says so on each of them (see below).
+- **Pay with USDC, pay with stocks, Pay in 3 (pay later from the line), and paying from another chain** are public payments. The checkout says so on each of them (see below). "Pay later, privately" hides the payer from the merchant, but the draw into the pool is public; see [Private credit](#private-credit-pay-later-privately).
 - **What the relayers see.**
   - The merchant server sees the invoice and the payment.
   - Noren's P2P relayer sees the recipient and the amount.
@@ -40,8 +41,9 @@ In both live payments below, the traveller's address appears in neither the tx s
 
 - **Checkout** (`packages/web/src/Checkout.tsx`).
   - "Pay privately" is the default and first method. Its label is "Default · {shop} never learns who paid".
+  - **Pay later, privately** is the second method, labelled "Private · your credit line tops up your private balance".
   - The other methods are each labelled **Public**: Pay with USDC, Pay with stocks and Pay in 3. Each one shows a note: "This is a public payment… {shop} and anyone reading the chain can link it to you."
-  - Each note has a **Make it private: shield first** button. It switches to the private method, which has the get-USDC → shield flow.
+  - Each note has a **Make it private** button. On Pay in 3 it switches to Pay later, privately; on the others it switches to the private method, which has the get-USDC → shield flow.
 - **Noren app → Pay** (`packages/web/src/app/PayTab.tsx`). A **Send privately** card takes a recipient and an amount. It makes the proof in the browser, posts it to the Noren server's relayer, and shows the tx link and what the recipient got after the relayer fee.
 - **Noren Merchant.**
   - Payment rows show **Customer: Private** for pool payments. Public methods show "Arc wallet", "Robinhood wallet" or "Credit line …".
@@ -73,6 +75,70 @@ Source chain (Arbitrum Sepolia)              Arc testnet
   - It never reverts for a well-formed call from its rail. A failed shield becomes a claimable balance for the beneficiary. Failures include a reused precommitment, a deposit below the pool's 1 USDC minimum, and a precommitment outside the field.
 - **What stays as it was.** The live NorenArcHook v2 `0x8845ae4B…` and its CRE config are untouched. The SHIELD-aware hook `0x30c84a5a…` is a separate deployment. The CRE relay reaches it through the `privacy-settings` target (`packages/cctp/cre`, config `config.privacy.json`, gas limit 1.2M; the live write used 655,029).
 - **The CCIP rail.** It uses the same action and sink code. On these testnets no CCIP lane carries USDC into Arc (see [CCIP.md](CCIP.md#tokens-what-ccip-can-move-into-arc-today)), so a CCIP SHIELD has nothing to deposit. Turning it on would take three owner txs: deploy a sink with `railId = keccak256("CCIP")`, `gateway.setApp(sink)` and `router.setRail(sink, CCIP)`. That would rewire the live CCIP gateway, so it was not done.
+
+## Private credit: pay later, privately
+
+Pay in 3 pays the merchant straight from the borrower's credit line (`payInvoice`), so the merchant and the chain see which line, and so which borrower, paid. **Pay later, privately** routes the same credit through the Kohaku pool instead:
+
+```
+Noren app / checkout (browser)                       Arc
+  Kohaku account: nextPrecommitment() ──► NorenCreditLine.drawToPool(lineId, amount, precommitment)
+                                            · same checks as payInvoice: borrower only, not paused, open, not expired,
+                                              within the limit, pool can cover it
+                                            · same debt: drawn += amount, totalOutstanding, updatedAt, Drawn log
+                                              (merchant = Entrypoint, invoiceId = 0) for the CRE bridge, plus DrawnToPool
+                                            · borrower screened against USDC's blocklist (the pool sees the line as depositor)
+                                            · Entrypoint.deposit(USDC, amount, precommitment)  (same entry as NorenShieldSink)
+                                         ASP approves the label (updateRoot)
+  proof made on the device ─────────────► NorenCheckout.pay (relayed by the merchant): pool → merchant payout
+```
+
+- **Contract.** `drawToPool` is an additive function on `NorenCreditLine` (`packages/arc-credit`). `payInvoice` and `drawToPool` share one `_checkDraw` and one `_book`, so the limit, expiry and pause rules and the debt are the same by construction. Existing events and the ABI are unchanged; `DrawnToPool`, `PoolDrawRagequit`, `PrivacyPoolSet`, `setPrivacyPool`, `ragequitPoolDraw` and `lineOfCommitment` are new. The owner turns it on with `setPrivacyPool(entrypoint, pool)`, which checks that the pool is the Entrypoint's USDC pool.
+- **Why on the line, not an adapter.** An adapter would still need an operator role on the line, so the line would change either way. Adding the function keeps the draw atomic: the debt is booked and the deposit made in one transaction, or neither.
+- **Minimum deposit.** The pool takes deposits of at least **1 USDC** (`assetConfig(USDC).minimumDepositAmount` on the live Entrypoint). A smaller invoice draws 1 USDC and the rest stays in the borrower's private balance; the checkout says so. A draw below the minimum reverts and books no debt (fork test).
+- **Exit.** The pool only lets the original depositor ragequit, and the depositor is the credit line. `ragequitPoolDraw(proof)` lets the borrower take a deposit the ASP never approves back out; the proceeds repay the line first and any rest goes to the borrower. Its guards are fork-tested; a full ragequit with a real proof was not run.
+- **Repay is unchanged.** `repay(lineId, amount)` from any wallet, public. The Noren app labels it **Public**.
+
+**What is private**
+
+- **The merchant doesn't learn the payer.** The payment is a pool withdrawal sent by the merchant's own server. On the live run below, the borrower's address appears in neither the sender, the input nor the logs of the payment tx, and neither does the credit line's. Noren Merchant shows **Customer: Private** for it, like any private payment.
+- **Underwriting is sealed.** The credit check runs on 0G Private Computer inside a TEE, and only numeric features go in, never an address ([0G.md](0G.md); first live sealed decision `a30b5e94…`). The starter-line path uses **World ID**, which proves a unique human with a nullifier and no identity ([WORLD.md](WORLD.md); its live run is blocked on a Developer Portal app).
+
+**What is NOT private**
+
+- **The lender knows the borrower.** A line is opened for a wallet: collateral lines come from a `CreditLineOpened` on Robinhood Chain naming the borrower, starter lines from a report naming the borrower. That is the point of a credit line.
+- **Draws to the pool are public.** `Drawn` and `DrawnToPool` name the line (and so the borrower) and the amount, and the pool's `Deposited` log shows the credit line as depositor. Anyone can see that a borrower moved credit into the pool. What is hidden is which later payment it funded.
+- **Repayments and collateral are public.** `Repaid` names the line; the collateral sits in `NorenCredit` on Robinhood Chain.
+- **A small pool links by timing and amount.** The testnet pool holds a handful of deposits, almost all from Noren's own runs, and deposits from the credit line stand out. On the live run the 0.40 USDC payment came about 25 seconds after a 1.00 USDC draw, so an observer could link them. Privacy needs a crowd and some waiting; the checkout shows the anonymity set and warns when it is thin.
+- **Gas.** The live borrower was sent 0.05 USDC of gas by the operator, publicly. A borrower who never holds public USDC needs a relayer for the draw too; that isn't built.
+
+### Live on Arc testnet (Nov 6 2026)
+
+Record: [`scripts/live/private-credit-runs.json`](../scripts/live/private-credit-runs.json). All transactions are real. A fresh borrower `0x2Ef3ab4fb55A71dB7961598286B56fA26541e223`; the operator `0x4B2ACf80…3F80` deploys, funds, runs the ASP and the merchant server. The live `NorenCreditLine` `0x7140aad0…` (no `drawToPool`), the pool, Entrypoint, NorenCheckout, NorenShieldSink, hooks, routers and CCIP gateways were not changed.
+
+| # | Step | Tx | Gas |
+|---|---|---|---|
+| 1 | Deploy `NorenCreditLine` with `drawToPool` → [`0x4e26d0bfc5ac22b3fe8579afe50cb9584b2a1f86`](https://explorer.testnet.arc.io/address/0x4e26d0bfc5ac22b3fe8579afe50cb9584b2a1f86) | [0x48eb492d…2131](https://explorer.testnet.arc.io/tx/0x48eb492db8202dcf94c1f13e5fa22ce60278180ee85614c36a389cb9ea302131) | 2,914,143 |
+| 2 | `setPrivacyPool(Entrypoint, USDC pool)` | [0x0a174978…564a](https://explorer.testnet.arc.io/tx/0x0a1749783e9bfcbc4b24d387e064f9ea455446de5f7fe84187a6ed858b77564a) | 87,315 |
+| 3 | **Chainlink CRE** (`cre workflow simulate --broadcast`, credit-bridge handler 3) → MockKeystoneForwarder → `onReport`: a 1.50 USDC line for the borrower. Test nullifier, not a World ID proof | [0xa92d7dee…8427](https://explorer.testnet.arc.io/tx/0xa92d7dee109c04639a56cd130b978106ad05c5b5c7a8e6d84c53d5821b068427) | 189,236 |
+| 4 | Operator approves and funds the credit pool with 1.00 USDC (`fund`) | [0x2c4037a2…54af](https://explorer.testnet.arc.io/tx/0x2c4037a23d30d71de49d71c1f23cf21605bd0e01e50894362ef907cbb1da54af), [0x2310e38f…d2a](https://explorer.testnet.arc.io/tx/0x2310e38f2585266bf87d8d2045e8b23e87de77966ac45f54be6a4ba803d2bd2a) | 55,438 / 54,665 |
+| 5 | Operator sends the borrower 0.05 USDC for gas | [0x7ced66d9…5ae1](https://explorer.testnet.arc.io/tx/0x7ced66d9821e32fd1af6becfd9287de8c53e30dacbfaa14423e0b6869d155ae1) | 73,938 |
+| 6 | **Borrower `drawToPool` 1.00 USDC** under the precommitment its Kohaku account computed: pool `Deposited` with depositor = the credit line, debt 1.00 USDC | [0x25fc8a15…7bae](https://explorer.testnet.arc.io/tx/0x25fc8a159d88225c5313cd92a3eca3cfaec7c6a3d79b00e19dffc486a81d7bae) | 443,028 |
+| 7 | ASP approves the label (`updateRoot`; one more root was posted at start-up) | [0xd474cde5…99c7](https://explorer.testnet.arc.io/tx/0xd474cde5f5ff7c3a3d7638910ae0ae39c9f6b36e758e92fb2a3ff11a3fb099c7) ([0x65dc363a…51cc](https://explorer.testnet.arc.io/tx/0x65dc363a40cb379ce5ed551d5ceb212d4d987193539af00e28a2b67613d551cc)) | 149,661 |
+| 8 | **Pay a 0.40 USDC Noren invoice privately** (`NorenCheckout.pay`, relayed by the merchant server; proof 2.46 s in Node). The payout `0x32EeabA9…F821` gained exactly 0.40 USDC | [0xf3b78257…723a](https://explorer.testnet.arc.io/tx/0xf3b782579b4f8076d220085df9d192eaccd0336eb20b974a689993e1fc02723a) | 596,759 |
+
+Checked by the run: the deposit used the borrower's precommitment; the line's debt rose by exactly 1.00 USDC; the borrower is not on USDC's blocklist; in tx 8 the borrower's address and the credit line's address appear in neither sender, input nor logs; 0.60 USDC stays private afterwards; the line still owes 1.00 USDC. The operator spent **1.149471 USDC** (1.00 into the credit pool, 0.05 borrower gas, about 0.10 gas; the 0.40 went to the operator's own payout key).
+
+Why 1.00 and not 0.50 USDC: the live pool's minimum deposit is 1 USDC, so a 0.50 draw reverts.
+
+### Run it
+
+```bash
+pnpm exec tsx scripts/live/private-credit-live.ts --fork   # Anvil fork of Arc testnet, ports 8870-8872, ForkUSDC shim, nothing broadcast
+pnpm exec tsx scripts/live/private-credit-live.ts          # public Arc testnet (operator key from .env.arc-deployer; stops above 2 USDC spent)
+```
+
+Both modes run the same steps and checks, including the CRE simulator (fork mode broadcasts with Anvil's published dev account 9). The fork run on Nov 6 passed end to end: draw, ASP approval, a 0.40 USDC private payment with the borrower absent from the payment tx. In the browser, `pnpm dev:all` → `#/pay/<id>` → **Pay later, privately** draws, waits for the ASP and pays (screenshots: `docs/img/private-credit-*.jpg`).
 
 ## Compliance: the ASP model
 
@@ -155,6 +221,8 @@ Arc spend for the run: about **0.06 USDC** of operator gas, out of a ≤3 USDC b
 | Suite | Command | Tests |
 |---|---|---|
 | NorenShieldSink against the live Arc pool, Entrypoint and router (Arc testnet fork, USDC shim) | `cd packages/ccip && FOUNDRY_PROFILE=fork forge test --match-contract NorenShieldSinkFork` | 11 |
+| `NorenCreditLine.drawToPool` against the live Arc Entrypoint and USDC pool (Arc testnet fork, USDC shim) | `cd packages/arc-credit && FOUNDRY_PROFILE=fork forge test` | 15 |
+| Pay later, privately end to end (draw → ASP → private invoice payment, borrower absent from the payment tx) | `pnpm exec tsx scripts/live/private-credit-live.ts --fork` | 1 run |
 | NorenArcHook incl. SHIELD validation | `cd packages/cctp && forge test` | 24 |
 | Action encoders (Solidity byte vector for `shield`) | `cd packages/ccip && pnpm test:sdk` | 7 |
 | CCTP action encoders | `cd packages/cctp && pnpm exec vitest run test-sdk/actions.test.ts` | 4 |

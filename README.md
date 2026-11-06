@@ -27,8 +27,9 @@ Then: **Noren Merchant** `#/dashboard` → create a link → pay it at `#/pay/<i
 |---|---|---|
 | **Pay a Noren invoice** | Groth16 proof bound to the invoice, made in the browser; the merchant relays it from the Kohaku pool | [`0x1ce6858a…`](https://explorer.testnet.arc.io/tx/0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a), and paid from a cross-chain arrival [`0xc833c436…`](https://explorer.testnet.arc.io/tx/0xc833c436734b1b0425d5cab6fa6aefc0b7ecbc83a2deeb2c46d2cc14ad6589ff) |
 | **Send privately** | P2P withdrawal relayed by Noren (`Entrypoint.relay`); the recipient never sees the sender | [`0x69dc6a2d…`](https://explorer.testnet.arc.io/tx/0x69dc6a2ddc6c6e6cdb0a53813a46cca3d74c9d0d6ead85c8050709519c94ce09) |
+| **Pay later, privately** | The credit line draws straight into the pool under the borrower's precommitment (`NorenCreditLine.drawToPool`), then the invoice is paid from the pool; the merchant sees "Customer: Private", the lender still knows its borrower | draw [`0x25fc8a15…`](https://explorer.testnet.arc.io/tx/0x25fc8a159d88225c5313cd92a3eca3cfaec7c6a3d79b00e19dffc486a81d7bae) → private payment [`0xf3b78257…`](https://explorer.testnet.arc.io/tx/0xf3b782579b4f8076d220085df9d192eaccd0336eb20b974a689993e1fc02723a) |
 | **Arrive private** | CCTP burn with a SHIELD hook: the USDC lands straight in the pool (`NorenShieldSink`) | Arbitrum burn [`0xe55d5240…`](https://sepolia.arbiscan.io/tx/0xe55d52400e1fb3c7d3d5e73184c7eff64bf8947c0d8e07716ca9c447f63fe593) → pool [`0xdf7b3d45…`](https://explorer.testnet.arc.io/tx/0xdf7b3d45b4363e9e66ed866e1c7356d294a894ef074554e36d6cb1f15548815c) |
-| **Not private** | Swaps, bridges, deposits, amounts; the testnet pool's crowd is small | [docs/PRIVACY.md](docs/PRIVACY.md) |
+| **Not private** | Swaps, bridges, deposits, amounts, credit draws and repayments; the testnet pool's crowd is small | [docs/PRIVACY.md](docs/PRIVACY.md) |
 
 ## Live on public testnets
 
@@ -89,11 +90,11 @@ const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secre
 |---|---|---|---|
 | Customer pays with | USDC in a Kohaku privacy pool (Arc) | NVDA, TSLA, AAPL… Stock Tokens (Robinhood Chain) | A USDC credit line on Arc, backed by locked Stock Tokens |
 | Merchant receives | USDC on Arc, in the payment tx | USDG on Robinhood Chain, from a 1inch Aqua maker (or Noren's vault as fallback) | USDC on Arc, upfront, from the credit pool |
-| Merchant learns the payer | **no**: the proof binds the invoice, not a wallet | yes (public wallet) | yes (the line is public) |
+| Merchant learns the payer | **no**: the proof binds the invoice, not a wallet | yes (public wallet) | Pay in 3: yes (the line is public). **Pay later, privately: no** (the line draws into the pool; the lender still knows the borrower) |
 | Contract | `NorenCheckout` + 0xbow Privacy Pools | `NorenGateway` → `NorenLiquidity` (1inch Aqua + SwapVM), `NorenVault` fallback | `NorenCredit` (Robinhood) ↔ CRE ↔ `NorenCreditLine` (Arc) |
 | Price | Chainlink fiat feeds (Arc mainnet, read-only) | Chainlink stock feeds (Robinhood): makers quote through the `NorenOraclePeg` SwapVM instruction; the vault adds a 0.50% spread | Chainlink stock feeds value the collateral |
 
-The checkout says it plainly: only "Pay privately" (the default) hides you. **Pay from another chain** (Circle CCTP V2 with a PAY_INVOICE hook, from 10 testnets) is a fifth option; it is public on the source chain.
+The checkout says it plainly: only "Pay privately" (the default) and "Pay later, privately" hide you from the merchant. **Pay from another chain** (Circle CCTP V2 with a PAY_INVOICE hook, from 10 testnets) is a fifth option; it is public on the source chain.
 
 Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party licenses](#third-party-licenses)).
 
@@ -103,7 +104,7 @@ Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party l
 
 | What | Result |
 |---|---|
-| All suites on the final build ([TESTING.md](TESTING.md)) | **574 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
+| All suites on the final build ([TESTING.md](TESTING.md)) | **589 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
 | `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), proof 1.28 s, re-proof 1.14 s, 39.0 s total |
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
 | `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040798 NVDA at $184.61 pays a 7.50 invoice, filled by a 1inch Aqua maker (fee 0.0377 USDG; merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |
@@ -170,7 +171,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 2. **Attest.** The underwriter signs an EIP-712 `CreditAttestation`; `NorenCredit.applyAttestation` verifies it on-chain.
 3. **Lock.** `NorenCredit.openCreditLine` values the shares with Chainlink (with a weekend haircut when markets are closed) and emits `CreditLineOpened`.
 4. **Bridge.** The Chainlink CRE workflow writes the limit to `NorenCreditLine` on Arc through the forwarder.
-5. **Spend.** On any Noren checkout, "Pay later" calls `NorenCreditLine.payInvoice`; the merchant is paid USDC upfront and the server settles the invoice from the `Drawn` log.
+5. **Spend.** On any Noren checkout, "Pay in 3" calls `NorenCreditLine.payInvoice`; the merchant is paid USDC upfront and the server settles the invoice from the `Drawn` log. "Pay later, privately" calls `NorenCreditLine.drawToPool` instead: the draw becomes the customer's private balance in the Kohaku pool, and the invoice is paid from the pool ([docs/PRIVACY.md](docs/PRIVACY.md#private-credit-pay-later-privately)).
 6. **Repay.** USDC on Arc, in parts or at once; the app suggests `NorenCredit.INSTALLMENTS()` parts (3). CRE carries each `Drawn`/`Repaid` back to `NorenCredit`. Debt left after expiry plus grace, or collateral below 110% of the debt, makes the line liquidatable, and liquidation sells the collateral to 1inch Aqua makers through SwapVM.
 7. **No stock?** Verify with World ID (IDKit, server-verified) for one small unsecured starter line per human. Noren stores only the nullifier.
 
@@ -178,7 +179,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 
 - **Censorship resistant.** The customer's funds sit in a Privacy Pools contract, not with Noren: they can withdraw or pay any merchant without Noren's permission. Settlement is a contract call any merchant server can relay; the merchant runs its own.
 - **Open source.** MIT (Noren) and Apache-2.0 (vendored Privacy Pools). One command builds and runs everything locally: `pnpm install && pnpm dev:all`.
-- **Private.** What each party learns: the **merchant** learns that an invoice was paid in full, never the payer's address, balance or history. The **Noren server** never sees note secrets, keys or proof inputs; it relays a finished proof. The **ASP** sees only deposit addresses, which it checks against USDC's blacklist. **World ID** gives Noren a nullifier, not a person. The **0G** credit check gets numeric features without an address, inside a TEE. The web app makes **no third-party requests**: fonts and prover artifacts are served by the app itself. Pay with stocks and pay later are *not* private, and the UI says so.
+- **Private.** What each party learns: the **merchant** learns that an invoice was paid in full, never the payer's address, balance or history. The **Noren server** never sees note secrets, keys or proof inputs; it relays a finished proof. The **ASP** sees only deposit addresses, which it checks against USDC's blacklist. **World ID** gives Noren a nullifier, not a person. The **0G** credit check gets numeric features without an address, inside a TEE. The web app makes **no third-party requests**: fonts and prover artifacts are served by the app itself. Pay with stocks and Pay in 3 are *not* private, and the UI says so. "Pay later, privately" hides the payer from the merchant; the lender still knows its borrower, and draws and repayments are public.
 - **Secure.** Keys, note secrets and Groth16 proofs stay in the customer's browser. Invoice-bound proofs make tampering, replay, squatting, expiry and stale roots fail on-chain (the 5 attack checks above). CRE reports are accepted only from the configured forwarder; credit attestations only with the underwriter's EIP-712 signature.
 
 ## Honest limits

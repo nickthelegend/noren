@@ -68,6 +68,10 @@ Other functions:
   - The line is revolving: drawn minus repaid must stay at or under the limit.
   - It reverts when the line is paused, expired or frozen, or when the pool is short.
   - Each `(lineId, invoiceId)` pays only once.
+- `drawToPool(lineId, amount, precommitment)` (Pay later, privately; off until the owner calls `setPrivacyPool(entrypoint, pool)`):
+  - The same checks and the same debt as `payInvoice`, but the USDC is deposited into the Kohaku pool under the borrower's precommitment.
+  - It emits `Drawn(lineId, amount, 0, entrypoint)`, so handler 2 carries the debt to `NorenCredit` exactly as for a merchant draw, plus `DrawnToPool(lineId, amount, precommitment, commitment)`.
+  - See [PRIVACY.md](PRIVACY.md#private-credit-pay-later-privately).
 - `repay(lineId, amount)`:
   - Anyone can repay. It also works while paused, after expiry and after a freeze.
   - The amount can't be more than what is outstanding.
