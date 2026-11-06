@@ -1,0 +1,26 @@
+# CRE project settings for the Noren credit bridge (Robinhood Chain <-> Arc).
+# CRE lists forwarders for "robinhood-testnet" (chain 46630) and "arc-testnet" (chain 5042002)
+# only; neither mainnet has a CRE forwarder yet (docs/BRIDGE-ROUTES.md).
+
+# Local forks started by scripts/fork-simulate.sh:
+#   127.0.0.1:8730  Anvil fork of Arc Testnet (chain 5042002). Carries the real arc-testnet
+#                   MockKeystoneForwarder 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1.
+#   127.0.0.1:8731  Anvil fork of Robinhood Chain MAINNET run with --chain-id 46630, so CRE's
+#                   robinhood-testnet selector can address it while it holds the real mainnet
+#                   Stock Tokens and Chainlink feeds. The robinhood-testnet MockKeystoneForwarder
+#                   0x0b93082D9b3C7C97fAcd250082899BAcf3af3885 does not exist on mainnet; the script
+#                   copies its bytecode and two storage slots from the real Robinhood Testnet.
+local-fork:
+  rpcs:
+    - chain-name: arc-testnet
+      url: http://127.0.0.1:8730
+    - chain-name: robinhood-testnet
+      url: http://127.0.0.1:8731
+
+# Public testnets. --broadcast here needs a funded key on both testnets in CRE_ETH_PRIVATE_KEY.
+staging-settings:
+  rpcs:
+    - chain-name: arc-testnet
+      url: https://rpc.testnet.arc.io
+    - chain-name: robinhood-testnet
+      url: https://rpc.testnet.chain.robinhood.com
