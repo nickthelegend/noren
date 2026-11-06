@@ -85,8 +85,13 @@ run(async () => {
   };
   const stack = await startStack({
     mounts: async (arc) => {
+      // Reclaim (zkTLS): prove one off-chain fact to raise the credit limit. Without RECLAIM_* it answers "Setup required".
+      const { createReclaimHandler, missingReclaimEnv } = await import('../packages/server/src/reclaim.ts');
+      const reclaimGaps = missingReclaimEnv(process.env);
+      if (reclaimGaps.length) missing.push(`Reclaim: ${reclaimGaps.join(', ')} (Nick creates the app at dev.reclaimprotocol.org; docs/RECLAIM.md)`);
+      const reclaim = createReclaimHandler({ env: process.env, storeFile: resolve('data/reclaim-proofs.json') });
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
-      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
+      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, reclaim, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
       const gaps = w.missingSettings(config);
@@ -116,7 +121,7 @@ run(async () => {
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
       const worldId = w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }));
-      return [xchainOrders, worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
+      return [xchainOrders, reclaim, worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
@@ -140,7 +145,7 @@ run(async () => {
       }
       if (has('packages/robinhood/underwriter/src/server.ts') && robinhood) {
         try {
-          Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, NOREN_RH_DECISIONS_LOG: resolve('data/underwriter-decisions.jsonl') }); // history stays on Robinhood mainnet (read-only)
+          Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, NOREN_RH_DECISIONS_LOG: resolve('data/underwriter-decisions.jsonl'), NOREN_RECLAIM_STORE: resolve('data/reclaim-proofs.json') }); // history stays on Robinhood mainnet (read-only)
           const { server } = await import('../packages/robinhood/underwriter/src/server.ts' as string);
           pub.underwriterUrl = await listen(server, UNDERWRITER_PORT);
         } catch (e: any) { missing.push(`History underwriter failed to start: ${e.message}`); }
