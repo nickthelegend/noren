@@ -6,6 +6,10 @@
 
 ![Noren](docs/img/readme/landing.jpg)
 
+## Why the name Noren (暖簾)
+
+A noren is the split fabric curtain hung in the doorway of a traditional Japanese shop or restaurant. It tells passers-by the shop is open and shows its name, yet hides who is inside, while air still flows through. Noren does the same for payments: the merchant is open for business and is paid in full, but the curtain hides who paid. It hides the payer, not the payment: the merchant, the amount and the invoice are still visible on-chain. Value still flows freely: USDC from any chain, stocks and credit all settle on Arc.
+
 ## Live demo
 
 | Surface | URL |

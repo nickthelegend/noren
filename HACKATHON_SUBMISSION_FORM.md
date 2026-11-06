@@ -16,7 +16,7 @@ Merchants accept stablecoins, stocks or credit — privately. DEX + stablecoin p
 
 ## Description
 
-**Noren lets merchants accept stablecoins, stocks or credit — privately.** A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.
+**Noren lets merchants accept stablecoins, stocks or credit — privately.** A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain. The name is the split curtain in a Japanese shop doorway: it shows the shop is open but hides who is inside. Noren does the same for payments: the merchant is paid in full, the amount stays visible, and the payer stays hidden.
 
 **The problem.** Paying a shop from a crypto wallet hands it your address, your balance and every other payment you've made. Card networks never worked that way. Crypto credit has the opposite problem: collateral sits idle in a lending contract and earns nothing.
 
