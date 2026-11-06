@@ -88,29 +88,61 @@ export type CrossChainPayment = { invoiceId: Hex; payer: Address; amount: bigint
 /** CCIP chain selectors Noren deployed on (packages/ccip/sdk/chains.ts). */
 const CCIP_SELECTORS: Record<string, CctpChainKey> = { "3034092155422581607": "arc-testnet", "2032988798112970440": "robinhood-testnet", "10344971235874465080": "base-sepolia", "16015286601757825753": "ethereum-sepolia" };
 let routerFrom: Promise<bigint> | null = null;
+/** Per-merchant results already read, and the last block they cover: a refresh only reads the blocks after it. */
+const scanned = new Map<string, { to: bigint; rows: CrossChainPayment[] }>();
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const rpcCode = (e: unknown) => { for (let c = e as { code?: number; cause?: unknown } | undefined, i = 0; c && i < 6; c = c.cause as typeof c, i++) if (typeof c.code === "number") return c.code; return undefined; };
+
+/**
+ * eth_getLogs over [from, to] in windows (10k blocks, newest first). The public Arc testnet RPC answers -32005 ("rate
+ * limit exceeded", which viem reports as "Request exceeds defined limit") when called too fast, and -32012 ("requested
+ * range too large") on busy ranges: the first is retried with backoff, the second halves the window.
+ */
+async function logsInWindows<T>(read: (lo: bigint, hi: bigint) => Promise<T[]>, from: bigint, to: bigint, step = 10_000n): Promise<T[]> {
+  const out: T[] = [];
+  for (let hi = to; hi >= from;) {
+    const lo = hi - step + 1n > from ? hi - step + 1n : from;
+    let logs: T[] | null = null;
+    for (let attempt = 0; logs === null; attempt++) {
+      try { logs = await read(lo, hi); }
+      catch (e) {
+        const code = rpcCode(e);
+        if (code === -32012 && step > 500n) { step /= 2n; break; }
+        if (code === -32005 && attempt < 5) { await wait(400 * 2 ** attempt); continue; }
+        throw e;
+      }
+    }
+    if (logs === null) continue; // window shrank: retry the same hi with the smaller step
+    out.push(...logs.reverse());
+    if (lo === from) break;
+    hi = lo - 1n;
+    await wait(120); // stay under the public RPC's request rate
+  }
+  return out;
+}
 
 /**
  * InvoicePaid on the live NorenArcActionRouter for one merchant: payments that arrived from another chain over CCTP
- * (source = CCTP domain) or CCIP (source = chain selector). Scans newest-first in 10k-block windows.
+ * (source = CCTP domain) or CCIP (source = chain selector). Reads from the router's deploy block in 10k-block windows,
+ * then caches, so a refresh reads only new blocks.
  */
-export async function crossChainPayments(merchant: Address, opts: { maxWindows?: number } = {}): Promise<CrossChainPayment[]> {
+export async function crossChainPayments(merchant: Address): Promise<CrossChainPayment[]> {
   const arc = publicFor("arc-testnet");
-  routerFrom ??= arc.getTransactionReceipt({ hash: ROUTER_DEPLOY_TX }).then((r) => r.blockNumber);
+  routerFrom ??= arc.getTransactionReceipt({ hash: ROUTER_DEPLOY_TX }).then((r) => r.blockNumber).catch((e) => { routerFrom = null; throw e; });
   const floor = await routerFrom;
+  const key = merchant.toLowerCase(), prev = scanned.get(key);
+  const head = await arc.getBlockNumber();
+  const from = prev ? prev.to + 1n : floor;
+  if (prev && from > head) return prev.rows;
   const cctp = keccak256(toHex("CCTP")), ccip = keccak256(toHex("CCIP"));
-  const out: CrossChainPayment[] = [];
-  const step = 10_000n;
-  let windows = 0;
-  for (let hi = await arc.getBlockNumber(); hi >= floor && windows < (opts.maxWindows ?? 40); hi -= step, windows++) {
-    const lo = hi - step + 1n > floor ? hi - step + 1n : floor;
-    const logs = await arc.getLogs({ address: ACTION_ROUTER, event: invoicePaid, args: { merchant }, fromBlock: lo, toBlock: hi });
-    for (const l of logs.reverse()) {
-      const a = l.args as { invoiceId: Hex; payer: Address; amount: bigint; rail: Hex; source: bigint; onCredit: boolean };
-      const rail = a.rail === cctp ? "CCTP" : a.rail === ccip ? "CCIP" : "other";
-      const from = rail === "CCTP" ? (Object.values(CCTP_CHAINS).find((c) => BigInt(c.domain) === a.source)?.key ?? null) : rail === "CCIP" ? (CCIP_SELECTORS[a.source.toString()] ?? null) : null;
-      out.push({ invoiceId: a.invoiceId, payer: a.payer, amount: a.amount, rail, from, fromLabel: from ? CCTP_CHAINS[from].name : `${rail} source ${a.source}`, onCredit: a.onCredit, tx: l.transactionHash!, block: l.blockNumber! });
-    }
-    if (lo === floor) break;
-  }
-  return out;
+  const logs = await logsInWindows((lo, hi) => arc.getLogs({ address: ACTION_ROUTER, event: invoicePaid, args: { merchant }, fromBlock: lo, toBlock: hi }), from, head);
+  const fresh = logs.map((l): CrossChainPayment => {
+    const a = l.args as { invoiceId: Hex; payer: Address; amount: bigint; rail: Hex; source: bigint; onCredit: boolean };
+    const rail = a.rail === cctp ? "CCTP" : a.rail === ccip ? "CCIP" : "other";
+    const src = rail === "CCTP" ? (Object.values(CCTP_CHAINS).find((c) => BigInt(c.domain) === a.source)?.key ?? null) : rail === "CCIP" ? (CCIP_SELECTORS[a.source.toString()] ?? null) : null;
+    return { invoiceId: a.invoiceId, payer: a.payer, amount: a.amount, rail, from: src, fromLabel: src ? CCTP_CHAINS[src].name : `${rail} source ${a.source}`, onCredit: a.onCredit, tx: l.transactionHash!, block: l.blockNumber! };
+  });
+  const rows = [...fresh, ...(prev?.rows ?? [])];
+  scanned.set(key, { to: head, rows });
+  return rows;
 }

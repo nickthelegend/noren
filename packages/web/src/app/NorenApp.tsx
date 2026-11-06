@@ -27,6 +27,8 @@ import { HomeTab } from "./HomeTab";
 import { LiveArc, NetSwitch } from "../LiveArc";
 import { useNet } from "../network";
 import { Mark } from "../logos";
+import { PRIVY_APP_ID, restoreBrowserWallet, useSigner } from "../signer";
+import { SignIn, WalletSwitch } from "./SignIn";
 
 export const TABS = ["home", "pay", "bridge", "earn", "credit", "borrow", "swap"] as const;
 export type Tab = (typeof TABS)[number];
@@ -44,7 +46,11 @@ export function NorenApp() {
   const [tab, setTab] = useState<Tab>(tabFromHash);
   useEffect(() => { const on = () => setTab(tabFromHash()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
   const go = (t: Tab) => { history.replaceState(null, "", `#/app/${t}`); setTab(t); scrollTo({ top: 0 }); };
-  const oc = useMemo(() => (cfg ? makeOnchain(cfg) : null), [cfg]);
+  const signer = useSigner();
+  // Privy chosen but not signed in: the home screen is the sign-in. Otherwise every card signs with the active wallet.
+  const needsSignIn = (!!PRIVY_APP_ID && signer.mode === "privy" && signer.status !== "in") || (signer.mode === "browser" && !signer.browser);
+  useEffect(() => { restoreBrowserWallet().catch(() => {}); }, []);
+  const oc = useMemo(() => (cfg && !needsSignIn ? makeOnchain(cfg) : null), [cfg, needsSignIn, signer.signerKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [hold, setHold] = useState<Wallet["hold"]>(null);
   const [holdErr, setHoldErr] = useState<string | null>(null);
   const [arcUsdc, setArcUsdc] = useState<bigint | null>(null);
@@ -62,7 +68,7 @@ export function NorenApp() {
     oc.arcUsdc().then(setArcUsdc).catch(() => setArcUsdc(null));
     setTick((t) => t + 1);
   }, [oc]);
-  useEffect(() => { refresh(); const t = setInterval(refresh, 8000); return () => clearInterval(t); }, [refresh]);
+  useEffect(() => { setHold(null); setArcUsdc(null); refresh(); const t = setInterval(refresh, 8000); return () => clearInterval(t); }, [refresh]);
 
   if (err) return (
     <div className="nk"><main className="nk-main"><div className="nk-col"><div className="nk-setup" role="alert"><span className="nk-tag">Setup required</span><b>The Noren server isn't running.</b><p>{err}</p><p><code>pnpm dev:all</code> then <code>pnpm --filter @noren/web dev</code></p></div></div></main></div>
@@ -90,16 +96,16 @@ export function NorenApp() {
               <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />Arc fork</span>
             </span>}
             <div className="nk-prof">
-              <button className="nk-chip" onClick={() => setMenu((o) => !o)} aria-expanded={menu} aria-haspopup="dialog"><i className="nk-ava" aria-hidden />{oc ? shortHex(oc.address, 6) : "…"}</button>
-              {menu && w && <Profile w={w} onClose={() => setMenu(false)} />}
+              <button className="nk-chip" onClick={() => setMenu((o) => !o)} aria-expanded={menu} aria-haspopup="dialog"><i className="nk-ava" aria-hidden />{oc ? shortHex(oc.address, 6) : needsSignIn ? "Signed out" : "…"}</button>
+              {menu && (w ? <Profile w={w} onClose={() => setMenu(false)} /> : <div className="nk-menu" role="dialog" aria-label="Your wallet"><WalletSwitch /><button className="nk-x" onClick={() => setMenu(false)} aria-label="Close">×</button></div>)}
             </div>
           </div>
         </header>
 
         <main className="nk-main">
-          {net === "live" ? <div className="nk-col"><LiveArc context="app" /></div> : !w ? <div className="nk-col"><div className="nk-skel"><i /><i /><i /></div></div> : (
+          {net === "live" ? <div className="nk-col"><LiveArc context="app" /></div> : needsSignIn ? <div className="nk-col"><SignIn /></div> : !w ? <div className="nk-col"><div className="nk-skel"><i /><i /><i /></div></div> : (
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={tab} className={`nk-pane${tab === "home" ? " wide" : ""}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
+              <motion.div key={`${tab}:${signer.signerKey}`} className={`nk-pane${tab === "home" ? " wide" : ""}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
                 {tab === "home" && <HomeTab w={w} go={go} />}
                 {tab === "swap" && <SwapTab w={w} />}
                 {tab === "bridge" && <BridgeTab w={w} />}
@@ -125,7 +131,8 @@ function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   return (
     <div className="nk-menu" role="dialog" aria-label="Your wallet">
-      <div className="nk-menu-row"><small>Your address on both chains (a test key kept in this browser)</small><span>{w.oc.address}</span></div>
+      <WalletSwitch />
+      <div className="nk-menu-row"><small>Your address on both chains</small><span>{w.oc.address}</span></div>
       <div className="nk-bal" aria-label="Robinhood Chain balances">
         <span>{h ? usdc(h.usdg) : "…"}<em><Mark id="USDG" size={14} />USDG</em></span>
         <span>{h ? (Number(h.eth) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em><Mark id="ETH" size={14} />ETH</em></span>

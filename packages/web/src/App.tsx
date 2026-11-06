@@ -1,17 +1,22 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Landing } from "./Landing";
 import { Dashboard } from "./Dashboard";
 import { Checkout } from "./Checkout";
 import { NorenApp } from "./app/NorenApp";
 import { TxPage } from "./tx";
 import { Icon, Logo, useRoute } from "./ui";
+import { PRIVY_APP_ID } from "./signer";
+
+// Privy (sign-in + embedded wallet) loads only on the product surfaces, and only when VITE_PRIVY_APP_ID is set.
+const NorenPrivy = lazy(() => import("./privy"));
+const WithPrivy = ({ children }: { children: ReactNode }) => (PRIVY_APP_ID ? <Suspense fallback={<div className="boot" aria-busy="true" />}><NorenPrivy>{children}</NorenPrivy></Suspense> : <>{children}</>);
 
 export function App() {
   const route = useRoute();
-  if (route.page === "dashboard") return <Dashboard tab={route.tab} sub={route.sub} />;
+  if (route.page === "dashboard") return <WithPrivy><Dashboard tab={route.tab} sub={route.sub} /></WithPrivy>;
   // Keyed by the whole hash so an app handoff (#/pay/<id>?m=usdc) always starts on the chosen method.
-  if (route.page === "pay") return <Checkout key={location.hash} id={route.id} />;
-  if (route.page === "app") return <NorenApp />;
+  if (route.page === "pay") return <WithPrivy><Checkout key={location.hash} id={route.id} /></WithPrivy>;
+  if (route.page === "app") return <WithPrivy><NorenApp /></WithPrivy>;
   if (route.page === "tx") return <TxPage chain={route.chain} hash={route.hash} />;
   return <Site />;
 }

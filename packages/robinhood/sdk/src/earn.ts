@@ -454,6 +454,88 @@ export function createNorenEarn({
     return { receipt: r, sale: events(r, norenLiquidityAbi, 'MakerSale')[0] }
   }
 
+  // ---------------------------------------------------------------- loans that pay themselves down
+
+  /**
+   * What the realised Aqua maker fees on `who`'s locked shares would repay now (NorenBorrow.yieldOf /
+   * previewYieldRepay). Yield only exists after real fills; with none, `yieldUsdg` is 0 and the
+   * message says so. `path` per vault: 'usdg' when the vault already holds the fees in USDG,
+   * 'sell' when the asset part would be sold to the best Aqua maker (up to 3% under Chainlink).
+   */
+  const previewYieldRepay = async (who: Address) => {
+    const b = borrowAddr()
+    const [[capped, fills, debt], perVault] = (await Promise.all([
+      read(b, norenBorrowAbi, 'previewYieldRepay', [who]),
+      Promise.all(
+        (addresses.depositVaults ?? []).map(async ({ asset, vault }) => {
+          const [[y, f], locked, held] = (await Promise.all([
+            read(b, norenBorrowAbi, 'yieldOf', [who, vault]),
+            read(b, norenBorrowAbi, 'lockedShares', [who, vault]),
+            read(addresses.usdg, erc20PermitAbi, 'balanceOf', [vault]),
+          ])) as [[bigint, bigint], bigint, bigint]
+          return { asset, vault, lockedShares: locked, yieldUsdg: y, fills: Number(f), path: (held >= y ? 'usdg' : 'sell') as 'usdg' | 'sell' }
+        }),
+      ),
+    ])) as [[bigint, bigint, bigint], { asset: Address; vault: Address; lockedShares: bigint; yieldUsdg: bigint; fills: number; path: 'usdg' | 'sell' }[]]
+    const usd = (v: bigint) => (Number(v) / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+    const message =
+      debt === 0n
+        ? 'No loan to pay down'
+        : capped === 0n
+          ? 'No fills yet, so nothing earned yet'
+          : `${usd(capped)} USDG of trading fees from ${fills} Aqua fill${fills === 1n ? '' : 's'} can pay your loan down to ${usd(debt - capped)} USDG`
+    return { yieldUsdg: capped, fills: Number(fills), debtUsdg: debt, debtAfterUsdg: debt - capped, vaults: perVault.filter((v) => v.lockedShares > 0n), message }
+  }
+
+  /**
+   * Harvest the realised fees of `who`'s locked shares (default: the wallet's own) into its loan.
+   * Anyone may send it; the USDG only goes to the lender pool against that loan. Throws a readable
+   * error when there is no loan or nothing earned yet (no fills since the last harvest).
+   */
+  const harvestToRepay = async (who?: Address) => {
+    const target = who ?? account()
+    const p = await previewYieldRepay(target)
+    if (p.debtUsdg === 0n) throw new Error('No loan to pay down')
+    if (p.yieldUsdg === 0n) throw new Error('No fills yet, so nothing earned yet: harvest after a trade fills against your vault')
+    const r = await confirm(await write(borrowAddr(), norenBorrowAbi, 'harvestToRepay', [target]))
+    const ev = events(r, norenBorrowAbi, 'YieldRepaid') as { vault: Address; usdg: bigint; debtAfter: bigint; shares: bigint; fills: bigint }[]
+    const repaidUsdg = ev.reduce((a, e) => a + e.usdg, 0n)
+    return {
+      receipt: r,
+      hash: r.transactionHash,
+      repaidUsdg,
+      fills: ev.reduce((a, e) => a + Number(e.fills), 0),
+      debtBeforeUsdg: ev.length ? ev[ev.length - 1].debtAfter + repaidUsdg : p.debtUsdg,
+      debtAfterUsdg: ev.length ? ev[ev.length - 1].debtAfter : p.debtUsdg,
+      perVault: ev.map((e) => ({ vault: e.vault, usdg: e.usdg, shares: e.shares, fills: Number(e.fills), debtAfter: e.debtAfter })),
+    }
+  }
+
+  /**
+   * Cumulative debt paid by the collateral's trading fees, from NorenBorrow's YieldRepaid events (and
+   * the on-chain running total `yieldRepaidUsdg`, which the events must match). `fromBlock` bounds the
+   * log scan (the deployment block on a fork).
+   */
+  const loanPaidByYield = async (who: Address, opts: { fromBlock?: bigint } = {}) => {
+    const b = borrowAddr()
+    const [logs, total, debt] = (await Promise.all([
+      pc.getContractEvents({ address: b, abi: norenBorrowAbi, eventName: 'YieldRepaid', args: { account: who }, fromBlock: opts.fromBlock ?? 'earliest', toBlock: 'latest' }),
+      read(b, norenBorrowAbi, 'yieldRepaidUsdg', [who]),
+      read(b, norenBorrowAbi, 'debtOf', [who]),
+    ])) as [{ args: { vault: Address; keeper: Address; usdg: bigint; debtAfter: bigint; shares: bigint; fills: bigint }; transactionHash: Hex; blockNumber: bigint }[], bigint, bigint]
+    const fromEventsUsdg = logs.reduce((a, l) => a + l.args.usdg, 0n)
+    return {
+      totalUsdg: total,
+      fromEventsUsdg,
+      fills: logs.reduce((a, l) => a + Number(l.args.fills), 0),
+      harvests: new Set(logs.map((l) => l.transactionHash)).size,
+      debtNowUsdg: debt,
+      /** Debt now plus what the fees already repaid (interest on that part not included). */
+      debtWithoutEarningsUsdg: debt + total,
+      history: logs.map((l) => ({ hash: l.transactionHash, blockNumber: l.blockNumber, vault: l.args.vault, keeper: l.args.keeper, usdg: l.args.usdg, debtAfter: l.args.debtAfter, shares: l.args.shares, fills: Number(l.args.fills) })),
+    }
+  }
+
   // ---------------------------------------------------------------- reputation and credit
 
   const reputation = async (who: Address) => {
@@ -535,6 +617,9 @@ export function createNorenEarn({
     health,
     liquidationPrice,
     liquidateLoanViaAqua,
+    previewYieldRepay,
+    harvestToRepay,
+    loanPaidByYield,
     buyAsset,
     reputation,
     milestones,

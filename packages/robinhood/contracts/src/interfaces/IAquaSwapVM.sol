@@ -52,6 +52,9 @@ interface INorenLiquidity {
   function liquidate(address asset, uint256 amount, uint256 debtUsdg, uint16 bonusBps, address proceedsTo, address bonusTo)
     external
     returns (uint256 proceeds, uint256 sold, uint256 bonus, uint256 excessUsdg);
+  function sellExactAsset(address asset, uint256 assetIn, uint256 minUsdgOut, address to)
+    external
+    returns (uint256 usdgOut, bytes32 strategyHash);
 }
 
 /// @notice NorenLiquidity's maker-side API (used by NorenVault to run a vault-backed strategy).

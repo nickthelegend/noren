@@ -1,28 +1,20 @@
 /**
- * The customer's private wallet, in this browser. Test networks only: a local key pays gas for shielding, and a local
- * seed derives the Kohaku note secrets. Proofs are generated here, on the device; no server ever sees the secrets.
+ * The customer's private wallet, in this browser. Test networks only. The active wallet (signer.ts: the Privy embedded
+ * wallet, or the test key) pays gas for shielding, and its seed derives the Kohaku note secrets. Proofs are generated
+ * here, on the device; no server ever sees the secrets.
  */
 import { createPublicClient, createWalletClient, erc20Abi, http, keccak256, toBytes, concatHex, parseAbiItem, type Hex } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { activeAccount, activeKey, kohakuSeed, walletTransport } from "./signer";
 import { createCustomer } from "@noren/core/customer";
 import { localFork, type Invoice } from "@noren/core";
 import type { Config } from "./api";
 
-const KEY = "noren.customer.v1";
-type Stored = { gasKey: Hex; seed: Hex };
-function stored(): Stored {
-  try {
-    const s = JSON.parse(localStorage.getItem(KEY) ?? "null");
-    if (s?.gasKey && s?.seed) return s;
-  } catch { /* fresh below */ }
-  const s = { gasKey: generatePrivateKey(), seed: generatePrivateKey() };
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* private mode: wallet lives for this tab */ }
-  return s;
-}
-
-/** Kohaku's sync cache, namespaced per deployment so a redeployed pool (or a fresh fork) never reads stale state. */
-const storageFor = (cfg: Config) => {
-  const ns = `noren.kohaku.${cfg.chainId}.${cfg.deployment.pool.toLowerCase()}.${cfg.deployment.deploymentBlock}.`;
+/**
+ * Kohaku's sync cache, namespaced per deployment so a redeployed pool (or a fresh fork) never reads stale state, and per
+ * wallet for Privy wallets (the test wallet keeps its original namespace, so existing balances stay readable).
+ */
+const storageFor = (cfg: Config, wallet: string) => {
+  const ns = `noren.kohaku.${cfg.chainId}.${cfg.deployment.pool.toLowerCase()}.${cfg.deployment.deploymentBlock}.${wallet === "test" ? "" : wallet + "."}`;
   return {
     get: async (k: string) => { try { return localStorage.getItem(ns + k); } catch { return null; } },
     set: async (k: string, v: string) => { try { localStorage.setItem(ns + k, v); } catch { /* ignore */ } },
@@ -30,16 +22,18 @@ const storageFor = (cfg: Config) => {
 };
 
 export function makeWallet(cfg: Config) {
-  const s = stored();
-  const account = privateKeyToAccount(s.gasKey);
+  const account = activeAccount(), walletKey = activeKey();
   const chain = localFork(cfg.rpcUrl);
   const pub = createPublicClient({ chain, transport: http(cfg.rpcUrl) });
-  const wallet = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
+  const wallet = createWalletClient({ chain, transport: walletTransport(cfg.rpcUrl), account });
   const customer = createCustomer({
-    deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage: storageFor(cfg),
+    deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage: storageFor(cfg, walletKey),
     // Same-origin prover artifacts (served from /zk by this app): the browser makes no third-party request.
     artifactBaseUrl: `${location.origin}/zk`,
-    deriveAt: async (path) => keccak256(concatHex([s.seed, keccak256(toBytes(path))])),
+    deriveAt: async (path) => {
+      if (activeKey() !== walletKey) throw new Error("The active wallet changed; reopen this screen to use the new one");
+      return keccak256(concatHex([await kohakuSeed(), keccak256(toBytes(path))]));
+    },
   });
   return {
     address: account.address,

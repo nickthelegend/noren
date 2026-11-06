@@ -52,6 +52,16 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   /// @notice Timestamp of the first deposit: the start of the observed yield window.
   uint64 public firstDepositAt;
 
+  /// @dev Fee-per-share accumulator scale: USDG (6 dp) x 1e36 / share (24 dp).
+  uint256 internal constant ACC = 1e36;
+  /// @dev Realised maker fees per share up to the last mint or burn. Fills never change the share
+  /// supply, so checkpointing at every mint and burn attributes each fee to exactly the shares that
+  /// existed when it was booked.
+  uint256 internal _feeAcc;
+  uint256 internal _feesCheckpointed;
+  /// @notice The only address allowed to call `harvestUsdg` (NorenBorrow, for loans repaid by yield).
+  address public harvester;
+
   struct Stats {
     uint256 assetBalance; // raw asset units held
     uint256 usdgBalance; // USDG (6 decimals) held from ask-side sales
@@ -70,6 +80,8 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   event StrategyShipped(bytes32 indexed strategyHash, uint256 assetVirtual, uint256 usdgVirtual);
   event StrategyDocked(bytes32 indexed strategyHash);
   event RedeemedInKind(address indexed caller, address indexed receiver, address indexed owner, uint256 shares, uint256 assets, uint256 usdgOut);
+  event HarvesterSet(address indexed harvester);
+  event YieldHarvested(address indexed owner, address indexed receiver, uint256 shares, uint256 usdgOut);
 
   error NotSupported(address asset);
   error StrategyActive(bytes32 strategyHash);
@@ -78,6 +90,8 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
   error NotWethVault();
   error EthTransferFailed();
   error ZeroShares();
+  error NotHarvester();
+  error NotEnoughUsdg(uint256 requested, uint256 held);
 
   constructor(
     address owner_,
@@ -128,6 +142,12 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
     liquidity.remove(h);
     strategyHash = bytes32(0);
     emit StrategyDocked(h);
+  }
+
+  /// @notice Set the contract allowed to take realised fees out in USDG (NorenBorrow).
+  function setHarvester(address h) external onlyOwner {
+    harvester = h;
+    emit HarvesterSet(h);
   }
 
   // ---------------------------------------------------------------- ERC-4626
@@ -195,6 +215,22 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
     emit RedeemedInKind(msg.sender, receiver, owner_, shares, assets, usdgOut);
   }
 
+  /// @notice Harvester only: burn `owner_`'s shares worth exactly `usdgAmount` at the validated
+  /// Chainlink price (shares rounded up, in the remaining holders' favour) and pay that USDG from the
+  /// USDG the vault already holds. Used to take a loan's realised fee yield out without a sale.
+  /// Reverts when the vault holds less USDG than requested.
+  function harvestUsdg(uint256 usdgAmount, address receiver, address owner_) external nonReentrant returns (uint256 shares) {
+    if (msg.sender != harvester || msg.sender == address(0)) revert NotHarvester();
+    if (usdgAmount == 0) revert ZeroShares();
+    uint256 held = usdg.balanceOf(address(this));
+    if (usdgAmount > held) revert NotEnoughUsdg(usdgAmount, held);
+    shares = sharesForUsdg(usdgAmount);
+    if (owner_ != msg.sender) _spendAllowance(owner_, msg.sender, shares);
+    _burn(owner_, shares);
+    usdg.safeTransfer(receiver, usdgAmount);
+    emit YieldHarvested(owner_, receiver, shares, usdgAmount);
+  }
+
   /// @notice NAV in raw asset units: the asset held plus USDG converted at the validated Chainlink price.
   function totalAssets() public view override returns (uint256) {
     uint256 a = IERC20(asset()).balanceOf(address(this));
@@ -228,6 +264,26 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
     (uint256 a, uint256 u) = inKind(shares);
     if (a != 0) v = risk ? oracle.riskValueUsd8(asset(), a) : oracle.valueUsd8(asset(), a);
     if (u != 0) v += oracle.usdgToUsd8(u, Math.Rounding.Floor);
+  }
+
+  /// @notice Shares worth `usdgAmount` USDG at the validated Chainlink price, rounded up.
+  function sharesForUsdg(uint256 usdgAmount) public view returns (uint256) {
+    if (usdgAmount == 0) return 0;
+    uint256 usd8 = oracle.usdgToUsd8(usdgAmount, Math.Rounding.Ceil);
+    NorenAssetOracle.Price memory p = oracle.price(asset());
+    uint256 dec = IERC20Metadata(asset()).decimals();
+    uint256 assetUnits = usd8.mulDiv(10 ** dec * 1e18, p.usd8 * oracle.multiplier(asset()), Math.Rounding.Ceil);
+    return _convertToShares(assetUnits, Math.Rounding.Ceil);
+  }
+
+  /// @notice Realised maker fees earned per share since the vault opened (USDG x 1e36 per share).
+  /// A holder's fee yield between two readings = shares x (later - earlier) / 1e36, in USDG.
+  function feesPerShare() public view returns (uint256 acc) {
+    acc = _feeAcc;
+    uint256 supply = totalSupply();
+    if (supply == 0) return acc;
+    (uint256 fees,,) = feeBook();
+    if (fees > _feesCheckpointed) acc += (fees - _feesCheckpointed).mulDiv(ACC, supply);
   }
 
   function strategyHistory() external view returns (bytes32[] memory) {
@@ -273,6 +329,17 @@ contract NorenDepositVault is ERC4626, Ownable2Step, ReentrancyGuard {
     oracle.checkTransferable(asset(), caller, address(this));
     super._deposit(caller, receiver, assets, shares);
     _afterIntakeAccounting(assets);
+  }
+
+  /// @dev Checkpoint the fee accumulator before the share supply changes (mint or burn).
+  function _update(address from, address to, uint256 value) internal override {
+    if (from == address(0) || to == address(0)) {
+      (uint256 fees,,) = feeBook();
+      uint256 supply = totalSupply();
+      if (supply != 0 && fees > _feesCheckpointed) _feeAcc += (fees - _feesCheckpointed).mulDiv(ACC, supply);
+      _feesCheckpointed = fees;
+    }
+    super._update(from, to, value);
   }
 
   function _afterIntake(address receiver, uint256 assets, uint256 shares) internal {

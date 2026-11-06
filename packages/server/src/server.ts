@@ -9,6 +9,7 @@ import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork,
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
 import { assertRobinhoodFork, creditDrawProblem, ensureUniswapOnFork, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 import { AuthState } from './auth.ts';
+import { createPrivyVerifier } from './privy.ts';
 import { createPrivateRelay, type PrivateRelayOptions } from './private.ts';
 import { findStoreBySecret, mayAct, newSecretKey, publicStore, validName, validPayout, validateRedirect, validateMetadata, type Principal, type Store } from './stores.ts';
 
@@ -38,7 +39,7 @@ export function readableError(error: any): string {
   } catch { /* inspect the next cause */ }
   return raw.includes('Setup required') ? raw : 'Transaction rejected: ' + raw.slice(0, 180);
 }
-export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
+export type ServerOptions = { /** Privy app ID for "Sign in with Privy" (defaults to PRIVY_APP_ID); tokens are checked against Privy's public JWKS, no app secret. */ privyAppId?: string; deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
   /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
   mounts?: ((req: any, res: any) => Promise<boolean>)[];
   /** "Send privately": relay Kohaku withdrawals to any address (GET /private/relayer, POST /private/send). */
@@ -86,6 +87,7 @@ export function createMerchantServer(options: ServerOptions): Server {
   }
   const chain = localFork(options.rpcUrl);
   const publicClient: any = createPublicClient({ chain, transport: http(options.rpcUrl), cacheTime: 0 });
+  const privy = createPrivyVerifier(options.privyAppId ?? process.env.PRIVY_APP_ID ?? undefined);
   const auth = new AuthState(publicClient, options.deployment.chainId, ['localhost:5190', '127.0.0.1:5190', ...(process.env.NOREN_SIWE_DOMAINS ?? '').split(',').map(s => s.trim()).filter(Boolean)]);
   if (options.dev && (!loopback(options.rpcUrl) || options.deployment.chainId !== 5042002)) throw new Error('Setup required: dev endpoints require loopback RPC and fork chain 5042002');
   const devReady = options.dev ? assertLocalFork(options.rpcUrl) : Promise.resolve();
@@ -205,6 +207,8 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (privateRelay && await privateRelay.mount(req, res)) return;
       if (req.method === 'GET' && path === '/auth/nonce') return send(res, 200, { nonce: auth.nonce() });
       if (req.method === 'POST' && path === '/auth/siwe') { const b = await body(req); const result = await auth.siwe(b.message, b.signature); await saveSessions(); return send(res, 200, result); }
+      if (req.method === 'GET' && path === '/auth/privy') return send(res, 200, { configured: !!privy, ...(privy ? {} : { error: 'Setup required: PRIVY_APP_ID is not set on the Noren server' }) });
+      if (req.method === 'POST' && path === '/auth/privy') { const b = await body(req); try { const result = await auth.privy(privy, b.accessToken, b.message, b.signature); await saveSessions(); return send(res, 200, result); } catch (e: any) { const m = String(e?.message ?? e); return send(res, /^Setup required|^PrivyUnavailable/.test(m) ? 503 : 401, { error: m }); } }
       if (req.method === 'POST' && path === '/auth/logout') { const t = bearer(req); if (!t || !auth.address(t)) return send(res, 401, { error: 'Session required' }); auth.logout(t); await saveSessions(); return send(res, 200, { revoked: true }); }
       if (req.method === 'GET' && path === '/stores') { const p = principal(req); if (!p || p.kind !== 'session') return send(res, 401, { error: 'Session required' }); return send(res, 200, stores.filter(s => s.owner.toLowerCase() === p.address.toLowerCase()).map(publicStore)); }
       const byKey = /^\/stores\/by-key\/(pk_test_[0-9a-f]{32})$/.exec(path);

@@ -21,6 +21,7 @@ import { deploySettlementDesk, requestSettlement, startSettlementRelay } from '.
 import { relayDeposit, acrossDeposit } from '../packages/bridge-settlement/keeper/lib.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 import { deployXChain, startXChainRelay, type XChainDev, type XChainEntry } from './dev-xchain.ts';
+import { startSelfRepayFills } from './dev-selfrepay.ts';
 
 // Keys (World ID, 0G) from the worktree's .env, else the main checkout's. Loaded before any service starts; never printed.
 for (const f of ['.env', mainCheckoutEnv()]) if (f && existsSync(f)) { process.loadEnvFile(f); break; }
@@ -58,6 +59,11 @@ run(async () => {
   const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
   // Fork only: a repaid loan counts as a reputation milestone after 15 minutes instead of a day, so the film can show it.
   if (robinhood?.borrow) await forkLoanMilestone(robinhoodRpc, robinhood.borrow).then(() => console.log('NorenBorrow (fork): a loan counts as repaid-loan milestone after 15 min')).catch((e) => missing.push(`NorenBorrow fork params: ${e.message}`));
+  // Loans that pay themselves down: real Aqua fills against the vaults a new loan is locked in (fork only).
+  if (robinhood?.borrow && existsSync(snapshot)) {
+    try { const d = JSON.parse((await import('node:fs')).readFileSync(resolve('packages/robinhood/.fork/deployment.json'), 'utf8')); onStop(startSelfRepayFills(robinhoodRpc, d).stop); }
+    catch (e: any) { missing.push(`Demo fills: ${e.message}`); }
+  }
 
   let settle: { desk: Address; deployBlock: bigint; keeper: any; relay?: ReturnType<typeof startSettlementRelay> } | undefined;
   if (has('packages/bridge-settlement/src/NorenSettlementDesk.sol')) {

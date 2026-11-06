@@ -9,6 +9,7 @@ import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
 import { CCTP_CHAINS, CHAIN_MARK, crossChainPayments, type CrossChainPayment } from "./crosschain";
+import { privyActions } from "./signer";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard";
@@ -73,7 +74,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const setToken = (t: string) => { setTokenState(t); try { localStorage.setItem(TOKEN_KEY, t); } catch { /* private mode */ } };
 
   useEffect(() => { api.config().then(setCfg).catch((e) => setErr(msgOf(e))); }, []);
-  const signOut = () => { if (session) fetch(`${SERVER}/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${session.session}` } }).catch(() => {}); saveSession(null); setSession(null); setStores(null); go("#/dashboard"); };
+  const signOut = () => { if (session) fetch(`${SERVER}/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${session.session}` } }).catch(() => {}); if (session?.via === "privy") privyActions()?.logout().catch(() => {}); saveSession(null); setSession(null); setStores(null); go("#/dashboard"); };
   const refresh = useCallback(async () => {
     if (!cfg) return;
     try { setRows(await api.listInvoices(cfg.merchant) as Row[]); } catch (e) { setErr(msgOf(e)); }

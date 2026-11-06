@@ -1,5 +1,20 @@
 # Test results
 
+## self-repay: loans that pay themselves down (branch `self-repay` from `v3`, Nov 6 2026)
+
+`NorenBorrow.harvestToRepay` repays a loan with the realised Aqua fees its locked shares earned ([docs/EARN.md](docs/EARN.md#loans-that-pay-themselves-down)). The suites the change touches were rerun on the branch HEAD, one at a time:
+
+| Suite | Command | Result |
+|---|---|---|
+| Robinhood contracts, fresh mainnet fork | `NOREN_RH_TEST_PORT=8900 sh packages/robinhood/scripts/test-fork.sh` | **158 passed**, 11 suites (150 before + **8 new** in `NorenSelfRepay.t.sol`; no existing test changed) |
+| Robinhood SDK and underwriter on the rebuilt warmed snapshot (mainnet block 107689497) + live mainnet reads | `NOREN_RH_RPC=http://127.0.0.1:8902 pnpm --filter @noren/robinhood exec vitest run` | **21 passed**, 9 files (new: `sdk/test/selfrepay.fork.test.ts`) |
+| Robinhood SDK and web typecheck, web production build | `pnpm --filter @noren/robinhood typecheck`; `cd packages/web && pnpm exec tsc --noEmit -p . && pnpm exec vite build` | pass |
+| `pnpm e2e:credit` against this branch's `pnpm dev:all` (rebuilt snapshot) | `NOREN_MERCHANT_TOKEN=<printed> pnpm e2e:credit` | **8/8** in 26.4 s; CRE Robinhood → Arc in 6.0 s; 0.039949 NVDA at $188.34 filled by an Aqua maker (fee 0.0301 USDG) |
+
+So the total becomes **599 passed** (590 + 8 Foundry + 1 SDK fork test), 1 weekend-only skip.
+
+**Browser, built-in preview at 1440 and 375 px against this branch's `pnpm dev:all` (fresh browser test key, fork faucet):** deposit 1 NVDA and 0.9 ETH in Earn, lock both in Borrow, and the card reads "no fills since it was locked" with a disabled "No loan to pay down" button. Then borrow 500 USDG. dev:all's demo trader makes six real Aqua fills (ETH buys 0.2 and 0.1, a 0.1 sell-back; NVDA buys 0.5 and 0.25, a 0.25 sell-back), and the card's "Earned, not used yet" climbs live to 4.2528 USDG from 6 fills, both vaults already in USDG. **Use earnings to pay down loan** takes the debt from **500 to 495.7472 USDG** (fork tx `0x6131a9404add81e232dd3a7da4e27e8cd7ffcc0e95d179620b5b0b92ff623aee`), and the health factor goes from 3.72 to 3.75. The card then reads "Paid by your collateral's trading fees: 4.2528 USDG from 6 Aqua fills · 1 harvest", debt without earnings 500. There is no horizontal overflow at 375 px.
+
 ## v3: product polish (branch `v3`, Nov 6 2026)
 
 `v3` is `private-credit` plus the app Home, the four ways to pay, Uniswap v4 as the default swap route (live on Arc testnet), Aqua makers shown in Earn and Borrow, and the Robinhood ⇄ Arc bridge hero. Suites the changes touch were rerun on its HEAD, one at a time:
