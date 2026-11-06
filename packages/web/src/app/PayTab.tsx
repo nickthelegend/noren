@@ -1,9 +1,12 @@
 /**
  * Pay: open a Noren payment link (paste it, or pick an open link and scan its QR), your private balance in the
- * Kohaku privacy pool, and your Pay in 3 plans on NorenCredit with their next installment.
+ * Kohaku privacy pool, send privately to any address through Noren's relayer, and your Pay in 3 plans on NorenCredit
+ * with their next installment.
  */
 import { useEffect, useState } from "react";
-import { api, usdc, type InvoiceView } from "../api";
+import { api, SERVER, toBase, usdc, type InvoiceView } from "../api";
+import { jsonBigints } from "@noren/core";
+import { isAddress, type Address, type Hex } from "viem";
 import { msgOf } from "../ui";
 import { QR } from "../kit";
 import type { Wallet } from "./NorenApp";
@@ -33,6 +36,7 @@ export function PayTab({ w }: { w: Wallet }) {
         <p>{privErr ? `Couldn't read the pool: ${privErr}` : priv && priv.pending > 0n ? `+${usdc(priv.pending)} USDC being screened by the ASP` : "Pay any Noren checkout from here and the merchant never learns your wallet."}{w.arcUsdc !== null ? ` · Public Arc wallet: ${usdc(w.arcUsdc)} USDC` : ""}</p>
       </div>
       <PayLink w={w} />
+      <SendPrivately w={w} spendable={priv?.approved ?? null} />
       <Plans w={w} />
     </div>
   );
@@ -76,6 +80,64 @@ function PayLink({ w }: { w: Wallet }) {
           {qr && <div className="nk-qr" style={{ marginTop: 8 }}><QR text={linkFor(qr)} size={200} /><p className="nk-fine" style={{ textAlign: "center" }}>Scan with a phone camera to open this checkout</p></div>}
         </div>
       </div>
+    </Card>
+  );
+}
+
+type RelayQuote = { relayer: Address; feeRecipient: Address; feeBps: string; maxRelayFeeBps: string };
+/**
+ * Send privately: pay any address (a merchant or a person) from the private balance. The proof is made here; Noren's
+ * server relays Kohaku's Entrypoint.relay, so the recipient is paid by the pool and never sees this wallet.
+ */
+function SendPrivately({ w, spendable }: { w: Wallet; spendable: bigint | null }) {
+  const [to, setTo] = useState("");
+  const [amt, setAmt] = useState("");
+  const [quote, setQuote] = useState<RelayQuote | null>(null);
+  const [qErr, setQErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"proving" | "relaying" | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
+  useEffect(() => {
+    let on = true;
+    fetch(`${SERVER}/private/relayer`).then(async (r) => { const j = await r.json(); if (!r.ok) throw new Error(j.error ?? `relayer answered ${r.status}`); return j; })
+      .then((j) => on && (setQuote(j), setQErr(null))).catch((e) => on && setQErr(msgOf(e)));
+    return () => { on = false; };
+  }, []);
+  const amount = /^\d+(\.\d{0,6})?$/.test(amt) ? toBase(amt) : 0n;
+  const fee = quote ? (amount * BigInt(quote.feeBps)) / 10_000n : 0n;
+  const okTo = isAddress(to) && !/^0x0{40}$/i.test(to);
+  const tooMuch = spendable !== null && amount > spendable;
+  const send = async () => {
+    if (!quote || !okTo || amount <= 0n) return;
+    setNote(null); setBusy("proving");
+    try {
+      const { makeWallet } = await import("../wallet");
+      const t0 = performance.now();
+      const p = await makeWallet(w.cfg).customer.proveRelayedSend({ recipient: to as Address, amount, feeRecipient: quote.feeRecipient, relayFeeBps: BigInt(quote.feeBps) });
+      const secs = (performance.now() - t0) / 1000;
+      setBusy("relaying");
+      const r = await fetch(`${SERVER}/private/send`, { method: "POST", headers: { "content-type": "application/json" }, body: jsonBigints(p) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error ?? `relay failed (${r.status})`);
+      setNote({ t: <>Sent {usdc(j.received)} USDC to <span className="nk-mono">{shortHex(to, 6)}</span> from the pool (proof {secs.toFixed(1)} s on this device). Tx <TxLink chain="arc" cfg={w.cfg} hash={j.tx as Hex} />. Your address is not in it.</> });
+      setAmt(""); w.refresh();
+    } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
+  };
+  return (
+    <Card title="Send privately" sub="Pay any address from your private balance; they see the pool, not you">
+      {qErr ? <div className="nk-pad"><SetupCard title="Noren's relayer isn't reachable" text={qErr} /></div> : <>
+        <div className="nk-box">
+          <label htmlFor="nk-send-to">To</label>
+          <div className="nk-row"><input id="nk-send-to" className="nk-mono" placeholder="0x… a shop or a friend" value={to} onChange={(e) => setTo(e.target.value.trim())} autoComplete="off" spellCheck={false} /></div>
+          <div className="nk-sub"><span>{to && !okTo ? "That isn't an address" : "Any address on Arc"}</span><span /></div>
+        </div>
+        <div className="nk-box">
+          <label htmlFor="nk-send-amt">Amount</label>
+          <div className="nk-row"><input id="nk-send-amt" inputMode="decimal" style={{ fontSize: 18, fontWeight: 500 }} placeholder="0.00" value={amt} onChange={(e) => setAmt(e.target.value.trim())} autoComplete="off" /><span className="lg-row"><Mark id="USDC" size={18} />USDC</span></div>
+          <div className="nk-sub"><span>{tooMuch ? "More than your private balance" : quote ? `Relayer fee ${Number(quote.feeBps) / 100}%${amount > 0n ? ` · they receive ${usdc(amount - fee)} USDC` : ""}` : "Reading the relayer…"}</span><span>{spendable !== null ? `${usdc(spendable)} private` : ""}</span></div>
+        </div>
+        <button className="nk-cta" disabled={!!busy || !quote || !okTo || amount <= 0n || tooMuch} onClick={send}>{busy === "proving" ? <><Spin /> Proving on this device…</> : busy === "relaying" ? <><Spin /> Noren is relaying…</> : "Send privately"}</button>
+        <p className="nk-fine">One spend moves one private note: the amount must fit in a single deposit you made. Anything left stays private as change.</p>
+      </>}
+      {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
     </Card>
   );
 }
