@@ -5,3 +5,4 @@ contracts/broadcast/
 node_modules/
 cre/xchain-aqua/node_modules/
 cre/xchain-aqua/config.local-fork.json
+cre/xchain-aqua/.cre_build_tmp.js
