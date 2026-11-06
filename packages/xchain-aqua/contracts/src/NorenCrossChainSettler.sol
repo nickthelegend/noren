@@ -25,13 +25,22 @@ interface INorenAquaOrderHandler {
     returns (bool filled, uint256 amountOut, bytes32 orderId);
 }
 
+/// @notice The parts of NorenArcActionRouter (packages/ccip, live on Arc Testnet) the settler uses.
+interface INorenArcActionRouter {
+  function aquaOrders(bytes32 ref)
+    external
+    view
+    returns (address beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bool open, bytes memory params);
+  function settleAquaOrder(bytes32 ref, address to) external;
+}
+
 /// @title NorenCrossChainSettler
 /// @notice Destination side of Noren cross-chain Aqua, on Arc (the liquidity hub). Makers keep
 /// USDC (or EURC) in their own wallets and ship 1inch Aqua strategies whose SwapVM program is the
 /// Chainlink-pegged NorenOraclePeg instruction. One maker wallet backs strategies for orders from
 /// every source chain: Aqua's virtual balances let the same USDC serve them all.
 ///
-/// Two ways in, one fill path:
+/// Three ways in, one fill path:
 ///  1. Escrowed orders (`onReport` / `receiveXChain`, payload ORDER). The taker's tokens stay locked
 ///     in a NorenCrossChainEscrow on the source chain (a Robinhood Stock Token, WETH on Base...).
 ///     The settler mints a NorenEscrowReceipt for exactly the escrowed amount, swaps it through the
@@ -39,8 +48,10 @@ interface INorenAquaOrderHandler {
 ///     same transaction and emits a FILLED message. The escrow then releases the locked tokens to
 ///     the maker's payout address on the source chain. The source chain's Chainlink round rides
 ///     along with the order and is written to a NorenRelayedFeed that the strategy reads.
-///  2. Delivered orders (`fillDelivered`, called by the Arc action router after CCTP or CCIP).
-///     The input tokens (USDC minted by CCTP) are already on Arc and are swapped directly.
+///  2. Orders held by the Noren Arc action router (`fillFromActionRouter`, or a CRE ROUTER_ORDER
+///     report): action kind 3 AQUA_ORDER, USDC delivered by CCTP V2 or instructions over CCIP. The
+///     settler, as the router's aquaOperator, takes the held funds and swaps them in one call.
+///  3. Push-style delivery (`fillDelivered`): a transport adapter that approved the input tokens.
 ///
 /// Safety: every order settles at most once (None -> Filled | Expired); the order id commits to both
 /// chains and contracts; the strategy must belong to the maker the taker named; fills are
@@ -62,6 +73,9 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
   uint16 internal constant TAKER_TRANSFER_FROM_AND_AQUA_PUSH = 0x0040;
   uint8 internal constant FLAG_UI_MULTIPLIER = 0x01;
   uint8 internal constant FLAG_MARKET_HOURS = 0x02;
+  uint8 internal constant MODE_ESCROWED = 0;
+  uint8 internal constant MODE_PULL = 1;
+  uint8 internal constant MODE_ACTION_ROUTER = 2;
 
   enum Status {
     None,
@@ -182,6 +196,7 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
   error ReceivedShort(uint256 expected, uint256 received);
   error BadMessage(uint8 kind);
   error ZeroAddress();
+  error RouterOrderNotOpen(address actionRouter, bytes32 ref);
 
   constructor(address owner_, address forwarder_, IAqua aqua_, ISwapVMRouter router_) Ownable(owner_) {
     if (forwarder_ == address(0) || address(aqua_) == address(0) || router_.AQUA() != address(aqua_)) revert BadConfig();
@@ -275,6 +290,10 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
     if (kind == XChainMessages.ORDER) {
       (, CrossChainOrder memory o, PriceRound memory p) = XChainMessages.decodeOrder(payload);
       _fillEscrowed(o, p, srcChainId, srcSender);
+    } else if (kind == XChainMessages.ROUTER_ORDER && srcSender == address(0)) {
+      // CRE saw AquaOrderOpened on the Arc action router; the fill itself is permissionless.
+      (, address actionRouter, bytes32 ref) = abi.decode(payload, (uint8, address, bytes32));
+      _fillFromActionRouter(actionRouter, ref);
     } else if (kind == XChainMessages.PRICE && srcSender == address(0)) {
       // Price-only reports come from CRE (it read the source feed); transports can't send them.
       (address feed, PriceRound memory p) = XChainMessages.decodePrice(payload);
@@ -306,7 +325,7 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
       if (stored && (r.flags & FLAG_UI_MULTIPLIER) != 0) NorenEscrowReceipt(r.inToken).setUiMultiplier(p.uiMultiplier);
     }
 
-    try this.executeFill(o.strategyHash, r.inToken, r.outToken, o.amountIn, o.minAmountOut, o.recipient, true, address(0)) returns (
+    try this.executeFill(o.strategyHash, r.inToken, r.outToken, o.amountIn, o.minAmountOut, o.recipient, MODE_ESCROWED, address(0), bytes32(0)) returns (
       uint256 amountOut
     ) {
       orderStatus[id] = Status.Filled;
@@ -368,6 +387,32 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
     if (!transports[msg.sender]) revert NotTransport(msg.sender);
     AquaOrderParams memory a = abi.decode(params, (AquaOrderParams));
     orderId = keccak256(abi.encode(block.chainid, address(this), msg.sender, tokenIn, amountIn, beneficiary, ref, a));
+    (filled, amountOut) = _fillDeliveredCore(orderId, tokenIn, amountIn, a, MODE_PULL, msg.sender, ref);
+  }
+
+  /// @notice Fill an AQUA_ORDER (action kind 3) held by the Noren Arc action router under `ref`
+  /// (USDC delivered by CCTP V2, or instructions over CCIP). The settler must be the router's
+  /// aquaOperator. In one call it takes the held funds with settleAquaOrder(ref, settler) and swaps
+  /// them through the maker's strategy, paying tokenOut to the order's recipient. If anything fails,
+  /// everything rolls back and the order stays open in the router (the beneficiary can
+  /// cancelAquaOrder). Anyone may call it, or CRE through a ROUTER_ORDER report.
+  function fillFromActionRouter(address actionRouter, bytes32 ref) external nonReentrant returns (bool filled, uint256 amountOut, bytes32 orderId) {
+    return _fillFromActionRouter(actionRouter, ref);
+  }
+
+  function _fillFromActionRouter(address actionRouter, bytes32 ref) internal returns (bool filled, uint256 amountOut, bytes32 orderId) {
+    if (!transports[actionRouter]) revert NotTransport(actionRouter);
+    (address beneficiary, address token, uint256 amount,,, bool open, bytes memory params) = INorenArcActionRouter(actionRouter).aquaOrders(ref);
+    if (!open) revert RouterOrderNotOpen(actionRouter, ref);
+    AquaOrderParams memory a = abi.decode(params, (AquaOrderParams));
+    orderId = keccak256(abi.encode(block.chainid, address(this), actionRouter, ref, beneficiary));
+    (filled, amountOut) = _fillDeliveredCore(orderId, token, amount, a, MODE_ACTION_ROUTER, actionRouter, ref);
+  }
+
+  function _fillDeliveredCore(bytes32 orderId, address tokenIn, uint256 amountIn, AquaOrderParams memory a, uint8 mode, address payer, bytes32 ref)
+    internal
+    returns (bool, uint256)
+  {
     if (orderStatus[orderId] != Status.None) revert AlreadySettled(orderId, orderStatus[orderId]);
     bytes32 key = routeKey(0, tokenIn, a.tokenOut);
     Route memory r = _routes[key];
@@ -381,26 +426,25 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
       else if (s.maker != a.maker) reason = abi.encodeWithSelector(WrongMaker.selector, s.maker, a.maker);
       else if (s.routeKey != key) reason = abi.encodeWithSelector(WrongStrategy.selector, a.strategyHash, key);
       else {
-        try this.executeFill(a.strategyHash, tokenIn, a.tokenOut, amountIn, a.minAmountOut, a.recipient, false, msg.sender) returns (
-          uint256 out
-        ) {
+        try this.executeFill(a.strategyHash, tokenIn, a.tokenOut, amountIn, a.minAmountOut, a.recipient, mode, payer, ref) returns (uint256 out) {
           orderStatus[orderId] = Status.Filled;
           _record(s, orderId, a.strategyHash, a.srcChainId, a.recipient, a.tokenOut, amountIn, out, true);
-          return (true, out, orderId);
+          return (true, out);
         } catch (bytes memory why) {
           reason = why;
         }
       }
     }
-    // Nothing was pulled: the caller keeps the funds for the beneficiary.
+    // Nothing was taken: the caller (or the router) keeps the funds for the beneficiary.
     emit FillRejected(orderId, reason);
-    return (false, 0, orderId);
+    return (false, 0);
   }
 
   // ================================================================ fill (self-call, so a failure rolls everything back)
 
-  /// @dev Only callable by this contract. Escrowed: mint the receipt, swap, burn it from the maker.
-  /// Delivered: pull the input from `payer`, swap.
+  /// @dev Only callable by this contract. MODE_ESCROWED: mint the receipt, swap, burn it from the
+  /// maker. MODE_PULL: pull the input from `payer`. MODE_ACTION_ROUTER: take the funds the Arc action
+  /// router holds under `ref` (settleAquaOrder). Then swap through the maker's strategy.
   function executeFill(
     bytes32 strategyHash,
     address inToken,
@@ -408,17 +452,20 @@ contract NorenCrossChainSettler is XChainInbox, Ownable2Step, ReentrancyGuard, I
     uint256 amountIn,
     uint256 minAmountOut,
     address recipient,
-    bool escrowed,
-    address payer
+    uint8 mode,
+    address payer,
+    bytes32 ref
   ) external returns (uint256 amountOut) {
     if (msg.sender != address(this)) revert OnlySelf();
     Strategy storage s = _strategies[strategyHash];
+    bool escrowed = mode == MODE_ESCROWED;
     if (escrowed) {
       NorenEscrowReceipt(inToken).mint(address(this), amountIn);
       NorenEscrowReceipt(inToken).setUnlocked(true);
     } else {
       uint256 before = IERC20(inToken).balanceOf(address(this));
-      IERC20(inToken).safeTransferFrom(payer, address(this), amountIn);
+      if (mode == MODE_PULL) IERC20(inToken).safeTransferFrom(payer, address(this), amountIn);
+      else INorenArcActionRouter(payer).settleAquaOrder(ref, address(this));
       uint256 got = IERC20(inToken).balanceOf(address(this)) - before;
       if (got != amountIn) revert ReceivedShort(amountIn, got);
     }

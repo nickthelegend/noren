@@ -24,12 +24,14 @@ struct PriceRound {
 ///   ORDER_DELIVERED  adapter  -> settler   abi.encode(2, CrossChainOrder, PriceRound)  tokenIn arrives with it
 ///   FILLED / EXPIRED settler  -> escrow    abi.encode(kind, Settlement fields)
 ///   PRICE            CRE      -> settler   abi.encode(5, address relayedFeed, PriceRound)
+///   ROUTER_ORDER     CRE      -> settler   abi.encode(6, address actionRouter, bytes32 ref)  fill an order the Arc action router holds
 library XChainMessages {
   uint8 internal constant ORDER = 1;
   uint8 internal constant ORDER_DELIVERED = 2;
   uint8 internal constant FILLED = 3;
   uint8 internal constant EXPIRED = 4;
   uint8 internal constant PRICE = 5;
+  uint8 internal constant ROUTER_ORDER = 6;
 
   struct Settlement {
     uint8 kind; // FILLED or EXPIRED

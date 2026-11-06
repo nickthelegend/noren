@@ -175,3 +175,102 @@ contract XChainDeliveredTest is XChainForkBase {
     assertFalse(filled);
   }
 }
+
+interface IArcActionRouter {
+  function execute(bytes32 rail, bytes32 msgId, uint64 source, address sourceSender, address token, uint256 amount, bytes calldata action)
+    external
+    returns (bool ok);
+  function setAquaOperator(address operator) external;
+  function aquaOrders(bytes32 ref)
+    external
+    view
+    returns (address beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bool open, bytes memory params);
+  function cancelAquaOrder(bytes32 ref) external;
+  function owner() external view returns (address);
+}
+
+/// @notice The LIVE NorenArcActionRouter on Arc Testnet (packages/ccip, 0x3D2d…A7A4), forked: an
+/// AQUA_ORDER (action kind 3) lands there from a rail and the settler fills it against the maker.
+/// On the fork the rail's delivery is played by impersonating the live NorenCcipGateway (its
+/// registered CCIP rail) and minting the delivered USDC to the router with the fork-only USDC shim;
+/// the router owner is impersonated to set the settler as aquaOperator.
+contract XChainActionRouterTest is XChainForkBase {
+  using Math for uint256;
+
+  IArcActionRouter internal constant ROUTER = IArcActionRouter(0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4);
+  address internal constant CCIP_GATEWAY = 0x55005e60b4d4Bed4156BC635B1342bC55d9B6247;
+  bytes32 internal constant RAIL_CCIP = keccak256('CCIP');
+  PriceRound internal eur;
+
+  function setUp() public {
+    vm.createSelectFork(vm.envOr('ARC_MAINNET_RPC', string('https://arc-rpc.publicnode.com')));
+    (eur.roundId, eur.answer, eur.startedAt, eur.updatedAt, eur.answeredInRound) = IAggregatorV3(XC.ARC_MAINNET_EUR_USD).latestRoundData();
+    eur.decimals = 8;
+    eur.uiMultiplier = 1e18;
+    eur.sourceFeed = XC.ARC_MAINNET_EUR_USD;
+    uint256 mainnetNow = block.timestamp;
+    _setUpArc();
+    if (block.timestamp < mainnetNow) vm.warp(mainnetNow);
+    require(address(ROUTER).code.length != 0, 'live action router missing on the fork');
+    vm.prank(XC.ARC_FORWARDER);
+    arc.settler.onReport('', abi.encode(XChainMessages.PRICE, address(arc.eurUsd), eur));
+    arc.settler.setTransport(address(ROUTER), true);
+    vm.prank(ROUTER.owner());
+    ROUTER.setAquaOperator(address(arc.settler));
+  }
+
+  function _land(bytes32 ref, uint256 amount, uint256 minOut) internal {
+    bytes memory params = abi.encode(
+      NorenCrossChainSettler.AquaOrderParams({
+        srcChainId: XC.BASE_SEPOLIA,
+        tokenOut: XC.ARC_EURC,
+        minAmountOut: minOut,
+        recipient: recipient,
+        maker: maker,
+        strategyHash: eurcStrategy,
+        fillDeadline: uint64(block.timestamp + 10 minutes),
+        nonce: uint256(ref)
+      })
+    );
+    IForkUSDC(XC.ARC_USDC).mint(address(ROUTER), amount); // what the rail delivers (fork shim)
+    vm.prank(CCIP_GATEWAY);
+    assertTrue(ROUTER.execute(RAIL_CCIP, keccak256(abi.encode(ref)), XC.BASE_SEPOLIA, recipient, XC.ARC_USDC, amount, abi.encode(uint8(3), recipient, ref, params)));
+    (,,,,, bool open,) = ROUTER.aquaOrders(ref);
+    assertTrue(open, 'router holds the AQUA_ORDER');
+  }
+
+  function test_orderLandingInTheLiveActionRouterIsFilledByTheArcMaker() public {
+    bytes32 ref = keccak256('base-sepolia-order-1');
+    _land(ref, 250e6, 1);
+    uint256 makerEurc = IERC20(XC.ARC_EURC).balanceOf(maker);
+    // Delivered through a CRE ROUTER_ORDER report (anyone could also call fillFromActionRouter).
+    vm.prank(XC.ARC_FORWARDER);
+    arc.settler.onReport('', abi.encode(XChainMessages.ROUTER_ORDER, address(ROUTER), ref));
+    uint256 expected = uint256(250e6).mulDiv(1e8 * 10_000, uint256(eur.answer) * 10_040);
+    assertEq(IERC20(XC.ARC_EURC).balanceOf(recipient), expected, 'EURC to the beneficiary');
+    assertEq(makerEurc - IERC20(XC.ARC_EURC).balanceOf(maker), expected);
+    (,,,,, bool open,) = ROUTER.aquaOrders(ref);
+    assertFalse(open, 'router closed the order as filled');
+    assertEq(_usdc(maker), MAKER_USDC + 250e6, 'maker got the delivered USDC');
+  }
+
+  function test_failedFillLeavesTheOrderOpenForTheBeneficiary() public {
+    bytes32 ref = keccak256('base-sepolia-order-2');
+    _land(ref, 100e6, 1_000_000e6); // min out far above the peg
+    (bool filled,,) = arc.settler.fillFromActionRouter(address(ROUTER), ref);
+    assertFalse(filled);
+    (,,,,, bool open,) = ROUTER.aquaOrders(ref);
+    assertTrue(open, 'still open in the router');
+    uint256 before = _usdc(recipient);
+    vm.prank(recipient);
+    ROUTER.cancelAquaOrder(ref);
+    assertEq(_usdc(recipient) - before, 100e6, 'beneficiary took the USDC back');
+    vm.expectRevert(abi.encodeWithSelector(NorenCrossChainSettler.RouterOrderNotOpen.selector, address(ROUTER), ref));
+    arc.settler.fillFromActionRouter(address(ROUTER), ref);
+  }
+
+  function test_unknownRouterIsRefused() public {
+    vm.expectRevert(abi.encodeWithSelector(XChainInbox.NotTransport.selector, address(this)));
+    arc.settler.fillFromActionRouter(address(this), bytes32(0));
+  }
+}

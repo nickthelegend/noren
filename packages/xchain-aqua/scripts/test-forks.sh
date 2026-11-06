@@ -22,4 +22,4 @@ stop_pid "$RH_PID"
 echo "== phase 2: Arc Testnet fork + Base Sepolia fork" >&2
 start_base
 echo "   Base Sepolia fork block $BASE_FORK_BLOCK" >&2
-NOREN_XCHAIN_ARC_RPC=$ARC NOREN_XCHAIN_BASE_RPC=$BASE forge test --match-contract 'XChainBaseArcTest|XChainDeliveredTest' "$@"
+NOREN_XCHAIN_ARC_RPC=$ARC NOREN_XCHAIN_BASE_RPC=$BASE forge test --match-contract 'XChainBaseArcTest|XChainDeliveredTest|XChainActionRouterTest' "$@"
