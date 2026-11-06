@@ -1,0 +1,28 @@
+{
+  "name": "@noren/cctp",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./sdk/index.ts"
+  },
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test && vitest run",
+    "test:sol": "forge test",
+    "test:sdk": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "bridge": "tsx scripts/bridge.ts",
+    "deploy": "tsx scripts/deploy.ts"
+  },
+  "dependencies": {
+    "viem": "2.51.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.7",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}
