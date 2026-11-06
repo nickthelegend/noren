@@ -155,14 +155,14 @@ export function Checkout({ id }: { id: string }) {
           ) : settled ? (
             <div className="co-done">
               <div className="co-check" aria-hidden><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="m15 27 7.5 7.5L38 19" /></svg></div>
-              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : drawnOnCredit && view?.method !== "stocks" && view?.method !== "usdc" ? <>Paid <em>later</em>, privately</> : view?.method === "stocks" ? <>Paid with <em>{view.stock?.asset?.toLowerCase() === "0x0bd7d308f8e1639fab988df18a8011f41eacad73" ? "ETH" : "stocks"}</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
+              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : drawnOnCredit && view?.method !== "stocks" && view?.method !== "usdc" ? <>Paid <em>later</em>, privately</> : view?.method === "stocks" ? <>Paid with <em>{assetSym(view.stock?.asset) === "ETH" ? "ETH" : assetSym(view.stock?.asset) === "USDG" ? "USDG" : "stocks"}</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
               <p>{usdc(view?.invoice.amount)} USDC to {shop}.{view?.status === "refunded" && ` ${usdc(view.refundAmount)} USDC came back to your private refund inbox.`}</p>
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
                 {total && <><dt>Click to paid</dt><dd>{total.toFixed(1)} s</dd></>}
                 <dt>Transaction</dt><dd><TxLink chain={view?.method === "stocks" ? "robinhood" : "arc"} cfg={cfg} hash={view?.paymentTx} n={8} /></dd>
                 {view?.method === "stocks" && view.stock ? <>
-                  <dt>You paid</dt><dd className="lg-row">{stockSym(view.stock.asset) && <Mark id={stockSym(view.stock.asset)!} size={16} />}{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(view.stock.asset) ?? "units"} at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
+                  <dt>You paid</dt><dd className="lg-row">{stockSym(view.stock.asset) && <Mark id={stockSym(view.stock.asset)!} size={16} />}{stockSym(view.stock.asset) === "USDG" ? `${usdc(view.invoice.amount)} USDG, no conversion` : `${(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} ${stockSym(view.stock.asset) ?? "units"} at $${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}`}</dd>
                   <dt>Private</dt><dd>no: paid from your Robinhood wallet</dd>
                 </> : view?.method === "usdc" ? <>
                   <dt>Paid from</dt><dd>your wallet on Arc</dd>
