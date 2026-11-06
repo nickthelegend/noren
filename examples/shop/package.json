@@ -1,0 +1,31 @@
+{
+  "name": "@noren-examples/shop",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Aubelle: a demo fashion boutique that takes payment with the Noren SDK",
+  "scripts": {
+    "dev": "vite --port 8781 --strictPort",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "start": "tsx server/index.ts",
+    "test": "tsx --test server/*.test.ts"
+  },
+  "dependencies": {
+    "@noren/core": "link:../../packages/core"
+  },
+  "devDependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource/instrument-serif": "5.3.0",
+    "@types/node": "24.10.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "viem": "2.51.3",
+    "vite": "5.4.11"
+  }
+}
