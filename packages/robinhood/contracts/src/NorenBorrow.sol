@@ -26,6 +26,11 @@ import {INorenLiquidity} from './interfaces/IAquaSwapVM.sol';
 ///   debt and sells the asset to Aqua makers through NorenLiquidity.liquidate, the same path as
 ///   NorenCredit.liquidatePlanViaAqua: proceeds to the lender pool, a 5% bonus in collateral to the
 ///   keeper, the rest back to the borrower. Debt left with no collateral is written off as bad debt.
+/// - Loans that pay themselves down (`harvestToRepay`): the realised Aqua maker fees a position's
+///   locked shares earned since it locked them (or since the last harvest) are taken out of the
+///   vault in USDG and repay the debt. Anyone may call it as a keeper; the USDG goes only to the
+///   lender pool against this account's debt, the principal shares stay locked, and the health
+///   factor can only improve.
 /// This contract is the lender pool's receivables source: NorenCredit's plus outstanding loans.
 contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INorenBorrowRecord {
   using SafeERC20 for IERC20;
@@ -36,6 +41,10 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   uint256 internal constant YEAR = 365 days;
   uint16 public constant MAX_LTV_BPS = 8_000;
   uint8 public constant MAX_VAULTS = 8;
+  /// @dev Matches NorenDepositVault's fee-per-share scale.
+  uint256 internal constant ACC = 1e36;
+  /// @notice Worst price a harvest may accept when it has to sell the asset part to Aqua makers.
+  uint16 public constant HARVEST_MAX_SLIPPAGE_BPS = 300;
 
   struct Account {
     uint256 scaledDebt; // debt / borrowIndex (RAY)
@@ -76,6 +85,16 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   uint256 public interestPaidUsdg;
   uint256 public badDebtUsdg;
 
+  /// @notice Vault fees-per-share at the position's last settlement (lock, unlock, harvest).
+  mapping(address account => mapping(address vault => uint256)) public feeIndexOf;
+  /// @notice Realised fee yield (USDG) settled on the locked shares and not yet harvested.
+  mapping(address account => mapping(address vault => uint256)) internal _pendingYield;
+  /// @notice The vault's fill count when this position started earning or was last harvested.
+  mapping(address account => mapping(address vault => uint256)) public fillMarkOf;
+  /// @notice USDG of debt repaid by harvested yield, per account and in total.
+  mapping(address account => uint256) public yieldRepaidUsdg;
+  uint256 public totalYieldRepaidUsdg;
+
   event VaultAdded(address indexed vault, address indexed asset);
   event ParamsSet(uint16 liquidationLtvBps, uint16 liquidationBonusBps, uint16 borrowRateBps, uint256 minMilestonePrincipal, uint32 minMilestoneAge);
   event LiquiditySet(address indexed liquidity);
@@ -95,6 +114,17 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     uint256 badDebtUsdg
   );
   event CollateralCredited(address indexed account, address indexed asset, uint256 amount);
+  /// @notice `usdg` of `account`'s debt repaid from the realised fees of its locked `vault` shares
+  /// (`shares` redeemed, `fills` = vault fills since the position's previous harvest or lock).
+  event YieldRepaid(
+    address indexed account,
+    address indexed vault,
+    address indexed keeper,
+    uint256 usdg,
+    uint256 debtAfter,
+    uint256 shares,
+    uint256 fills
+  );
 
   error NotVault(address vault);
   error TooManyVaults();
@@ -106,6 +136,8 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   error NoLiquidity();
   error NothingToClaim();
   error BadConfig();
+  error NoYield();
+  error HealthWorse(uint256 before, uint256 afterHarvest);
 
   constructor(
     address owner_,
@@ -159,6 +191,7 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   function lock(NorenDepositVault v, uint256 shares) external nonReentrant {
     _requireVault(v);
     if (shares == 0) revert ZeroAmount();
+    _settleYield(msg.sender, v);
     IERC20(address(v)).safeTransferFrom(msg.sender, address(this), shares);
     lockedShares[msg.sender][address(v)] += shares;
     emit Locked(msg.sender, address(v), shares);
@@ -172,6 +205,9 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     if (shares == 0) revert ZeroAmount();
     if (shares > locked) revert InsufficientLocked(shares, locked);
     _accrue();
+    _settleYield(msg.sender, v);
+    // The leaving shares carry their part of the unharvested yield in their value.
+    _pendingYield[msg.sender][address(v)] = _pendingYield[msg.sender][address(v)].mulDiv(locked - shares, locked);
     lockedShares[msg.sender][address(v)] = locked - shares;
     uint256 debt = debtOf(msg.sender);
     if (debt != 0) {
@@ -228,6 +264,9 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     uint256 shares = lockedShares[account][address(v)];
     if (shares == 0) revert InsufficientLocked(1, 0);
     lockedShares[account][address(v)] = 0;
+    // Seized shares are redeemed with their unharvested yield in them.
+    _pendingYield[account][address(v)] = 0;
+    feeIndexOf[account][address(v)] = v.feesPerShare();
     uint256 debt = debtOf(account);
     (uint256 amt, uint256 u) = v.redeemInKind(shares, address(this), address(this));
     address asset = v.asset();
@@ -267,6 +306,51 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     emit LoanLiquidated(account, address(v), msg.sender, shares, repaidUsdg, sold, bonus, bad);
   }
 
+  /// @notice Repay `account`'s debt with the realised Aqua maker fees its locked shares earned since
+  /// they were locked or last harvested. Anyone may call it (a keeper); the caller receives nothing.
+  /// Per vault: the yield is taken in USDG straight from the vault when it holds enough USDG
+  /// (`harvestUsdg`, shares worth exactly the yield at Chainlink, rounded up); otherwise shares worth
+  /// the yield are redeemed in kind and their asset part is sold to the best Aqua maker
+  /// (NorenLiquidity.sellExactAsset, within HARVEST_MAX_SLIPPAGE_BPS of Chainlink). Only yield
+  /// shares leave; reverts with NoYield when nothing was earned, NoDebt without a loan, and
+  /// HealthWorse if the health factor would drop. Yield above the debt stays pending.
+  function harvestToRepay(address account) external nonReentrant returns (uint256 repaidUsdg) {
+    _accrue();
+    uint256 debt = debtOf(account);
+    if (debt == 0) revert NoDebt();
+    uint256 hf0 = healthFactor(account);
+    for (uint256 i; i < _vaults.length && repaidUsdg < debt; ++i) {
+      NorenDepositVault v = _vaults[i];
+      if (lockedShares[account][address(v)] == 0 && _pendingYield[account][address(v)] == 0) continue;
+      _settleYield(account, v);
+      uint256 y = _pendingYield[account][address(v)];
+      if (y == 0 || lockedShares[account][address(v)] == 0) continue;
+      uint256 take = Math.min(y, debt - repaidUsdg);
+      (uint256 got, uint256 shares) = _harvest(account, v, take);
+      if (got == 0) continue;
+      _pendingYield[account][address(v)] = y - take;
+      (, uint256 fillsNow,) = v.feeBook();
+      uint256 fills = fillsNow - fillMarkOf[account][address(v)];
+      fillMarkOf[account][address(v)] = fillsNow;
+      if (got > debt - repaidUsdg) {
+        // a sale can only return less than the yield, but never repay more than is owed
+        _sendOrCredit(address(usdg), account, got - (debt - repaidUsdg));
+        got = debt - repaidUsdg;
+      }
+      repaidUsdg += got;
+      emit YieldRepaid(account, address(v), msg.sender, got, debt - repaidUsdg, shares, fills);
+    }
+    if (repaidUsdg == 0) revert NoYield();
+    usdg.safeTransfer(address(lender), repaidUsdg);
+    uint256 interest = _reduceDebt(account, repaidUsdg, debt);
+    yieldRepaidUsdg[account] += repaidUsdg;
+    totalYieldRepaidUsdg += repaidUsdg;
+    emit Repaid(account, msg.sender, repaidUsdg, interest, debt - repaidUsdg);
+    if (repaidUsdg == debt) _closeLoan(account);
+    uint256 hf1 = healthFactor(account);
+    if (hf1 < hf0) revert HealthWorse(hf0, hf1);
+  }
+
   /// @notice Withdraw tokens that could not be pushed (e.g. a blocklisted Stock Token account).
   function claim(address asset) external nonReentrant {
     uint256 amt = claimable[msg.sender][asset];
@@ -276,6 +360,29 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   }
 
   // ================================================================ views
+
+  /// @notice Realised fee yield (USDG) on `who`'s locked `v` shares not yet harvested, and the
+  /// vault's fills since the position started earning or was last harvested.
+  function yieldOf(address who, NorenDepositVault v) public view returns (uint256 usdgAmount, uint256 fills) {
+    uint256 locked = lockedShares[who][address(v)];
+    usdgAmount = _pendingYield[who][address(v)];
+    if (locked == 0) return (usdgAmount, 0);
+    usdgAmount += locked.mulDiv(v.feesPerShare() - feeIndexOf[who][address(v)], ACC);
+    (, uint256 f,) = v.feeBook();
+    fills = f - fillMarkOf[who][address(v)];
+  }
+
+  /// @notice What `harvestToRepay(who)` would repay now (before any sale spread): the unharvested
+  /// yield over every locked vault, capped at the debt.
+  function previewYieldRepay(address who) external view returns (uint256 usdgAmount, uint256 fills, uint256 debtUsdg) {
+    for (uint256 i; i < _vaults.length; ++i) {
+      (uint256 y, uint256 f) = yieldOf(who, _vaults[i]);
+      usdgAmount += y;
+      fills += f;
+    }
+    debtUsdg = debtOf(who);
+    if (usdgAmount > debtUsdg) usdgAmount = debtUsdg;
+  }
 
   function vaults() external view returns (NorenDepositVault[] memory) {
     return _vaults;
@@ -403,6 +510,45 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     if (a.scaledDebt == 0 && a.principal != 0) {
       totalPrincipal -= a.principal;
       a.principal = 0;
+    }
+  }
+
+  /// @dev Move the yield earned on `who`'s locked `v` shares since the last settlement into pending.
+  function _settleYield(address who, NorenDepositVault v) internal {
+    uint256 acc = v.feesPerShare();
+    uint256 locked = lockedShares[who][address(v)];
+    if (locked != 0) {
+      _pendingYield[who][address(v)] += locked.mulDiv(acc - feeIndexOf[who][address(v)], ACC);
+    } else if (_pendingYield[who][address(v)] == 0) {
+      (, uint256 f,) = v.feeBook();
+      fillMarkOf[who][address(v)] = f;
+    }
+    feeIndexOf[who][address(v)] = acc;
+  }
+
+  /// @dev Take `take` USDG of yield out of `who`'s locked `v` shares. Returns the USDG received and
+  /// the shares redeemed (never more than the position's locked shares).
+  function _harvest(address who, NorenDepositVault v, uint256 take) internal returns (uint256 got, uint256 shares) {
+    shares = v.sharesForUsdg(take);
+    uint256 locked = lockedShares[who][address(v)];
+    if (shares > locked) revert InsufficientLocked(shares, locked);
+    lockedShares[who][address(v)] = locked - shares;
+    if (usdg.balanceOf(address(v)) >= take) {
+      uint256 burned = v.harvestUsdg(take, address(this), address(this));
+      if (burned != shares) revert BadConfig();
+      return (take, shares);
+    }
+    (uint256 a, uint256 u) = v.redeemInKind(shares, address(this), address(this));
+    got = u;
+    if (a != 0) {
+      INorenLiquidity l = liquidity;
+      if (address(l) == address(0)) revert NoLiquidity();
+      address asset = v.asset();
+      uint256 minOut = oracle.usd8ToUsdg(oracle.valueUsd8(asset, a).mulDiv(BPS - HARVEST_MAX_SLIPPAGE_BPS, BPS), Math.Rounding.Ceil);
+      IERC20(asset).forceApprove(address(l), a);
+      (uint256 out,) = l.sellExactAsset(asset, a, minOut, address(this));
+      IERC20(asset).forceApprove(address(l), 0);
+      got += out;
     }
   }
 

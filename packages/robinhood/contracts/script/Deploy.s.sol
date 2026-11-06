@@ -128,6 +128,7 @@ contract Deploy is Script {
       // WETH: bid 25 / ask 40 bps; stocks: bid 40 / ask 60 bps, +300 bps while US markets are closed.
       bool eth = assets[i] == RH.WETH;
       v.shipStrategy(NorenLiquidity.PegTerms(eth ? 25 : 40, eth ? 40 : 60, eth ? 0 : 300, 0, 0, 0));
+      v.setHarvester(address(borrow)); // loans repaid by the collateral's realised fees (harvestToRepay)
       borrow.addVault(v);
     }
   }
