@@ -8,6 +8,9 @@ import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
 import { useSigner } from "./signer";
 import { NATIVE_ETH, USDG, usd8, units, type Holding, type Onchain } from "./onchain";
+
+/** A payable asset in the picker: every Stock Token with a Chainlink feed, ETH and USDG, with this wallet's balance. */
+type Payable = Holding & { dec: number };
 import { swapper, type RouteQuote } from "./app/swap";
 import { TOKENS, USDG_TOKEN } from "./app/tokens";
 import type { ReactNode } from "react";
@@ -22,7 +25,7 @@ const ETH_GAS_RESERVE = 2_000_000_000_000_000n;
 export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: InvoiceView; shop: string; onPaid: () => void }) {
   const [tk, setTk] = useState<Onchain | null>(null);
   const [mirror, setMirror] = useState<Mirror | null>(null);
-  const [hold, setHold] = useState<Holding[] | null>(null);
+  const [hold, setHold] = useState<Payable[] | null>(null);
   const [eth, setEth] = useState<bigint | null>(null);
   const [sym, setSym] = useState<string | null>(null);
   const [q, setQ] = useState<Awaited<ReturnType<Onchain["stockQuote"]>> | null>(null);
@@ -47,13 +50,18 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
     try {
       const h = await tk.holdings();
       // ETH is a way to pay too (NorenGateway asset 0x0); keep 0.002 ETH back for gas.
-      const ethPay = h.eth > ETH_GAS_RESERVE ? [{ sym: "ETH", name: "Ether", token: NATIVE_ETH, feed: NATIVE_ETH, balance: h.eth - ETH_GAS_RESERVE, price8: 0n, updatedAt: 0, value8: 0n } as Holding] : [];
-      setHold([...h.stocks.filter((s) => s.balance > 0n), ...ethPay]); setEth(h.eth); setErr(null);
+      // Every asset NorenGateway accepts, held or not: the 8 Stock Tokens with Chainlink feeds, ETH (0.002 kept for gas)
+      // and USDG. Unheld ones stay listed with their live price and "0 held".
+      const ethPay = { sym: "ETH", name: "Ether", token: NATIVE_ETH, feed: NATIVE_ETH, balance: h.eth > ETH_GAS_RESERVE ? h.eth - ETH_GAS_RESERVE : 0n, price8: 0n, updatedAt: 0, value8: 0n, dec: 18 } as Payable;
+      const usdg = { sym: "USDG", name: "Global Dollar", token: USDG, feed: USDG, balance: h.usdg, price8: 100_000_000n, updatedAt: 0, value8: 0n, dec: 6 } as Payable;
+      const stocks = h.stocks.map((x) => ({ ...x, dec: 18 }));
+      setHold([...stocks.filter((x) => x.balance > 0n), ethPay, usdg, ...stocks.filter((x) => x.balance === 0n)]); setEth(h.eth); setErr(null);
     } catch (e) { setErr(msgOf(e)); }
   }, [tk]);
   useEffect(() => { load(); const t = setInterval(() => { if (!hold) load(); }, 6000); return () => clearInterval(t); }, [load, hold]);
-  useEffect(() => { if (!sym && hold?.length) setSym(hold[0].sym); }, [hold, sym]);
+  useEffect(() => { if (!sym && hold?.length) setSym((hold.find((x) => x.balance > 0n) ?? hold[0]).sym); }, [hold, sym]);
   const s = hold?.find((h) => h.sym === sym);
+  const dec = s?.dec ?? 18;
   useEffect(() => {
     if (!tk || !mirror || !s) return;
     let on = true; setQ(null);
@@ -65,7 +73,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   // Uniswap v4 comparison: how much of the same stock buys the invoice's USDG on the v4 pool (exact-in quote of the
   // Aqua amount, scaled, plus 0.5% so slippage can't leave the invoice short). The v4 route swaps, then pays in USDG.
   useEffect(() => {
-    if (!tk || !q || !s || s.sym === "ETH" || q.route !== "aqua-maker") { setV4(null); return; }
+    if (!tk || !q || !s || s.sym === "ETH" || s.sym === "USDG" || q.route !== "aqua-maker") { setV4(null); return; }
     let on = true;
     const tin = TOKENS.find((t) => t.sym === s.sym)!;
     const sw = swapper(cfg, tk);
@@ -84,7 +92,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
 
   if (err) return <div className="co-setup"><span className="eyebrow">Setup required</span><p>{err.replace(/^Setup required:\s*/, "")}</p></div>;
   if (!hold || !mirror) return <div className="co-setup quiet"><span className="spin xs" /> Opening this invoice on Robinhood Chain…</div>;
-  if (!hold.length) return (
+  if (!hold.some((x) => x.balance > 0n)) return (
     <div className="co-credit-empty">
       <p><b>No Stock Tokens or ETH in this wallet.</b> On the test network you can take a few real NVDA tokens from the fork faucet.</p>
       <button className="btn line full" disabled={!!busy} onClick={async () => { setBusy("faucet"); try { await api.robinhoodFaucet(tk!.address); await load(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } }}>{busy === "faucet" ? <><span className="spin" /> Moving tokens…</> : "Get test stock"}</button>
@@ -115,25 +123,25 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   return (
     <div className="co-credit">
       <div className="co-stock-pick" role="radiogroup" aria-label="Stock Token or ETH">
-        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} onClick={() => setSym(h.sym)}><Mark id={h.sym} size={30} /><span><b>{h.sym}</b><small>{units(h.balance, 18)} {h.sym === "ETH" ? "spendable" : "held"}</small></span></button>)}
+        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} data-empty={h.balance === 0n} onClick={() => setSym(h.sym)} aria-label={`${h.sym}, ${units(h.balance, h.dec)} held${h.price8 ? `, $${usd8(h.price8)}` : ""}`}><Mark id={h.sym} size={30} /><span><b>{h.sym}{h.price8 > 0n && h.sym !== "USDG" ? <i className="co-px"> ${usd8(h.price8)}</i> : null}</b><small>{units(h.balance, h.dec)} {h.sym === "ETH" ? "spendable" : "held"}</small></span></button>)}
       </div>
       <dl className="co-quote">
-        <dt>You pay</dt><dd className="lg-row">{sym && <Mark id={sym} size={16} />}<b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
-        <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}` : "…"}</dd>
+        <dt>You pay</dt><dd className="lg-row">{sym && <Mark id={sym} size={16} />}<b className="num">{q ? units(q.assetIn, dec, 6) : "…"}</b> {sym}</dd>
+        <dt>Chainlink price</dt><dd>{sym === "USDG" ? "1 USDG = 1 USDG, no conversion" : q ? `$${usd8(q.priceUsd8)}` : "…"}</dd>
         {q?.marketClosed && <><dt>US markets</dt><dd><span className="co-closed" title="Saturday, Sunday and Monday before 06:00 UTC the stock feeds pause, so makers add 3% to their spread">markets closed: wider spread</span></dd></>}
-        <dt>Best execution</dt><dd>{!q ? "…" : q.route !== "aqua-maker" ? `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread` : via === "v4" ? "Uniswap v4 → USDG" : "1inch Aqua maker · SwapVM, Chainlink-pegged"}</dd>
+        <dt>Best execution</dt><dd>{!q ? "…" : sym === "USDG" ? "Paid straight to the merchant" : q.route !== "aqua-maker" ? `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread` : via === "v4" ? "Uniswap v4 → USDG" : "1inch Aqua maker · SwapVM, Chainlink-pegged"}</dd>
         <dt>{shop} receives</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
       </dl>
       {q?.route === "aqua-maker" && sym !== "ETH" && (
         <div className="co-routes" role="radiogroup" aria-label="Route">
-          <button role="radio" aria-checked={via === "aqua"} onClick={() => setVia("aqua")}><Mark id="1INCH" size={20} /><span><b>1inch Aqua maker</b><small>SwapVM order pegged to Chainlink, pays {shop} directly</small></span><b className="num">{units(q.assetIn, 18, 6)} {sym}</b></button>
+          <button role="radio" aria-checked={via === "aqua"} onClick={() => setVia("aqua")}><Mark id="1INCH" size={20} /><span><b>1inch Aqua maker</b><small>SwapVM order pegged to Chainlink, pays {shop} directly</small></span><b className="num">{units(q.assetIn, dec, 6)} {sym}</b></button>
           <button role="radio" aria-checked={via === "v4"} disabled={!v4ok} onClick={() => setVia("v4")}><Mark id="UNISWAP" size={20} /><span><b>Uniswap v4</b><small>{v4ok ? `${(v4ok.route.id === "v4" ? v4ok.route.key.fee / 10000 : 0).toFixed(2)}% pool → USDG, then pays ${shop}; includes 0.5% slippage room` : v4 && "error" in v4 ? v4.error : "Quoting…"}</small></span><b className="num">{v4ok ? `${units(v4ok.need, 18, 6)} ${sym}` : "–"}</b></button>
         </div>
       )}
       <ol className="co-settle" aria-label="How the merchant gets paid">
         <li data-on="true"><b>{shop} gets USDG</b><span>on Robinhood Chain, in the payment tx</span></li>
         <li><b>Settle to Arc</b><span>Chainlink CRE approves a live Relay or Across quote</span></li>
-        <li><b>USDC on Arc</b><span>filled by a real relayer (none on a local fork)</span></li>
+        <li><b>USDC on Arc</b><span>filled by a real relayer (none on the mainnet snapshot)</span></li>
       </ol>
       <div className="co-privacy light">
         <Icon.chart />
@@ -141,9 +149,9 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
       </div>
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn kaki full xl" disabled={!!busy || !!tx || !enough || eth === 0n} onClick={pay}>
-        {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {needIn ? units(needIn, 18, 4) : ""} {sym}</>}
+        {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {needIn ? units(needIn, dec, 4) : ""} {sym}</>}
       </button>
-      <p className="faint sm center">NorenGateway.pay on a local Robinhood Chain fork, signed by your test key in this browser.</p>
+      <p className="faint sm center">NorenGateway.pay on Robinhood Chain · mainnet snapshot, signed by your test key in this browser.</p>
       <p className="co-attrib mono">Powered by SwapVM — © Degensoft Ltd 2025</p>
     </div>
   );

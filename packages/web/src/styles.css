@@ -967,3 +967,5 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-more-t i { grid-area: i; font-style: normal; font-size: 18px; color: var(--faint); width: 24px; text-align: center; }
 .co-more-go { flex: none; min-height: 44px; margin-right: 6px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--ai); background: var(--white); color: var(--ai); font-weight: 600; font-size: 13px; cursor: pointer; }
 .co-more-go[aria-selected="true"] { background: var(--ai); color: var(--white); }
+.co-stock-pick button[data-empty="true"] { opacity: .55; }
+.co-stock-pick .co-px { margin-left: 6px; font: 400 11px/1 var(--mono, ui-monospace); font-style: normal; color: var(--faint, #80849a); }

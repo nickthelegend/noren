@@ -70,12 +70,16 @@ TX_CUST_USDG=$(send_pm $USDG $CUSTOMER 5000000000)
 TX_CUST_NVDA=$(send_pm $NVDA $CUSTOMER 20000000000000000000)
 TX_CUST_TSLA=$(send_pm $TSLA $CUSTOMER 10000000000000000000)
 TX_CUST_AAPL=$(send_pm $AAPL $CUSTOMER 10000000000000000000)
-TX_MAKER_USDG=$(send_pm $USDG $MAKER 50000000000)
+# The other Stock Tokens with Chainlink feeds, so every one can pay at checkout on the snapshot (10 each, demo customer).
+for T in 0x117cc2133c37B721F49dE2A7a74833232B3B4C0C 0xe93237C50D904957Cf27E7B1133b510C669c2e74 0x12f190a9F9d7D37a250758b26824B97CE941bF54 0x2e0847E8910a9732eB3fb1bb4b70a580ADAD4FE3 0xc0D6457C16Cc70d6790Dd43521C899C87ce02f35; do
+  send_pm $T $CUSTOMER 10000000000000000000 >/dev/null
+done
+TX_MAKER_USDG=$(send_pm $USDG $MAKER 100000000000)
 cast rpc --rpc-url "$RPC" anvil_stopImpersonatingAccount "$POOL_MANAGER" >/dev/null
 cast send --rpc-url "$RPC" --private-key "$OWNER_KEY" $USDG 'approve(address,uint256)' "$VAULT" 250000000000 >/dev/null
 TX_LP_DEPOSIT=$(cast send --rpc-url "$RPC" --private-key "$OWNER_KEY" "$VAULT" 'deposit(uint256,address)' 250000000000 "$OWNER" --json | jq -r .transactionHash)
 
-# Aqua maker: ships NVDA/TSLA/AAPL/WETH NorenOraclePeg strategies (10,000 USDG virtual each) and registers them.
+# Aqua maker: ships NorenOraclePeg strategies for NVDA, TSLA, AAPL, SPY, MSFT, AMZN, GOOGL, META and WETH (10,000 USDG each) and registers them.
 STRATEGIES="[]"
 if [ "${NOREN_AQUA_SEED_MAKERS:-1}" = 1 ]; then
   SEED="$(NOREN_RH_LIQUIDITY=$LIQUIDITY forge script script/SeedMakers.s.sol:SeedMakers --rpc-url "$RPC" --broadcast --private-key "$MAKER_KEY" 2>&1)" || { echo "$SEED" >&2; exit 1; }
