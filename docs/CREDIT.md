@@ -136,3 +136,78 @@ Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG 
 - **aqua.fork (4):** NVDA payment routed to the seeded maker (fee booked), a maker ships and docks a strategy, maker vs Uniswap v4 best execution, Pay-in-3 schedule and liquidation sentence then a keeper liquidation through makers.
 
 `pnpm exec tsc -p tsconfig.json --noEmit` passes. The 0G path was not exercised here (`ZG_PC_API_KEY` is not set in this environment), so the decisions above came from the labelled deterministic score and floor.
+
+## Deposit stock, get credit: the LTV ladder and "Raise your limit"
+
+Deposit NVDA, TSLA, AAPL or ETH into Noren's 1inch Aqua pools (the Earn deposit vaults) instead of selling. The nNVDA
+(nTSLA, nETH…) shares stay Aqua liquidity and earn trading fees, and NorenCredit takes them as credit-line collateral
+(`setShareCollateral`): **credit limit = the shares' risk value × the tier's LTV**, read from
+`NorenCreditLens.maxCreditLimit(borrower, collateral, amount)`, the same arithmetic `openCreditLine` checks. A line that
+goes underwater is liquidated by selling the shares to Aqua makers. The fees the locked shares earn are the borrower's:
+`harvestLineToRepay` puts them toward the line, `claimLineYield` pays them out when nothing is owed.
+
+A fee repayment lowers `lineOutstanding` on Robinhood at once; NorenCreditLine on Arc shows the gross debt until the CRE
+bridge relays it. The app labels the two figures "Owed on Robinhood" and "Owed on Arc".
+
+### The tiers (NorenReputation.tierTable, read live by the app)
+
+| Tier | LTV | Unlocked by |
+|---|---|---|
+| 0 | 66% | any deposit (NorenCredit caps every line at the reputation tier: `NOREN_RH_REPUTATION_CAP`, on by default) |
+| 1 | 70% | 40 points |
+| 2 | 75% | 75 points + verified human (World ID) |
+| 3 | 80% | 100 points + verified human + a repayment milestone (3 on-time installments, a repaid loan, or an ONCHAIN_REPAYMENT attestation) |
+
+Points: each on-time Pay-in-3 installment +10 (first 12), each fully repaid loan +25 (first 4), account age +20/+20, and
+**each private attestation kind +25** (MAX_KIND_POINTS 25 at the server's fixed weight of 10,000 bps); late −15,
+liquidation −60. So $100 of NVDA lends $66 at first and up to $80 at tier 3.
+
+### Private attestations (NorenReputation.recordAttestation)
+
+After the Noren server verifies something off-chain it records only the **kind** and a salted commitment
+`keccak256(abi.encode(uint8 kind, bytes32 proofId, bytes32 salt))`; the salt stays in a 0600 file on the server. Kinds:
+0 World ID (proofId = the nullifier), 1-4 a Reclaim credit score / KYC / balance / identity (proofId = the Reclaim proof
+identifier), 5 ONCHAIN_REPAYMENT (the attester read the wallet's repayments on-chain). **Every kind uses the same public
+weight, 10,000 bps**: the weight is public, so a per-proof weight would leak something (how high a score was); a fixed
+one reveals only the kind. The attester is NorenCredit's underwriter key (fork: Anvil's published key #9).
+
+Code: `packages/server/src/reclaim-onchain.ts` (commitments, `recordKind`), `packages/server/src/attestations.ts`
+(`GET /reputation/attestations`, `POST /reputation/attest-repayment`, `recordWorldId`), the Reclaim session in
+`reclaim.ts`, and the World ID sink in `scripts/dev-all.ts`. The Credit page lists each recorded kind with "Recorded
+on-chain: proof type only, no personal data" and its tx.
+
+For secured lines the underwriter (`underwriter/src/attest.ts`, `securedTerms`) signs the reputation tier's LTV as the
+collateral ratio (never under 125%) and at least the wallet's Earn deposits at that LTV as the limit, so the signed terms
+can reach what NorenCredit's reputation cap allows. The app re-attests when the tier lends more than the applied terms.
+
+### Raise your limit (Credit page)
+
+Each task shows the limit and LTV before and after, from the contract's own rule:
+1. **World ID** (production IDKit, QR for World App): a private kind-0 attestation, +25 points, verified human.
+2. **Repay on time**: three on-time installments (+30), a repaid loan (+25), then **Record my repayments on-chain**
+   (the attester's ONCHAIN_REPAYMENT attestation, +25 and the milestone tier 3 needs).
+3. **Reclaim** (docs/RECLAIM.md): each proof kind is a private attestation, +25 points.
+4. **Lock collateral**: limit = collateral value × tier LTV, with a lock-more calculator.
+
+### Measured on the dev stack (Nov 7 2026, fresh fork wallets, real transactions)
+
+`scripts/dev-reputation-ladder.ts <wallet> all`: 0 points / 66% → 3 on-time installments 30 → repaid loan 55 points,
+tier 1, **70%** → ONCHAIN_REPAYMENT attestation 80 points, still 70% (no World ID). World ID (+25, human) then gives 105
+points, tier 3, **80%**; the app shows that move as "LTV 70% → 80%" on the World ID task.
+
+Share-backed line from the app (Anvil key #5 as the browser key): 2 NVDA → 1.989 nNVDA ($372.68 risk value); at tier 1
+the line opened at **$260.87 (70%)**; a 20 USDC Pay-in-3 draw on Arc; three real Aqua fills
+(`scripts/dev-maker-fill.ts`) earned the nNVDA vault fees, and **Pay down with fees** (`harvestLineToRepay`) cut what
+Robinhood counts as owed. With the wallet at tier 0 the same deposit opened at $245.96 (66%).
+
+### Driving it for the film
+
+1. `pnpm dev:all` (stack lock), web on 5190. Fund the film wallet on the forks: wallet menu → test stock, or
+   `POST /dev/robinhood-faucet {address}`.
+2. Earn → deposit 2 NVDA. Credit shows "Credit limit $X (66%)".
+3. `pnpm exec tsx scripts/dev-reputation-ladder.ts <film wallet> all` (or `ontime`, `loan`, `attest` one at a time on
+   camera): 66% → 70%, with "Recorded on-chain: on-chain repayments".
+4. World ID live on Nick's phone (Credit → Verify): 70% → 80%.
+5. Credit → Open the credit line with the nNVDA shares: the limit is the shares' value × 80%.
+6. Pay later at a checkout. `pnpm exec tsx scripts/dev-maker-fill.ts 3 0.2` makes real fills; Credit → **Pay down
+   with fees**.

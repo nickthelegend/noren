@@ -17,7 +17,7 @@ export const LOGOS: Record<string, Spec> = {
   SPY: S("spy.svg", "State Street SPDR S&P 500", "#fff", 0.17), MSFT: S("msft.svg", "Microsoft", "#fff", 0.25), GOOGL: S("googl.png", "Alphabet (Google)", "#fff", 0.16),
   AMZN: S("amzn.png", "Amazon"), META: S("meta.png", "Meta", "#fff", 0.13),
   // chains
-  ARC: S("arc.svg", "Arc"), ROBINHOOD: S("robinhood-chain.png", "Robinhood Chain"),
+  ARC: S("arc.svg", "Arc"), ROBINHOOD: S("robinhood-chain.png", "Robinhood Chain"), BASE: S("base.svg", "Base"), ARBITRUM: S("arbitrum.svg", "Arbitrum", "#fff", 0.06),
   // protocols
   CHAINLINK: S("chainlink.svg", "Chainlink", "#fff", 0.18), "1INCH": S("1inch.svg", "1inch", "#fff", 0.12), UNISWAP: S("uniswap.svg", "Uniswap", "#fff", 0.07),
   WORLD: S("world.svg", "World", "#fff", 0.13), "0G": S("0g.svg", "0G", "#0b0b0f", 0.2), CIRCLE: S("circle.svg", "Circle", "#fff", 0.04),

@@ -10,7 +10,7 @@
 // history-based approval; only the floor can still apply.
 import { attestationLogEntry, creditCheck, featuresFromHistory, type CreditCheckResult } from '@noren/ai-underwriter'
 import type { WalletHistory } from './history.js'
-import { collateralFloor, scoreWallet, type WalletScore } from './score.js'
+import { collateralFloor, scoreWallet, type OffchainProof, type WalletScore } from './score.js'
 
 export type Terms = { tier: number; limitUsdg: bigint; collateralRatioBps: number }
 type Decided = Extract<CreditCheckResult, { status: 'approved' | 'declined' }>
@@ -28,8 +28,8 @@ export type Decision = {
   logEntry: ReturnType<typeof attestationLogEntry> | null
 }
 
-export async function decideTerms(history: WalletHistory): Promise<Decision> {
-  const score = scoreWallet(history)
+export async function decideTerms(history: WalletHistory, extras: { offchain?: OffchainProof | null } = {}): Promise<Decision> {
+  const score = scoreWallet(history, extras)
   const floor = collateralFloor(history)
   const zg = await creditCheck(featuresFromHistory(history))
 

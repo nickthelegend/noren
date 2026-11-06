@@ -1,8 +1,11 @@
 # Noren (暖簾)
 
-> **Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.**
+> **Noren lets merchants accept stablecoins, stocks or credit — privately.**
+>
+> A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.
 
 **What's new**
+- **Deposit stock, get credit.** Deposit NVDA, TSLA, AAPL or ETH into Noren's 1inch Aqua pools instead of selling. Borrow up to 80% of their value. The fees they earn pay the loan back. The LTV comes from `NorenReputation.tierTable`: 66% to start, 70% at 40 points, 75% at 75 points with World ID, 80% at 100 points with World ID and a repayment milestone. So $100 of NVDA borrows $66 today and up to $80 at the top tier. The Credit page lists the tasks that raise it (World ID, on-time repayment, a Reclaim zkTLS proof, more collateral) with the limit before and after each.
 - **Lending pools that are 1inch Aqua makers.** The lender pool and the Earn vaults ship Chainlink-pegged SwapVM strategies, and their balances never leave the vault. The same capital backs loans, earns the spread on fills (stock payments, cross-chain orders, swaps where it beats Uniswap) and buys liquidated collateral in partial Dutch auctions. `harvestToRepay` lets those fees pay a loan down. We added two SwapVM opcodes: `NorenOraclePeg` (34) and `NorenDutchDecay` (35).
 - **Private settlement with invoice-bound proofs.** The customer's Kohaku / 0xbow Privacy Pools proof is bound to one invoice: merchant, amount, expiry and refund address. The merchant relays it and pays the gas, and the payer's address never appears in the transaction. Refunds go back into a shielded inbox. "Pay later, privately" draws a credit line straight into the pool.
 - **Arc as the hub, with Chainlink CRE in charge.** Five CRE workflows relay CCTP V2 burns, carry credit lines and Aqua orders between chains, write Chainlink FX rates and approve settlements. A CCTP hook can pay an invoice or open an Aqua order the moment the USDC lands on Arc. CCIP carries credit instructions into the same router: 10 messages, all delivered.
@@ -101,7 +104,7 @@ On Nov 6 22:00 IST, all 115 transaction links in this README and `docs/` returne
 | **Send privately** | **Yes**: the recipient never learns the sender | A pool withdrawal relayed by Noren (`Entrypoint.relay`) |
 | **Pay later, privately** | **From the merchant, yes**. The lender still knows its borrower. | `NorenCreditLine.drawToPool` deposits under the borrower's precommitment, then the invoice is paid from the pool |
 | **Arrive private** | Yes on Arc; the source-chain burn is public | A CCTP burn with a SHIELD hook lands in the pool (`NorenShieldSink`) |
-| Pay with USDC, pay with stocks, Pay in 3 | **No**, and the checkout says so | Public wallets |
+| Pay with USDC, pay with stocks or crypto, Pay in 3 | **No**, and the checkout says so | Public wallets |
 | Swaps, bridges, deposits, amounts, credit draws and repayments | **No** | Public transactions |
 
 Limits: the testnet pool has few depositors, so timing can link a deposit to a payment (the checkout shows the anonymity set). The ASP screens only the on-chain depositor. Detail: [docs/PRIVACY.md](docs/PRIVACY.md).

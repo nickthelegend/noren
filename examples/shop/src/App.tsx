@@ -260,7 +260,7 @@ function CheckoutButton() {
       <button className="btn btn-noren btn-wide" onClick={start} disabled={busy || !config || lines.length === 0} aria-busy={busy}>
         {busy ? 'Opening Noren…' : <>Checkout with <NorenMark /> <span className="noren-word">Noren</span></>}
       </button>
-      <p className="noren-note">Four ways at Noren's checkout: pay privately, pay with USDC, pay with stocks, or Pay in 3 / pay later, privately. Pay privately (or later, privately) and Aubelle never sees your wallet.</p>
+      <p className="noren-note">Four ways at Noren's checkout: pay privately, pay with USDC, pay with stocks or crypto, or Pay in 3 / pay later, privately. Pay privately (or later, privately) and Aubelle never sees your wallet.</p>
       {fail && <p className="error" role="alert">{fail}</p>}
     </>
   );
@@ -419,7 +419,7 @@ function IntegrationPanel() {
         <p>Aubelle's whole payment integration is one file of {lines} lines on the shop's backend: create a Noren invoice for the bag, send the shopper to Noren's hosted checkout, and trust the order only after a signed webhook.</p>
         <ol className="steps">
           <li><b>Invoice</b> for the bag total, with the order ID in metadata.</li>
-          <li><b>Redirect</b> to Noren's hosted checkout: pay privately, with USDC, with stocks, or Pay in 3 / pay later, privately.</li>
+          <li><b>Redirect</b> to Noren's hosted checkout: pay privately, with USDC, with stocks or crypto, or Pay in 3 / pay later, privately.</li>
           <li><b>Webhook</b> signed with HMAC-SHA256; the shop verifies it and marks the order paid.</li>
         </ol>
         <p className="muted small">The secret key stays on the server. Prices are recomputed there, never taken from the browser.</p>

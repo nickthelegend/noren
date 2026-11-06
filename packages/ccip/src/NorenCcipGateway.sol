@@ -71,6 +71,8 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
   mapping(bytes32 messageId => bytes payload) public failedPayload;
   /// @notice Tokens delivered with no app configured, claimable by the origin sender.
   mapping(address account => mapping(address token => uint256)) public claimable;
+  /// @notice Tokens owed to users (claimables and FAILED deliveries); `withdrawToken` can never take them.
+  mapping(address token => uint256) public reserved;
 
   event RouteSet(uint64 indexed finalChain, uint64 nextChain, address nextReceiver, address finalReceiver, uint32 gasLimit, uint16 finalityDepth);
   event AllowedOriginSet(uint64 indexed originChain, bool allowed);
@@ -103,6 +105,7 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
   event MessageRetried(bytes32 indexed messageId);
   event MessageRecovered(bytes32 indexed messageId, address to);
   event Claimed(address indexed account, address indexed token, uint256 amount);
+  event NonceBumped(uint64 nonce);
 
   error NoRoute(uint64 finalChain);
   error WrongDestination(uint64 finalChain, address finalReceiver);
@@ -112,6 +115,9 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
   error NotFailed(bytes32 messageId);
   error NothingToClaim();
   error AppDeclined(bytes32 messageId);
+  error UnexpectedNative(uint256 value);
+  error ExceedsFree(uint256 amount, uint256 free);
+  error NonceNotHigher(uint64 nonce, uint64 current);
 
   constructor(address router, uint64 localChain_, address owner_) NorenCcipBase(router, localChain_, owner_) {}
 
@@ -131,6 +137,24 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
   function setApp(INorenActionSink app_) external onlyOwner {
     app = app_;
     emit AppSet(address(app_));
+  }
+
+  /// @notice Moves the outbound nonce forward (never back). A replacement gateway on the same chain starts above its
+  ///         predecessor's last nonce, so receivers keyed on `(originChain, nonce)` don't treat its messages as
+  ///         duplicates of the old gateway's.
+  function bumpNonce(uint64 to) external onlyOwner {
+    if (to <= nonce) revert NonceNotHigher(to, nonce);
+    nonce = to;
+    emit NonceBumped(to);
+  }
+
+  /// @notice Owner withdrawal of surplus tokens only: balances owed to users (`reserved`) stay put.
+  function withdrawToken(IERC20 token, address to, uint256 amount) external override onlyOwner {
+    uint256 bal = token.balanceOf(address(this));
+    uint256 res = reserved[address(token)];
+    uint256 free = bal > res ? bal - res : 0;
+    if (amount > free) revert ExceedsFree(amount, free);
+    token.safeTransfer(to, amount);
   }
 
   // ---------------------------------------------------------------- send
@@ -156,6 +180,8 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
     nonReentrant
     returns (bytes32 messageId)
   {
+    // An ERC-20 fee pays nothing from msg.value, which would otherwise stay stuck in the gateway.
+    if (feeToken != address(0) && msg.value != 0) revert UnexpectedNative(msg.value);
     Route memory r = _route(finalChain);
     uint64 n = ++nonce;
     bytes memory data = _envelope(msg.sender, n, finalChain, r.finalReceiver, payload).encode();
@@ -212,6 +238,7 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
       // Same Noren message delivered twice (e.g. a hub forward retried): keep any tokens recoverable, run nothing.
       d.status = Status.FAILED;
       failedPayload[message.messageId] = e.payload;
+      if (amount != 0) reserved[token] += amount;
       emit DuplicateIgnored(message.messageId, e.originChain, e.nonce, first);
       return;
     }
@@ -230,6 +257,7 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
     } catch (bytes memory reason) {
       d.status = Status.FAILED;
       failedPayload[message.messageId] = e.payload;
+      if (amount != 0) reserved[token] += amount;
       emit MessageFailed(message.messageId, reason);
     }
   }
@@ -242,7 +270,10 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
   {
     INorenActionSink sink = app;
     if (address(sink) == address(0)) {
-      if (amount != 0) claimable[originSender][token] += amount;
+      if (amount != 0) {
+        claimable[originSender][token] += amount;
+        reserved[token] += amount;
+      }
       return true;
     }
     if (amount != 0) IERC20(token).safeTransfer(address(sink), amount);
@@ -255,6 +286,8 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
     if (d.status != Status.FAILED) revert NotFailed(messageId);
     bytes32 key = NorenCcipEnvelope.originKey(d.originChain, d.nonce);
     if (deliveredBy[key] != messageId) revert NotFailed(messageId); // a duplicate copy can only be recovered
+    // Leaves the reserve here: deliver() hands it to the app or books it as a claimable again.
+    if (d.amount != 0) reserved[d.token] -= d.amount;
     bool appOk = this.deliver(messageId, d.originChain, d.originSender, d.token, d.amount, failedPayload[messageId]);
     if (!appOk && d.amount == 0) revert AppDeclined(messageId);
     d.status = Status.DELIVERED;
@@ -269,7 +302,10 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
     if (d.status != Status.FAILED) revert NotFailed(messageId);
     d.status = Status.RECOVERED;
     delete failedPayload[messageId];
-    if (d.amount != 0) IERC20(d.token).safeTransfer(to, d.amount);
+    if (d.amount != 0) {
+      reserved[d.token] -= d.amount;
+      IERC20(d.token).safeTransfer(to, d.amount);
+    }
     emit MessageRecovered(messageId, to);
   }
 
@@ -278,6 +314,7 @@ contract NorenCcipGateway is NorenCcipBase, ReentrancyGuard {
     uint256 amt = claimable[msg.sender][token];
     if (amt == 0) revert NothingToClaim();
     claimable[msg.sender][token] = 0;
+    reserved[token] -= amt;
     IERC20(token).safeTransfer(msg.sender, amt);
     emit Claimed(msg.sender, token, amt);
   }

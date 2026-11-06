@@ -20,6 +20,9 @@ export type CreditCfg = {
 };
 export const creditOf = (cfg: Config | null): CreditCfg | null => ((cfg as unknown as { credit?: CreditCfg | null })?.credit ?? null);
 
+/** NorenGateway takes native ETH as asset 0x0 (priced as WETH by Chainlink ETH/USD). */
+export const NATIVE_ETH = "0x0000000000000000000000000000000000000000" as Address;
+
 export const STOCKS: { sym: string; name: string; token: Address; feed: Address }[] = [
   { sym: "NVDA", name: "NVIDIA", token: "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC", feed: "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15" },
   { sym: "TSLA", name: "Tesla", token: "0x322F0929c4625eD5bAd873c95208D54E1c003b2d", feed: "0x4A1166a659A55625345e9515b32adECea5547C38" },
@@ -196,6 +199,18 @@ export function makeOnchain(cfg: Config) {
       const hash = await w.writeContract({ address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, asset, max], chain });
       const r = await c.waitForTransactionReceipt({ hash });
       if (r.status !== "success") throw new Error(`NorenGateway.pay reverted: ${hash}`);
+      return hash;
+    },
+    /** Robinhood: pay with native ETH (NorenGateway.pay with asset 0x0 and msg.value). The gateway prices it as WETH
+     *  through the same Aqua makers or vault, and refunds any excess over the quote. maxAssetIn allows 1% movement. */
+    async payWithEth(gateway: Address, merchant: Address, invoiceId: Hex, quoted: bigint) {
+      const c = need(); const chain = rhChain!;
+      const w = createWalletClient({ chain, transport: walletTransport(credit!.robinhoodRpc!), account });
+      const max = quoted + quoted / 100n;
+      await c.simulateContract({ account, address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, NATIVE_ETH, max], value: max });
+      const hash = await w.writeContract({ address: gateway, abi: gatewayAbi, functionName: "pay", args: [invoiceId, merchant, NATIVE_ETH, max], value: max, chain });
+      const r = await c.waitForTransactionReceipt({ hash });
+      if (r.status !== "success") throw new Error(`NorenGateway.pay (ETH) reverted: ${hash}`);
       return hash;
     },
     /** Arc: the line as NorenCreditLine sees it (written by the CRE bridge). live = the bridge has delivered it. */

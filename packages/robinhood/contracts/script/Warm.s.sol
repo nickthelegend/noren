@@ -159,7 +159,8 @@ contract Warm is Script {
     (uint256 col,) = oracle.assetForUsd8(RH.TSLA, 300e8, 0);
     vm.startPrank(customer);
     IERC20(RH.TSLA).approve(address(credit), col);
-    bytes32 lineId = credit.openCreditLine(RH.TSLA, col, 200e6, uint64(block.timestamp + 30 days));
+    // 195 USDC on $300 of TSLA (65%): within the 66% reputation LTV cap a wallet without attestations has.
+    bytes32 lineId = credit.openCreditLine(RH.TSLA, col, 195e6, uint64(block.timestamp + 30 days));
     vm.stopPrank();
     vm.prank(forwarder);
     credit.onReport('', abi.encode(lineId, uint256(50e6), uint256(0), uint64(block.timestamp)));

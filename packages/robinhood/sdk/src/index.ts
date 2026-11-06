@@ -3,6 +3,7 @@
 import {
   decodeEventLog,
   encodeAbiParameters,
+  keccak256,
   defineChain,
   hashDomain,
   parseSignature,
@@ -15,7 +16,7 @@ import {
   type TransactionReceipt,
   type WalletClient,
 } from 'viem'
-import { aquaAbi, erc20PermitAbi, norenAssetOracleAbi, norenCreditAbi, norenGatewayAbi, norenLiquidityAbi, norenVaultAbi, stockTokenAbi, v4QuoterAbi } from './abi.js'
+import { aquaAbi, erc20PermitAbi, norenAssetOracleAbi, norenCreditAbi, norenCreditLensAbi, norenGatewayAbi, norenLiquidityAbi, norenReputationAbi, norenVaultAbi, stockTokenAbi, v4QuoterAbi } from './abi.js'
 import {
   AQUA,
   V4_QUOTER,
@@ -68,6 +69,28 @@ export const INSTALLMENTS = 3
 export const MISSED_TO_DEFAULT = 2
 
 export type PaymentMethod = 'native' | 'permit' | 'approve'
+
+/** NorenReputation private attestation kinds (bit `kind` of attestationsOf().kinds). */
+export const ATTESTATION_KINDS = {
+  WORLD_ID: 0,
+  RECLAIM_CREDIT_SCORE: 1,
+  RECLAIM_KYC: 2,
+  RECLAIM_BALANCE: 3,
+  RECLAIM_IDENTITY: 4,
+  ONCHAIN_REPAYMENT: 5,
+} as const
+export type AttestationKind = keyof typeof ATTESTATION_KINDS
+
+/** The on-chain commitment for a private attestation: keccak256(abi.encode(uint8 kind, bytes32 proofId,
+ * bytes32 salt)), as NorenReputation.commitmentFor. Keep proofId and salt (32 random bytes) on the server. */
+export function attestationCommitment(kind: number, proofId: Hex, salt: Hex): Hex {
+  return keccak256(encodeAbiParameters([{ type: 'uint8' }, { type: 'bytes32' }, { type: 'bytes32' }], [kind, proofId, salt]))
+}
+
+/** Names of the kinds set in an attestationsOf() bitmap. */
+export function attestationKindsOf(bitmap: bigint): AttestationKind[] {
+  return (Object.keys(ATTESTATION_KINDS) as AttestationKind[]).filter((k) => (bitmap >> BigInt(ATTESTATION_KINDS[k])) & 1n)
+}
 
 export function createNorenRobinhood({
   publicClient,
@@ -270,6 +293,58 @@ export function createNorenRobinhood({
     )
     const args = eventArgs(await confirm(hash), norenCreditAbi, 'CreditLineOpened')
     return { hash, lineId: args.lineId as Hex, collateralValueUsd8: args.collateralValueUsd8 as bigint }
+  }
+
+  const needs = (a: Address | undefined, name: string): Address => {
+    if (!a) throw new Error(`Setup required: addresses.${name} (packages/robinhood/.fork/deployment.json)`)
+    return a
+  }
+
+  /** Largest Arc line `amount` of `collateral` (a Stock Token, NATIVE_ETH, or deposit-vault shares such as
+   * nNVDA) allows for `borrower`: risk value x the tier LTV (capped by the on-chain reputation tier), capped
+   * by available credit. limitUsdc6 opens exactly with openCreditLine / openCreditLineWithShares. */
+  const maxCreditLimit = async (borrower: Address, collateral: Address, amount: bigint) => {
+    const [limitUsdc6, valueUsd8, ltvBps] = (await read(needs(addresses.creditLens, 'creditLens'), norenCreditLensAbi, 'maxCreditLimit', [
+      borrower,
+      collateral,
+      amount,
+    ])) as [bigint, bigint, number]
+    return { limitUsdc6, valueUsd8, ltvBps: Number(ltvBps) }
+  }
+
+  /** Lock NorenDepositVault shares (nNVDA, nETH, ...) for an Arc line. They stay an Aqua maker position and
+   * keep earning fees, which harvestLineToRepay can put toward the line. */
+  const openCreditLineWithShares = async ({ shareVault, shares, limitUsdc6, expiry }: { shareVault: Address; shares: bigint; limitUsdc6: bigint; expiry: bigint | number }) =>
+    openCreditLine({ collateral: shareVault, collateralAmount: shares, limitUsdc6, expiry })
+
+  /** Anyone: repay a share-backed line's outstanding Arc debt from its shares' yield only. */
+  const harvestLineToRepay = async (lineId: Hex) => {
+    const receipt = await confirm(await write(addresses.credit, norenCreditAbi, 'harvestLineToRepay', [lineId]))
+    const a = eventArgs(receipt, norenCreditAbi, 'LineYieldRepaid')
+    return { hash: receipt.transactionHash, paidUsdg: a.paidUsdg as bigint, creditUsdc6: a.creditUsdc6 as bigint, shares: a.shares as bigint, outstandingUsdc6: a.outstandingUsdc6 as bigint }
+  }
+
+  /** Borrower, nothing owed: take the share-backed line's yield. */
+  const claimLineYield = async (lineId: Hex) => {
+    const receipt = await confirm(await write(addresses.credit, norenCreditAbi, 'claimLineYield', [lineId]))
+    const a = eventArgs(receipt, norenCreditAbi, 'LineYieldClaimed')
+    return { hash: receipt.transactionHash, yieldUsdg: a.yieldUsdg as bigint, shares: a.shares as bigint }
+  }
+
+  /** A share-backed line's yield now: unharvested USDG, and what yield already repaid (Arc USDC, USDG). */
+  const lineYield = async (lineId: Hex) => {
+    const [pendingUsdg, paidUsdc6, paidUsdg] = (await read(needs(addresses.creditLens, 'creditLens'), norenCreditLensAbi, 'lineYield', [lineId])) as [bigint, bigint, bigint]
+    return { pendingUsdg, paidUsdc6, paidUsdg }
+  }
+
+  /** Private on-chain reputation: tier, LTV, points and which attestation kinds exist (never their data). */
+  const reputationOf = async (borrower: Address) => {
+    const rep = needs(addresses.reputation, 'reputation')
+    const [[tier, kinds, count], [points, , ltvBps, limitMultiplierBps]] = (await Promise.all([
+      read(rep, norenReputationAbi, 'attestationsOf', [borrower]),
+      read(rep, norenReputationAbi, 'reputationOf', [borrower]),
+    ])) as [[number, bigint, number], [bigint, number, number, number]]
+    return { tier: Number(tier), kinds, kindNames: attestationKindsOf(kinds), count: Number(count), points, ltvBps: Number(ltvBps), limitMultiplierBps: Number(limitMultiplierBps) }
   }
 
   /** First call stops the line; collateral returns once an Arc report after the close shows it repaid. */
@@ -595,6 +670,12 @@ export function createNorenRobinhood({
     openPlan,
     repay,
     openCreditLine,
+    openCreditLineWithShares,
+    maxCreditLimit,
+    harvestLineToRepay,
+    claimLineYield,
+    lineYield,
+    reputationOf,
     closeCreditLine,
     liquidatePlan,
     liquidateLine,

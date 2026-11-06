@@ -46,11 +46,18 @@ contract NorenAssetOracle is Ownable2Step {
   uint16 public usdgDepegBps = 200;
   /// @notice Extra haircut applied to Stock Token value for new risk taken while markets are closed.
   uint16 public closedHaircutBps = 500;
+  /// @notice Chainlink L2 Sequencer Uptime feed for Robinhood Chain (an Arbitrum Orbit L2); zero =
+  /// not checked. Chainlink's feed directory lists no uptime feed for Robinhood Chain yet (checked
+  /// Nov 6 2026), so this stays unset until one is published.
+  address public sequencerUptimeFeed;
+  /// @notice Seconds after the sequencer comes back up before prices are trusted again.
+  uint32 public sequencerGracePeriod;
 
   event AssetConfigured(address indexed asset, address indexed feed, uint32 maxAgeOpen, uint32 maxAgeClosed, bool marketHours, bool applyUiMultiplier);
   event AssetDisabled(address indexed asset);
   event HolidaySet(uint256 indexed utcDay, bool closed);
   event RiskParamsSet(uint16 usdgDepegBps, uint16 closedHaircutBps);
+  event SequencerUptimeFeedSet(address indexed feed, uint32 gracePeriod);
 
   error AssetNotSupported(address asset);
   error InvalidPrice(address asset, int256 answer);
@@ -61,6 +68,8 @@ contract NorenAssetOracle is Ownable2Step {
   error BadConfig();
   error AssetPaused(address asset);
   error AccountBlocked(address asset, address account);
+  error SequencerDown();
+  error SequencerGracePeriod(uint256 upSince, uint32 gracePeriod);
 
   constructor(address owner_, address usdg_) Ownable(owner_) {
     if (usdg_ == address(0)) revert BadConfig();
@@ -101,6 +110,14 @@ contract NorenAssetOracle is Ownable2Step {
     emit RiskParamsSet(depegBps, haircutBps);
   }
 
+  /// @notice Set (or clear with address(0)) the L2 Sequencer Uptime feed checked before every price.
+  function setSequencerUptimeFeed(address feed, uint32 gracePeriod) external onlyOwner {
+    if (feed != address(0)) IAggregatorV3(feed).latestRoundData();
+    sequencerUptimeFeed = feed;
+    sequencerGracePeriod = gracePeriod;
+    emit SequencerUptimeFeedSet(feed, gracePeriod);
+  }
+
   // ---------------------------------------------------------------- views
 
   function assets() external view returns (address[] memory) {
@@ -124,10 +141,13 @@ contract NorenAssetOracle is Ownable2Step {
     return false;
   }
 
-  /// @notice Validated Chainlink price for `asset`, normalised to 8 decimals.
+  /// @notice Validated Chainlink price for `asset`, normalised to 8 decimals. A disabled asset
+  /// (disableAsset) is still priced so positions already holding it can be valued, repaid and
+  /// liquidated; `isSupported` is what stops new risk in it.
   function price(address asset) public view returns (Price memory p) {
     AssetConfig memory c = assetConfig[asset];
-    if (!c.enabled) revert AssetNotSupported(asset);
+    if (c.feed == address(0)) revert AssetNotSupported(asset);
+    _checkSequencer();
     IAggregatorV3 feed = IAggregatorV3(c.feed);
     (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
     if (answer <= 0) revert InvalidPrice(asset, answer);
@@ -202,6 +222,18 @@ contract NorenAssetOracle is Ownable2Step {
     if (reg.paused()) revert AssetPaused(asset);
     if (from != address(0) && reg.isBlocked(from)) revert AccountBlocked(asset, from);
     if (to != address(0) && reg.isBlocked(to)) revert AccountBlocked(asset, to);
+  }
+
+  /// @dev Chainlink L2 sequencer check: answer 0 = up; prices are refused while it is down and for
+  /// `sequencerGracePeriod` after it comes back.
+  function _checkSequencer() internal view {
+    address f = sequencerUptimeFeed;
+    if (f == address(0)) return;
+    (, int256 answer, uint256 startedAt,,) = IAggregatorV3(f).latestRoundData();
+    if (answer != 0) revert SequencerDown();
+    if (startedAt == 0 || startedAt > block.timestamp || block.timestamp - startedAt <= sequencerGracePeriod) {
+      revert SequencerGracePeriod(startedAt, sequencerGracePeriod);
+    }
   }
 
   function _value(address asset, uint256 amount, uint256 price8, Math.Rounding r) internal view returns (uint256) {

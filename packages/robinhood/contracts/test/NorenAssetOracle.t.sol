@@ -123,11 +123,31 @@ contract NorenAssetOracleTest is RobinhoodBase {
     oracle.price(address(0xBEEF));
   }
 
-  function test_disabledAssetReverts() public {
+  /// @notice Audit RH-C-4: disabling an asset stops new risk (isSupported) but keeps it priced, so
+  /// positions already holding it can still be valued and liquidated.
+  function test_Audit_RHC4_disabledAssetStillPricedButNotAccepted() public {
+    uint256 before = oracle.price(RH.SPY).usd8;
     vm.prank(owner);
     oracle.disableAsset(RH.SPY);
-    vm.expectRevert(abi.encodeWithSelector(NorenAssetOracle.AssetNotSupported.selector, RH.SPY));
-    oracle.price(RH.SPY);
+    assertFalse(oracle.isSupported(RH.SPY), 'no new risk in a disabled asset');
+    assertEq(oracle.price(RH.SPY).usd8, before, 'still priced for existing positions');
+  }
+
+  /// @notice Audit RH-C-5: with an L2 Sequencer Uptime feed set, prices are refused while it reports
+  /// down. Robinhood Chain has no Chainlink uptime feed yet, so the real ETH/USD feed stands in for a
+  /// "down" reading (any non-zero answer = down); the up/grace-period branch needs a real uptime feed.
+  function test_Audit_RHC5_sequencerDownBlocksPrices() public {
+    vm.expectRevert();
+    oracle.setSequencerUptimeFeed(RH.FEED_ETH, 1 hours); // owner only
+    vm.prank(owner);
+    oracle.setSequencerUptimeFeed(RH.FEED_ETH, 1 hours);
+    vm.expectRevert(NorenAssetOracle.SequencerDown.selector);
+    oracle.price(RH.NVDA);
+    vm.expectRevert(NorenAssetOracle.SequencerDown.selector);
+    oracle.usdgPrice();
+    vm.prank(owner);
+    oracle.setSequencerUptimeFeed(address(0), 0);
+    assertGt(oracle.price(RH.USDG).usd8, 0, 'unset = not checked');
   }
 
   function test_badConfigRejected() public {

@@ -52,6 +52,34 @@ contract XChainBaseArcTest is XChainForkBase {
     assertEq(uint8(escrow.orderStatus(keccak256(abi.encode(o)))), uint8(NorenCrossChainEscrow.Status.Released));
   }
 
+  // XC-1: a relayed round's decimals must match the relayed feed's (fixed at deploy); otherwise a round in other
+  // units (e.g. 18 dp) would be stored and misprice every fill by orders of magnitude.
+  function test_Audit_XC1_relayedRoundInOtherDecimalsIsRefused() public {
+    bytes memory payload = _open(_order(AMOUNT, 1e6, maker, wethStrategy, 91));
+    (,, PriceRound memory p) = abi.decode(payload, (uint8, CrossChainOrder, PriceRound));
+    vm.selectFork(arcFork);
+    assertEq(p.decimals, arc.ethUsd.decimals(), 'escrow carries the source feed decimals');
+    // The fork env is shared across tests, so the feed may or may not hold a round already: go past both.
+    uint80 r0 = arc.ethUsd.latestRound().roundId;
+    uint256 u0 = arc.ethUsd.latestRound().updatedAt;
+    if (p.roundId > r0) r0 = p.roundId;
+    if (p.updatedAt > u0) u0 = p.updatedAt;
+    PriceRound memory wrong = p;
+    wrong.roundId = r0 + 1;
+    wrong.answeredInRound = r0 + 1;
+    wrong.updatedAt = u0 + 1;
+    wrong.decimals = 18;
+    vm.prank(XC.ARC_FORWARDER);
+    vm.expectRevert(abi.encodeWithSelector(NorenCrossChainSettler.WrongDecimals.selector, uint8(18), uint8(8)));
+    arc.settler.onReport('', abi.encode(XChainMessages.PRICE, address(arc.ethUsd), wrong));
+    // The same round in the feed's own decimals is relayed.
+    wrong.decimals = 8;
+    vm.prank(XC.ARC_FORWARDER);
+    arc.settler.onReport('', abi.encode(XChainMessages.PRICE, address(arc.ethUsd), wrong));
+    (uint80 r,,,,) = arc.ethUsd.latestRoundData();
+    assertEq(r, r0 + 1, 'relayed');
+  }
+
   function test_oneMakerWalletBacksTwoRoutes() public {
     // The same maker's USDC wallet backs both the NVDA (Robinhood) and WETH (Base) strategies:
     // Aqua virtual balances are allocations of one wallet, not separate deposits.

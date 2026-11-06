@@ -8,6 +8,7 @@ export const reputationAbi = parseAbi([
   "function breakdownOf(address account) view returns ((uint32 onTime, uint32 late, uint32 repaidLoans, uint32 liquidations, uint64 firstSeenAt, uint64 ageDays, bool verifiedHuman, uint256 points, uint256 milestones, uint8 tier, uint16 ltvBps, uint16 limitMultiplierBps))",
   "function creditLimitOf(address account) view returns (uint256 totalUsd6, uint256 securedUsdg, uint256 starterUsdc)",
   "function tierTable(uint8 t) pure returns ((uint16 ltvBps, uint16 limitMultiplierBps, uint16 minPoints, bool needsHuman, bool needsRepayment))",
+  "function starterUsdc6() view returns (uint256)",
 ]);
 
 const M = [

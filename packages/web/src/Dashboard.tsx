@@ -38,7 +38,7 @@ const METHOD: Record<Method, [string, string, (r?: Row) => JSX.Element]> = {
   usdc: ["USDC", "A direct USDC transfer from the customer's Arc wallet, verified on-chain", () => <Mark id="USDC" size={16} />],
   private: ["Private pool", "Zero-knowledge withdrawal from the Kohaku privacy pool", () => <Mark id="KOHAKU" size={16} />],
   credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", () => <span className="sd-pm-ic round" aria-hidden><Icon.layers /></span>],
-  stocks: ["Pay with stocks", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", (r) => <Mark id={stockSym(r?.stock?.asset) ?? "ROBINHOOD"} size={16} />],
+  stocks: ["Pay with stocks or crypto", "Paid with Stock Tokens or ETH, converted to stablecoin at the Chainlink price", (r) => <Mark id={stockSym(r?.stock?.asset) ?? "ROBINHOOD"} size={16} />],
 };
 const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}>{I(r)}{t}{m === "stocks" && stockSym(r.stock?.asset) && <span className="sd-muted">· {stockSym(r.stock?.asset)}</span>}</span>; };
 /** The settlement currency with its logo: USDG on Robinhood Chain for stock payments, USDC on Arc for the rest. */
@@ -204,7 +204,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
   ];
   return (
     <>
-      <PageHead title="Today" sub={<>Welcome back, {shop}. Everything here is read from your server and the chain; nothing here identifies a customer.</>}>
+      <PageHead title="Today" sub={<>Noren lets merchants accept stablecoins, stocks or credit — privately. Welcome back, {shop}: everything here is read from your server and the chain, and nothing here identifies a customer.</>}>
         <button className="sd-btn primary" disabled={!token} onClick={onCreate}><Icon.plus /> Create payment link</button>
       </PageHead>
 
@@ -392,7 +392,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
   };
   return (
     <section className="sd-settle">
-      <div className="sd-section-h"><h2>USDG on Robinhood Chain</h2>{d && <span className="sd-muted">from Pay with stocks</span>}</div>
+      <div className="sd-section-h"><h2>USDG on Robinhood Chain</h2>{d && <span className="sd-muted">from Pay with stocks or crypto</span>}</div>
       {!token ? <p className="sd-muted">Add your secret key to see and settle USDG.</p> : err ? <p className="sd-muted">{/Not found|404/.test(err) ? "Setup required: Settle to Arc runs with pnpm dev:all (packages/bridge-settlement)." : err}</p> : !d ? <div className="sd-skel-rows"><i /></div> : (
         <>
           <div className="sd-settle-row">

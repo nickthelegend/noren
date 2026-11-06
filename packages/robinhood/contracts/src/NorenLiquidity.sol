@@ -76,6 +76,9 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
   mapping(address asset => bytes32[]) internal _byAsset;
   mapping(address maker => bytes32[]) internal _byMaker;
   mapping(address maker => uint256) public makerFeesUsdg;
+  /// @notice When on, only owner-approved makers may register (anti-squatting switch; off by default).
+  bool public makerAllowlist;
+  mapping(address maker => bool) public approvedMaker;
 
   event StrategyRegistered(
     bytes32 indexed strategyHash, address indexed maker, address indexed asset, uint16 bidSpreadBps, uint16 askSpreadBps
@@ -106,6 +109,8 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     address indexed asset, address indexed seller, uint256 amount, uint256 sold, uint256 bonus, uint256 proceedsUsdg, uint256 debtUsdg
   );
   event LimitsSet(uint16 maxSpreadBps, uint16 maxLiquidationSlippageBps, uint8 maxStrategiesPerAsset);
+  event MakerAllowlistSet(bool on);
+  event MakerApproved(address indexed maker, bool approved);
 
   error AssetNotSupported(address asset);
   error SpreadTooWide(uint16 bidSpreadBps, uint16 maxSpreadBps);
@@ -120,6 +125,7 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
   error FillMismatch(uint256 amountIn, uint256 amountOut);
   error ReceivedShort(uint256 expected, uint256 received);
   error BadConfig();
+  error MakerNotApproved(address maker);
 
   constructor(address owner_, IAqua aqua_, ISwapVMRouter router_, NorenAssetOracle oracle_) Ownable(owner_) {
     if (address(aqua_) == address(0) || router_.AQUA() != address(aqua_)) revert BadConfig();
@@ -136,6 +142,19 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     maxLiquidationSlippageBps = maxLiqSlippage;
     maxStrategiesPerAsset = maxPerAsset;
     emit LimitsSet(maxSpread, maxLiqSlippage, maxPerAsset);
+  }
+
+  /// @notice Turn the maker allowlist on or off. Registration is permissionless while it is off, so
+  /// anyone can fill an asset's `maxStrategiesPerAsset` slots; the owner can then remove squatters
+  /// (`remove`) and switch this on.
+  function setMakerAllowlist(bool on) external onlyOwner {
+    makerAllowlist = on;
+    emit MakerAllowlistSet(on);
+  }
+
+  function setMakerApproved(address maker, bool approved) external onlyOwner {
+    approvedMaker[maker] = approved;
+    emit MakerApproved(maker, approved);
   }
 
   // ================================================================ strategy building
@@ -176,6 +195,7 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
   /// @notice Register the caller's shipped Aqua strategy so Noren routes conversions to it.
   /// The strategy must already be shipped to the router with both USDG and `asset` as tokens.
   function register(address asset, PegTerms calldata t) external returns (bytes32 strategyHash) {
+    if (makerAllowlist && !approvedMaker[msg.sender]) revert MakerNotApproved(msg.sender);
     if (t.bidSpreadBps > maxSpreadBps) revert SpreadTooWide(t.bidSpreadBps, maxSpreadBps);
     ISwapVMRouter.Order memory o;
     (o, strategyHash) = buildOrder(msg.sender, asset, t);
@@ -195,11 +215,13 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     emit StrategyRegistered(strategyHash, msg.sender, asset, t.bidSpreadBps, t.askSpreadBps);
   }
 
-  /// @notice The maker may remove a strategy at any time; anyone may remove one that was docked on Aqua.
+  /// @notice The maker or the owner may remove a strategy at any time (the owner clears squatted
+  /// routing slots); anyone may remove one that was docked on Aqua. Removal only stops Noren routing:
+  /// the maker's Aqua strategy and funds are untouched.
   function remove(bytes32 strategyHash) external {
     Strategy storage s = _strategies[strategyHash];
     if (!s.active) revert UnknownStrategy(strategyHash);
-    if (msg.sender != s.maker && _shipped(s.maker, strategyHash, s.asset)) revert NotRemovable(strategyHash);
+    if (msg.sender != s.maker && msg.sender != owner() && _shipped(s.maker, strategyHash, s.asset)) revert NotRemovable(strategyHash);
     s.active = false;
     bytes32[] storage list = _byAsset[s.asset];
     for (uint256 i; i < list.length; ++i) {
@@ -277,7 +299,7 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     if (strategyHash == bytes32(0)) revert NoMakerLiquidity(asset, usdgOut);
     if (assetIn > maxAssetIn) revert Slippage(assetIn, maxAssetIn);
     _pull(asset, assetIn);
-    _swap(strategyHash, asset, false, usdgOut, assetIn, to, assetIn, usdgOut);
+    _swap(strategyHash, asset, false, usdgOut, assetIn, _recipient(to), assetIn, usdgOut);
   }
 
   /// @notice Sell exactly `assetIn` of `asset` from the caller to the best maker; `to` receives the USDG.
@@ -290,7 +312,7 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     if (strategyHash == bytes32(0)) revert NoMakerLiquidity(asset, assetIn);
     if (usdgOut < minUsdgOut) revert Slippage(minUsdgOut, usdgOut);
     _pull(asset, assetIn);
-    _swap(strategyHash, asset, true, assetIn, usdgOut, to, assetIn, usdgOut);
+    _swap(strategyHash, asset, true, assetIn, usdgOut, _recipient(to), assetIn, usdgOut);
   }
 
   /// @notice Buy exactly `assetOut` of `asset` from the best maker (Chainlink price plus its ask spread);
@@ -306,14 +328,15 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     _pull(address(usdg), usdgIn);
     Strategy storage s = _strategies[strategyHash];
     usdg.forceApprove(address(router), usdgIn);
-    address recipient = to == address(0) || to == address(this) ? msg.sender : to;
+    address recipient = _recipient(to);
     (uint256 uin, uint256 aout,) = router.swap(_order(s), address(usdg), asset, assetOut, _takerData(false, usdgIn, recipient));
     if (uin != usdgIn || aout != assetOut) revert FillMismatch(uin, aout);
     uint256 valueUsdg;
     try oracle.valueUsd8(asset, aout) returns (uint256 v) {
       valueUsdg = oracle.usd8ToUsdg(v, Math.Rounding.Ceil);
     } catch {}
-    uint256 fee = uin > valueUsdg ? uin - valueUsdg : 0;
+    // An unpriceable fill (feed stale or asset disabled in NorenAssetOracle) books no fee, as in _swap.
+    uint256 fee = valueUsdg != 0 && uin > valueUsdg ? uin - valueUsdg : 0;
     s.fills += 1;
     s.volumeUsdg += uin;
     s.feesUsdg += fee;
@@ -416,6 +439,11 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     } catch {
       return false;
     }
+  }
+
+  /// @dev USDG or asset bought for an external caller never stays in this contract (no sweep exists).
+  function _recipient(address to) internal view returns (address) {
+    return to == address(0) || to == address(this) ? msg.sender : to;
   }
 
   function _pull(address asset, uint256 amount) internal {

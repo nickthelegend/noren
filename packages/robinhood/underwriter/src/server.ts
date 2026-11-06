@@ -3,6 +3,8 @@
 //   GET  /score/:address   real Robinhood mainnet history + deterministic score (no signing)
 //   POST /attest {borrower} history -> 0G credit check (or the labelled deterministic score when 0G
 //                           is not configured) -> limit x NorenReputation multiplier -> EIP-712 CreditAttestation signature
+//   Both read the Reclaim proof store (NOREN_RECLAIM_STORE, default data/reclaim-proofs.json): a verified off-chain
+//   fact adds the offchainProof factor. /score also answers what the score would be with one ("reclaim.ifVerified").
 //   POST /attest-age {account} mainnet first-activity scan -> EIP-712 AccountAge for NorenReputation
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
@@ -10,10 +12,11 @@ import { fileURLToPath } from 'node:url'
 import { appendDecision, toStoredDecision } from '@noren/ai-underwriter'
 import { createPublicClient, http, isAddress, type Address } from 'viem'
 import { loadForkDeployment } from '../../sdk/src/node.js'
-import { reputationMultiplierBps, signAccountAge, signAttestation } from './attest.js'
+import { reputationMultiplierBps, securedTerms, signAccountAge, signAttestation, withSecured } from './attest.js'
 import { decideTerms } from './decide.js'
 import { readWalletHistory } from './history.js'
-import { scoreWallet } from './score.js'
+import { offchainProofOf } from './reclaim.js'
+import { OFFCHAIN_PROOF_POINTS, scoreWallet } from './score.js'
 
 const port = Number(process.env.NOREN_RH_UNDERWRITER_PORT ?? 8721)
 const decisionsLog = process.env.NOREN_RH_DECISIONS_LOG ?? resolve(fileURLToPath(new URL('../../.fork/credit-decisions.jsonl', import.meta.url)))
@@ -35,7 +38,13 @@ const server = createServer(async (req, res) => {
       const borrower = decodeURIComponent(req.url.slice(7))
       if (!isAddress(borrower)) return send(400, { error: 'Invalid borrower address' })
       const history = await readWalletHistory(borrower)
-      return send(200, { history, score: scoreWallet(history) })
+      const offchain = await offchainProofOf(borrower)
+      const score = scoreWallet(history, { offchain })
+      // "After" for the UI: this wallet plus one more credit-score proof (+15, the largest boost), within the 20-point cap.
+      const ifVerified = scoreWallet(history, { offchain: { provider: 'Reclaim', proofId: 'hypothetical', points: (offchain?.points ?? 0) + 15 } })
+      // When 0G is configured it sets the signed terms (see decide.ts); the score, this factor included, decides only without it.
+      const decidedBy = process.env.ZG_PC_API_KEY ? '0g' : 'deterministic-score'
+      return send(200, { history, score, reclaim: { verified: !!offchain, ...(offchain ? { provider: offchain.provider, proofId: offchain.proofId } : {}), points: Math.min(OFFCHAIN_PROOF_POINTS, offchain?.points ?? 0), maxPoints: OFFCHAIN_PROOF_POINTS, decidedBy, ifVerified: { score: ifVerified.score, tier: ifVerified.tier, limitUsdg: ifVerified.limitUsdg, collateralRatioBps: ifVerified.collateralRatioBps } } })
     }
     if (req.method === 'POST' && req.url === '/attest') {
       let raw = ''
@@ -47,7 +56,7 @@ const server = createServer(async (req, res) => {
       if (!borrower || !isAddress(borrower)) return send(400, { error: 'Invalid borrower address' })
 
       const history = await readWalletHistory(borrower)
-      const decision = await decideTerms(history)
+      const decision = await decideTerms(history, { offchain: await offchainProofOf(borrower) })
       if (decision.zg.status !== 'refused' || decision.zg.evidence) await appendDecision(decisionsLog, toStoredDecision(decision.zg, borrower))
       if (decision.logEntry) console.log(serialize({ attestationLog: decision.logEntry, borrower }))
       if (decision.source === 'refused') return send(502, { error: decision.note, decision })
@@ -64,10 +73,12 @@ const server = createServer(async (req, res) => {
       // Reputation milestones (World ID, on-time repayments, repaid loans) scale the attested limit.
       const reputation = (process.env.NOREN_RH_REPUTATION as Address | undefined) ?? (deployment as { reputation?: Address } | undefined)?.reputation
       const multiplier = await reputationMultiplierBps(client, reputation, borrower)
-      const terms = { ...decision.terms, limitUsdg: (decision.terms.limitUsdg * BigInt(multiplier.bps)) / 10_000n }
+      const scaled = { ...decision.terms, limitUsdg: (decision.terms.limitUsdg * BigInt(multiplier.bps)) / 10_000n }
+      const secured = await securedTerms(client, reputation, (deployment as { borrow?: Address } | undefined)?.borrow ?? (process.env.NOREN_RH_BORROW as Address | undefined), borrower)
+      const terms = withSecured(scaled, secured)
       const signed = await signAttestation({ borrower, terms, credit, chainId: await client.getChainId(), publicClient: client })
       if (decision.logEntry) console.log(serialize({ attestationLog: decision.logEntry, borrower, signed: !signed.declined }))
-      return send(200, { decisionSource: decision.source, decision, reputationMultiplier: { ...multiplier, baseLimitUsdg: decision.terms.limitUsdg }, ...signed })
+      return send(200, { decisionSource: decision.source, decision, reputationMultiplier: { ...multiplier, baseLimitUsdg: decision.terms.limitUsdg }, secured, ...signed })
     }
     if (req.method === 'POST' && req.url === '/attest-age') {
       let raw = ''

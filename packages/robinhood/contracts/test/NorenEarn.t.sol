@@ -678,5 +678,23 @@ contract NorenEarnTest is RobinhoodBase {
     vm.expectRevert(NorenReputation.BadConfig.selector);
     rep.setStarter(101e6);
   }
-}
 
+  /// @notice Audit RH-C-4: once the oracle disables an asset its locked shares stop counting toward
+  /// the borrow limit (no new risk), while the health factor still values them for liquidation.
+  function test_Audit_RHC4_disabledAssetLeavesBorrowLimitNotHealth() public {
+    _depositEth(alice, 1 ether);
+    _lockAll(alice, nETH);
+    uint256 limit = _borrowLimitFor(alice);
+    vm.prank(alice);
+    borrow.borrow(limit / 2, alice);
+    uint256 hf = borrow.healthFactor(alice);
+    vm.prank(owner);
+    oracle.disableAsset(RH.WETH);
+    assertEq(borrow.borrowLimitUsdg(alice), 0, 'no new borrowing against a disabled asset');
+    assertEq(borrow.healthFactor(alice), hf, 'still valued for liquidation');
+    uint256 debt = borrow.debtOf(alice);
+    vm.prank(alice);
+    vm.expectRevert(abi.encodeWithSelector(NorenBorrow.ExceedsLimit.selector, debt + 1, 0));
+    borrow.borrow(1, alice);
+  }
+}

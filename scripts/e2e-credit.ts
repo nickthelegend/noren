@@ -39,6 +39,7 @@ const rhW = createWalletClient({ chain: rhChain, transport: http(c.robinhoodRpc,
 const arcW = createWalletClient({ chain: arcChain, transport: http(cfg.rpcUrl), account: borrower });
 const send = async (w: any, pub: any, req: any) => { const hash = await w.writeContract(req); const r = await pub.waitForTransactionReceipt({ hash }); if (r.status !== 'success') throw new Error(`${req.functionName} reverted: ${hash}`); return { hash: hash as Hex, gas: r.gasUsed as bigint }; };
 
+const lensAbi = parseAbi(['function maxCreditLimit(address borrower, address collateral, uint256 amount) view returns (uint256 limitUsdc6, uint256 valueUsd8, uint16 ltvBps)']);
 const creditAbi = parseAbi([
   'function applyAttestation((address borrower,uint8 tier,uint256 limitUsdg,uint16 collateralRatioBps,uint256 nonce,uint64 expiry) a, bytes signature)',
   'function attestationNonce(address) view returns (uint256)',
@@ -73,17 +74,22 @@ ok('EIP-712 attestation verified on-chain', `tier ${terms[0]}, collateral ratio 
 // 3. open the line: 2 NVDA at the Chainlink price
 const collateral = parseUnits('2', 18);
 await send(rhW, rh, { address: ROBINHOOD.stocks.NVDA, abi: erc20Abi, functionName: 'approve', args: [c.creditContract, collateral] });
-const limit = 150_000_000n, expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
+// Size the line from NorenCreditLens.maxCreditLimit (collateral risk value x the tier LTV, capped by the on-chain
+// reputation tier and the available credit), never from creditTerms alone: 150 USDC, or less if that is all it allows.
+if (!c.creditLens) throw new Error('Setup required: NorenCreditLens (creditLens) is not in this stack\'s config; rebuild the Robinhood snapshot');
+const [maxLimit, , maxLtv] = await rh.readContract({ address: c.creditLens, abi: lensAbi, functionName: 'maxCreditLimit', args: [borrower.address, ROBINHOOD.stocks.NVDA, collateral] });
+const limit = (maxLimit < 150_000_000n ? maxLimit : 150_000_000n) / 1_000_000n * 1_000_000n, expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
+if (limit === 0n) throw new Error(`maxCreditLimit allows no line for 2 NVDA (LTV ${Number(maxLtv) / 100}%)`);
 const opened = await send(rhW, rh, { address: c.creditContract, abi: creditAbi, functionName: 'openCreditLine', args: [ROBINHOOD.stocks.NVDA, collateral, limit, expiry] });
 const [ev] = await rh.getLogs({ address: c.creditContract, event: parseAbiItem('event CreditLineOpened(address indexed borrower, bytes32 indexed lineId, uint256 limitUsdc6, uint64 expiry, uint256 collateralValueUsd8)'), args: { borrower: borrower.address }, fromBlock: BigInt(c.robinhoodFromBlock) });
 const lineId: Hex = ev.args.lineId;
-ok('Credit line opened on Robinhood', `2 NVDA locked (collateral $${(Number(ev.args.collateralValueUsd8) / 1e8).toFixed(2)} at Chainlink), limit 150 USDC, line ${lineId}, tx ${opened.hash}`);
+ok('Credit line opened on Robinhood', `2 NVDA locked (collateral $${(Number(ev.args.collateralValueUsd8) / 1e8).toFixed(2)} at Chainlink), limit ${Number(limit) / 1e6} USDC (maxCreditLimit ${(Number(maxLimit) / 1e6).toFixed(2)} at ${Number(maxLtv) / 100}% LTV), line ${lineId}, tx ${opened.hash}`);
 
 // 4. CRE: Robinhood → Arc
 const tOpen = Date.now();
 await until('the CRE bridge to sync the line to Arc', async () => (await arc.readContract({ address: c.creditLine, abi: lineAbi, functionName: 'lines', args: [lineId] })).limitUsdc6 === limit);
 const bridge1 = await until('the CRE bridge log entry', async () => (await json('/credit/bridge')).find((e: any) => e.source === opened.hash && e.written), 30_000);
-ok('CRE bridge → Arc', `NorenCreditLine limit 150 USDC after ${((Date.now() - tOpen) / 1000).toFixed(1)} s; forwarder tx ${bridge1.written} (${(bridge1.ms / 1000).toFixed(1)} s in the CRE simulator)`);
+ok('CRE bridge → Arc', `NorenCreditLine limit ${Number(limit) / 1e6} USDC after ${((Date.now() - tOpen) / 1000).toFixed(1)} s; forwarder tx ${bridge1.written} (${(bridge1.ms / 1000).toFixed(1)} s in the CRE simulator)`);
 
 // 5. pay later on Arc
 const merchant = cfg.merchant as Address;

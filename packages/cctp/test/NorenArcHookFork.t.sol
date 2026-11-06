@@ -50,6 +50,17 @@ contract ForkRouter is INorenActionSink {
   }
 }
 
+/// A generic CCTP V2 message recipient anyone can deploy on Arc (what an attacker would point `sendMessage` at).
+contract AttackerHandler {
+  function handleReceiveFinalizedMessage(uint32, bytes32, uint32, bytes calldata) external pure returns (bool) {
+    return true;
+  }
+
+  function handleReceiveUnfinalizedMessage(uint32, bytes32, uint32, bytes calldata) external pure returns (bool) {
+    return true;
+  }
+}
+
 /// FORK TESTS against Circle's real CCTP V2 contracts.
 /// 1. Arc Testnet fork: NorenArcHook drives the real MessageTransmitterV2, TokenMessengerV2 and TokenMinterV2, which mint Arc
 ///    USDC (0x3600..., whose precompile-backed code is swapped for ForkArcUsdc on the fork). Iris cannot attest a message that was never burned, so on the fork only, the test enables
@@ -77,7 +88,7 @@ contract NorenArcHookForkTest is Test {
   function _arcFork() internal {
     vm.createSelectFork(vm.envOr("ARC_TESTNET_RPC", string("https://rpc.testnet.arc.io")));
     vm.etch(ARC_USDC, address(new ForkArcUsdc()).code);
-    hook = new NorenArcHook(IMessageTransmitterV2(MT), IERC20Min(ARC_USDC), ARC_FORWARDER, address(this));
+    hook = new NorenArcHook(IMessageTransmitterV2(MT), IERC20Min(ARC_USDC), TM, ARC_FORWARDER, address(this));
     address manager = IAttestable(MT).attesterManager();
     vm.startPrank(manager);
     IAttestable(MT).enableAttester(vm.addr(attesterKey));
@@ -157,6 +168,32 @@ contract NorenArcHookForkTest is Test {
     // someone other than NorenArcHook tries to complete it directly at Circle's transmitter
     vm.expectRevert();
     IMessageTransmitterV2(MT).receiveMessage(m, _attest(m));
+  }
+
+  /// ARC-1 on Circle's real MessageTransmitterV2: a generic `sendMessage` message from any source address, addressed to
+  /// an attacker's handler, with the hook as destinationCaller and a body shaped like a burn whose `messageSender` is a
+  /// victim borrower. Circle's transmitter accepts it (checked below by calling it as the hook), so before the fix the
+  /// hook would have routed a forged `sourceSender` to the router. The hook now rejects it before Circle is called.
+  function test_Audit_ARC1_fork_forgedGenericMessageRejected() public {
+    _arcFork();
+    address handler = address(new AttackerHandler());
+    address victim = makeAddr("victimBorrower");
+    bytes memory action = abi.encode(uint8(5), victim, bytes32("ref"), abi.encode(bytes32("line"), alice, bytes32("inv"), uint256(1e6)));
+    bytes memory body = abi.encodePacked(
+      uint32(1), _b32(BASE_SEPOLIA_USDC), _b32(address(hook)), uint256(0), _b32(victim), uint256(0), uint256(0), uint256(0), action
+    );
+    bytes32 nonce = keccak256("noren-fork-forged");
+    bytes memory m = abi.encodePacked(
+      uint32(1), uint32(6), uint32(26), nonce, _b32(makeAddr("attackerOnBase")), _b32(handler), _b32(address(hook)), uint32(1000), uint32(2000), body
+    );
+    bytes memory att = _attest(m);
+    vm.expectRevert(abi.encodeWithSelector(NorenArcHook.NotBurnMessage.selector, _b32(handler)));
+    hook.relay(m, att);
+    // The vector was real: Circle's transmitter accepts this message from the hook's address.
+    uint256 snap = vm.snapshotState();
+    vm.prank(address(hook));
+    assertTrue(IMessageTransmitterV2(MT).receiveMessage(m, att));
+    vm.revertToState(snap);
   }
 
   function test_fork_arc_unknownAttesterRejectedByCircle() public {

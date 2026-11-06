@@ -14,6 +14,7 @@ import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
 import { AquaMakerPanel } from "./AquaMaker";
+import { StockLtv } from "./StockCredit";
 import { SelfRepayCard } from "./SelfRepay";
 
 const symOf = (a: Address) => TOKENS.find((t) => t.address.toLowerCase() === a.toLowerCase())?.sym ?? shortHex(a, 4);
@@ -70,6 +71,7 @@ export function BorrowTab({ w }: { w: Wallet }) {
 
   return (
     <div className="nk-col">
+      <StockLtv w={w} compact />
       <div className="nk-hero" aria-label="Borrow limit">
         <small>Borrow limit · NorenBorrow on Robinhood Chain</small>
         <b>{pos ? <><i>$</i>{fmtUnits(pos.limit, 6, 2)}</> : err ? "–" : "…"}</b>

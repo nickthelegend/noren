@@ -40,7 +40,13 @@ export function collateralFloor(history: WalletHistory): { tier: 1; limitUsdg: b
   return { tier: 1, limitUsdg: (limit / 1_000_000n) * 1_000_000n, collateralRatioBps: 15_000 }
 }
 
-export function scoreWallet(history: WalletHistory): WalletScore {
+/** Reclaim (zkTLS) proofs the Noren server verified for this wallet: off-chain facts, no raw values. `points` is the
+ *  sum of each proof's group boost (credit score 15, KYC 8, balance 8, identity 3; packages/server reclaim-providers.ts). */
+export type OffchainProof = { provider: string; proofId: string; points: number }
+/** Cap on the Reclaim boost, whatever the number of proofs. */
+export const OFFCHAIN_PROOF_POINTS = 20
+
+export function scoreWallet(history: WalletHistory, extras: { offchain?: OffchainProof | null } = {}): WalletScore {
   const factors: ScoreFactor[] = []
   const add = (id: string, label: string, value: number | string, points: number, maxPoints: number, data: { source: string; status: 'available' | 'unavailable'; note: string }) =>
     factors.push({ id, label, value, points: data.status === 'available' ? Math.round(points * 10) / 10 : 0, maxPoints, ...data })
@@ -56,6 +62,10 @@ export function scoreWallet(history: WalletHistory): WalletScore {
   const prior = history.repaymentHistory
   const repayment = prior.defaults > 0 ? 0 : Math.max(0, Math.min(20, 10 + prior.onTime * 2.5 - prior.late * 5))
   add('repayments', 'Noren repayment record', `${prior.onTime} on time, ${prior.late} late, ${prior.defaults} liquidations`, repayment, 20, prior)
+  const proof = extras.offchain
+  add('offchainProof', 'Off-chain facts proved with Reclaim (zkTLS)', proof ? proof.provider : 'not proved', proof ? Math.min(OFFCHAIN_PROOF_POINTS, Math.max(0, proof.points)) : 0, OFFCHAIN_PROOF_POINTS, proof
+    ? { source: `reclaim:${proof.proofId.slice(0, 18)}`, status: 'available', note: `Verified by the Noren server with the Reclaim SDK (${proof.provider})` }
+    : { source: 'reclaim', status: 'unavailable', note: 'Not proved yet: Credit → Raise your limit → Prove with Reclaim' })
 
   const score = Math.max(0, Math.min(100, Math.round(factors.reduce((sum, f) => sum + f.points, 0))))
   let tier = score < 30 ? 0 : score < 50 ? 1 : score < 65 ? 2 : score < 80 ? 3 : 4

@@ -21,7 +21,7 @@ export const invoiceIdIn = (s: string) => /0x[0-9a-fA-F]{64}/.exec(s)?.[0] as He
 export const WAYS = [
   { id: "private", title: "Pay privately", sub: "USDC from your private balance. The shop never learns who paid.", tag: "Private" },
   { id: "usdc", title: "Pay with USDC", sub: "From your public wallet on Arc.", tag: "Public" },
-  { id: "stocks", title: "Pay with stocks", sub: "NVDA, TSLA, AAPL… sold to the best price for the shop's USDG.", tag: "Public" },
+  { id: "stocks", title: "Pay with stocks or crypto", sub: "Any Stock Token you hold, or ETH, sold to the best price for the shop's USDG.", tag: "Public" },
   { id: "later", title: "Pay in 3 / Pay later, privately", sub: "From your credit line. Pay later, privately keeps you hidden from the shop.", tag: "Private option" },
 ] as const;
 

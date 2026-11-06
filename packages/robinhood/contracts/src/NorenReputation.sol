@@ -31,6 +31,12 @@ interface INorenBorrowRecord {
 ///   account per nullifier.
 /// Late installments and liquidations (Pay in 3, Arc lines and loans) subtract points.
 ///
+/// - Private attestations (`recordAttestation`): the attester (the underwriter key or an owner-set
+///   attester) records that it checked one kind of proof off-chain (World ID, a Reclaim zkTLS proof of
+///   a credit score, KYC, a balance or an identity, or on-chain repayments elsewhere). Only the kind,
+///   a weight and a salted commitment keccak256(abi.encode(kind, proofId, salt)) go on-chain: no name,
+///   score, balance or provider account. Each kind counts once per borrower and a commitment is never
+///   reused. The borrower's address and which kinds of proof it has are public; the data is not.
 /// Milestones unlock tiers: borrow LTV 66 -> 70 -> 75 -> 80% (never above 80%), a credit-limit
 /// multiplier the underwriter applies to the Pay-in-3 / Arc line limit it attests, and the World ID
 /// starter line (unsecured, on Arc, opened by the World ID server through the CRE bridge).
@@ -46,6 +52,19 @@ contract NorenReputation is Ownable2Step, EIP712 {
   uint256 public constant M_FIRST_LOAN_REPAID = 1 << 4;
   uint256 public constant M_LOANS_REPAID_3 = 1 << 5;
   uint256 public constant M_CLEAN_RECORD = 1 << 6;
+  /// @notice An ONCHAIN_REPAYMENT attestation (repayment history the attester verified elsewhere).
+  uint256 public constant M_ATTESTED_REPAYMENT = 1 << 7;
+
+  /// @notice Private attestation kinds (bit `kind` in `attestedKinds`).
+  uint8 public constant KIND_WORLD_ID = 0;
+  uint8 public constant KIND_RECLAIM_CREDIT_SCORE = 1;
+  uint8 public constant KIND_RECLAIM_KYC = 2;
+  uint8 public constant KIND_RECLAIM_BALANCE = 3;
+  uint8 public constant KIND_RECLAIM_IDENTITY = 4;
+  uint8 public constant KIND_ONCHAIN_REPAYMENT = 5;
+  uint8 public constant KIND_COUNT = 6;
+  /// @notice Points one attestation adds at boostBps = 10,000 (it adds boostBps / 10,000 of this).
+  uint256 public constant MAX_KIND_POINTS = 25;
 
   uint256 public constant POINTS_ON_TIME = 10; // per installment, first 12 count
   uint256 public constant MAX_ON_TIME_COUNTED = 12;
@@ -94,12 +113,25 @@ contract NorenReputation is Ownable2Step, EIP712 {
   mapping(address account => bytes32) public nullifierOf;
   mapping(address account => uint64) public verifiedAt;
   mapping(address account => uint64) public firstSeenAt;
+  /// @notice Optional attester besides NorenCredit.underwriter() for `recordAttestation` (0 = none).
+  address public attester;
+  /// @notice Bitmap of the attestation kinds recorded for an account (bit = kind).
+  mapping(address account => uint256) public attestedKinds;
+  /// @notice The weight (bps of MAX_KIND_POINTS) each recorded kind carries.
+  mapping(address account => mapping(uint8 kind => uint16)) public kindBoostBps;
+  /// @notice The commitment recorded for (account, kind).
+  mapping(address account => mapping(uint8 kind => bytes32)) public commitmentOf;
+  /// @notice Commitments ever recorded (replay protection across accounts and kinds).
+  mapping(bytes32 commitment => bool) public commitmentUsed;
 
   event BorrowSet(address indexed borrow);
   event WorldIdSignerSet(address indexed signer);
   event StarterSet(uint256 starterUsdc6);
   event HumanVerified(address indexed account, bytes32 indexed nullifierHash);
   event AccountAgeRecorded(address indexed account, uint64 firstSeenAt);
+  event AttesterSet(address indexed attester);
+  /// @notice A private attestation: only the kind and the salted commitment, never the proof's data.
+  event AttestationRecorded(address indexed borrower, uint8 indexed kind, bytes32 commitment);
 
   error BadSignature();
   error AttestationExpired(uint64 expiry);
@@ -108,6 +140,10 @@ contract NorenReputation is Ownable2Step, EIP712 {
   error BadAttestation();
   error NotOlder(uint64 firstSeenAt, uint64 recorded);
   error BadConfig();
+  error NotAttester(address caller);
+  error BadKind(uint8 kind);
+  error KindAlreadyRecorded(address borrower, uint8 kind);
+  error CommitmentUsed(bytes32 commitment);
 
   constructor(address owner_, INorenCreditHistory credit_, address worldIdSigner_)
     Ownable(owner_)
@@ -137,7 +173,54 @@ contract NorenReputation is Ownable2Step, EIP712 {
     emit StarterSet(usdc6);
   }
 
+  /// @notice Set (or clear with 0) an attester besides the underwriter key.
+  function setAttester(address a) external onlyOwner {
+    attester = a;
+    emit AttesterSet(a);
+  }
+
   // ---------------------------------------------------------------- attestations
+
+  /// @notice The commitment the attester records: keccak256(abi.encode(kind, proofId, salt)). `proofId`
+  /// identifies the verified proof off-chain (e.g. the Reclaim proof identifier or World ID nullifier);
+  /// `salt` is 32 random bytes the server keeps, so the commitment cannot be brute-forced.
+  function commitmentFor(uint8 kind, bytes32 proofId, bytes32 salt) external pure returns (bytes32) {
+    return keccak256(abi.encode(kind, proofId, salt));
+  }
+
+  /// @notice Attester only: record that `borrower` passed one `kind` of proof, verified off-chain.
+  /// `boostBps` (0-10,000) is the weight the attester gives it, in bps of MAX_KIND_POINTS; it is public,
+  /// so a server that wants to reveal nothing beyond the kind uses one fixed weight per kind.
+  /// Each kind counts once per borrower; a commitment is accepted once, ever.
+  function recordAttestation(address borrower, uint8 kind, bytes32 commitment, uint16 boostBps) external {
+    if (msg.sender != credit.underwriter() && (msg.sender != attester || attester == address(0))) revert NotAttester(msg.sender);
+    if (kind >= KIND_COUNT) revert BadKind(kind);
+    if (borrower == address(0) || commitment == bytes32(0) || boostBps > 10_000) revert BadAttestation();
+    uint256 kinds = attestedKinds[borrower];
+    if (kinds & (1 << kind) != 0) revert KindAlreadyRecorded(borrower, kind);
+    if (commitmentUsed[commitment]) revert CommitmentUsed(commitment);
+    commitmentUsed[commitment] = true;
+    attestedKinds[borrower] = kinds | (1 << kind);
+    kindBoostBps[borrower][kind] = boostBps;
+    commitmentOf[borrower][kind] = commitment;
+    emit AttestationRecorded(borrower, kind, commitment);
+  }
+
+  /// @notice Private reputation: the tier, the bitmap of recorded attestation kinds and their count.
+  /// No proof data exists on-chain to return.
+  function attestationsOf(address account) external view returns (uint8 tier, uint256 kinds, uint8 count) {
+    kinds = attestedKinds[account];
+    for (uint256 k = kinds; k != 0; k &= k - 1) ++count;
+    tier = breakdownOf(account).tier;
+  }
+
+  /// @notice Points from recorded attestations (each kind: MAX_KIND_POINTS x boostBps / 10,000).
+  function attestationPointsOf(address account) public view returns (uint256 pts) {
+    uint256 kinds = attestedKinds[account];
+    for (uint8 k; k < KIND_COUNT; ++k) {
+      if (kinds & (1 << k) != 0) pts += MAX_KIND_POINTS * kindBoostBps[account][k] / 10_000;
+    }
+  }
 
   function domainSeparator() external view returns (bytes32) {
     return _domainSeparatorV4();
@@ -201,7 +284,8 @@ contract NorenReputation is Ownable2Step, EIP712 {
     }
     b.firstSeenAt = firstSeenAt[account];
     if (b.firstSeenAt != 0 && b.firstSeenAt <= block.timestamp) b.ageDays = uint64((block.timestamp - b.firstSeenAt) / 1 days);
-    b.verifiedHuman = nullifierOf[account] != bytes32(0);
+    uint256 kinds = attestedKinds[account];
+    b.verifiedHuman = nullifierOf[account] != bytes32(0) || kinds & (1 << KIND_WORLD_ID) != 0;
 
     uint256 m;
     if (b.verifiedHuman) m |= M_VERIFIED_HUMAN;
@@ -211,12 +295,15 @@ contract NorenReputation is Ownable2Step, EIP712 {
     if (b.repaidLoans >= 1) m |= M_FIRST_LOAN_REPAID;
     if (b.repaidLoans >= 3) m |= M_LOANS_REPAID_3;
     if (b.late == 0 && b.liquidations == 0 && (b.onTime != 0 || b.repaidLoans != 0)) m |= M_CLEAN_RECORD;
+    if (kinds & (1 << KIND_ONCHAIN_REPAYMENT) != 0) m |= M_ATTESTED_REPAYMENT;
     b.milestones = m;
 
     uint256 plus = _min(b.onTime, MAX_ON_TIME_COUNTED) * POINTS_ON_TIME + _min(b.repaidLoans, MAX_LOANS_COUNTED) * POINTS_LOAN_REPAID;
     if (m & M_ACCOUNT_30D != 0) plus += POINTS_AGE_30D;
     if (m & M_ACCOUNT_180D != 0) plus += POINTS_AGE_180D;
-    if (b.verifiedHuman) plus += POINTS_VERIFIED_HUMAN;
+    // A World ID attestation earns its kind points below, not POINTS_VERIFIED_HUMAN as well.
+    if (nullifierOf[account] != bytes32(0)) plus += POINTS_VERIFIED_HUMAN;
+    plus += attestationPointsOf(account);
     uint256 minus = uint256(b.late) * PENALTY_LATE + uint256(b.liquidations) * PENALTY_LIQUIDATION;
     b.points = plus > minus ? plus - minus : 0;
 
@@ -224,7 +311,7 @@ contract NorenReputation is Ownable2Step, EIP712 {
       Tier memory tt = tierTable(t);
       if (b.points < tt.minPoints) continue;
       if (tt.needsHuman && !b.verifiedHuman) continue;
-      if (tt.needsRepayment && m & (M_FIRST_LOAN_REPAID | M_ON_TIME_3) == 0) continue;
+      if (tt.needsRepayment && m & (M_FIRST_LOAN_REPAID | M_ON_TIME_3 | M_ATTESTED_REPAYMENT) == 0) continue;
       b.tier = t;
       break;
     }

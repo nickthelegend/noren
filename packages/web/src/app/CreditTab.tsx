@@ -1,9 +1,9 @@
 /**
  * Credit: your reputation (the history underwriter's score from real Robinhood Chain history, signed with EIP-712),
- * your credit limit (NorenCredit's terms on-chain), milestones, and a World ID boost (one starter line per human).
+ * your credit limit (NorenCredit's terms on-chain), "Raise your limit" tasks (World ID, on-time repayment, a Reclaim
+ * zkTLS proof, collateral) with the limit before and after each, and milestones.
  */
 import { useEffect, useMemo, useState } from "react";
-import { VerifyHuman } from "@noren/world-id/react";
 import { SERVER, short, usdc } from "../api";
 import { msgOf } from "../ui";
 import { creditActions, type AiCheck, type Underwriting } from "../credit-actions";
@@ -15,6 +15,10 @@ import { readLadder } from "./earn";
 import type { Address } from "viem";
 import { fmtUnits } from "./tokens";
 import { CreditLineCard } from "./CreditLine";
+import { RaiseLimit } from "./RaiseLimit";
+import { StockCreditFlow } from "./StockCredit";
+
+const jump = (h: string) => { if (h.startsWith("#/")) { location.hash = h; return; } document.getElementById(h.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
 export function CreditTab({ w }: { w: Wallet }) {
   const actions = useMemo(() => creditActions(w.cfg, w.oc), [w.cfg, w.oc]);
@@ -38,7 +42,11 @@ export function CreditTab({ w }: { w: Wallet }) {
         <p>{posErr ? posErr : !terms ? "Reading your terms…" : terms.tier === 0 ? "No tier yet. Your first credit line applies the underwriter's signed attestation." : `Tier ${terms.tier} · ${(terms.ratioBps / 100).toFixed(0)}% collateral · ${usdc(terms.availableUsdg)} USDG available`}</p>
       </div>
 
-      <CreditLineCard w={w} />
+      <StockCreditFlow w={w} nonce={verified} go={jump} />
+
+      <RaiseLimit w={w} u={u} nonce={verified} onVerified={() => setVerified((n) => n + 1)} />
+
+      <div id="nk-line"><CreditLineCard w={w} /></div>
 
       <Card title="Reputation" sub="Scored from this wallet's real Robinhood Chain history, signed with EIP-712 and checked on-chain by NorenCredit" pill={u ? <span className="nk-pill">{u.tier}</span> : undefined}>
         <div className="nk-pad">
@@ -61,13 +69,6 @@ export function CreditTab({ w }: { w: Wallet }) {
           {rep.error ? <SetupCard title="Reputation milestones aren't live on this stack" text={rep.error} /> : !rep.items ? <Skel rows={3} /> : (
             <ul className="nk-items">{rep.items.map((m) => <li key={m.id} data-done={m.done}><span className="nk-check">{m.done ? "✓" : ""}</span><div><b>{m.title}</b><small>{m.detail}</small></div>{m.boost && <span className="r nk-mono">{m.boost}</span>}</li>)}</ul>
           )}
-        </div>
-      </Card>
-
-      <Card title="Verify you're human with World ID" sub="A boost for wallets without stock: one unsecured starter line per unique human, opened on Arc by Chainlink CRE">
-        <div className="nk-pad nk-world">
-          <p className="nk-fine" style={{ margin: "0 4px 10px" }}>Production World ID: tap <b>Verify with World ID</b>, then scan the QR code with <b>World App</b> and finish the Selfie Check on your phone. The request stays open for 5 minutes; if it expires, start again.</p>
-          <VerifyHuman serverUrl={SERVER} wallet={w.oc.address} onResult={() => { setVerified((n) => n + 1); w.refresh(); }} />
         </div>
       </Card>
 

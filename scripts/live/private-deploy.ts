@@ -5,7 +5,7 @@
 //   pnpm exec tsx scripts/live/private-deploy.ts
 //
 //   1. NorenShieldSink(usdc, Entrypoint, PrivacyPool, NorenArcActionRouter, keccak256("CCTP"), operator)
-//   2. NorenArcHook(MessageTransmitterV2, usdc, MockKeystoneForwarder, operator)  (the privacy hook)
+//   2. NorenArcHook(MessageTransmitterV2, usdc, TokenMessengerV2, MockKeystoneForwarder, operator)  (the privacy hook)
 //   3. hook.setRouter(sink)   4. sink.setRail(hook, true)   5. router.setRail(sink, keccak256("CCTP"))
 //
 // Every tx is sent by the operator key under the shared nonce lock /private/tmp/noren-arc-deployer.lock. Resumable:
@@ -23,6 +23,7 @@ import { operatorKey, RPC, txLink, addressLink } from './e2e-live.ts';
 export const RECORD = resolve('scripts/live/private-deployments.json');
 export const ROUTER: Address = '0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4';
 export const TRANSMITTER: Address = '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275';
+export const TOKEN_MESSENGER: Address = '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'; // Circle TokenMessengerV2 (CCTP V2 testnets)
 export const FORWARDER: Address = '0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1';
 export const RAIL_CCTP = keccak256(toHex('CCTP'));
 const OPERATOR = '0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80';
@@ -68,7 +69,7 @@ async function main() {
       rec.NorenShieldSink = r.contractAddress; save(rec);
     }
     if (!rec.NorenArcHook) {
-      const hash = await wallet.deployContract({ abi: hook.abi, bytecode: hook.bytecode, args: [TRANSMITTER, d.usdc, FORWARDER, operator.address] });
+      const hash = await wallet.deployContract({ abi: hook.abi, bytecode: hook.bytecode, args: [TRANSMITTER, d.usdc, TOKEN_MESSENGER, FORWARDER, operator.address] });
       const r = await settle('deploy NorenArcHook (SHIELD-aware)', hash);
       rec.NorenArcHook = r.contractAddress; save(rec);
     }

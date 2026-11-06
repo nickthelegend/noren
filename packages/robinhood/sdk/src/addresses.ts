@@ -42,6 +42,10 @@ export interface NorenAddresses {
   aqua?: Address
   /** NorenDutchAuction: partial Dutch-auction liquidations (needs the router with NorenDutchDecay, opcode 35). */
   dutchAuction?: Address
+  /** NorenCreditLens: maxCreditLimit (collateral x tier LTV) and live share-line yield. */
+  creditLens?: Address
+  /** NorenReputation: tiers, private attestations (attestationsOf). */
+  reputation?: Address
   deployBlock?: number
   chainId?: number
   rpcUrl?: string

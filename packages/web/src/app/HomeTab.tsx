@@ -58,6 +58,7 @@ export function HomeTab({ w, go }: { w: Wallet; go: (t: Tab) => void }) {
   return (
     <div className="nk-home">
       <div className="nk-home-main">
+        <p className="nk-home-tag">Noren lets merchants accept stablecoins, stocks or credit — privately. Pay any Noren checkout privately, with stocks or crypto, or later on credit.</p>
         <section className="nk-wallet" aria-label="Your balance">
           <div className="nk-wallet-top">
             <small>Total balance</small>

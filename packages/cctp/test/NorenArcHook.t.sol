@@ -112,7 +112,7 @@ contract NorenArcHookTest is Test {
     usdc = new TestUsdc();
     mt = new TransmitterDouble(usdc);
     mt.setAttestation(attestation);
-    hook = new NorenArcHook(mt, usdc, forwarder, owner);
+    hook = new NorenArcHook(mt, usdc, address(0x8FE6), forwarder, owner);
     router = new RouterDouble();
   }
 
@@ -202,6 +202,35 @@ contract NorenArcHookTest is Test {
     bytes memory m = _msg(6, 26, bytes32(uint256(6)), address(0), alice, 1e6, 0, "");
     vm.expectRevert(abi.encodeWithSelector(NorenArcHook.WrongDestinationCaller.selector, bytes32(0)));
     hook.relay(m, attestation);
+  }
+
+  /// ARC-1: a generic MessageTransmitterV2.sendMessage message (anyone can send one, and Iris attests it) can name
+  /// the hook as destinationCaller and carry a body shaped like a burn with a forged `messageSender`. The hook must
+  /// reject anything not addressed to Circle's TokenMessengerV2, or the router would trust the forged sender
+  /// (PAY_ON_CREDIT checks sourceSender == borrower; CREDIT_LINE checks creditAuthority).
+  function test_Audit_ARC1_genericMessageWithForgedDepositorRejected() public {
+    vm.prank(owner);
+    hook.setRouter(router);
+    address victimBorrower = makeAddr("victimBorrower");
+    bytes memory params = abi.encode(bytes32("line"), merchant, bytes32("inv"), uint256(1e6));
+    bytes memory m = _msgFrom(victimBorrower, bytes32(uint256(77)), address(hook), 0, 0, _action(5, victimBorrower, params));
+    bytes32 attackerRecipient = _b32(makeAddr("attackerHandler"));
+    assembly {
+      mstore(add(add(m, 32), 76), attackerRecipient) // header recipient: the attacker's own handler, not TokenMessengerV2
+    }
+    vm.expectRevert(abi.encodeWithSelector(NorenArcHook.NotBurnMessage.selector, attackerRecipient));
+    hook.relay(m, attestation);
+    vm.expectRevert(abi.encodeWithSelector(NorenArcHook.NotBurnMessage.selector, attackerRecipient));
+    vm.prank(forwarder);
+    hook.onReport("", _report(m));
+    assertEq(router.lastSender(), address(0));
+    assertFalse(hook.processed(bytes32(uint256(77))));
+  }
+
+  function test_Audit_ARC1_tokenMessengerIsRequired() public {
+    vm.expectRevert(NorenArcHook.ZeroAddress.selector);
+    new NorenArcHook(mt, usdc, address(0), forwarder, owner);
+    assertEq(hook.tokenMessenger(), address(0x8FE6));
   }
 
   function test_shortMessageReverts() public {

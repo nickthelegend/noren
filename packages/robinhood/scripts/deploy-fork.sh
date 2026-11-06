@@ -55,7 +55,7 @@ OUT="$(NOREN_RH_OWNER=$OWNER NOREN_RH_UNDERWRITER=$UNDERWRITER NOREN_RH_FORWARDE
 pick() { sed -nE "s/.*$1[[:space:]]+(0x[[:xdigit:]]{40}).*/\1/p" <<<"$OUT" | tail -1; }
 ORACLE=$(pick NOREN_RH_ORACLE); VAULT=$(pick NOREN_RH_VAULT); GATEWAY=$(pick NOREN_RH_GATEWAY); CREDIT=$(pick NOREN_RH_CREDIT)
 ROUTER=$(pick NOREN_RH_SWAPVM_ROUTER); LIQUIDITY=$(pick NOREN_RH_LIQUIDITY); DUTCH=$(pick NOREN_RH_DUTCH_AUCTION)
-REPUTATION=$(pick NOREN_RH_REPUTATION); BORROW=$(pick NOREN_RH_BORROW)
+REPUTATION=$(pick NOREN_RH_REPUTATION); BORROW=$(pick NOREN_RH_BORROW); CREDIT_LENS=$(pick NOREN_RH_CREDIT_LENS)
 DEPOSIT_VAULTS=$(sed -nE 's/.*NOREN_RH_DEPOSIT_VAULT[[:space:]]+(0x[[:xdigit:]]{40})[[:space:]]+(0x[[:xdigit:]]{40}).*/{"asset":"\1","vault":"\2"}/p' <<<"$OUT" | paste -sd, - | sed 's/^/[/;s/$/]/')
 [ -n "$BORROW" ] && [ -n "$REPUTATION" ] || { echo "$OUT" >&2; exit 1; }
 [ -n "$CREDIT" ] && [ -n "$LIQUIDITY" ] || { echo "$OUT" >&2; exit 1; }
@@ -97,6 +97,7 @@ cat >"$ROOT/.fork/deployment.json" <<JSON
   "dutchAuction": "$DUTCH",
   "reputation": "$REPUTATION",
   "borrow": "$BORROW",
+  "creditLens": "$CREDIT_LENS",
   "depositVaults": $DEPOSIT_VAULTS,
   "worldIdSigner": "$WORLD_ID_SIGNER",
   "swapRouter": "$ROUTER",

@@ -262,6 +262,44 @@ contract NorenCreditLineTest is RobinhoodBase {
   function _ceil() internal pure returns (Math.Rounding) {
     return Math.Rounding.Ceil;
   }
+
+  /// @notice Audit RH-C-3: Arc reports are bounded by what NorenCreditLine on Arc can produce:
+  /// outstanding within the line's limit, repaid <= drawn, and neither total ever decreasing.
+  function test_Audit_RHC3_reportOutsideArcInvariantsRejected() public {
+    _open();
+    uint64 t = uint64(vm.getBlockTimestamp());
+    vm.startPrank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadReport.selector, LIMIT + 1, 0));
+    credit.onReport('', abi.encode(lineId, LIMIT + 1, uint256(0), t)); // invented debt above the limit
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadReport.selector, 100e6, 101e6));
+    credit.onReport('', abi.encode(lineId, uint256(100e6), uint256(101e6), t)); // repaid > drawn
+    credit.onReport('', abi.encode(lineId, uint256(300e6), uint256(200e6), t));
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadReport.selector, 300e6, 100e6));
+    credit.onReport('', abi.encode(lineId, uint256(300e6), uint256(100e6), t + 1)); // repayment rolled back
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.BadReport.selector, 250e6, 200e6));
+    credit.onReport('', abi.encode(lineId, uint256(250e6), uint256(200e6), t + 1)); // drawn rolled back
+    // Revolving use is fine: drawn grows past the limit while outstanding stays within it.
+    credit.onReport('', abi.encode(lineId, uint256(700e6), uint256(200e6), t + 1));
+    vm.stopPrank();
+    assertEq(credit.lineOutstanding(lineId), LIMIT);
+    (, bool under) = credit.lineLiquidatable(lineId);
+    assertFalse(under, 'a full draw is still collateralised');
+  }
+
+  /// @notice Audit RH-C-7: closing a line that was never drawn completes it but does not count as a
+  /// clean repayment, so it cannot lift the borrower's tier for free.
+  function test_Audit_RHC7_unusedLineIsNotClean() public {
+    _open();
+    vm.prank(customer);
+    credit.closeCreditLine(lineId);
+    vm.warp(vm.getBlockTimestamp() + 60);
+    _report(0, 0, uint64(vm.getBlockTimestamp()));
+    assertEq(uint8(credit.line(lineId).status), uint8(NorenCredit.LineStatus.Closed));
+    assertEq(tsla.balanceOf(customer), col, 'collateral returned');
+    (,, uint32 completed, uint32 clean,) = credit.history(customer);
+    assertEq(completed, 1);
+    assertEq(clean, 0);
+  }
 }
 
 import {Math} from '@oz/utils/math/Math.sol';

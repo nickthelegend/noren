@@ -66,16 +66,16 @@ const POWERS: Power[] = [
   { k: "private", t: "Pay privately", s: ["live"], art: "/art/iso-privacy.jpg", alt: "A coin stack passes behind a noren curtain; only a receipt comes out the other side",
     d: "Pay from a Kohaku privacy pool. Your browser makes a zero-knowledge proof for exactly this invoice, and the shop gets paid without ever learning your address.",
     m: "Proof in the browser: 1.09–1.13 s" },
-  { k: "stocks", t: "Pay with stocks", s: ["live"],
-    d: "Spend NVDA, TSLA or other Stock Tokens. A 1inch Aqua maker buys them at the Chainlink price and the merchant receives USDG.",
+  { k: "stocks", t: "Pay with stocks or crypto", s: ["live"],
+    d: "Spend any Stock Token you hold (NVDA, TSLA, AAPL…) or ETH. A 1inch Aqua maker buys it at the Chainlink price and the merchant receives USDG.",
     m: "0.040798 NVDA at $184.61 → 7.50 USDG" },
   { k: "in3", t: "Pay in 3", s: ["live"],
     d: "Pay later on your credit line, then repay in three parts in USDC before the line expires.",
     m: "14.02 USDC checkout → 4.67 × 3" },
-  { k: "earn", t: "Earn", s: ["live"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
-    d: "Deposit NVDA, TSLA, AAPL or ETH into a deposit vault and get receipt shares. The vault is a 1inch Aqua maker: your deposit stays in it, its spread on real fills is your yield, and the same shares are collateral in Borrow. Withdraw any time." },
+  { k: "earn", t: "Deposit stock, get credit", s: ["live"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
+    d: "Deposit NVDA, TSLA, AAPL or ETH into Noren's 1inch Aqua pools instead of selling. Borrow up to 80% of their value. The fees they earn pay the loan back. $100 of NVDA borrows $66 today, up to $80 at the top tier. You get receipt shares; the vault is a 1inch Aqua maker: your deposit stays in it, its spread on real fills is your yield, and the same shares are collateral in Borrow. Withdraw any time." },
   { k: "borrow", t: "Borrow at a Chainlink price", s: ["live"],
-    d: "Lock your Earn receipt shares and borrow USDG at your reputation LTV (66% up to 80%), with the health factor and liquidation price from Chainlink. Or lock Stock Tokens for a USDC line on Arc, opened by a CRE workflow.",
+    d: "Lock your Earn receipt shares and borrow USDG at your reputation LTV: 66% to start, then 70, 75 and 80% as World ID and on-time repayments raise your tier, with the health factor and liquidation price from Chainlink. Or lock Stock Tokens for a USDC line on Arc, opened by a CRE workflow.",
     m: "2 NVDA locked = $371.41 collateral" },
   { k: "human", t: "Credit for real humans", s: ["live"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
     d: "No stock? Verify with World ID (production; verified for real with an Orb credential in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
@@ -206,7 +206,7 @@ export function Landing() {
         <div className="lx-hero-in">
           <span className="lx-pill mono"><i />Live on Arc, CCTP and CCIP testnets</span>
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
-          <p>Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.</p>
+          <p>Noren lets merchants accept stablecoins, stocks or credit — privately. A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.</p>
           <div className="lx-ctas">
             <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
