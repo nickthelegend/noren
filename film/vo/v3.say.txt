@@ -1,1 +1,1 @@
-Oh-bell, a demo boutique, added Noh-ren with the SDK: one file creates the invoice and trusts only a signed webhook. The checkout offers four ways to pay: privately, with U S D C, with stocks or crypto, or later on credit, still private.
+Oh-bell, a demo boutique, added Noh-ren with the SDK. Pick a dress, size small, into the bag, and check out with Noh-ren: four ways to pay. Privately, with U S D C, with stocks or crypto, or later on credit, still private.

@@ -2,169 +2,193 @@
   {
     "text": "Second,",
     "start": 0,
-    "end": 0.506,
+    "end": 0.619,
     "id": "w0"
   },
   {
     "text": "with",
-    "start": 0.506,
-    "end": 0.795,
+    "start": 0.619,
+    "end": 0.973,
     "id": "w1"
   },
   {
-    "text": "stocks",
-    "start": 0.795,
-    "end": 1.229,
+    "text": "any",
+    "start": 0.973,
+    "end": 1.239,
     "id": "w2"
   },
   {
-    "text": "or",
-    "start": 1.229,
-    "end": 1.374,
+    "text": "stock",
+    "start": 1.239,
+    "end": 1.681,
     "id": "w3"
   },
   {
-    "text": "crypto,",
-    "start": 1.374,
-    "end": 1.88,
+    "text": "you",
+    "start": 1.681,
+    "end": 1.947,
     "id": "w4"
   },
   {
-    "text": "Obel's",
-    "start": 1.88,
-    "end": 2.448,
+    "text": "hold",
+    "start": 1.947,
+    "end": 2.301,
     "id": "w5"
   },
   {
-    "text": "dress",
-    "start": 2.448,
-    "end": 2.921,
+    "text": "or",
+    "start": 2.301,
+    "end": 2.478,
     "id": "w6"
   },
   {
-    "text": "paid",
-    "start": 2.921,
-    "end": 3.3,
+    "text": "crypto,",
+    "start": 2.478,
+    "end": 3.097,
     "id": "w7"
   },
   {
-    "text": "in",
-    "start": 3.3,
-    "end": 3.489,
+    "text": "Tesla,",
+    "start": 3.097,
+    "end": 3.628,
     "id": "w8"
   },
   {
-    "text": "Nvidia",
-    "start": 3.489,
-    "end": 4.057,
+    "text": "Apple,",
+    "start": 3.628,
+    "end": 4.159,
     "id": "w9"
   },
   {
-    "text": "or",
-    "start": 4.057,
-    "end": 4.247,
+    "text": "Nvidia,",
+    "start": 4.159,
+    "end": 4.779,
     "id": "w10"
   },
   {
-    "text": "ETH",
-    "start": 4.247,
-    "end": 4.531,
+    "text": "the",
+    "start": 4.779,
+    "end": 5.044,
     "id": "w11"
   },
   {
-    "text": "on",
-    "start": 4.531,
-    "end": 4.72,
+    "text": "S",
+    "start": 5.044,
+    "end": 5.133,
     "id": "w12"
   },
   {
-    "text": "Robinhood",
-    "start": 4.72,
-    "end": 5.572,
+    "text": "and",
+    "start": 5.133,
+    "end": 5.398,
     "id": "w13"
   },
   {
-    "text": "Chain.",
-    "start": 5.572,
-    "end": 6.14,
+    "text": "P500",
+    "start": 5.398,
+    "end": 5.752,
     "id": "w14"
   },
   {
-    "text": "A",
-    "start": 6.14,
-    "end": 6.196,
+    "text": "and",
+    "start": 5.752,
+    "end": 6.018,
     "id": "w15"
   },
   {
-    "text": "one-inch",
-    "start": 6.196,
-    "end": 6.647,
+    "text": "more,",
+    "start": 6.018,
+    "end": 6.46,
     "id": "w16"
   },
   {
-    "text": "AquaMaker",
-    "start": 6.647,
-    "end": 7.153,
+    "text": "or",
+    "start": 6.46,
+    "end": 6.793,
     "id": "w17"
   },
   {
-    "text": "buys",
-    "start": 7.153,
-    "end": 7.378,
+    "text": "ETH.",
+    "start": 6.793,
+    "end": 7.46,
     "id": "w18"
   },
   {
-    "text": "it",
-    "start": 7.378,
-    "end": 7.491,
+    "text": "A",
+    "start": 7.46,
+    "end": 7.544,
     "id": "w19"
   },
   {
-    "text": "at",
-    "start": 7.491,
-    "end": 7.603,
+    "text": "1-inch",
+    "start": 7.544,
+    "end": 8.051,
     "id": "w20"
   },
   {
-    "text": "the",
-    "start": 7.603,
-    "end": 7.772,
+    "text": "AquaMaker",
+    "start": 8.051,
+    "end": 8.812,
     "id": "w21"
   },
   {
-    "text": "Chainlink",
-    "start": 7.772,
-    "end": 8.279,
+    "text": "buys",
+    "start": 8.812,
+    "end": 9.15,
     "id": "w22"
   },
   {
-    "text": "price",
-    "start": 8.279,
-    "end": 8.56,
+    "text": "it",
+    "start": 9.15,
+    "end": 9.319,
     "id": "w23"
   },
   {
-    "text": "and",
-    "start": 8.56,
-    "end": 8.958,
+    "text": "at",
+    "start": 9.319,
+    "end": 9.488,
     "id": "w24"
   },
   {
-    "text": "Obel",
-    "start": 8.958,
-    "end": 9.487,
+    "text": "the",
+    "start": 9.488,
+    "end": 9.741,
     "id": "w25"
   },
   {
-    "text": "gets",
-    "start": 9.487,
-    "end": 10.017,
+    "text": "Chainlink",
+    "start": 9.741,
+    "end": 10.501,
     "id": "w26"
   },
   {
-    "text": "USDG.",
-    "start": 10.017,
-    "end": 10.68,
+    "text": "price,",
+    "start": 10.501,
+    "end": 11.008,
     "id": "w27"
+  },
+  {
+    "text": "and",
+    "start": 11.008,
+    "end": 11.262,
+    "id": "w28"
+  },
+  {
+    "text": "Obel",
+    "start": 11.262,
+    "end": 11.6,
+    "id": "w29"
+  },
+  {
+    "text": "gets",
+    "start": 11.6,
+    "end": 11.938,
+    "id": "w30"
+  },
+  {
+    "text": "USDG.",
+    "start": 11.938,
+    "end": 12.36,
+    "id": "w31"
   }
 ]

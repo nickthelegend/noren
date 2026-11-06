@@ -27,7 +27,9 @@ const take = process.argv[2];
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const TAKES = `${HERE}takes/`, STATE = `${HERE}state/state${process.env.WALLET_KEY ? "-" + process.env.WALLET_KEY.replace(/[^a-z0-9-]/gi, "") : ""}.json`;
 mkdirSync(TAKES, { recursive: true }); mkdirSync(`${HERE}state`, { recursive: true });
-const APP = "http://localhost:5190", SHOP = "http://127.0.0.1:8780", SERVER = "http://127.0.0.1:8790";
+// v6 records the hosted deployment: NOREN_APP_URL / NOREN_SHOP_URL / NOREN_SERVER_URL (defaults: the local dev stack)
+const APP = (process.env.NOREN_APP_URL ?? "http://localhost:5190").replace(/\/$/, ""), SHOP = (process.env.NOREN_SHOP_URL ?? "http://127.0.0.1:8780").replace(/\/$/, ""), SERVER = (process.env.NOREN_SERVER_URL ?? "http://127.0.0.1:8790").replace(/\/$/, "");
+const appUrlRe = new RegExp("^" + APP.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/#/pay/");
 const ARC_EXPLORER = "https://explorer.testnet.arc.io";
 const LIVE_PAY = "0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a";
 const LIVE_REFUND = "0x890ab6a618a3caf187eb26a3071660ef2f2f2d8de9298b8c71658f66c2ee016a";
@@ -336,7 +338,7 @@ try {
     await click(p.getByRole("button", { name: /Add to bag/ }), "add to bag"); await sleep(2000);
     await click(p.locator(".drawer").getByRole("link", { name: "View bag" }), "view bag"); await sleep(1800);
     await click(p.getByRole("button", { name: /Checkout with/ }), "checkout with Noren");
-    await p.waitForURL(/localhost:5190\/#\/pay\//, { timeout: 30000 }); result("checkout", p.url()); await sleep(4000);
+    await p.waitForURL(/#\/pay\//, { timeout: 60000 }); result("checkout", p.url()); await sleep(4000);
     const tabs = p.locator("[role=tablist][aria-label='Payment method'] [role=tab]");
     result("methods", (await tabs.allInnerTexts()).map((t) => t.replace(/\n+/g, " ")).join(" || "));
     for (let i = 0; i < Math.min(await tabs.count(), 6); i++) { await point(tabs.nth(i)); await sleep(900); }
@@ -451,7 +453,7 @@ try {
   }
 
   // ---------------------------------------------------------------- v4 takes
-  const V4 = "/Volumes/Extreme SSD/Projects/grokbot/projects/_wt/noren-v4";
+  const V4 = process.env.NOREN_REPO ?? "/Volumes/Extreme SSD/Projects/grokbot/projects/_wt/noren-v4";
   const forkScript = (args) => { log("fork script:", args.join(" ")); const out = execFileSync("pnpm", ["exec", "tsx", ...args], { cwd: V4, encoding: "utf8", timeout: 600000, stdio: ["ignore", "pipe", "pipe"] }); writeFileSync(`${HERE}state/fork-${args[0].split("/").pop()}-${Date.now()}.log`, out); return out; };
   const walletAddr = async () => { await p.locator(".nk-chip").click(); await sleep(1200); const a = (await p.locator(".nk-menu-row span").first().innerText()).trim(); await p.locator(".nk-x").click(); await sleep(600); return a; };
 
@@ -598,7 +600,7 @@ try {
     await p.getByRole("button", { name: /Add to bag/ }).click(); await sleep(1500);
     await p.locator(".drawer").getByRole("link", { name: "View bag" }).click(); await sleep(1500);
     await p.getByRole("button", { name: /Checkout with/ }).click();
-    await p.waitForURL(/localhost:5190\/#\/pay\//, { timeout: 30000 }); await sleep(5000);
+    await p.waitForURL(/#\/pay\//, { timeout: 60000 }); await sleep(5000);
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(1500);
     await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks or crypto"); await sleep(3000);
@@ -631,6 +633,52 @@ try {
     const recent = p.locator("[aria-label='Recent live transfers into Arc']").first();
     if (await recent.count()) { await point(recent); await sleep(2000); await scrollBy(320, 1400); await sleep(2500); result("recent", (await recent.innerText()).replace(/\n+/g, " | ").slice(0, 900)); }
     await cut();
+  }
+
+  // ---------------------------------------------------------------- v6 takes (hosted URLs; full frame, one action per shot)
+  if (take === "shop6") {
+    // The shopping flow, unhurried: Aubelle -> a dress -> size -> add to bag -> the bag -> checkout -> Noren's checkout
+    await p.goto(`${SHOP}/#/`); await sleep(4000);
+    await moveTo(640, 360, 1);
+    await rollCamera(); await sleep(2500);
+    await click(p.getByRole("link", { name: "Dresses" }).first(), "dresses"); await sleep(2500);
+    await click(p.locator('a.card[href="#/p/amelie-gingham"]'), "Amélie Gingham"); await sleep(3000);
+    await click(p.getByRole("button", { name: "S", exact: true }), "size S"); await sleep(1200);
+    await click(p.getByRole("button", { name: /Add to bag/ }), "add to bag"); await sleep(3000);
+    await click(p.locator(".drawer").getByRole("link", { name: "View bag" }), "view bag"); await sleep(3000);
+    await click(p.getByRole("button", { name: /Checkout with|Proceed to checkout|Checkout/ }).first(), "checkout");
+    await p.waitForURL(/#\/pay\//, { timeout: 60000 }); result("checkout", p.url()); await sleep(5000);
+    const tabs = p.locator("[role=tablist][aria-label='Payment method'] [role=tab]");
+    result("methods", (await tabs.allInnerTexts()).map((t) => t.replace(/\n+/g, " ")).join(" || "));
+    for (let i = 0; i < Math.min(await tabs.count(), 5); i++) { await point(tabs.nth(i)); await sleep(1100); }
+    await sleep(1500);
+    writeFileSync(`${HERE}state/checkout6.txt`, p.url());
+    await cut(); await save();
+  }
+
+  if (take === "stockpay6") {
+    // Pay with stocks or crypto from the checkout opened by shop6: the whole token list, then pay with one
+    const url = (await import("node:fs")).readFileSync(`${HERE}state/checkout6.txt`, "utf8").trim();
+    await p.goto(url); await sleep(6000);
+    await moveTo(900, 300, 1);
+    await rollCamera(); await sleep(1500);
+    await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks or crypto"); await sleep(2500);
+    const pick = p.locator("[aria-label='Stock Token or ETH']");
+    await until(() => pick.isVisible(), "picker", 240000);
+    await point(pick); await sleep(1000);
+    result("tokens", (await pick.innerText()).replace(/\n+/g, " | "));
+    const opts = pick.getByRole("radio");
+    for (let i = 0; i < await opts.count(); i++) { await point(opts.nth(i)); await sleep(450); }
+    const sym = process.env.PAY_WITH ?? "NVDA";
+    await click(pick.getByRole("radio", { name: new RegExp("^" + sym) }), `pick ${sym}`); await sleep(2500);
+    const pay = p.getByRole("button", { name: new RegExp(`Pay with [\\d.]+ ${sym}`) }).first();
+    await until(() => pay.isEnabled(), "quote", 120000);
+    result("quote", (await p.locator("body").innerText()).match(/You pay[\s\S]{0,300}/)?.[0]?.replace(/\n+/g, " | "));
+    await sleep(1500);
+    await click(pay, `pay with ${sym}`);
+    await until(async () => /Paid with/.test(await p.locator("body").innerText()), "paid", 240000); await sleep(2500);
+    result("paid", (await p.locator("body").innerText()).match(/Paid with[\s\S]{0,400}/)?.[0]?.replace(/\n+/g, " | ")); await sleep(4000);
+    await cut(); await save();
   }
 
   if (take === "landing4") {
@@ -780,7 +828,7 @@ try {
     await click(p.getByRole("button", { name: /Open bag/ }), "bag"); await sleep(1500);
     await click(p.locator(".drawer").getByRole("link", { name: "View bag" }), "view bag"); await sleep(2000);
     await click(p.getByRole("button", { name: /Checkout with/ }), "checkout with Noren");
-    await p.waitForURL(/localhost:5190\/#\/pay\//, { timeout: 30000 }); result("checkout", p.url()); await sleep(4500);
+    await p.waitForURL(/#\/pay\//, { timeout: 60000 }); result("checkout", p.url()); await sleep(4500);
     await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks");
     await until(async () => /Pay with [\d.]+ NVDA/.test(await p.locator(".btn.kaki").innerText()), "stock quote", 90000); await sleep(2000);
     result("stock quote", (await p.locator(".co-credit").innerText()).replace(/\n+/g, " | "));
