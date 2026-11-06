@@ -27,7 +27,7 @@ type Method = "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
 const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Kohaku pool", "Zero-knowledge withdrawal from the privacy pool", Icon.shield], credit: ["Tsuke credit", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Stock Tokens", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
 const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}><span className="sd-pm-ic"><I /></span>{t}</span>; };
-const Who = ({ r }: { r: Row }) => r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
+const Who = ({ r }: { r: Row }) => r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
 /* ================================================================== shell */
 export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
@@ -284,7 +284,7 @@ function Balances({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
   const ledger = useMemo(() => {
     const e: { at: number; type: string; amount: number; id: string; tx?: string; desc?: string }[] = [];
     for (const x of r) {
-      if (settled(x) && x.paidAt) e.push({ at: secs(x.paidAt)!, type: "Payment", amount: n6(x.invoice.amount), id: x.invoice.invoiceId, tx: x.paymentTx, desc: x.description });
+      if (settled(x) && x.paidAt) e.push({ at: secs(x.paidAt)!, type: x.method === "stocks" ? "Payment (USDG, Robinhood)" : "Payment", amount: n6(x.invoice.amount), id: x.invoice.invoiceId, tx: x.paymentTx, desc: x.description });
       if (x.refundAmount && x.refundedAt) e.push({ at: secs(x.refundedAt)!, type: "Refund", amount: -n6(x.refundAmount), id: x.invoice.invoiceId, tx: x.refundTx, desc: x.description });
     }
     return e.sort((a, b) => b.at - a.at);
@@ -375,7 +375,7 @@ function PayTable({ rows, loading }: { rows: Row[]; loading?: boolean }) {
         <tbody>{rows.map((x) => (
           <tr key={x.invoice.invoiceId} tabIndex={0} onClick={() => go(`#/dashboard/payments/${x.invoice.invoiceId}`)} onKeyDown={(e) => e.key === "Enter" && go(`#/dashboard/payments/${x.invoice.invoiceId}`)}>
             <td className="r num"><b>{usdc(x.invoice.amount)}</b></td>
-            <td className="sd-cur">USDC{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
+            <td className="sd-cur">{x.method === "stocks" ? "USDG" : "USDC"}{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
             <td><Badge s={x.status} /></td>
             <td className="hide-s"><PM r={x} /></td>
             <td className="hide-m sd-desc">{x.description || <span className="sd-muted mono">{short(x.invoice.invoiceId, 8)}</span>}</td>
@@ -399,8 +399,11 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
   useEffect(() => { if (!token) { setEvents([]); return; } api.eventLog(cfg.merchant, token).then((l) => setEvents(l.filter((e) => String(e.data?.invoiceId ?? "").toLowerCase() === id.toLowerCase()))).catch(() => setEvents([])); }, [cfg, token, id, tick]);
   if (!rows) return <div className="sd-loading"><span className="spin" /> Loading payment…</div>;
   if (!r) return <><a className="sd-back" href="#/dashboard/payments"><Icon.back /> Payments</a><Empty title="Payment not found" text={`No payment ${short(id, 10)} in this merchant's records.`} /></>;
-  const credit = r.method === "credit";
-  const steps: [string, number | string | undefined, ReactNode, boolean][] = credit ? [
+  const credit = r.method === "credit", stock = r.method === "stocks";
+  const steps: [string, number | string | undefined, ReactNode, boolean][] = stock ? [
+    ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
+    ["Paid with Stock Tokens on Robinhood Chain, USDG received", r.paidAt, r.paymentTx ? <><span className="mono" title="Local Robinhood Chain fork">{short(r.paymentTx, 8)}</span> · TsukeGateway.pay, gas paid by the customer</> : null, settled(r)],
+  ] : credit ? [
     ["Payment link created", r.createdAt, r.description ? `“${r.description}”` : null, true],
     ["Paid from a Tsuke credit line, USDC received", r.paidAt, r.paymentTx ? <><TxRef cfg={cfg} hash={r.paymentTx} /> · NorenCreditLine.payInvoice, gas paid by the customer</> : null, settled(r)],
   ] : [
@@ -419,7 +422,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
           {r.quote && <p className="sd-quote-line">Priced at <b>{fiatStr(r.quote)}</b> · Chainlink rate locked at creation</p>}
         </div>
         <div className="sd-head-act">
-          {r.status === "paid" && !credit && <button className="sd-btn" disabled={!token} onClick={() => setRefunding(true)}><Icon.refund /> Refund</button>}
+          {r.status === "paid" && !credit && !stock && <button className="sd-btn" disabled={!token} onClick={() => setRefunding(true)}><Icon.refund /> Refund</button>}
           <Menu trigger={(o) => <button className="sd-btn" onClick={o} aria-label="More actions">⋯</button>} items={[["Copy payment ID", () => { navigator.clipboard?.writeText(r.invoice.invoiceId); toast("Payment ID copied"); }], ["Copy checkout link", () => { navigator.clipboard?.writeText(payLink(r.invoice.invoiceId)); toast("Checkout link copied"); }], ["Open hosted checkout", () => go(`#/pay/${r.invoice.invoiceId}`)]]} />
         </div>
       </div>
@@ -427,7 +430,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
         <div><span>Last update</span><b>{dt(r.refundedAt ?? r.paidAt ?? r.boundAt ?? r.createdAt)}</b></div>
         <div><span>Customer</span><b><Who r={r} /></b></div>
         <div><span>Payment method</span><b><PM r={r} /></b></div>
-        <div><span>Network fee</span><b>{r.paymentGasUsed ? `${Number(r.paymentGasUsed).toLocaleString()} gas · paid by ${credit ? "the customer" : "you"}` : "–"}</b></div>
+        <div><span>Network fee</span><b>{r.paymentGasUsed ? `${Number(r.paymentGasUsed).toLocaleString()} gas · paid by ${credit || stock ? "the customer" : "you"}` : "–"}</b></div>
       </div>
 
       <div className="sd-detail-grid">
@@ -457,7 +460,16 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
           </section>
           <section className="sd-panel">
             <h2>Payment method</h2>
-            {credit ? (
+            {stock && r.stock ? (
+              <dl className="sd-dl">
+                <dt>Type</dt><dd>Stock Tokens, sold to Tsuke's vault</dd>
+                <dt>Shares</dt><dd className="num">{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
+                <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
+                <dt>You received</dt><dd>{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
+                <dt>Network</dt><dd>Robinhood Chain {r.stock.chainId} (local fork)</dd>
+                <dt>Block</dt><dd className="mono">{r.paymentBlock ?? "–"}</dd>
+              </dl>
+            ) : credit ? (
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Tsuke credit line</dd>
                 <dt>Line ID</dt><dd className="mono">{short(r.creditLineId, 8)} {r.creditLineId && <Copy text={r.creditLineId} />}</dd>
