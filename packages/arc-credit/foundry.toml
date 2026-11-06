@@ -13,3 +13,10 @@ cbor_metadata = false
 
 [profile.default.lint]
 exclude_lints = ['block-timestamp', 'unsafe-typecast']
+
+# Arc testnet fork against the live Kohaku Entrypoint and USDC pool (drawToPool).
+[profile.fork]
+test = 'fork-test'
+
+[rpc_endpoints]
+arc_testnet = "https://rpc.testnet.arc.io"

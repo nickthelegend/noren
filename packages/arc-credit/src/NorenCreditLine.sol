@@ -5,6 +5,7 @@ import {IERC20} from '@oz/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@oz/token/ERC20/utils/SafeERC20.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
 import {IReceiver, IERC165} from './interfaces/IReceiver.sol';
+import {IPrivacyEntrypoint, IPrivacyPoolRagequit, IUsdcBlocklist} from './interfaces/IPrivacyPool.sol';
 
 /// @title NorenCreditLine
 /// @notice Arc side of the Noren credit line. A Chainlink CRE workflow watches NorenCredit on
@@ -26,6 +27,14 @@ import {IReceiver, IERC165} from './interfaces/IReceiver.sol';
 ///                for a verified unique human, capped by maxStarterLimitUsdc6. Each nullifierHash is
 ///                accepted once, ever. It opens or tops up the borrower's own starter line, kept apart
 ///                from collateral lines so Robinhood's collateral accounting stays exact.
+///
+///      Pay later, privately: `drawToPool` draws on a line exactly as `payInvoice` does (same checks, same debt,
+///      same `Drawn` log for the CRE bridge) but deposits the USDC into the Kohaku privacy pool under the
+///      borrower's own precommitment instead of paying a merchant. The borrower then pays merchants from the
+///      pool with Noren's private checkout, so a merchant never learns which customer paid; the lender still
+///      knows its borrower. The pool records this contract as the depositor, so the borrower is screened against
+///      USDC's blocklist here, and `ragequitPoolDraw` lets a deposit the ASP never approves leave the pool:
+///      the proceeds repay the line first and any rest goes to the borrower.
 contract NorenCreditLine is IReceiver, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
@@ -47,6 +56,9 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   uint8 public constant KIND_HUMAN_STARTER = 2;
   /// @notice Longest expiry a starter-limit report may set, from the time it lands.
   uint64 public constant MAX_STARTER_DURATION = 90 days;
+  /// @dev BN254 scalar field: a precommitment must be a field element for the pool's circuits.
+  uint256 internal constant SNARK_SCALAR_FIELD =
+    21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
   IERC20 public immutable usdc;
   address public owner;
@@ -66,8 +78,19 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   mapping(bytes32 lineId => Line) private _lines;
   mapping(bytes32 lineId => mapping(bytes32 invoiceId => bool)) public invoicePaid;
 
+  /// @notice Kohaku (0xbow Privacy Pools) Entrypoint that `drawToPool` deposits through (zero = private draws off).
+  IPrivacyEntrypoint public privacyEntrypoint;
+  /// @notice The Entrypoint's USDC pool, the one `ragequitPoolDraw` exits from.
+  IPrivacyPoolRagequit public privacyPool;
+  /// @notice Line a pool deposit made by `drawToPool` belongs to (zero = not made by this contract).
+  mapping(uint256 commitment => bytes32 lineId) public lineOfCommitment;
+
   event Drawn(bytes32 indexed lineId, uint256 amount, bytes32 invoiceId, address merchant);
   event Repaid(bytes32 indexed lineId, uint256 amount);
+  /// @notice A draw deposited into the privacy pool. `Drawn` is emitted too (merchant = the Entrypoint, invoiceId = 0).
+  event DrawnToPool(bytes32 indexed lineId, uint256 amount, uint256 precommitment, uint256 commitment);
+  event PoolDrawRagequit(bytes32 indexed lineId, uint256 indexed commitment, uint256 received, uint256 repaid, uint256 toBorrower);
+  event PrivacyPoolSet(address indexed entrypoint, address indexed pool);
   event CreditLineSynced(bytes32 indexed lineId, address indexed borrower, uint256 limitUsdc6, uint64 expiry);
   event CreditLineFrozen(bytes32 indexed lineId);
   event HumanStarterGranted(
@@ -104,6 +127,11 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   error StarterCapExceeded(uint256 cap, uint256 requested);
   error StarterExpiryTooFar(uint64 expiry, uint64 latest);
   error NotCollateralLine(bytes32 lineId);
+  error PrivacyPoolNotSet();
+  error PoolMismatch(address configured, address expected);
+  error BadPrecommitment();
+  error Blocklisted(address account);
+  error UnknownCommitment(uint256 commitment);
 
   modifier onlyOwner() {
     if (msg.sender != owner) revert NotOwner();
@@ -221,26 +249,61 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   /// @notice Pay a Noren merchant in USDC from the credit pool. Revolving: drawn minus repaid
   ///         stays at or under the limit. Each (lineId, invoiceId) pays once.
   function payInvoice(bytes32 lineId, address merchant, uint256 amount, bytes32 invoiceId) external nonReentrant {
-    if (paused) revert IsPaused();
-    Line storage l = _lines[lineId];
-    if (l.borrower == address(0)) revert UnknownLine(lineId);
-    if (l.borrower != msg.sender) revert NotBorrower();
-    if (l.closed) revert LineClosed(lineId);
-    if (block.timestamp >= l.expiry) revert LineExpired(lineId, l.expiry);
+    Line storage l = _checkDraw(lineId, amount);
     if (merchant == address(0)) revert ZeroAddress();
-    if (amount == 0) revert ZeroAmount();
     if (invoicePaid[lineId][invoiceId]) revert InvoiceAlreadyPaid(invoiceId);
-    uint256 room = _available(l);
-    if (amount > room) revert LimitExceeded(room, amount);
-    uint256 pool = usdc.balanceOf(address(this));
-    if (amount > pool) revert PoolInsufficient(pool, amount);
 
     invoicePaid[lineId][invoiceId] = true;
-    l.drawnUsdc6 += amount;
-    totalOutstandingUsdc6 += amount;
-    _touch(l);
+    _book(l, amount);
     usdc.safeTransfer(merchant, amount);
     emit Drawn(lineId, amount, invoiceId, merchant);
+  }
+
+  /// @notice Pay later, privately: draw `amount` on the line into the Kohaku privacy pool under the borrower's
+  ///         precommitment (Kohaku `nextPrecommitment()`, computed in the borrower's wallet). Same checks and debt
+  ///         as `payInvoice`; the USDC becomes the borrower's private balance instead of a merchant payment.
+  /// @return commitment The pool commitment of the new deposit.
+  function drawToPool(bytes32 lineId, uint256 amount, uint256 precommitment) external nonReentrant returns (uint256 commitment) {
+    IPrivacyEntrypoint entrypoint = privacyEntrypoint;
+    if (address(entrypoint) == address(0)) revert PrivacyPoolNotSet();
+    Line storage l = _checkDraw(lineId, amount);
+    if (precommitment == 0 || precommitment >= SNARK_SCALAR_FIELD) revert BadPrecommitment();
+    // The pool's ASP sees this contract as the depositor, so the borrower behind the deposit is screened here.
+    if (IUsdcBlocklist(address(usdc)).isBlacklisted(msg.sender)) revert Blocklisted(msg.sender);
+
+    _book(l, amount);
+    usdc.forceApprove(address(entrypoint), amount);
+    commitment = entrypoint.deposit(usdc, amount, precommitment);
+    lineOfCommitment[commitment] = lineId;
+    emit Drawn(lineId, amount, bytes32(0), address(entrypoint));
+    emit DrawnToPool(lineId, amount, precommitment, commitment);
+  }
+
+  /// @notice Public exit for a `drawToPool` deposit, for example one the ASP never approves. The pool only lets
+  ///         the original depositor (this contract) ragequit; only the holder of the deposit's secrets can make the
+  ///         proof. The proceeds repay the line first; anything left goes to the borrower.
+  function ragequitPoolDraw(IPrivacyPoolRagequit.RagequitProof calldata proof) external nonReentrant {
+    uint256 commitment = proof.pubSignals[0];
+    bytes32 lineId = lineOfCommitment[commitment];
+    if (lineId == bytes32(0)) revert UnknownCommitment(commitment);
+    Line storage l = _lines[lineId];
+    if (l.borrower != msg.sender) revert NotBorrower();
+    delete lineOfCommitment[commitment];
+
+    uint256 before = usdc.balanceOf(address(this));
+    privacyPool.ragequit(proof);
+    uint256 received = usdc.balanceOf(address(this)) - before;
+    uint256 owed = l.drawnUsdc6 - l.repaidUsdc6;
+    uint256 repaid = received < owed ? received : owed;
+    if (repaid > 0) {
+      l.repaidUsdc6 += repaid;
+      totalOutstandingUsdc6 -= repaid;
+      _touch(l);
+      emit Repaid(lineId, repaid);
+    }
+    uint256 rest = received - repaid;
+    if (rest > 0) usdc.safeTransfer(l.borrower, rest);
+    emit PoolDrawRagequit(lineId, commitment, received, repaid, rest);
   }
 
   /// @notice Repay a line in USDC. Anyone may repay on the borrower's behalf; works while paused
@@ -298,6 +361,19 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     emit PoolWithdrawn(to, amount);
   }
 
+  /// @notice Turns `drawToPool` on (or off with zero addresses). `pool` must be the Entrypoint's USDC pool.
+  function setPrivacyPool(IPrivacyEntrypoint entrypoint_, IPrivacyPoolRagequit pool_) external onlyOwner {
+    if (address(entrypoint_) != address(0)) {
+      (address configured,,,) = entrypoint_.assetConfig(usdc);
+      if (configured == address(0) || configured != address(pool_)) revert PoolMismatch(configured, address(pool_));
+    } else if (address(pool_) != address(0)) {
+      revert ZeroAddress();
+    }
+    privacyEntrypoint = entrypoint_;
+    privacyPool = pool_;
+    emit PrivacyPoolSet(address(entrypoint_), address(pool_));
+  }
+
   function setForwarder(address forwarder_) external onlyOwner {
     if (forwarder_ == address(0)) revert ZeroAddress();
     forwarder = forwarder_;
@@ -343,6 +419,28 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     emit OwnershipTransferred(owner, msg.sender);
     owner = msg.sender;
     pendingOwner = address(0);
+  }
+
+  /// @dev The checks every draw passes: not paused, known line, borrower only,
+  ///      open, not expired, non-zero, within the limit, and the pool can cover it.
+  function _checkDraw(bytes32 lineId, uint256 amount) private view returns (Line storage l) {
+    if (paused) revert IsPaused();
+    l = _lines[lineId];
+    if (l.borrower == address(0)) revert UnknownLine(lineId);
+    if (l.borrower != msg.sender) revert NotBorrower();
+    if (l.closed) revert LineClosed(lineId);
+    if (block.timestamp >= l.expiry) revert LineExpired(lineId, l.expiry);
+    if (amount == 0) revert ZeroAmount();
+    uint256 room = _available(l);
+    if (amount > room) revert LimitExceeded(room, amount);
+    uint256 pool = usdc.balanceOf(address(this));
+    if (amount > pool) revert PoolInsufficient(pool, amount);
+  }
+
+  function _book(Line storage l, uint256 amount) private {
+    l.drawnUsdc6 += amount;
+    totalOutstandingUsdc6 += amount;
+    _touch(l);
   }
 
   function _available(Line storage l) private view returns (uint256) {
