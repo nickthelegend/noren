@@ -1,1 +1,1 @@
-Bring USDC to Arc from any chain. Ethereum. Base. Arbitrum. Robinhood. Circle burns it, attests it, and Noren's hook mints it on Arc. All of it ran live on public testnets.
+Her money doesn't have to start on Arc. From Ethereum, Base, Arbitrum or Robinhood Chain, Circle's CCTP burns the USDC, attests it, and Noren mints it on Arc. Live, in well under a minute.

@@ -1,1 +1,1 @@
-Aubelle is a demo boutique. One SDK file connects it to Noren. Pick a dress. Add it to the bag. Check out with Noren. Four ways to pay: private, USDC, stocks or crypto, or credit.
+Now meet Riya. She's shopping at Aubelle, a boutique that added Noren with a single file. She picks a dress, drops it in her bag, and checks out with Noren. Four ways to pay, all in one checkout.

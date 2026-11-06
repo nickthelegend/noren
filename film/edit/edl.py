@@ -55,12 +55,12 @@ OFFSET = {"intro": 5.0}
 BEATS = [
     ("intro", "landing4", [(0.9, 10.9)], None, None, []),
     # 02 Noren Merchant (hosted): Privy modal (not completed), the injected test wallet (SIWE), store on Arc testnet, API keys
-    ("merchant", "merchant3", [(2.0, 5.6)], None, ARC, [(0.1, 3.4, "Privy sign-in (email or wallet)")]),
+    ("merchant", "merchant3", [(2.0, 5.6)], None, ARC, [(0.1, 3.4, "Juhu Chai House signs in: Privy (email or wallet)")]),
     ("merchant", "merchant3", [(6.6, 12.5)], None, ARC, [(0.1, 2.6, "demo continues with an injected test wallet"), (2.8, 3.0, "Signed in with SIWE (EIP-4361): no transaction")]),
     ("merchant", "merchant3", [(13.6, 20.2)], None, ARC, [(0.1, 6.4, "Store registered on Arc testnet: <em>NorenCheckout.registerMerchant</em>")]),
     ("merchant", "merchant3", [(33.6, 37.5)], None, ARC, [(0.1, 3.7, "First link made · API keys: the secret is shown once <em>(redacted)</em>")]),
     # 03 Aubelle (hosted shop): a dress -> size -> add to bag -> bag -> Noren checkout, four ways to pay
-    ("shop", "shop6", [(0.8, 3.8)], None, ARC, [(0.1, 2.8, "Aubelle: a demo shop in <em>examples/shop</em>")]),
+    ("shop", "shop6", [(0.8, 3.8)], None, ARC, [(0.1, 2.8, "<em>Riya</em> shops at Aubelle, a demo boutique")]),
     ("shop", "shop6", [(7.6, 15.6)], None, ARC, [(0.1, 7.8, "Pick a dress · size S · add to bag")]),
     ("shop", "shop6", [(18.0, 22.4)], None, ARC, [(0.1, 4.2, "The bag → <em>Checkout with Noren</em>")]),
     ("shop", "shop6", [(27.0, 30.6)], None, ARC, [(0.1, 3.4, "Four ways to pay: private · USDC · <em>stocks or crypto</em> · later")]),
@@ -80,9 +80,9 @@ BEATS = [
     ("credit", "credit4a", [(4.0, 7.7)], None, RHS, [(0.1, 3.5, "Deposit stock, get credit: 66% → up to 80%")]),
     ("credit", "credit4a", [(11.5, 16.0)], None, RHS, [(0.1, 4.3, "Deposit 2 {nvda} NVDA into the Aqua pool")]),
     ("credit", "credit4a", [(17.6, 21.6)], None, RHS, [(0.1, 3.8, "Your stock is now <em>1inch Aqua liquidity</em>")]),
-    ("credit", "@world", [(-3.7, 0.3)], None, WORLD, [(0.05, 3.9, "World ID: a real Orb verification in World App")]),
-    ("credit", "credit4a", [(31.0, 35.2)], None, RHS, [(0.1, 1.9, "Credit limit $248.53 · tier 0 · 66%"), (2.1, 2.0, "then a repaid loan + the on-chain record → tier 1 · 70%")]),
-    ("credit", "credit4a", [(24.3, 29.2)], None, RHS, [(0.1, 4.7, "Next: open the line · Pay later · NVDA fees pay it down")]),
+    ("credit", "credit4a", [(31.0, 35.2)], None, RHS, [(0.1, 4.0, "Credit limit $248.53: tier 0 · 66% today")]),
+    ("credit", "@world", [(-3.7, 0.3)], None, WORLD, [(0.05, 3.9, "Reputation: World ID, a real Orb verification in World App")]),
+    ("credit", "credit4a", [(24.3, 29.2)], None, RHS, [(0.1, 4.7, "Five steps: deposit · limit · open the line · pay later · fees pay it down")]),
     ("swap", "swap3", [(0.8, 5.1)], None, SWAP_LIVE, [(0.1, 4.1, "Swap: Uniswap v4 first; Noren's Aqua maker when it's better")]),
     # 08a private by default (hosted checkout, live on Arc testnet), the merchant's view, the live Arbitrum SHIELD run
     ("private", "privpay6", [(0.3, 3.3)], None, ARC, [(0.1, 2.8, "Checkout opens on <em>Pay privately</em>, the default")]),
@@ -90,10 +90,9 @@ BEATS = [
     ("private", "privcredit-m", [(3.6, 6.6)], None, ARC, [(0.1, 2.8, "Noren Merchant: Customer: <em>Private</em>")]),
     ("private", "xexplorer", [(17.6, 19.6)], (1.12, 30, 30), ARB_LIVE, [(0.05, 1.9, "Live: Arbitrum SHIELD burn → private invoice on Arc")]),
     # 08b pay with stocks or crypto (hosted checkout, Robinhood Chain mainnet snapshot): the token list, one payment
-    ("stocks", "stockpay6", [(4.0, 16.2)], None, RHS, [(0.1, 6.0, "Every Stock Token you hold, and ETH, at its Chainlink price"), (6.3, 5.8, "hosted snapshot today: quotes paused (stale price round)")]),
-    # the hosted quote is refused today (StalePrice: the snapshot's clock was moved 24 h ahead by a test script), so the
-    # payment itself is the earlier local run on the same mainnet snapshot, cropped to the checkout, and captioned so
-    ("stocks", "shop3", [(42.85, 45.05)], (1.25, 50, 100), RHS + " · earlier local run", [(0.05, 2.15, "Earlier local run: paid 0.788045 {nvda} NVDA at $188.41")]),
+    ("stocks", "stockpay6", [(6.0, 11.0)], None, RHS, [(0.1, 4.8, "Every Stock Token you hold, and ETH, at its Chainlink price")]),
+    ("stocks", "stockpay6", [(17.2, 22.9)], None, RHS, [(0.1, 5.5, "Pay 12.50 with 0.067024 {nvda} NVDA at $187.10 · 1inch Aqua maker")]),
+    ("stocks", "stockpay6", [(26.6, 30.3)], None, RHS, [(0.05, 3.6, "Paid with stocks, 4 s later · tx 0x2524…46ad")]),
     # 08c pay later, privately: the live Arc testnet payment, then the live CCIP run
     ("later", "xexplorer2", [(0.3, 8.3)], None, ARC, [(0.05, 7.8, "Pay later, privately: live on Arc testnet · tx 0xf3b7…723a")]),
     ("later", "xexplorer", [(88.0, 95.0)], (1.2, 50, 10), CCIP_LIVE, [(0.05, 6.9, "Live over CCIP: Robinhood testnet → Base hub → Arc")]),
@@ -139,7 +138,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). v4 is split at a sentence: v4 (home, pay, bridge) and v4c (stocks, the three rails).
-VO = [("v1", 0.0), ("v2", 15.9), ("v3", 35.3), ("v4", 54.2), ("v4e", 68.4), ("v4c", 83.8), ("v4b", 96.3), ("v4d", 117.4), ("v4s", 121.6), ("v5a", 125.8), ("v5b", 137.9), ("v5c-verified", 152.3), ("v6", 167.6)]   # Nick's cloned voice (ElevenLabs), placed on the v6 cut
+VO = [("v1", 0.2), ("v2", 15.4), ("v3", 35.3), ("v4", 54.3), ("v4e", 68.2), ("v4c", 83.8), ("v4b", 96.2), ("v4d", 114.6), ("v4s", 121.6), ("v5a", 125.9), ("v5b", 137.9), ("v5c", 152.3), ("v6", 167.6)]   # the story read (ElevenLabs, Nick's clone, stitched)
 
 POPS = []
 

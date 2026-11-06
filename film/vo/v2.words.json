@@ -1,236 +1,278 @@
 [
   {
-    "text": "a",
-    "start": 0.04,
-    "end": 0.1,
+    "text": "This",
+    "start": 0.09,
+    "end": 0.33,
     "id": "w0"
   },
   {
-    "text": "merchant",
-    "start": 0.1,
-    "end": 0.96,
+    "text": "is",
+    "start": 0.33,
+    "end": 0.49,
     "id": "w1"
   },
   {
-    "text": "signs",
-    "start": 0.96,
-    "end": 1.5,
+    "text": "Juhu",
+    "start": 0.49,
+    "end": 0.81,
     "id": "w2"
   },
   {
-    "text": "in",
-    "start": 1.5,
-    "end": 1.71,
+    "text": "Chai",
+    "start": 0.81,
+    "end": 1.13,
     "id": "w3"
   },
   {
-    "text": "with",
-    "start": 1.71,
-    "end": 2.03,
+    "text": "House,",
+    "start": 1.13,
+    "end": 1.71,
     "id": "w4"
   },
   {
-    "text": "privy",
-    "start": 2.24,
-    "end": 2.68,
+    "text": "a",
+    "start": 1.77,
+    "end": 1.83,
     "id": "w5"
   },
   {
-    "text": "or",
-    "start": 2.72,
-    "end": 2.95,
+    "text": "small",
+    "start": 1.83,
+    "end": 2.29,
     "id": "w6"
   },
   {
-    "text": "a",
-    "start": 2.95,
-    "end": 3.06,
+    "text": "cafe",
+    "start": 2.29,
+    "end": 2.65,
     "id": "w7"
   },
   {
-    "text": "wallet,",
-    "start": 3.06,
-    "end": 3.78,
+    "text": "in",
+    "start": 2.65,
+    "end": 2.83,
     "id": "w8"
   },
   {
-    "text": "no",
-    "start": 3.82,
-    "end": 3.96,
+    "text": "Mumbai.",
+    "start": 2.83,
+    "end": 3.52,
     "id": "w9"
   },
   {
-    "text": "password,",
-    "start": 4.06,
-    "end": 5.01,
+    "text": "The",
+    "start": 3.61,
+    "end": 3.78,
     "id": "w10"
   },
   {
-    "text": "no",
-    "start": 5.01,
-    "end": 5.18,
+    "text": "owner",
+    "start": 3.78,
+    "end": 4.01,
     "id": "w11"
   },
   {
-    "text": "transaction,",
-    "start": 5.18,
-    "end": 6.18,
+    "text": "signs",
+    "start": 4.29,
+    "end": 4.64,
     "id": "w12"
   },
   {
-    "text": "name",
-    "start": 6.22,
-    "end": 6.65,
+    "text": "in",
+    "start": 4.64,
+    "end": 4.81,
     "id": "w13"
   },
   {
-    "text": "the",
-    "start": 6.65,
-    "end": 7,
+    "text": "with",
+    "start": 4.81,
+    "end": 5.15,
     "id": "w14"
   },
   {
-    "text": "store,",
-    "start": 7,
-    "end": 7.6,
+    "text": "a",
+    "start": 5.15,
+    "end": 5.23,
     "id": "w15"
   },
   {
-    "text": "choose",
-    "start": 7.64,
-    "end": 8.17,
+    "text": "wallet,",
+    "start": 5.23,
+    "end": 5.96,
     "id": "w16"
   },
   {
-    "text": "where",
-    "start": 8.17,
-    "end": 8.64,
+    "text": "registers",
+    "start": 5.96,
+    "end": 6.58,
     "id": "w17"
   },
   {
-    "text": "usdc",
-    "start": 8.64,
-    "end": 9.02,
+    "text": "the",
+    "start": 7,
+    "end": 7.06,
     "id": "w18"
   },
   {
-    "text": "lands",
-    "start": 9.02,
-    "end": 9.49,
+    "text": "store",
+    "start": 7.06,
+    "end": 7.51,
     "id": "w19"
   },
   {
     "text": "on",
-    "start": 9.49,
-    "end": 9.63,
+    "start": 7.51,
+    "end": 7.7,
     "id": "w20"
   },
   {
-    "text": "ark,",
-    "start": 9.84,
-    "end": 10.15,
+    "text": "ARC,",
+    "start": 7.7,
+    "end": 8.24,
     "id": "w21"
   },
   {
-    "text": "noran",
-    "start": 10.15,
-    "end": 10.62,
+    "text": "and",
+    "start": 8.24,
+    "end": 8.42,
     "id": "w22"
   },
   {
-    "text": "registers",
-    "start": 10.62,
-    "end": 11.47,
+    "text": "creates",
+    "start": 8.42,
+    "end": 8.85,
     "id": "w23"
   },
   {
-    "text": "it",
-    "start": 11.47,
-    "end": 11.56,
+    "text": "a",
+    "start": 8.85,
+    "end": 8.91,
     "id": "w24"
   },
   {
-    "text": "on",
-    "start": 11.66,
-    "end": 11.85,
+    "text": "payment",
+    "start": 8.91,
+    "end": 9.09,
     "id": "w25"
   },
   {
-    "text": "chain,",
-    "start": 11.85,
-    "end": 12.56,
+    "text": "link",
+    "start": 9.47,
+    "end": 9.6,
     "id": "w26"
   },
   {
-    "text": "then",
-    "start": 12.56,
-    "end": 13,
+    "text": "in",
+    "start": 9.69,
+    "end": 9.82,
     "id": "w27"
   },
   {
-    "text": "a",
-    "start": 13,
-    "end": 13.11,
+    "text": "seconds.",
+    "start": 9.82,
+    "end": 10.92,
     "id": "w28"
   },
   {
-    "text": "payment",
-    "start": 13.11,
-    "end": 13.87,
+    "text": "Every",
+    "start": 11.01,
+    "end": 11.41,
     "id": "w29"
   },
   {
-    "text": "link",
-    "start": 13.87,
-    "end": 14.32,
+    "text": "payment",
+    "start": 11.69,
+    "end": 12.19,
     "id": "w30"
   },
   {
-    "text": "and",
-    "start": 14.32,
-    "end": 14.62,
+    "text": "lands",
+    "start": 12.19,
+    "end": 12.72,
     "id": "w31"
   },
   {
-    "text": "api",
-    "start": 14.62,
-    "end": 15.23,
+    "text": "as",
+    "start": 12.72,
+    "end": 12.93,
     "id": "w32"
   },
   {
-    "text": "keys,",
-    "start": 15.23,
-    "end": 16.16,
+    "text": "USDC",
+    "start": 12.93,
+    "end": 13.34,
     "id": "w33"
   },
   {
-    "text": "the",
-    "start": 16.2,
-    "end": 16.39,
+    "text": "on",
+    "start": 13.34,
+    "end": 13.55,
     "id": "w34"
   },
   {
-    "text": "secret",
-    "start": 16.39,
-    "end": 16.85,
+    "text": "ARC.",
+    "start": 13.55,
+    "end": 13.98,
     "id": "w35"
   },
   {
-    "text": "is",
-    "start": 16.85,
-    "end": 17,
+    "text": "And",
+    "start": 14.31,
+    "end": 14.42,
     "id": "w36"
   },
   {
-    "text": "shown",
-    "start": 17,
-    "end": 17.38,
+    "text": "with",
+    "start": 14.42,
+    "end": 14.69,
     "id": "w37"
   },
   {
-    "text": "once.",
-    "start": 17.38,
-    "end": 17.72,
+    "text": "private",
+    "start": 14.69,
+    "end": 15.16,
     "id": "w38"
+  },
+  {
+    "text": "payments,",
+    "start": 15.16,
+    "end": 15.83,
+    "id": "w39"
+  },
+  {
+    "text": "the",
+    "start": 15.83,
+    "end": 16.03,
+    "id": "w40"
+  },
+  {
+    "text": "owner",
+    "start": 16.03,
+    "end": 16.37,
+    "id": "w41"
+  },
+  {
+    "text": "never",
+    "start": 16.37,
+    "end": 16.7,
+    "id": "w42"
+  },
+  {
+    "text": "learns",
+    "start": 16.71,
+    "end": 17.12,
+    "id": "w43"
+  },
+  {
+    "text": "who",
+    "start": 17.12,
+    "end": 17.27,
+    "id": "w44"
+  },
+  {
+    "text": "paid.",
+    "start": 17.64,
+    "end": 17.72,
+    "id": "w45"
   }
 ]

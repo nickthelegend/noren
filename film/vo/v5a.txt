@@ -1,1 +1,1 @@
-Three ways to pay. First, USDC on Arc. Private by default. The shop sees only “private”. And it ran live, from Arbitrum.
+Back at the café, a customer pays privately. Juhu Chai House gets its USDC — and the customer column just says: private.

@@ -1,1 +1,1 @@
-Pay a shop in crypto, and it sees your whole wallet. Noren fixes that. Stablecoins, stocks or credit. Private by default. Built on Arc, with 1inch Aqua liquidity and USDC from any chain.
+Every time you pay a shop with crypto, you hand them your whole wallet: your balance, your salary, every payment you've ever made. And if you want to spend your stocks? You have to sell them first. We built Noren to fix both.

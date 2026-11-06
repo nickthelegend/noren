@@ -1,152 +1,152 @@
 [
   {
-    "text": "Second",
-    "start": 0.01,
-    "end": 0.56,
+    "text": "At",
+    "start": 0.05,
+    "end": 0.18,
     "id": "w0"
   },
   {
-    "text": "any",
-    "start": 0.56,
-    "end": 0.76,
+    "text": "the",
+    "start": 0.18,
+    "end": 0.4,
     "id": "w1"
   },
   {
-    "text": "stock",
-    "start": 0.86,
-    "end": 1.31,
+    "text": "cafe",
+    "start": 0.47,
+    "end": 0.75,
     "id": "w2"
   },
   {
-    "text": "you",
-    "start": 1.31,
-    "end": 1.59,
+    "text": "Ria",
+    "start": 0.86,
+    "end": 1.09,
     "id": "w3"
   },
   {
-    "text": "hold,",
-    "start": 1.59,
-    "end": 2.09,
+    "text": "can",
+    "start": 1.09,
+    "end": 1.35,
     "id": "w4"
   },
   {
-    "text": "Tesla,",
-    "start": 2.26,
-    "end": 2.79,
+    "text": "pay",
+    "start": 1.35,
+    "end": 1.53,
     "id": "w5"
   },
   {
-    "text": "Apple,",
-    "start": 2.79,
-    "end": 3.43,
+    "text": "with",
+    "start": 1.65,
+    "end": 2,
     "id": "w6"
   },
   {
-    "text": "Nvidia,",
-    "start": 3.56,
-    "end": 4.24,
+    "text": "any",
+    "start": 2,
+    "end": 2.27,
     "id": "w7"
   },
   {
-    "text": "the",
-    "start": 4.24,
-    "end": 4.52,
+    "text": "stock",
+    "start": 2.27,
+    "end": 2.66,
     "id": "w8"
   },
   {
-    "text": "S&P",
-    "start": 4.52,
-    "end": 4.79,
+    "text": "she",
+    "start": 2.73,
+    "end": 3,
     "id": "w9"
   },
   {
-    "text": "500",
-    "start": 4.79,
-    "end": 5.67,
+    "text": "holds,",
+    "start": 3,
+    "end": 3.67,
     "id": "w10"
   },
   {
-    "text": "or",
-    "start": 5.7,
-    "end": 6.08,
+    "text": "Tesla,",
+    "start": 3.68,
+    "end": 4.23,
     "id": "w11"
   },
   {
-    "text": "8th,",
-    "start": 6.08,
-    "end": 6.78,
+    "text": "Apple,",
+    "start": 4.24,
+    "end": 4.71,
     "id": "w12"
   },
   {
-    "text": "a",
-    "start": 6.8,
-    "end": 6.85,
+    "text": "Nvidia,",
+    "start": 4.71,
+    "end": 5.28,
     "id": "w13"
   },
   {
-    "text": "1",
-    "start": 6.85,
-    "end": 7.06,
+    "text": "the",
+    "start": 5.28,
+    "end": 5.62,
     "id": "w14"
   },
   {
-    "text": "inch",
-    "start": 7.06,
-    "end": 7.36,
+    "text": "S&P",
+    "start": 5.62,
+    "end": 5.95,
     "id": "w15"
   },
   {
-    "text": "aqua",
-    "start": 7.36,
-    "end": 7.84,
+    "text": "500",
+    "start": 5.95,
+    "end": 6.84,
     "id": "w16"
   },
   {
-    "text": "maker",
-    "start": 7.84,
-    "end": 8.24,
+    "text": "or",
+    "start": 7.23,
+    "end": 7.28,
     "id": "w17"
   },
   {
-    "text": "buys",
-    "start": 8.24,
-    "end": 8.6,
+    "text": "ETH",
+    "start": 7.33,
+    "end": 7.54,
     "id": "w18"
   },
   {
-    "text": "it",
-    "start": 8.61,
-    "end": 8.75,
+    "text": "sold",
+    "start": 7.57,
+    "end": 7.91,
     "id": "w19"
   },
   {
     "text": "at",
-    "start": 8.75,
-    "end": 8.85,
+    "start": 7.91,
+    "end": 8.02,
     "id": "w20"
   },
   {
     "text": "the",
-    "start": 8.94,
-    "end": 9.13,
+    "start": 8.2,
+    "end": 8.36,
     "id": "w21"
   },
   {
     "text": "chain",
-    "start": 9.13,
-    "end": 9.52,
+    "start": 8.36,
+    "end": 8.81,
     "id": "w22"
   },
   {
     "text": "link",
-    "start": 9.52,
-    "end": 9.79,
+    "start": 8.93,
+    "end": 9.18,
     "id": "w23"
   },
   {
     "text": "price.",
-    "start": 9.86,
-    "end": 10.28,
+    "start": 9.18,
+    "end": 9.72,
     "id": "w24"
   }
 ]

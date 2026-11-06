@@ -1,188 +1,206 @@
 [
   {
-    "text": "Bring",
-    "start": 0.07,
-    "end": 0.69,
+    "text": "Her",
+    "start": 0.05,
+    "end": 0.21,
     "id": "w0"
   },
   {
-    "text": "USDC",
-    "start": 0.69,
-    "end": 1.19,
+    "text": "money",
+    "start": 0.21,
+    "end": 0.56,
     "id": "w1"
   },
   {
-    "text": "to",
-    "start": 1.36,
-    "end": 1.5,
+    "text": "doesn't",
+    "start": 0.56,
+    "end": 0.97,
     "id": "w2"
   },
   {
-    "text": "ARC",
-    "start": 1.53,
-    "end": 1.87,
+    "text": "have",
+    "start": 1.07,
+    "end": 1.33,
     "id": "w3"
   },
   {
-    "text": "from",
-    "start": 2.09,
-    "end": 2.28,
+    "text": "to",
+    "start": 1.33,
+    "end": 1.45,
     "id": "w4"
   },
   {
-    "text": "Anychain,",
-    "start": 2.39,
-    "end": 3.19,
+    "text": "start",
+    "start": 1.51,
+    "end": 1.82,
     "id": "w5"
   },
   {
-    "text": "Ethereum,",
-    "start": 3.19,
-    "end": 3.91,
+    "text": "on",
+    "start": 1.82,
+    "end": 1.96,
     "id": "w6"
   },
   {
-    "text": "Bass,",
-    "start": 3.91,
-    "end": 4.38,
+    "text": "ARK",
+    "start": 1.96,
+    "end": 2.13,
     "id": "w7"
   },
   {
-    "text": "Arbitrum,",
-    "start": 4.38,
-    "end": 5.16,
+    "text": "from",
+    "start": 2.27,
+    "end": 2.57,
     "id": "w8"
   },
   {
-    "text": "Robinhood,",
-    "start": 5.16,
-    "end": 6.18,
+    "text": "Ethereum,",
+    "start": 2.57,
+    "end": 3.52,
     "id": "w9"
   },
   {
-    "text": "Circle",
-    "start": 6.18,
-    "end": 7,
+    "text": "Base,",
+    "start": 3.52,
+    "end": 4.01,
     "id": "w10"
   },
   {
-    "text": "burns",
-    "start": 7,
-    "end": 7.03,
+    "text": "Arbitrum",
+    "start": 4.01,
+    "end": 4.66,
     "id": "w11"
   },
   {
-    "text": "it,",
-    "start": 7.12,
-    "end": 7.14,
+    "text": "or",
+    "start": 4.68,
+    "end": 4.8,
     "id": "w12"
   },
   {
-    "text": "a",
-    "start": 7.21,
-    "end": 7.23,
+    "text": "Robinhood",
+    "start": 4.8,
+    "end": 5.36,
     "id": "w13"
   },
   {
-    "text": "test",
-    "start": 7.23,
-    "end": 7.62,
+    "text": "Chain.",
+    "start": 5.36,
+    "end": 6.12,
     "id": "w14"
   },
   {
-    "text": "sit",
-    "start": 7.62,
-    "end": 7.88,
+    "text": "Circle's",
+    "start": 6.17,
+    "end": 7.33,
     "id": "w15"
   },
   {
-    "text": "and",
-    "start": 7.92,
-    "end": 8.2,
+    "text": "CTP",
+    "start": 7.39,
+    "end": 7.84,
     "id": "w16"
   },
   {
-    "text": "Norren's",
-    "start": 8.2,
-    "end": 8.9,
+    "text": "burns",
+    "start": 7.89,
+    "end": 8.62,
     "id": "w17"
   },
   {
-    "text": "hook",
-    "start": 9,
-    "end": 9.36,
+    "text": "the",
+    "start": 8.68,
+    "end": 9.12,
     "id": "w18"
   },
   {
-    "text": "mints",
-    "start": 9.36,
-    "end": 9.84,
+    "text": "USDC,",
+    "start": 9.12,
+    "end": 9.9,
     "id": "w19"
   },
   {
-    "text": "it",
-    "start": 9.84,
-    "end": 10.03,
+    "text": "attests",
+    "start": 10.07,
+    "end": 10.52,
     "id": "w20"
   },
   {
-    "text": "on",
-    "start": 10.03,
-    "end": 10.09,
+    "text": "it",
+    "start": 10.52,
+    "end": 10.68,
     "id": "w21"
   },
   {
-    "text": "ARC,",
-    "start": 10.26,
-    "end": 10.71,
+    "text": "and",
+    "start": 10.68,
+    "end": 10.92,
     "id": "w22"
   },
   {
-    "text": "all",
-    "start": 10.71,
-    "end": 10.88,
+    "text": "Norrin",
+    "start": 10.92,
+    "end": 11.4,
     "id": "w23"
   },
   {
-    "text": "of",
-    "start": 10.98,
-    "end": 11.14,
+    "text": "mints",
+    "start": 11.4,
+    "end": 11.81,
     "id": "w24"
   },
   {
     "text": "it",
-    "start": 11.14,
-    "end": 11.31,
+    "start": 11.81,
+    "end": 11.84,
     "id": "w25"
   },
   {
-    "text": "ran",
-    "start": 11.31,
-    "end": 11.56,
+    "text": "on",
+    "start": 11.96,
+    "end": 12.13,
     "id": "w26"
   },
   {
-    "text": "live",
-    "start": 11.56,
-    "end": 11.89,
+    "text": "ARK,",
+    "start": 12.26,
+    "end": 12.51,
     "id": "w27"
   },
   {
-    "text": "on",
-    "start": 11.89,
-    "end": 12.07,
+    "text": "live",
+    "start": 12.52,
+    "end": 12.98,
     "id": "w28"
   },
   {
-    "text": "public",
-    "start": 12.07,
-    "end": 12.57,
+    "text": "in",
+    "start": 12.98,
+    "end": 13.21,
     "id": "w29"
   },
   {
-    "text": "testnets.",
-    "start": 12.57,
-    "end": 13.32,
+    "text": "well",
+    "start": 13.21,
+    "end": 13.68,
     "id": "w30"
+  },
+  {
+    "text": "under",
+    "start": 13.68,
+    "end": 13.87,
+    "id": "w31"
+  },
+  {
+    "text": "a",
+    "start": 14.01,
+    "end": 14.03,
+    "id": "w32"
+  },
+  {
+    "text": "minute.",
+    "start": 14.03,
+    "end": 14.48,
+    "id": "w33"
   }
 ]

@@ -1,122 +1,152 @@
 [
   {
-    "text": "Now",
+    "text": "Ria",
     "start": 0.05,
-    "end": 0.24,
+    "end": 0.3,
     "id": "w0"
   },
   {
-    "text": "the",
-    "start": 0.24,
-    "end": 0.48,
+    "text": "opens",
+    "start": 0.3,
+    "end": 0.8,
     "id": "w1"
   },
   {
-    "text": "customer",
-    "start": 0.48,
-    "end": 0.88,
+    "text": "the",
+    "start": 0.8,
+    "end": 1.12,
     "id": "w2"
   },
   {
-    "text": "signing",
-    "start": 1.18,
-    "end": 1.66,
+    "text": "Norin",
+    "start": 1.12,
+    "end": 1.52,
     "id": "w3"
   },
   {
-    "text": "with",
-    "start": 1.66,
-    "end": 1.98,
+    "text": "app",
+    "start": 1.65,
+    "end": 1.82,
     "id": "w4"
   },
   {
-    "text": "Privy",
-    "start": 1.98,
-    "end": 2.27,
+    "text": "and",
+    "start": 1.95,
+    "end": 2.25,
     "id": "w5"
   },
   {
-    "text": "or",
-    "start": 2.43,
-    "end": 2.53,
+    "text": "pastes",
+    "start": 2.25,
+    "end": 2.84,
     "id": "w6"
   },
   {
-    "text": "a",
-    "start": 2.53,
-    "end": 2.59,
+    "text": "the",
+    "start": 2.98,
+    "end": 3.33,
     "id": "w7"
   },
   {
-    "text": "browser",
-    "start": 2.59,
-    "end": 3.07,
+    "text": "link.",
+    "start": 3.4,
+    "end": 4.16,
     "id": "w8"
   },
   {
-    "text": "wallet",
-    "start": 3.07,
-    "end": 3.44,
+    "text": "She",
+    "start": 4.21,
+    "end": 4.38,
     "id": "w9"
   },
   {
-    "text": "home",
-    "start": 3.52,
-    "end": 3.8,
+    "text": "pastes",
+    "start": 4.38,
+    "end": 4.76,
     "id": "w10"
   },
   {
-    "text": "shows",
-    "start": 3.8,
-    "end": 4.17,
+    "text": "privately",
+    "start": 4.86,
+    "end": 5.52,
     "id": "w11"
   },
   {
-    "text": "every",
-    "start": 4.2,
-    "end": 4.48,
+    "text": "and",
+    "start": 5.52,
+    "end": 5.68,
     "id": "w12"
   },
   {
-    "text": "balance,",
-    "start": 4.48,
-    "end": 5.04,
+    "text": "the",
+    "start": 5.81,
+    "end": 5.96,
     "id": "w13"
   },
   {
-    "text": "paste",
-    "start": 5.13,
-    "end": 5.32,
+    "text": "proof",
+    "start": 5.96,
+    "end": 6.33,
     "id": "w14"
   },
   {
-    "text": "a",
-    "start": 5.37,
-    "end": 5.4,
+    "text": "is",
+    "start": 6.33,
+    "end": 6.43,
     "id": "w15"
   },
   {
-    "text": "link,",
-    "start": 5.4,
-    "end": 6.1,
+    "text": "made",
+    "start": 6.54,
+    "end": 6.76,
     "id": "w16"
   },
   {
-    "text": "pay",
-    "start": 6.1,
-    "end": 6.32,
+    "text": "right",
+    "start": 6.76,
+    "end": 6.99,
     "id": "w17"
   },
   {
-    "text": "privately,",
-    "start": 6.32,
-    "end": 7.06,
+    "text": "in",
+    "start": 7.17,
+    "end": 7.3,
     "id": "w18"
   },
   {
-    "text": "done.",
-    "start": 7.06,
-    "end": 7.2,
+    "text": "her",
+    "start": 7.3,
+    "end": 7.49,
     "id": "w19"
+  },
+  {
+    "text": "browser",
+    "start": 7.49,
+    "end": 7.62,
+    "id": "w20"
+  },
+  {
+    "text": "in",
+    "start": 7.62,
+    "end": 8.23,
+    "id": "w21"
+  },
+  {
+    "text": "a",
+    "start": 8.23,
+    "end": 8.3,
+    "id": "w22"
+  },
+  {
+    "text": "few",
+    "start": 8.31,
+    "end": 8.61,
+    "id": "w23"
+  },
+  {
+    "text": "seconds.",
+    "start": 8.61,
+    "end": 9.36,
+    "id": "w24"
   }
 ]

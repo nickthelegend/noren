@@ -94,10 +94,10 @@ load with `noren.wallet.mode=browser` stored, so `privpay6` and `stockpay6` set 
 | 35–54 | Aubelle → dress → size S → bag → Noren checkout | `shop6` | Arc testnet · live | invoice AUB-DF5722, 148 USDC |
 | 54–68 | Privy shown · injected wallet · Home · paste link · paid privately 0.50 | `applogin3`, `apphome3` | Arc testnet · live | private pay on Arc testnet |
 | 68–96 | bridge chain chips · Ethereum/Base/Arbitrum → Arc explorers · rails card | `bridge4`, `xexplorer4`, card | CCTP V2 testnets / each chain · live | earlier live CCTP runs |
-| 96–121 | Earn tiers · deposit 2 NVDA · Aqua maker · World ID (World App) · limit 66% · five steps | `credit4a`, `world` | Robinhood Chain · mainnet snapshot / World ID · production | deposit tx 0xa803…7212; 70% caption from ladder txs 0x7499…ab8 (loan repaid) and 0x2935…c6c7 (attestation) |
+| 96–121 | Earn tiers · deposit 2 NVDA · Aqua maker · limit 66% · World ID (World App) · five steps | `credit4a`, `world` | Robinhood Chain · mainnet snapshot / World ID · production | deposit tx 0xa803…7212; tier 0 · 66% (the 70% step needs a repaid loan, which needs a clock jump: not run after the re-snapshot) |
 | 121–126 | Swap quotes | `swap3` | Arc testnet · live quotes | |
 | 126–138 | checkout on Pay privately · shield 1 USDC → paid 0.40 · merchant "Private" · Arbitrum SHIELD | `privpay6`, `privcredit-m`, `xexplorer` | Arc testnet · live | pay tx 0x4613…df39, proof 5.66 s |
-| 138–152 | the token list · paid with NVDA (earlier local run, cropped, captioned) | `stockpay6`, `shop3` | mainnet snapshot (· earlier local run) | hosted quote refused: StalePrice |
+| 138–152 | the token list · pick NVDA, quote · paid with stocks | `stockpay6` (re-take on the rebuilt snapshot) | Robinhood Chain · mainnet snapshot | 12.50 USDC with 0.067024 NVDA at $187.10, tx 0x2524…46ad; 4 s cut where the checkout briefly shows a "Paid privately" card |
 | 152–167 | pay-later tx 0xf3b7…723a · CCIP explorer | `xexplorer2`, `xexplorer` | Arc testnet · live / CCIP · live | |
 | 167–180 | live-on-testnets grid, end card | drawn | — | |
 
@@ -105,3 +105,20 @@ Not filmed on hosted: Pay later / Pay in 3 cards (Setup required), the credit li
 cross-chain Aqua (Setup required). The loan stage of `dev-reputation-ladder.ts` moved the hosted snapshot clock 24 h
 ahead (evm_increaseTime), so the snapshot's Chainlink rounds read as stale afterwards (gateway quotes and
 `creditLimitOf` revert with StalePrice); it was reported and the node was left as it is.
+
+The hosted Robinhood anvil was rebuilt from mainnet afterwards (Nick approved; clock back to real time), and
+`stockpay6` was re-taken on it.
+
+## Narration v6-final: the story read
+
+Nick: the declarative lines read "word by word". The coordinator's story script, adjusted only where the footage
+differs or a claim would be wrong ("in a few seconds" for the in-browser proof, measured 3.7–5.7 s; bridge "well
+under a minute", measured 16–31 s; "all in one checkout" since a stock payment settles USDG on Robinhood Chain; the
+stock payment is at the café). Voice: Nick's instant clone, `eleven_multilingual_v2`, stability 0.30, similarity 0.80,
+style 0.65, speaker boost, speed 1.08, with request stitching (`previous_text`/`next_text`) on every line.
+
+A/B (v1, v4b; stitched, same settings): multilingual_v2 v1 pitch spread 2.08 st (p10–p90 4.41 st), pauses only at
+sentence ends, LRA 3.3; turbo_v2_5 v1 1.69 st (3.31 st), LRA 3.0; v4b turbo had seven short gaps (choppy) against
+five sentence pauses. The old declarative v1 measured 1.67 st. eleven_v3 was not retried (it said "No run" and
+"Arkwa" in the first test). v1, v4, v4e and v5c were regenerated once: whisper heard an extra word at v1's dash and garbled lines in v4e and v5c, so the dash became a colon; v4's
+"pays privately" was checked with whisper medium.en.

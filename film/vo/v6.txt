@@ -1,1 +1,1 @@
-Live on public testnets: Arc, CCTP, CCIP, CRE, 1inch Aqua, Uniswap v4, Kohaku, World ID and zero G. Noren. Open source. On GitHub.
+Live on public testnets — with Circle, Chainlink, 1inch, Uniswap, World and Kohaku. Noren. Pay with stablecoins, stocks or credit — privately.

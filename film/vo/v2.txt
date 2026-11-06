@@ -1,1 +1,1 @@
-A merchant signs in with Privy or a wallet. No password. No transaction. Name the store. Choose where USDC lands on Arc. Noren registers it on-chain. Then a payment link, and API keys. The secret is shown once.
+This is Juhu Chai House, a small café in Mumbai. The owner signs in with a wallet, registers the store on Arc, and creates a payment link in seconds. Every payment lands as USDC on Arc — and with private payments, the owner never learns who paid.

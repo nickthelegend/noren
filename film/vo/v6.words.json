@@ -1,128 +1,122 @@
 [
   {
-    "text": "Live",
+    "text": "live",
     "start": 0.02,
-    "end": 0.36,
+    "end": 0.4,
     "id": "w0"
   },
   {
     "text": "on",
-    "start": 0.36,
-    "end": 0.54,
+    "start": 0.4,
+    "end": 0.55,
     "id": "w1"
   },
   {
     "text": "public",
-    "start": 0.54,
-    "end": 0.96,
+    "start": 0.65,
+    "end": 1.19,
     "id": "w2"
   },
   {
-    "text": "testnets,",
-    "start": 1.1,
-    "end": 1.96,
+    "text": "testnets",
+    "start": 1.19,
+    "end": 2,
     "id": "w3"
   },
   {
-    "text": "ARK,",
-    "start": 1.96,
-    "end": 2.58,
+    "text": "with",
+    "start": 2,
+    "end": 2.32,
     "id": "w4"
   },
   {
-    "text": "CCTV,",
-    "start": 2.58,
-    "end": 3.34,
+    "text": "Circle,",
+    "start": 2.32,
+    "end": 2.97,
     "id": "w5"
   },
   {
-    "text": "CCIP,",
-    "start": 3.34,
-    "end": 4.09,
+    "text": "Chainlink,",
+    "start": 3.02,
+    "end": 3.86,
     "id": "w6"
   },
   {
-    "text": "CRE,",
-    "start": 4.09,
-    "end": 4.79,
+    "text": "Oneinch,",
+    "start": 3.86,
+    "end": 4.58,
     "id": "w7"
   },
   {
-    "text": "1inch,",
-    "start": 4.8,
-    "end": 5.04,
+    "text": "Uniswap,",
+    "start": 4.58,
+    "end": 5.36,
     "id": "w8"
   },
   {
-    "text": "Aqua,",
-    "start": 5.04,
-    "end": 5.63,
+    "text": "World",
+    "start": 5.39,
+    "end": 5.78,
     "id": "w9"
   },
   {
-    "text": "Uniswap,",
-    "start": 5.63,
-    "end": 6.34,
+    "text": "and",
+    "start": 5.79,
+    "end": 6.05,
     "id": "w10"
   },
   {
-    "text": "VAR,",
-    "start": 6.54,
-    "end": 6.83,
+    "text": "Kohaku,",
+    "start": 6.05,
+    "end": 6.68,
     "id": "w11"
   },
   {
-    "text": "KOHAKU,",
-    "start": 7.08,
-    "end": 7.52,
+    "text": "Norin,",
+    "start": 7.11,
+    "end": 7.98,
     "id": "w12"
   },
   {
-    "text": "WorldID,",
-    "start": 7.52,
-    "end": 8.54,
+    "text": "pay",
+    "start": 8,
+    "end": 8.24,
     "id": "w13"
   },
   {
-    "text": "and",
-    "start": 8.56,
-    "end": 8.8,
+    "text": "with",
+    "start": 8.24,
+    "end": 8.53,
     "id": "w14"
   },
   {
-    "text": "ZeroG.",
-    "start": 8.87,
-    "end": 9.51,
+    "text": "stablecoins,",
+    "start": 8.63,
+    "end": 9.63,
     "id": "w15"
   },
   {
-    "text": "Noren,",
-    "start": 9.56,
-    "end": 10.07,
+    "text": "stocks",
+    "start": 9.97,
+    "end": 10.26,
     "id": "w16"
   },
   {
-    "text": "open",
-    "start": 10.07,
-    "end": 10.37,
+    "text": "or",
+    "start": 10.26,
+    "end": 10.43,
     "id": "w17"
   },
   {
-    "text": "source,",
-    "start": 10.38,
-    "end": 11,
+    "text": "credit,",
+    "start": 10.43,
+    "end": 11.13,
     "id": "w18"
   },
   {
-    "text": "on",
-    "start": 11,
-    "end": 11.15,
+    "text": "privately.",
+    "start": 11.13,
+    "end": 11.96,
     "id": "w19"
-  },
-  {
-    "text": "GitHub.",
-    "start": 11.15,
-    "end": 11.7,
-    "id": "w20"
   }
 ]

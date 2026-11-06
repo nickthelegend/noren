@@ -1,134 +1,128 @@
 [
   {
-    "text": "Three",
+    "text": "Back",
     "start": 0.05,
-    "end": 0.35,
+    "end": 0.23,
     "id": "w0"
   },
   {
-    "text": "ways",
-    "start": 0.35,
-    "end": 0.63,
+    "text": "at",
+    "start": 0.23,
+    "end": 0.34,
     "id": "w1"
   },
   {
-    "text": "to",
-    "start": 0.63,
-    "end": 0.77,
+    "text": "the",
+    "start": 0.34,
+    "end": 0.51,
     "id": "w2"
   },
   {
-    "text": "pay.",
-    "start": 0.77,
-    "end": 1.12,
+    "text": "cafe,",
+    "start": 0.51,
+    "end": 0.88,
     "id": "w3"
   },
   {
-    "text": "First,",
-    "start": 1.2,
-    "end": 1.77,
+    "text": "a",
+    "start": 0.88,
+    "end": 0.95,
     "id": "w4"
   },
   {
-    "text": "USDC",
-    "start": 1.77,
-    "end": 2.12,
+    "text": "customer",
+    "start": 0.95,
+    "end": 1.53,
     "id": "w5"
   },
   {
-    "text": "on",
-    "start": 2.14,
-    "end": 2.31,
+    "text": "pays",
+    "start": 1.64,
+    "end": 1.85,
     "id": "w6"
   },
   {
-    "text": "Arc.",
-    "start": 2.33,
-    "end": 2.82,
+    "text": "privately,",
+    "start": 1.97,
+    "end": 2.68,
     "id": "w7"
   },
   {
-    "text": "Private",
-    "start": 2.82,
-    "end": 3.15,
+    "text": "Juhoo",
+    "start": 2.68,
+    "end": 2.96,
     "id": "w8"
   },
   {
-    "text": "by",
-    "start": 3.32,
-    "end": 3.37,
+    "text": "Chai",
+    "start": 2.96,
+    "end": 3.19,
     "id": "w9"
   },
   {
-    "text": "default.",
-    "start": 3.37,
-    "end": 3.87,
+    "text": "House",
+    "start": 3.19,
+    "end": 3.48,
     "id": "w10"
   },
   {
-    "text": "The",
-    "start": 4.02,
-    "end": 4.18,
+    "text": "gets",
+    "start": 3.48,
+    "end": 3.76,
     "id": "w11"
   },
   {
-    "text": "shop",
-    "start": 4.18,
-    "end": 4.4,
+    "text": "its",
+    "start": 3.76,
+    "end": 4.29,
     "id": "w12"
   },
   {
-    "text": "sees",
-    "start": 4.49,
-    "end": 4.81,
+    "text": "USDC,",
+    "start": 4.29,
+    "end": 5.04,
     "id": "w13"
   },
   {
-    "text": "only",
-    "start": 4.81,
-    "end": 5.2,
+    "text": "and",
+    "start": 5.24,
+    "end": 5.36,
     "id": "w14"
   },
   {
-    "text": "private",
-    "start": 5.2,
-    "end": 5.72,
+    "text": "the",
+    "start": 5.36,
+    "end": 5.45,
     "id": "w15"
   },
   {
-    "text": "and",
-    "start": 6.09,
-    "end": 6.24,
+    "text": "customer",
+    "start": 5.46,
+    "end": 5.76,
     "id": "w16"
   },
   {
-    "text": "it",
-    "start": 6.24,
-    "end": 6.33,
+    "text": "column",
+    "start": 5.81,
+    "end": 6.31,
     "id": "w17"
   },
   {
-    "text": "ran",
-    "start": 6.47,
-    "end": 6.7,
+    "text": "just",
+    "start": 6.4,
+    "end": 6.74,
     "id": "w18"
   },
   {
-    "text": "live",
-    "start": 6.7,
-    "end": 7,
+    "text": "says",
+    "start": 6.8,
+    "end": 7.2,
     "id": "w19"
   },
   {
-    "text": "from",
-    "start": 7,
-    "end": 7.44,
+    "text": "PRIVATE!",
+    "start": 7.2,
+    "end": 7.84,
     "id": "w20"
-  },
-  {
-    "text": "Arbitrum.",
-    "start": 7.44,
-    "end": 8,
-    "id": "w21"
   }
 ]

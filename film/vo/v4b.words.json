@@ -1,284 +1,278 @@
 [
   {
-    "text": "Don't",
-    "start": 0.05,
-    "end": 0.42,
+    "text": "Here's",
+    "start": 0.06,
+    "end": 0.54,
     "id": "w0"
   },
   {
-    "text": "sell",
-    "start": 0.42,
-    "end": 0.76,
+    "text": "the",
+    "start": 0.54,
+    "end": 0.78,
     "id": "w1"
   },
   {
-    "text": "your",
-    "start": 0.76,
-    "end": 1.1,
+    "text": "part",
+    "start": 0.95,
+    "end": 1.17,
     "id": "w2"
   },
   {
-    "text": "stocks.",
-    "start": 1.1,
-    "end": 1.64,
+    "text": "Ria",
+    "start": 1.17,
+    "end": 1.44,
     "id": "w3"
   },
   {
-    "text": "Deposit",
-    "start": 1.69,
+    "text": "loves,",
+    "start": 1.44,
     "end": 2,
     "id": "w4"
   },
   {
-    "text": "Nvidia",
+    "text": "she",
     "start": 2,
-    "end": 2.31,
+    "end": 2.29,
     "id": "w5"
   },
   {
-    "text": "into",
-    "start": 2.31,
-    "end": 2.51,
+    "text": "owns",
+    "start": 2.29,
+    "end": 2.66,
     "id": "w6"
   },
   {
-    "text": "Norin's",
-    "start": 2.51,
-    "end": 3.02,
+    "text": "Nvidia",
+    "start": 2.68,
+    "end": 2.95,
     "id": "w7"
   },
   {
-    "text": "Aqua",
-    "start": 3.35,
-    "end": 4.02,
+    "text": "and",
+    "start": 3.32,
+    "end": 3.49,
     "id": "w8"
   },
   {
-    "text": "Pool.",
-    "start": 4.02,
-    "end": 4.88,
+    "text": "she",
+    "start": 3.49,
+    "end": 3.69,
     "id": "w9"
   },
   {
-    "text": "It",
-    "start": 4.93,
-    "end": 5.03,
+    "text": "doesn't",
+    "start": 3.7,
+    "end": 4.19,
     "id": "w10"
   },
   {
-    "text": "becomes",
-    "start": 5.03,
-    "end": 5.56,
+    "text": "want",
+    "start": 4.19,
+    "end": 4.47,
     "id": "w11"
   },
   {
-    "text": "a",
-    "start": 5.56,
-    "end": 5.63,
+    "text": "to",
+    "start": 4.47,
+    "end": 4.61,
     "id": "w12"
   },
   {
-    "text": "1-inch",
-    "start": 5.63,
-    "end": 6.22,
+    "text": "sell",
+    "start": 4.61,
+    "end": 4.63,
     "id": "w13"
   },
   {
-    "text": "Aqua",
-    "start": 6.22,
-    "end": 6.26,
+    "text": "it,",
+    "start": 5.04,
+    "end": 5.12,
     "id": "w14"
   },
   {
-    "text": "liquidity",
-    "start": 6.59,
-    "end": 7.24,
+    "text": "so",
+    "start": 5.12,
+    "end": 5.23,
     "id": "w15"
   },
   {
-    "text": "and",
-    "start": 7.24,
-    "end": 7.56,
+    "text": "she",
+    "start": 5.23,
+    "end": 5.4,
     "id": "w16"
   },
   {
-    "text": "66%",
-    "start": 7.56,
-    "end": 8.3,
+    "text": "deposits",
+    "start": 5.4,
+    "end": 5.94,
     "id": "w17"
   },
   {
-    "text": "of",
-    "start": 8.3,
-    "end": 8.51,
+    "text": "it",
+    "start": 6,
+    "end": 6.14,
     "id": "w18"
   },
   {
-    "text": "its",
-    "start": 8.51,
-    "end": 8.77,
+    "text": "into",
+    "start": 6.14,
+    "end": 6.55,
     "id": "w19"
   },
   {
-    "text": "value",
-    "start": 8.88,
-    "end": 9.36,
+    "text": "Norin's",
+    "start": 6.55,
+    "end": 7.25,
     "id": "w20"
   },
   {
-    "text": "is",
-    "start": 9.36,
-    "end": 9.41,
+    "text": "aqua",
+    "start": 7.26,
+    "end": 7.67,
     "id": "w21"
   },
   {
-    "text": "your",
-    "start": 9.7,
-    "end": 9.99,
+    "text": "pool.",
+    "start": 7.88,
+    "end": 8.42,
     "id": "w22"
   },
   {
-    "text": "credit",
-    "start": 9.99,
-    "end": 10.63,
+    "text": "It",
+    "start": 8.48,
+    "end": 8.6,
     "id": "w23"
   },
   {
-    "text": "limit.",
-    "start": 10.63,
-    "end": 11.24,
+    "text": "stays",
+    "start": 8.6,
+    "end": 9.05,
     "id": "w24"
   },
   {
-    "text": "Tasks",
-    "start": 11.29,
-    "end": 11.75,
+    "text": "hers,",
+    "start": 9.05,
+    "end": 9.59,
     "id": "w25"
   },
   {
-    "text": "raise",
-    "start": 11.75,
-    "end": 12.25,
+    "text": "it",
+    "start": 9.59,
+    "end": 9.74,
     "id": "w26"
   },
   {
-    "text": "it.",
-    "start": 12.26,
-    "end": 12.56,
+    "text": "keeps",
+    "start": 9.77,
+    "end": 9.95,
     "id": "w27"
   },
   {
-    "text": "World",
-    "start": 12.61,
-    "end": 13.41,
+    "text": "earning",
+    "start": 10.37,
+    "end": 10.85,
     "id": "w28"
   },
   {
-    "text": "ID,",
-    "start": 13.41,
-    "end": 13.89,
+    "text": "trading",
+    "start": 10.85,
+    "end": 11.36,
     "id": "w29"
   },
   {
-    "text": "a",
-    "start": 13.89,
-    "end": 13.94,
+    "text": "fees",
+    "start": 11.74,
+    "end": 11.84,
     "id": "w30"
   },
   {
-    "text": "Reclaim",
-    "start": 13.94,
-    "end": 14.42,
+    "text": "and",
+    "start": 11.84,
+    "end": 12.11,
     "id": "w31"
   },
   {
-    "text": "proof,",
-    "start": 14.42,
-    "end": 14.92,
+    "text": "it",
+    "start": 12.11,
+    "end": 12.29,
     "id": "w32"
   },
   {
-    "text": "Repaying",
-    "start": 14.92,
-    "end": 15.52,
+    "text": "becomes",
+    "start": 12.29,
+    "end": 12.92,
     "id": "w33"
   },
   {
-    "text": "on",
-    "start": 15.56,
-    "end": 15.71,
+    "text": "her",
+    "start": 12.92,
+    "end": 13.05,
     "id": "w34"
   },
   {
-    "text": "time,",
-    "start": 15.71,
-    "end": 16.2,
+    "text": "credit",
+    "start": 13.48,
+    "end": 13.73,
     "id": "w35"
   },
   {
-    "text": "recorded",
-    "start": 16.2,
-    "end": 16.85,
+    "text": "limit,",
+    "start": 13.73,
+    "end": 14.36,
     "id": "w36"
   },
   {
-    "text": "on",
-    "start": 16.85,
-    "end": 17.01,
+    "text": "66%",
+    "start": 14.36,
+    "end": 14.98,
     "id": "w37"
   },
   {
-    "text": "chain",
-    "start": 17.01,
-    "end": 17.42,
+    "text": "today",
+    "start": 15,
+    "end": 15.54,
     "id": "w38"
   },
   {
-    "text": "as",
-    "start": 17.42,
-    "end": 17.57,
+    "text": "up",
+    "start": 15.6,
+    "end": 15.67,
     "id": "w39"
   },
   {
-    "text": "a",
-    "start": 17.6,
-    "end": 17.68,
+    "text": "to",
+    "start": 15.67,
+    "end": 15.8,
     "id": "w40"
   },
   {
-    "text": "proof",
-    "start": 17.68,
-    "end": 18.12,
+    "text": "80%",
+    "start": 15.8,
+    "end": 16.2,
     "id": "w41"
   },
   {
-    "text": "type",
-    "start": 18.12,
-    "end": 18.63,
+    "text": "as",
+    "start": 16.3,
+    "end": 16.32,
     "id": "w42"
   },
   {
-    "text": "only,",
-    "start": 18.71,
-    "end": 19.2,
+    "text": "her",
+    "start": 16.49,
+    "end": 16.59,
     "id": "w43"
   },
   {
-    "text": "up",
-    "start": 19.21,
-    "end": 19.36,
+    "text": "reputation",
+    "start": 16.59,
+    "end": 17.07,
     "id": "w44"
   },
   {
-    "text": "to",
-    "start": 19.41,
-    "end": 19.54,
+    "text": "grows.",
+    "start": 17.48,
+    "end": 17.66,
     "id": "w45"
-  },
-  {
-    "text": "80%.",
-    "start": 19.54,
-    "end": 20.44,
-    "id": "w46"
   }
 ]
