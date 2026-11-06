@@ -34,7 +34,14 @@ async function load() {
   for (const o of JSON.parse(await readFile(join(DATA, 'orders.json'), 'utf8').catch(() => '[]')) as Order[]) orders.set(o.id, o);
   webhook = JSON.parse(await readFile(join(DATA, 'webhook.json'), 'utf8').catch(() => 'null'));
 }
-async function saveJson(name: string, value: unknown) { const tmp = join(DATA, `${name}.tmp`); await writeFile(tmp, JSON.stringify(value, null, 2)); await rename(tmp, join(DATA, name)); }
+// Writes are serialised and atomic (unique temp file, then rename), so a webhook landing mid-checkout can't clobber a save.
+let writes: Promise<unknown> = Promise.resolve();
+function saveJson(name: string, value: unknown) {
+  const text = JSON.stringify(value, null, 2);
+  const run = writes.then(async () => { const tmp = join(DATA, `${name}.${randomBytes(4).toString('hex')}.tmp`); await writeFile(tmp, text); await rename(tmp, join(DATA, name)); });
+  writes = run.catch(() => {});
+  return run;
+}
 const saveOrders = () => saveJson('orders.json', [...orders.values()]);
 
 /** Registers this shop's webhook endpoint with Noren once and keeps the signing secret (returned only at creation) on disk. */
