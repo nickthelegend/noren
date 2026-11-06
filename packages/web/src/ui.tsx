@@ -19,10 +19,13 @@ export type Route =
   | { page: "home" }
   | { page: "dashboard"; tab: "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard"; sub?: string }
   | { page: "pay"; id: string }
-  | { page: "app" };
+  | { page: "app" }
+  | { page: "tx"; chain: string; hash: string };
 export function useRoute(): Route {
   const [hash, setHash] = useState(() => location.hash);
   useEffect(() => { const on = () => { setHash(location.hash); window.scrollTo(0, 0); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
+  const t = /^#\/tx\/([\w-]+)\/([^/?#]+)/.exec(hash);
+  if (t) return { page: "tx", chain: t[1], hash: t[2] };
   const m = /^#\/pay\/(0x[0-9a-fA-F]{64})/.exec(hash);
   if (m) return { page: "pay", id: m[1] };
   if (/^#\/(app|credit)\b/.test(hash)) return { page: "app" };

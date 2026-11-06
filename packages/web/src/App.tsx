@@ -3,6 +3,7 @@ import { Landing } from "./Landing";
 import { Dashboard } from "./Dashboard";
 import { Checkout } from "./Checkout";
 import { NorenApp } from "./app/NorenApp";
+import { TxPage } from "./tx";
 import { Icon, Logo, useRoute } from "./ui";
 
 export function App() {
@@ -10,6 +11,7 @@ export function App() {
   if (route.page === "dashboard") return <Dashboard tab={route.tab} sub={route.sub} />;
   if (route.page === "pay") return <Checkout id={route.id} />;
   if (route.page === "app") return <NorenApp />;
+  if (route.page === "tx") return <TxPage chain={route.chain} hash={route.hash} />;
   return <Site />;
 }
 
