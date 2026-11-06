@@ -136,3 +136,24 @@ Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG 
 - **aqua.fork (4):** NVDA payment routed to the seeded maker (fee booked), a maker ships and docks a strategy, maker vs Uniswap v4 best execution, Pay-in-3 schedule and liquidation sentence then a keeper liquidation through makers.
 
 `pnpm exec tsc -p tsconfig.json --noEmit` passes. The 0G path was not exercised here (`ZG_PC_API_KEY` is not set in this environment), so the decisions above came from the labelled deterministic score and floor.
+
+## Deposit stock, get credit: the LTV ladder and "Raise your limit"
+
+Deposit NVDA, TSLA, AAPL or ETH into Noren's 1inch Aqua pools (the Earn deposit vaults) instead of selling. The shares stay Aqua liquidity and earn trading fees; NorenBorrow lends against them at the wallet's reputation LTV, and `NorenReputation.creditLimitOf` adds the World ID starter line. The tiers are `NorenReputation.tierTable`, read live by the app:
+
+| Tier | LTV | Unlocked by |
+|---|---|---|
+| 0 | 66% | any deposit |
+| 1 | 70% | 40 points |
+| 2 | 75% | 75 points + World ID |
+| 3 | 80% | 100 points + World ID + a repayment milestone (3 on-time installments or a repaid loan) |
+
+Points: World ID +50, each on-time Pay-in-3 installment +10 (first 12), each fully repaid loan +25 (first 4), account age +20 at 30 days and +20 more at 180; late installments −15, liquidations −60. So $100 of NVDA borrows $66 today and up to $80 at tier 3.
+
+The Credit page's **Raise your limit** section lists the tasks, each with the limit before and after. "After" is the contract's own math at the tier the task unlocks: `NorenBorrow.securedCapacityUsdg(me, tierTable(t).ltvBps)` plus the starter line, with the tier picked by the same rule as `breakdownOf`.
+1. **World ID** (+50, the production IDKit flow with its QR for World App): 66% → 70%.
+2. **Repay on time**: three on-time installments (+30) and one repaid loan (+25). With World ID: 75%, then 80%.
+3. **Reclaim zkTLS proof** (docs/RECLAIM.md): +10 on the history underwriter's score, which sets the Pay-in-3 line it signs. It does not change the LTV: NorenReputation has no generic attestation, and contracts stay unchanged.
+4. **Lock collateral**: each $100 adds $100 × your LTV.
+
+**Reaching 80% on the dev stack with real transactions.** `pnpm exec tsx scripts/dev-reputation-ladder.ts 0x<app wallet> [ontime|loan|all]` sends, from the app wallet (Anvil impersonation on the local Robinhood fork; no storage writes), the same calls the app makes: the underwriter's real EIP-712 attestation on NorenCredit, a Pay in 3 plan repaid on time (3 installments), then 1 NVDA deposited into the nNVDA Aqua vault, locked, borrowed against and repaid in full. dev:all sets the fork's loan-milestone age to 15 minutes; the script advances fork time by 16 minutes (`evm_increaseTime`, printed) instead of waiting. World ID is never scripted: verify in the app with World App. Run on a fresh wallet on Nov 6: 0 → 30 points after Pay in 3, 55 points / tier 1 / 70% after the loan without World ID; with World ID the same steps give 105 points, tier 3, 80%.
