@@ -111,7 +111,8 @@ easiest phone login. In the app the same flow is Credit → Raise your limit →
   wallet or session or malformed rejected with nothing stored.
 - `packages/server/src/reclaim.live.test.ts` (live, 4): the real attestor list, then the real `verifyProof` rejects a
   proof signed by a non-attestor and a tampered claim, and `verifyAndRecord` stores nothing. No Reclaim API or SDK mock.
-- `packages/server/src/reclaim-onchain.fork.test.ts` (fork, 1): against the deployed NorenReputation, records or says
-  exactly why not (today: no `recordAttestation` yet).
+- `packages/server/src/reclaim-onchain.fork.test.ts` (fork, 1): against the deployed NorenReputation, records an identity
+  attestation (kind 4, salted commitment, 10,000 bps), reads it back with `attestationsOf`, and a second one of the same
+  kind is refused (`KindAlreadyRecorded`).
 - `packages/robinhood/underwriter/test/score.test.ts`: the factor adds the proofs' points, is capped at 20, can move a
   wallet from tier 0 to tier 1, and never lifts the score above 100.

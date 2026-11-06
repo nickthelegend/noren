@@ -32,6 +32,11 @@ export const reputationAttestationAbi = parseAbi([
   'function recordAttestation(address borrower, uint8 kind, bytes32 commitment, uint16 boostBps)',
   'function attestationsOf(address account) view returns (uint8 tier, uint256 kinds, uint8 count)',
   'event AttestationRecorded(address indexed borrower, uint8 indexed kind, bytes32 commitment)',
+  'error NotAttester(address caller)',
+  'error BadKind(uint8 kind)',
+  'error BadAttestation()',
+  'error KindAlreadyRecorded(address borrower, uint8 kind)',
+  'error CommitmentUsed(bytes32 commitment)',
 ]);
 /** Anvil's published dev key #9, the fork's NorenCredit.underwriter() (packages/robinhood deploy-fork.sh). Fork only. */
 const FORK_UNDERWRITER_KEY = '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6' as Hex;
@@ -59,10 +64,10 @@ export async function recordKind(target: OnchainTarget | undefined, borrower: Ad
   try {
     await pub.simulateContract({ account, address: target.reputation, abi: reputationAttestationAbi, functionName: 'recordAttestation', args: [borrower, kind, commitment, boostBps] });
   } catch (e: any) {
-    const m = String(e?.shortMessage ?? e?.message ?? e);
+    const m = `${e?.shortMessage ?? ''} ${e?.message ?? e}`;
     if (/KindAlreadyRecorded/.test(m)) return { status: 'unavailable', reason: `this wallet already has a ${kindName} attestation on-chain (one per kind)` };
     if (/NotAttester/.test(m)) return { status: 'unavailable', reason: 'the server key is not NorenReputation\'s attester on this stack' };
-    return { status: 'unavailable', reason: `recordAttestation would revert: ${m.slice(0, 160)}` };
+    return { status: 'unavailable', reason: `recordAttestation would revert: ${String(e?.shortMessage ?? m).slice(0, 160)}` };
   }
   const wallet = createWalletClient({ account, transport: http(target.rpcUrl) });
   const tx = await wallet.writeContract({ address: target.reputation, abi: reputationAttestationAbi, functionName: 'recordAttestation', args: [borrower, kind, commitment, boostBps], account, chain: null });
