@@ -1,0 +1,77 @@
+%%{init: {"theme": "base", "layout": "elk", "fontFamily": "Arial, Helvetica, sans-serif", "flowchart": {"curve": "basis", "nodeSpacing": 34, "rankSpacing": 64, "padding": 14, "htmlLabels": true}, "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "15px", "primaryColor": "#fbf8f1", "primaryTextColor": "#17203f", "primaryBorderColor": "#1c2a5e", "lineColor": "#2c3d7c", "clusterBkg": "#f4efe4", "clusterBorder": "#1c2a5e", "edgeLabelBackground": "#fbf8f1", "titleColor": "#17203f"}}}%%
+flowchart TB
+  CUS(["<b>Customer</b><br/>browser key · proof made on device"])
+  MER(["<b>Merchant</b><br/>dashboard · API · signed webhooks"])
+
+  subgraph OFF["Noren services · off-chain"]
+    direction LR
+    WEB["<b>@noren/web</b><br/>landing · merchant dashboard<br/>hosted checkout"]
+    SDK["<b>@noren/core SDK</b><br/>shield · proveInvoicePayment<br/>refundInbox · verifyWebhook"]
+    SRV["<b>Merchant server</b><br/>invoices · relays payment + gas<br/>signed webhooks · SSE"]
+    ASP["<b>ASP postman</b><br/>scans deposits · checks USDC<br/>isBlacklisted · posts roots"]
+    UW["<b>Tsuke underwriter</b><br/>reads wallet history<br/>signs EIP-712 attestation"]
+  end
+
+  subgraph ARC["Arc testnet · chain 5042002 · gas paid in USDC"]
+    direction LR
+    CL["<b>NorenCreditLine</b><br/>payInvoice · repay<br/>emits Drawn / Repaid"]
+    CO["<b>NorenCheckout</b><br/>invoice-bound withdrawal<br/>pays merchant payout · private refunds"]
+    EP["<b>Entrypoint</b> (ERC-1967 proxy)<br/>0xbow Privacy Pools · ASP root"]
+    POOL["<b>PrivacyPoolComplex</b><br/>USDC pool · Groth16 verifiers"]
+    USDC[("<b>USDC</b><br/>0x3600…0000")]
+    RO["<b>NorenRateOracle</b><br/>Chainlink-derived FX rates"]
+  end
+
+  STUDIO{{"<b>Arc Studio</b><br/>import · compile · test · deploy"}}
+
+  subgraph CLK["Chainlink"]
+    direction LR
+    CREB["<b>CRE workflow · credit bridge</b><br/>EVM log triggers, both ways"]
+    CREP["<b>CRE workflow · pricing</b><br/>cron → read feeds → write"]
+    DF["<b>Data Feeds</b><br/>Arc mainnet: EUR/USD, USDC/USD …<br/>Robinhood: stocks, ETH, USDG"]
+  end
+
+  subgraph RH["Robinhood Chain · local Anvil fork of mainnet 4663"]
+    direction LR
+    TS["<b>TsukeCredit</b><br/>pay with anything · Pay in 4<br/>credit lines from history"]
+    ST[("<b>Stock Tokens · USDG · WETH</b><br/>real mainnet contracts")]
+  end
+
+  CUS --> WEB
+  MER --> WEB
+  WEB --- SDK
+  WEB <-->|"HTTP · SSE"| SRV
+  SDK -->|"① shield USDC"| EP
+  SDK -->|"payInvoice"| CL
+  SRV -->|"② relay proof"| CO
+  CO -->|"③ pool.withdraw, context = invoice"| POOL
+  CO -.->|"refund: Entrypoint.deposit"| EP
+  EP --> POOL
+  POOL --- USDC
+  ASP -->|"updateRoot"| EP
+  SRV -.->|"quote, read-only"| DF
+  STUDIO -.->|"imported, compiled, deployed"| CO
+  CL <-->|"onReport ⇄ Drawn / Repaid"| CREB
+  CREB <-->|"CreditLineOpened ⇄ onReport"| TS
+  DF --> CREP
+  CREP -->|"onReport"| RO
+  DF -.->|"prices"| TS
+  UW -->|"attestation"| TS
+  TS --- ST
+
+  classDef navy fill:#1c2a5e,stroke:#111a3d,color:#f4efe4,stroke-width:1.5px
+  classDef paper fill:#fffdf8,stroke:#1c2a5e,color:#17203f,stroke-width:1.2px
+  classDef kaki fill:#fbf8f1,stroke:#d9772f,color:#17203f,stroke-width:1.8px
+  classDef moss fill:#fbf8f1,stroke:#2f7a55,color:#17203f,stroke-width:1.8px
+  classDef person fill:#ebe4d4,stroke:#1c2a5e,color:#17203f,stroke-width:1.2px
+  classDef studio fill:#111a3d,stroke:#d9772f,color:#f4efe4,stroke-width:2px
+  class EP,POOL,CO,CL,RO navy
+  class USDC,WEB,SDK,SRV,ASP,UW paper
+  class DF,CREP,CREB kaki
+  class TS,ST moss
+  class CUS,MER person
+  class STUDIO studio
+  style OFF fill:#f4efe4,stroke:#868a99,color:#17203f
+  style ARC fill:#e7e3ef,stroke:#1c2a5e,color:#17203f,stroke-width:2px
+  style CLK fill:#f7ebdd,stroke:#d9772f,color:#17203f
+  style RH fill:#e4efe7,stroke:#2f7a55,color:#17203f
