@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type NorenEvent, type Webhook } from "./api";
 import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, parseAbi } from "viem";
 import { creditLineAbi, creditOf } from "./tsuke";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings";
@@ -487,12 +487,33 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
                 {r.quote.usdcUsd && <><dt>USDC/USD round</dt><dd className="mono">{r.quote.usdcUsd.roundId}</dd></>}
                 <dt>Oracle</dt><dd>Chainlink Data Feeds · Arc mainnet</dd>
               </dl>
+              <OnchainQuote cfg={cfg} q={r.quote} />
             </section>
           )}
         </div>
       </div>
       {refunding && <RefundModal r={r} token={token} onClose={() => setRefunding(false)} onDone={() => { setRefunding(false); onDone(); }} />}
     </>
+  );
+}
+
+const oracleAbi = parseAbi(["function quote(string currency, uint256 fiatAmount) view returns (uint256 usdcAmount, uint80 fiatUsdRoundId, uint80 usdcUsdRoundId, uint256 oldestUpdatedAt)", "function lastSourceBlock() view returns (uint64)"]);
+/** Re-quotes the invoice on Arc itself, from NorenRateOracle, whose rates the Chainlink CRE pricing workflow wrote. */
+function OnchainQuote({ cfg, q }: { cfg: Config; q: Quote }) {
+  const oracle = (creditOf(cfg) as { rateOracle?: `0x${string}` } | null)?.rateOracle;
+  const [v, setV] = useState<{ usdc: bigint; block: bigint } | null>(null);
+  const [e, setE] = useState<string | null>(null);
+  useEffect(() => {
+    if (!oracle) return;
+    const c = createPublicClient({ transport: http(cfg.rpcUrl) });
+    Promise.all([c.readContract({ address: oracle, abi: oracleAbi, functionName: "quote", args: [q.currency, BigInt(q.fiatAmount)] }), c.readContract({ address: oracle, abi: oracleAbi, functionName: "lastSourceBlock" })])
+      .then(([r, b]) => setV({ usdc: r[0], block: b })).catch((x) => setE(msgOf(x)));
+  }, [cfg, oracle, q.currency, q.fiatAmount]);
+  if (!oracle) return null;
+  return (
+    <dl className="sd-dl sd-oracle">
+      <dt>Same price on Arc</dt><dd>{e ? <span className="sd-err-t">{e}</span> : v ? <>{usdc(v.usdc)} USDC <span className="sd-muted">NorenRateOracle, rates written by the Chainlink CRE workflow (Arc mainnet block {String(v.block)})</span></> : "…"}</dd>
+    </dl>
   );
 }
 
