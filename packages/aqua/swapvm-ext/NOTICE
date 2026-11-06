@@ -27,6 +27,15 @@ Build and deploy (reproducible)
   only) with constructor (aqua = 0x1111113ccf1426a8e30e2bff5e005d929bf6a90a, weth =
   0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73, owner, "Noren SwapVM", "1.0.2-noren.1").
 
+Public deployment (2026-11-06)
+  Arc Testnet (5042002): 0x8717687866f988EEBe3bd1d8999DF820ffD9e295, deployed by
+  scripts/live/aqua-live.ts (CREATE2 via 0x4e59b44847b379578588920cA78FbF26c0B4956C) from this
+  folder's build artifact with constructor (aqua = 0x550CD499f1E2da71527f14d6469364461966895B, the
+  unmodified 1inch Aqua v1.0.0 that Noren redeployed there (packages/aqua/aqua-official), weth = 0,
+  owner = 0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80, "Noren SwapVM", "1.0.2-noren.1").
+  Tx 0x340bc44c5033657979816d1193897ff8e4a49f1c50da1ebe15810940ae9ed43a. This is the modified
+  SwapVM redeploy (one added instruction); it is not 1inch's router. See docs/AQUA-LIVE.md.
+
 Use
   Hackathon prototype (SwapVM-1.1 §4 non-commercial use). Any Commercial Use or crossing a
   Commercial Trigger (§5) requires a Commercial License from Degensoft (license@degensoft.com).
