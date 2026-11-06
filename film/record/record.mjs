@@ -29,6 +29,8 @@ const TAKES = `${HERE}takes/`, STATE = `${HERE}state/state${process.env.WALLET_K
 mkdirSync(TAKES, { recursive: true }); mkdirSync(`${HERE}state`, { recursive: true });
 // v6 records the hosted deployment: NOREN_APP_URL / NOREN_SHOP_URL / NOREN_SERVER_URL (defaults: the local dev stack)
 const APP = (process.env.NOREN_APP_URL ?? "http://localhost:5190").replace(/\/$/, ""), SHOP = (process.env.NOREN_SHOP_URL ?? "http://127.0.0.1:8780").replace(/\/$/, ""), SERVER = (process.env.NOREN_SERVER_URL ?? "http://127.0.0.1:8790").replace(/\/$/, "");
+// Noren Merchant and the hosted checkout can live on their own origin (NOREN_MERCHANT_URL), apart from the app
+const MERCH = (process.env.NOREN_MERCHANT_URL ?? APP).replace(/\/$/, "");
 const appUrlRe = new RegExp("^" + APP.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "/#/pay/");
 const ARC_EXPLORER = "https://explorer.testnet.arc.io";
 const LIVE_PAY = "0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a";
@@ -127,7 +129,8 @@ async function save() { await ctx.storageState({ path: STATE }); }
 async function privyGlimpse(button, hold = 2200) {
   await click(button, "sign in with Privy");
   const modal = p.getByText("Sign in to Noren", { exact: true });
-  await until(() => modal.isVisible(), "Privy modal", 30000);
+  const shown = await until(() => modal.isVisible(), "Privy modal", 15000).then(() => true).catch(() => false);
+  if (!shown) { ev("privy-missing", "Privy modal did not open"); log("Privy modal did not open on this origin"); await p.keyboard.press("Escape").catch(() => {}); await sleep(800); return false; }
   ev("privy-modal", "Privy modal open"); await sleep(hold);
   ev("privy-close", "Privy modal closed (not signed in)");
   await p.keyboard.press("Escape"); await sleep(900);
@@ -140,7 +143,7 @@ try {
     // Noren Merchant onboarding with the injected test wallet: Browser wallet -> SIWE (signed in Node) -> business ->
     // payouts -> first payment link -> API keys. Needs WALLET=fork (or live). The secret key is redacted in the edit.
     if (!TW) throw new Error("merchant3 needs WALLET=fork");
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3500);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(3500);
     await moveTo(900, 420, 1);
     await rollCamera(); await sleep(1500);
     await privyGlimpse(p.getByRole("button", { name: /Sign in with Privy/ }));
@@ -157,6 +160,7 @@ try {
     await click(p.getByRole("button", { name: /Create store/ }), "create store");
     await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 90000);
     result("store", await p.locator(".ob-card p").first().innerText()); await sleep(1200);
+    if (process.env.LINK_AMOUNT) await typeIn(p.locator(".ob-field input").nth(0), process.env.LINK_AMOUNT, "amount");
     await typeIn(p.locator(".ob-field input").nth(1), "Masala chai for the team", "description");
     await click(p.getByRole("button", { name: /Create link/ }), "create link");
     await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
@@ -196,10 +200,10 @@ try {
       await until(async () => /TOTAL BALANCE/i.test(await p.locator("main").innerText()), "home", 60000); await sleep(2000);
     }
     await p.locator(".nk-chip").click(); await sleep(1500);
-    await p.getByRole("button", { name: /Get test stock and USDG/ }).click();
-    await until(async () => /faucet:/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 120000);
-    await p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ }).click();
-    await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000);
+    const rhF = p.getByRole("button", { name: /Get test stock/ });
+    if (await rhF.count()) { await rhF.first().click(); await until(async () => /faucet|moved|sent/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 180000).catch(() => log("robinhood faucet: no status")); }
+    const arcF = p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ });
+    if (await arcF.count()) { await arcF.first().click(); await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000).catch(() => {}); }
     log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 300));
     log("address", (await p.locator(".nk-menu-row span").first().innerText()).trim()); await save();
   }
@@ -216,7 +220,7 @@ try {
     await click(p.locator(".nk-actions button").first(), "pay action"); await sleep(1500);
     await click(p.locator("#nk-paylink"), "focus link");
     ev("type", "paste invoice link", { text: link }); await p.locator("#nk-paylink").fill(link); await sleep(2500);
-    const top = p.getByRole("button", { name: /Shield 20 USDC from your wallet|Add 20 test USDC privately/ });
+    const top = p.getByRole("button", { name: /Shield [\d.]+ USDC from your wallet|Add [\d.]+ test USDC privately/ });
     if (await top.count() && await top.first().isVisible()) {
       await click(top.first(), "shield 20 USDC");
       await until(async () => !(await p.locator(".nk-paycard .nk-cta").isDisabled()), "private balance ready", 240000); await sleep(1200);
@@ -269,7 +273,7 @@ try {
   if (take === "setup3") {
     // Off camera, nothing recorded: a store with a 12.50 link (Noren Merchant), then the same browser as the customer
     // with the fork faucets. Prints the test key's public address (for scripts/live/fund-test-key.ts).
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(3000);
     await p.getByRole("button", { name: /Use a test wallet/ }).click();
     await until(() => p.getByText("What's your business called?").isVisible(), "signed in");
     await p.locator(".ob-field input").first().fill("Juhu Chai House");
@@ -285,10 +289,10 @@ try {
     await p.goto(`${APP}/#/app`); await sleep(6000);
     await p.locator(".nk-chip").click(); await sleep(1500);
     log("address", (await p.locator(".nk-menu-row span").first().innerText()).trim());
-    await p.getByRole("button", { name: /Get test stock and USDG/ }).click();
-    await until(async () => /faucet:/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 120000);
-    await p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ }).click();
-    await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000);
+    const rhF = p.getByRole("button", { name: /Get test stock/ });
+    if (await rhF.count()) { await rhF.first().click(); await until(async () => /faucet|moved|sent/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 180000).catch(() => log("robinhood faucet: no status")); }
+    const arcF = p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ });
+    if (await arcF.count()) { await arcF.first().click(); await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000).catch(() => {}); }
     log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 400));
     await save();
   }
@@ -298,7 +302,7 @@ try {
     const link = (await import("node:fs")).readFileSync(`${HERE}state/link-home.txt`, "utf8").trim();
     // Off camera: shield 20 of this key's fork USDC from the hosted checkout (the faucet was already used in setup3)
     if (!process.env.NO_SHIELD) {
-      await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(5000);
+      await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(5000);
       await p.getByRole("button", { name: /Shield 20 USDC/ }).click();
       await until(async () => /Pay 12.50 USDC/.test(await p.locator(".btn.ink.full").innerText()) && !(await p.locator(".btn.ink.full").isDisabled()), "ASP approval", 180000);
       log("shielded", await p.locator(".co-bal").innerText()); await save();
@@ -459,7 +463,7 @@ try {
 
   if (take === "link4") {
     // Off camera: Noren Merchant (merchant persona, injected wallet) sets up its store on this stack and makes a 20 USDC link
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(5000);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(5000);
     const inj = p.getByRole("button", { name: /Test wallet \(injected\)/ });
     await until(() => inj.isVisible(), "injected wallet option", 30000);
     await inj.click();
@@ -469,7 +473,7 @@ try {
     await p.getByRole("radio", { name: /USDC on Arc to my wallet/ }).click();
     await p.getByRole("button", { name: /Create store/ }).click();
     await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 90000);
-    await p.locator(".ob-field input").nth(0).fill("20");
+    await p.locator(".ob-field input").nth(0).fill(process.env.LINK_AMOUNT ?? "20");
     await p.locator(".ob-field input").nth(1).fill("Chai and samosas, office order");
     await p.getByRole("button", { name: /Create link/ }).click();
     await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
@@ -562,7 +566,7 @@ try {
     const link = (await import("node:fs")).readFileSync(`${HERE}state/link4.txt`, "utf8").trim();
     await p.goto(`${APP}/#/app`); await sleep(8000);   // the app reconnects the browser wallet first
     log("app account", await p.locator(".nk-chip").innerText().catch(() => "?"));
-    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await p.reload(); await sleep(8000);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await p.reload(); await sleep(8000);
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(1500);
     await click(p.getByRole("tab", { name: /Pay in 3 \/ Pay later/ }), "pay later"); await sleep(4000);
@@ -681,6 +685,58 @@ try {
     await cut(); await save();
   }
 
+  if (take === "privpay6") {
+    // Hosted checkout for a small link (state/link4.txt): opens on Pay privately, shields what it needs from the wallet
+    // (real Arc testnet USDC), proves in the browser, paid
+    const link = (await import("node:fs")).readFileSync(`${HERE}state/link4.txt`, "utf8").trim();
+    await p.goto(`${APP}/#/app`); await sleep(7000);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(8000);
+    await moveTo(900, 300, 1);
+    await rollCamera(); await sleep(2000);
+    result("default", await p.locator(".co-methods [aria-selected=true]").innerText().catch(() => ""));
+    const sh = p.getByRole("button", { name: /Shield|Add .*private/ }).first();
+    if (await sh.isVisible().catch(() => false)) {
+      result("shield button", await sh.innerText());
+      await click(sh, "shield");
+      await until(async () => { const bt = p.locator(".btn.ink.full"); return /Pay [\d.]+ USDC/.test(await bt.innerText()) && !(await bt.isDisabled()); }, "private balance ready", 300000);
+    }
+    await sleep(1500);
+    await click(p.locator(".btn.ink.full"), "pay privately");
+    await until(async () => /Paid\s*privately/.test(await p.locator("body").innerText()), "paid privately", 300000); await sleep(2000);
+    result("paid", (await p.locator("body").innerText()).match(/Paid\s*privately[\s\S]{0,400}/)?.[0]?.replace(/\n+/g, " | ")); await sleep(4000);
+    await cut(); await save();
+  }
+
+  if (take === "borrow6") {
+    // Loans that pay themselves down on the hosted Robinhood snapshot: lock nNVDA, borrow, real Aqua fills
+    // (dev-maker-fill.ts through the VPS tunnel), "Use earnings to pay down loan"
+    await p.goto(`${APP}/#/app/borrow`); await sleep(9000);
+    await moveTo(640, 360, 1);
+    await rollCamera(); await sleep(1500);
+    const row = p.locator(".nk-items li", { hasText: "nNVDA" }).first();
+    await typeIn(row.locator("input"), process.env.LOCK_AMOUNT ?? "1.5", "lock amount");
+    await click(row.getByRole("button", { name: "Lock", exact: true }), "lock");
+    await until(async () => /Locked|reverted|rror/.test(await status()), "lock", 180000); result("lock", await status());
+    await scrollBy(-600, 600); await sleep(2500);
+    await typeIn(p.locator("#nk-borrow"), process.env.BORROW_AMOUNT ?? "100", "borrow amount"); await sleep(1200);
+    await click(p.locator(".nk-cta").first(), "borrow");
+    await until(async () => /Borrowed|reverted|rror/.test(await status()), "borrow", 180000); result("borrow", await status()); await sleep(2000);
+    ev("result", "fills start", { value: "dev-maker-fill.ts" });
+    try { const out = forkScript(["scripts/dev-maker-fill.ts", "3", "0.2"]); result("fills", out.split("\n").filter((l) => /fork tx/.test(l)).join(" | ").slice(0, 600)); } catch (e) { log("maker fill failed:", String(e.message).slice(0, 300)); }
+    const card = p.locator("section, .nk-card", { hasText: "Your collateral keeps earning" }).last();
+    await point(card); await sleep(1500);
+    await until(async () => /from \d+ Aqua fill/.test(await card.innerText()), "fills shown", 120000).catch(() => log("no fills shown"));
+    await sleep(2000); result("earning", (await card.innerText()).replace(/\n+/g, " | ").slice(0, 600));
+    const use = card.getByRole("button", { name: /Use earnings to pay down loan/ });
+    if (await use.count() && await use.isEnabled()) {
+      await click(use, "use earnings");
+      await until(async () => /Paid [\d.]+ USDG from \d+ Aqua fill|reverted|rror/.test(await card.innerText()), "pay down", 120000); await sleep(2500);
+      result("paid down", (await card.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    }
+    await sleep(3000);
+    await cut(); await save();
+  }
+
   if (take === "landing4") {
     // The website with one slow, eased, continuous scroll (easeInOutCubic, ~2.5 viewport heights over 10 s),
     // driven by requestAnimationFrame in the page so every painted frame is on the curve. Shown at 1.0x in the film.
@@ -708,7 +764,7 @@ try {
   }
 
   if (take === "onboard") {
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(3000);
     await moveTo(900, 420, 1);
     await rollCamera(); await sleep(1500);
     await click(p.getByRole("button", { name: /Use a test wallet/ }), "sign in with a test wallet");
@@ -858,7 +914,7 @@ try {
 
   if (take === "private") {
     const link = (await import("node:fs")).readFileSync(`${HERE}state/link1.txt`, "utf8").trim();
-    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(4500);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(4500);
     await moveTo(1000, 300, 1);
     await rollCamera(); await sleep(1500);
     await click(p.getByRole("tab", { name: /Pay privately/ }), "pay privately"); await sleep(2500);
@@ -869,14 +925,14 @@ try {
     await until(async () => /Paid\s*privately/.test(await p.locator("body").innerText()), "private payment", 180000); await sleep(1500);
     result("private paid", (await p.locator("body").innerText()).match(/Paid\s*privately[\s\S]{0,400}/)?.[0]); await sleep(5000);
     // the store's view: Noren Merchant, customers identified 0
-    await p.goto(`${APP}/#/dashboard`); await sleep(5000);
+    await p.goto(`${MERCH}/#/dashboard`); await sleep(5000);
     result("dashboard", (await p.locator("main, body").first().innerText()).slice(0, 800)); await sleep(3000);
     await cut(); await save();
   }
 
   if (take === "privdefault") {
     // A fresh merchant and a fresh customer (one browser profile). Off camera: sign in, create the store and a 12.50 link.
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(3000);
     await p.getByRole("button", { name: /Use a test wallet/ }).click();
     await until(() => p.getByText("What's your business called?").isVisible(), "signed in");
     await p.locator(".ob-field input").first().fill("Juhu Chai House");
@@ -890,7 +946,7 @@ try {
     const link = await p.locator(".ob-url").innerText(); log("link", link);
     writeFileSync(`${HERE}state/link-priv.txt`, link); await save();
     // On camera: the hosted checkout opens on "Pay privately" (the default), funds, shields and pays.
-    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(5000);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(5000);
     await moveTo(900, 260, 1);
     await rollCamera(); await sleep(1800);
     result("default method", await p.locator(".co-methods [aria-selected=true]").innerText());
@@ -904,7 +960,7 @@ try {
     await until(async () => /Paid\s*privately/.test(await p.locator("body").innerText()), "private payment", 180000); await sleep(1500);
     result("private paid", (await p.locator("body").innerText()).match(/Paid\s*privately[\s\S]{0,400}/)?.[0]); await sleep(4000);
     // The store's view in Noren Merchant: the payment, and who paid it ("Private")
-    await p.goto(`${APP}/#/dashboard/payments`); await sleep(4500);
+    await p.goto(`${MERCH}/#/dashboard/payments`); await sleep(4500);
     const row = p.locator("tr", { hasText: "Masala chai" }).first();
     result("payments row", (await row.innerText()).replace(/\s+/g, " "));
     await point(row); await sleep(1800);
@@ -920,7 +976,7 @@ try {
     // Pay later, privately. Off camera, one fresh person: a store with a 12.50 link (Noren Merchant), then the same
     // browser as the customer: fork faucets, lock 1 NVDA and open a credit line (one 0G credit check), wait until CRE
     // has the line live on Arc. On camera: the checkout's "Pay later, privately", paid, then Noren Merchant.
-    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.goto(`${MERCH}/#/dashboard/onboard`); await sleep(3000);
     await p.getByRole("button", { name: /Use a test wallet/ }).click();
     await until(() => p.getByText("What's your business called?").isVisible(), "signed in");
     await p.locator(".ob-field input").first().fill("Juhu Chai House");
@@ -948,7 +1004,7 @@ try {
     await until(async () => /Live on Arc\s*\n?\s*Limit|Available on Arc\s*\n?\s*[\d.]+/.test(await p.locator(".nk-card").first().innerText()) && !/Bridging/.test(await p.locator(".nk-card").first().innerText()), "line live on Arc", 240000);
     log("line", (await p.locator(".nk-card").first().innerText()).replace(/\n+/g, " | ").slice(0, 300)); await save();
     // On camera
-    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(5000);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(5000);
     await moveTo(900, 260, 1);
     await rollCamera(); await sleep(1200);
     await click(p.getByRole("tab", { name: /Pay later, privately/ }), "pay later, privately"); await sleep(2500);
@@ -966,10 +1022,10 @@ try {
 
   if (take === "privcredit-m") {
     // Noren Merchant after the "Pay later, privately" payment of the privcredit take (same browser profile)
-    await p.goto(`${APP}/#/dashboard/payments`); await sleep(5000);
+    await p.goto(`${MERCH}/#/dashboard/payments`); await sleep(5000);
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(1500);
-    const row = p.locator("tr", { hasText: "Masala chai" }).first();
+    const row = p.locator("tr", { hasText: process.env.ROW_TEXT ?? "Masala chai" }).first();
     result("payments row", (await row.innerText()).replace(/\s+/g, " "));
     await point(row); await sleep(1200);
     await click(row, "open payment");
@@ -990,7 +1046,7 @@ try {
     result("bridge", (await p.locator("main").innerText()).slice(0, 300).replace(/\n+/g, " | "));
     await point(p.getByText("Already done on testnets")); await sleep(1500);
     await scrollBy(260, 900); await sleep(3000);
-    await p.goto(`${APP}/#/dashboard/payments`); await sleep(4500);
+    await p.goto(`${MERCH}/#/dashboard/payments`); await sleep(4500);
     await click(p.getByRole("radio", { name: "Arc testnet (live)" }), "Arc testnet (live)");
     await until(async () => /From other chains into Arc/.test(await p.locator("main").innerText()), "live panel", 60000); await sleep(3000);
     await point(p.getByText("From other chains into Arc")); await sleep(1500);
@@ -1033,14 +1089,14 @@ try {
     await point(p.getByText("Your credit limit grows with reputation")); await sleep(4000);
     result("ladder", (await p.locator(".nk-card", { hasText: "Your credit limit grows" }).innerText()).replace(/\n+/g, " | "));
     // the store makes a second link in Noren Merchant
-    await p.goto(`${APP}/#/dashboard/links`); await sleep(4000);
+    await p.goto(`${MERCH}/#/dashboard/links`); await sleep(4000);
     await click(p.getByRole("button", { name: /Create payment link/ }).first(), "create payment link"); await sleep(1500);
     await typeIn(p.locator("#cl-desc"), "Chai and samosas, office order", "description");
     await typeIn(p.locator("#cl-amt"), "24", "amount"); await sleep(1200);
     await click(p.locator("[role=dialog]").last().getByRole("button", { name: "Create link" }), "create link");
     await p.waitForURL(/#\/dashboard\/payments\/0x[0-9a-fA-F]{64}/, { timeout: 60000 });
     const id2 = p.url().match(/0x[0-9a-fA-F]{64}/)[0]; result("link2", id2); await sleep(3000);
-    await p.goto(`${APP}/#/pay/${id2}`); await sleep(4500);
+    await p.goto(`${MERCH}/#/pay/${id2}`); await sleep(4500);
     await click(p.getByRole("tab", { name: /Pay in 3/ }), "pay in 3");
     await until(async () => /Use [\d.]+ USDC of my credit/.test(await p.locator(".btn.kaki").innerText()), "credit available", 60000); await sleep(3000);
     result("credit checkout", (await p.locator(".co-credit").innerText()).replace(/\n+/g, " | "));
