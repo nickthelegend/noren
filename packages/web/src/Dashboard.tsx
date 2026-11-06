@@ -322,7 +322,7 @@ function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token
             <tbody>{ledger.map((l, i) => (
               <tr key={i} onClick={() => go(`#/dashboard/payments/${l.id}`)}>
                 <td><span className={`sd-type ${l.type === "Refund" ? "neg" : ""}`}>{l.type}</span></td>
-                <td className={`r num ${l.amount < 0 ? "neg" : ""}`}>{l.amount < 0 ? "−" : "+"}{fmt(Math.abs(l.amount))} <span className="sd-muted">USDC</span></td>
+                <td className={`r num ${l.amount < 0 ? "neg" : ""}`}>{l.amount < 0 ? "−" : "+"}{fmt(Math.abs(l.amount))} <span className="sd-muted">{/USDG/.test(l.type) ? "USDG" : "USDC"}</span></td>
                 <td className="hide-s">{l.desc || <span className="sd-muted mono">{short(l.id, 8)}</span>}</td>
                 <td className="hide-s"><TxRef cfg={cfg} hash={l.tx} /></td>
                 <td className="sd-muted">{dt(l.at)}</td>
