@@ -24,14 +24,14 @@ Status: ✅ done · 🟡 partly done · ⛔ blocked (named step for Nick) · ❌
 | Shareable Arc Studio project URL judges can open | `import.sh` writes the URL to `arc-studio/studio.json`. Nick then checks that the workspace is shared or public in the Studio web UI. | ⛔ |
 | Studio shown in the demo | Demo beat 1 below. | ⛔ (needs the URL) |
 | Working MVP: frontend | `packages/web`: landing page, merchant dashboard and hosted checkout, with proofs made in the browser. Measured on the local Arc fork: browser proof in 1.06–4.77 s (README). The Studio console page (prompt task D) adds a second frontend that reads the testnet contracts. | 🟡 (runs on a local fork until the testnet deploy) |
-| Working MVP: backend | `packages/server` (invoices, relay, signed webhooks, SSE) and `packages/postman` (ASP: USDC blacklist check, roots). `pnpm e2e` passes on an Arc testnet fork: 9/9 Foundry checkout tests, 5 attack reverts, payment and refund (re-run Nov 6). | ✅ (fork) |
+| Working MVP: backend | `packages/server` (invoices, relay, signed webhooks, SSE) and `packages/postman` (ASP: USDC blacklist check, roots). **Live on Arc testnet:** `scripts/live/e2e-live.ts` ran both against the public RPC: shield 5 USDC, ASP root, a private 2.50 USDC payment, a 1.00 USDC refund, and verified signed webhooks, 9 txs ([LIVE.md](LIVE.md)). On a fork, `pnpm e2e` also passes 9/9 Foundry checkout tests and 5 attack reverts (re-run Nov 6). | ✅ (live) |
 | Architecture diagram | [ARCHITECTURE.md](ARCHITECTURE.md), [img/architecture.png](img/architecture.png) | ✅ |
 | Video demo covering the core functions, Arc Studio and Circle's developer tools | Beat list below. Circle tools used: **USDC on Arc** (settlement and gas) and **USDC's `isBlacklisted`** (the ASP's compliance check). Not used: Circle Wallets, Gateway, CCTP, Nanopayments. | ❌ (not recorded) |
 | Detailed documentation | README, [API.md](API.md), [CHAINLINK.md](CHAINLINK.md), [ARCHITECTURE.md](ARCHITECTURE.md), this file, TESTING.md | ✅ |
-| GitHub or Replit repo link | `nickthelegend/noren` is **private**. Nick must make it public, or grant judges access, before submitting. | ❌ (Nick) |
-| DeFi / onchain finance app on Arc | Private checkout on a Privacy Pools USDC pool, plus the NorenCreditLine credit line on Arc (stock-backed, carried from Robinhood Chain by Chainlink CRE). | ✅ (fork) |
+| GitHub or Replit repo link | https://github.com/nickthelegend/noren (public since Nov 6). | ✅ |
+| DeFi / onchain finance app on Arc | Private checkout on a Privacy Pools USDC pool, plus the NorenCreditLine credit line on Arc (stock-backed, carried from Robinhood Chain by Chainlink CRE). Both are live on Arc testnet. On the public chain, a CRE report opened a starter line and a 0.50 USDC invoice was paid from it. The stock-backed path is still fork-only ([LIVE.md](LIVE.md)). | ✅ checkout live, 🟡 credit (stock path on fork) |
 | Settles in USDC or EURC | NorenCheckout pays merchants in USDC `0x3600…0000`. Refunds are USDC deposits into the customer's shielded inbox. NorenCreditLine pays merchants USDC. | ✅ |
-| Public deployment on Arc testnet (needed for "working", and for judges to check) | `scripts/deploy-arc.ts` was verified by a fork dry run (below). The live deploy needs 0.45 testnet USDC on the deployer. | ⛔ (faucet) |
+| Public deployment on Arc testnet (needed for "working", and for judges to check) | NorenCheckout `0xe18a…7547`, Entrypoint `0xa22f…0ad5`, pool `0x393d…d57d`, NorenRateOracle `0xdb82…831c` and NorenCreditLine `0x7140…8876`, each with every tx on the explorer ([LIVE.md](LIVE.md)). | ✅ |
 
 ## Arc Studio
 
@@ -67,39 +67,21 @@ What `import.sh` does:
 
 ## Public Arc testnet deployment
 
-**Status: BLOCKED on testnet USDC.** Getting it means solving the Circle faucet's CAPTCHA, which only Nick can do.
+**Status: live.** `scripts/deploy-arc.ts` deployed the stack on Arc testnet on Nov 6, at the addresses the fork dry run predicted. A real end-to-end run on the public chain followed: shield, ASP approval, a private 2.50 USDC payment with a Groth16 proof, and a 1.00 USDC refund to the shielded inbox. Chainlink CRE then wrote to NorenRateOracle and NorenCreditLine on the same chain. Every contract and transaction, with explorer links, is in [LIVE.md](LIVE.md), along with what is still fork-only. The machine-readable record is [`deployments/5042002.json`](../deployments/5042002.json).
 
-| | |
+| Contract | Address |
 |---|---|
-| Address to fund | `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Noren testnet deployer and ASP postman; its key is in the main checkout's gitignored `.env.arc-deployer`) |
-| Amount | **at least 0.45 USDC** on Arc Testnet (one faucet drip is enough) |
-| Faucet | https://faucet.circle.com → Arc Testnet → USDC |
-| Then | `pnpm exec tsx scripts/deploy-arc.ts` from the repo root |
-
-Dry run measured on Nov 6 (`pnpm exec tsx scripts/deploy-arc.ts --dry-run`):
-- **Setup:** an Anvil fork of `https://rpc.testnet.arc.io` on 127.0.0.1:8705, deploying from the real deployer address (impersonated on the fork only).
-- **Result:** 9 transactions and 14,978,568 gas, which cost 0.222 USDC at fork prices.
-- **Funding:** at the live gas price of 20 gwei, the deployer needs **0.4494 USDC** (1.5× margin).
-- **Checks:** the wiring check passed (Entrypoint → pool → USDC; checkout → Entrypoint + pool).
-- **Record:** `deployments/5042002-dryrun.json` (fork addresses, labelled as such).
-
-The deployer's nonce is 0. If the first nine transactions it sends are this deploy, the live addresses will match the fork's. These are **predictions, not deployments:**
-
-| Contract | Predicted address |
-|---|---|
-| Entrypoint (proxy) | `0xa22f3200ecb4319b48dca49677c2f73cd7260ad5` |
-| PrivacyPoolComplex (USDC) | `0x393d8d46e1dff8a719820e36d70ba509896ea57d` |
-| NorenCheckout | `0xe18a80506fdb7f5498aad7387a21134118a77547` |
-| WithdrawalVerifier | `0x015306ac6f866bf9b2dd157a79d65159697fb4cf` |
-| CommitmentVerifier | `0xe57a438a8ded2ad7d1a12ddf497a0da0bd2d2ba3` |
+| NorenCheckout | [`0xe18a80506fdb7f5498aad7387a21134118a77547`](https://explorer.testnet.arc.io/address/0xe18a80506fdb7f5498aad7387a21134118a77547) |
+| Entrypoint (proxy) | [`0xa22f3200ecb4319b48dca49677c2f73cd7260ad5`](https://explorer.testnet.arc.io/address/0xa22f3200ecb4319b48dca49677c2f73cd7260ad5) |
+| PrivacyPoolComplex (USDC) | [`0x393d8d46e1dff8a719820e36d70ba509896ea57d`](https://explorer.testnet.arc.io/address/0x393d8d46e1dff8a719820e36d70ba509896ea57d) |
+| NorenRateOracle | [`0xdb828bdcf33ef0a5a32861e4831ff3dd87be831c`](https://explorer.testnet.arc.io/address/0xdb828bdcf33ef0a5a32861e4831ff3dd87be831c) |
+| NorenCreditLine | [`0x7140aad0bb38dc6908a857b446897c78b0d88876`](https://explorer.testnet.arc.io/address/0x7140aad0bb38dc6908a857b446897c78b0d88876) |
 
 What the deploy script guarantees:
 - **Before sending anything:** it refuses a chain other than 5042002. It runs the fork dry run first and won't send a transaction unless the live balance covers the measured cost. It also refuses to overwrite a `deployments/5042002.json` whose checkout is already live, unless `--redeploy` is passed.
 - **While deploying:** it checks for code at every new address and reads the wiring back.
 - **Output:** it prints contract names and addresses only. The key is loaded from env, `.env` or `.env.arc-deployer` and is never printed.
-- **Local runs:** `pnpm e2e` and `pnpm dev:stack` call the same `deployArc()`. A local RPC now writes `deployments/5042002-fork.json`. Before this change, every e2e run overwrote `deployments/5042002.json` with fork addresses that don't exist on Arc testnet, and the server and postman read that file when started against the real testnet.
-
-**Studio or script: deploy once.** If Studio's wallet can pay for its own deploy, Studio's deployment is the better story for this track: use `adopt.ts` and skip the faucet. Otherwise use the script.
+- **Local runs:** `pnpm e2e` and `pnpm dev:stack` call the same `deployArc()`. A local RPC writes `deployments/5042002-fork.json`, never the live record.
 
 ## Demo beats for the Arc judges (4 min)
 
