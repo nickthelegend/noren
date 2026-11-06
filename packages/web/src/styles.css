@@ -916,5 +916,9 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-mix-l em.lg-row { gap: 4px; }
 .co-stack { display: inline-flex; flex: none; }
 .co-stack .lg-mark { box-shadow: 0 0 0 1.5px var(--white); }
-.co-stack .lg-mark + .lg-mark { margin-left: -8px; }
+.co-stack .lg-mark + .lg-mark { margin-left: -5px; }
 .co-amt em.lg-row { gap: 6px; }
+.co-quote dd.lg-row, .kv dd.lg-row { display: flex; justify-content: flex-end; flex-wrap: wrap; }
+.co-done .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 14px; padding: 12px 14px; border-radius: 14px; background: var(--paper); border: 1px solid var(--hair); font-size: 13.5px; }
+.co-done .kv dt { padding: 5px 0; color: var(--muted); }
+.co-done .kv dd { margin: 0; padding: 5px 0; text-align: right; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }

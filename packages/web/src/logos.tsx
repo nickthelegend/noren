@@ -13,7 +13,7 @@ export const LOGOS: Record<string, Spec> = {
   USDC: S("usdc.svg", "USDC"), EURC: S("eurc.svg", "EURC"), USDT: S("usdt.svg", "Tether USDt"), USDG: S("usdg.svg", "Global Dollar"),
   ETH: S("eth.svg", "Ether", "#eceefb", 0.17), WETH: S("eth.svg", "Wrapped Ether", "#eceefb", 0.17),
   // Stock Tokens: each company's own logo
-  NVDA: S("nvda.svg", "NVIDIA", "#fff", 0.15), TSLA: S("tsla.png", "Tesla", "#171a20", 0.24), AAPL: S("aapl.svg", "Apple", "#fff", 0.2),
+  NVDA: S("nvda.svg", "NVIDIA", "#fff", 0.09), TSLA: S("tsla.png", "Tesla", "#171a20", 0.24), AAPL: S("aapl.svg", "Apple", "#fff", 0.2),
   SPY: S("spy.svg", "State Street SPDR S&P 500", "#fff", 0.17), MSFT: S("msft.svg", "Microsoft", "#fff", 0.25), GOOGL: S("googl.png", "Alphabet (Google)", "#fff", 0.16),
   AMZN: S("amzn.png", "Amazon"), META: S("meta.png", "Meta", "#fff", 0.13),
   // chains

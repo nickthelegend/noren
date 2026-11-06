@@ -544,7 +544,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             {stock && r.stock ? (
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
-                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono">{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
+                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono lg-row"><Mark id="1INCH" size={16} />{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
                 <dt>Shares</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
