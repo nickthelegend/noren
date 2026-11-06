@@ -228,7 +228,12 @@ contract Warm is Script {
     vs[2].redeem(vs[2].maxRedeem(customer), customer, customer);
     borrow.unlock(vs[0], borrow.lockedShares(customer, address(vs[0])), customer);
     borrow.borrow(borrow.borrowLimitUsdg(customer), customer);
+    // loans that pay themselves down: a fill on the locked nNVDA strategy, then a keeper harvest
+    liquidity.buyFromMakers(vs[1].asset(), 1e16, type(uint256).max, customer);
     vm.stopPrank();
+    borrow.previewYieldRepay(customer);
+    vm.prank(keeper);
+    try borrow.harvestToRepay(customer) {} catch {}
     rep.creditLimitOf(customer);
     uint64 exp = uint64(block.timestamp + 1 hours);
     bytes32 nullifier = keccak256('warm-nullifier');

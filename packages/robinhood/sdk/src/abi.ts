@@ -7449,6 +7449,19 @@ export const norenDepositVaultAbi = [
   },
   {
     "type": "function",
+    "name": "feesPerShare",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "acc",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "firstDepositAt",
     "inputs": [],
     "outputs": [
@@ -7456,6 +7469,48 @@ export const norenDepositVaultAbi = [
         "name": "",
         "type": "uint64",
         "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "harvestUsdg",
+    "inputs": [
+      {
+        "name": "usdgAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "shares",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "harvester",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -7857,6 +7912,38 @@ export const norenDepositVaultAbi = [
   },
   {
     "type": "function",
+    "name": "setHarvester",
+    "inputs": [
+      {
+        "name": "h",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sharesForUsdg",
+    "inputs": [
+      {
+        "name": "usdgAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "sharesValueUsd8",
     "inputs": [
       {
@@ -8236,6 +8323,19 @@ export const norenDepositVaultAbi = [
   },
   {
     "type": "event",
+    "name": "HarvesterSet",
+    "inputs": [
+      {
+        "name": "harvester",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OwnershipTransferStarted",
     "inputs": [
       {
@@ -8408,6 +8508,37 @@ export const norenDepositVaultAbi = [
       },
       {
         "name": "shares",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "YieldHarvested",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "shares",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "usdgOut",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -8614,6 +8745,27 @@ export const norenDepositVaultAbi = [
   {
     "type": "error",
     "name": "NoStrategy",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotEnoughUsdg",
+    "inputs": [
+      {
+        "name": "requested",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "held",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotHarvester",
     "inputs": []
   },
   {
@@ -9897,6 +10049,19 @@ export const norenBorrowAbi = [
   },
   {
     "type": "function",
+    "name": "HARVEST_MAX_SLIPPAGE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_LTV_BPS",
     "inputs": [],
     "outputs": [
@@ -10173,6 +10338,73 @@ export const norenBorrowAbi = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "feeIndexOf",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "vault",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fillMarkOf",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "vault",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "harvestToRepay",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "repaidUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -10466,6 +10698,35 @@ export const norenBorrowAbi = [
   },
   {
     "type": "function",
+    "name": "previewYieldRepay",
+    "inputs": [
+      {
+        "name": "who",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "usdgAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "fills",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "debtUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "receivablesUsdg",
     "inputs": [],
     "outputs": [
@@ -10669,6 +10930,19 @@ export const norenBorrowAbi = [
   },
   {
     "type": "function",
+    "name": "totalYieldRepaidUsdg",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "transferOwnership",
     "inputs": [
       {
@@ -10725,6 +10999,54 @@ export const norenBorrowAbi = [
         "name": "",
         "type": "address[]",
         "internalType": "contract NorenDepositVault[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "yieldOf",
+    "inputs": [
+      {
+        "name": "who",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "v",
+        "type": "address",
+        "internalType": "contract NorenDepositVault"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "usdgAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "fills",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "yieldRepaidUsdg",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -11072,6 +11394,55 @@ export const norenBorrowAbi = [
     "anonymous": false
   },
   {
+    "type": "event",
+    "name": "YieldRepaid",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "vault",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "keeper",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "usdg",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "debtAfter",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "shares",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fills",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
     "type": "error",
     "name": "BadConfig",
     "inputs": []
@@ -11087,6 +11458,22 @@ export const norenBorrowAbi = [
       },
       {
         "name": "limitUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "HealthWorse",
+    "inputs": [
+      {
+        "name": "before",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "afterHarvest",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -11127,6 +11514,11 @@ export const norenBorrowAbi = [
   {
     "type": "error",
     "name": "NoLiquidity",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NoYield",
     "inputs": []
   },
   {
