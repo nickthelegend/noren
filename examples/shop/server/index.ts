@@ -143,9 +143,12 @@ const server = createServer(async (req, res) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Method not allowed' });
     return serveStatic(url.pathname, res);
   } catch (e: any) {
-    const status = typeof e?.status === 'number' && e.status >= 400 ? (e.status === 401 || e.status === 403 ? 502 : e.status) : 400;
-    console.error(`${req.method} ${url.pathname}: ${e.message}`);
-    return send(res, status, { error: e.status === 401 || e.status === 403 ? `Noren rejected the store's secret key (${e.message})` : e.message });
+    // NorenError carries the Noren API's status; 0 means Noren could not be reached at all.
+    const unreachable = e?.name === 'NorenError' && e.status === 0, rejected = e?.status === 401 || e?.status === 403;
+    const status = unreachable || rejected ? 502 : typeof e?.status === 'number' && e.status >= 400 ? e.status : 400;
+    const message = unreachable ? `Noren is not reachable at ${process.env.NOREN_SERVER} (${e.message}). Is the Noren server running?` : rejected ? `Noren rejected the store's secret key (${e.message})` : e.message;
+    console.error(`${req.method} ${url.pathname}: ${message}`);
+    return send(res, status, { error: message });
   }
 });
 

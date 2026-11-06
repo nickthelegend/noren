@@ -260,7 +260,7 @@ function CheckoutButton() {
       <button className="btn btn-noren btn-wide" onClick={start} disabled={busy || !config || lines.length === 0} aria-busy={busy}>
         {busy ? 'Opening Noren…' : <>Checkout with <NorenMark /> <span className="noren-word">Noren</span></>}
       </button>
-      <p className="noren-note">Pay in USDC from a private balance, with stocks, or later on credit. Aubelle never sees your wallet.</p>
+      <p className="noren-note">Pay with USDC, privately from a shielded balance, with stocks, or in 3 parts on credit. Pay privately and Aubelle never sees your wallet.</p>
       {fail && <p className="error" role="alert">{fail}</p>}
     </>
   );
