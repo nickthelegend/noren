@@ -1,0 +1,27 @@
+{
+  "name": "@noren/xchain-aqua",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Cross-chain 1inch Aqua for Noren: Arc makers fill orders from Robinhood Chain, Base and other chains, coordinated by Chainlink CRE.",
+  "exports": {
+    ".": "./sdk/index.ts"
+  },
+  "scripts": {
+    "build": "cd contracts && forge build",
+    "test:contracts": "sh scripts/test-forks.sh",
+    "demo": "bash scripts/xchain-demo.sh",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "viem": "2.51.3"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.4.0",
+    "@types/node": "24.10.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

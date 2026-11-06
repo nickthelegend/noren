@@ -1,0 +1,18 @@
+[profile.default]
+src = 'src'
+out = 'out'
+test = 'test'
+script = 'script'
+libs = ['../node_modules', '../../robinhood/contracts/lib']
+allow_paths = ['../node_modules', '../../../node_modules', '../../robinhood/contracts/lib']
+solc_version = '0.8.28'
+evm_version = 'cancun'
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+bytecode_hash = 'none'
+cbor_metadata = false
+fs_permissions = [{ access = 'read', path = '../../aqua/swapvm-ext/out' }, { access = 'read-write', path = '../.fork' }]
+
+[profile.default.lint]
+exclude_lints = ['block-timestamp', 'unsafe-typecast', 'mixed-case-function', 'mixed-case-variable', 'screaming-snake-case-immutable']
