@@ -1,0 +1,16 @@
+# CRE project settings for the Noren settlement desk (Robinhood Chain -> Arc value bridge).
+# The workflow writes to NorenSettlementDesk on Robinhood through CRE's "robinhood-testnet" target.
+# Relay, Across and both Chainlink feeds are read over HTTPS inside the workflow, so they need no entry here.
+
+# Local Anvil fork of Robinhood Chain mainnet (chain 4663) started by ../scripts/fork-settle.sh on 127.0.0.1:8732.
+# The CRE simulator does not compare the RPC chain id with the selector (see docs/BRIDGE.md).
+local-fork:
+  rpcs:
+    - chain-name: robinhood-testnet
+      url: http://127.0.0.1:8732
+
+# Public Robinhood Testnet. --broadcast here needs a funded key in CRE_ETH_PRIVATE_KEY and a deployed desk.
+staging-settings:
+  rpcs:
+    - chain-name: robinhood-testnet
+      url: https://rpc.testnet.chain.robinhood.com

@@ -200,6 +200,13 @@ Fees and times come from docs when the docs state them. Values from API quotes a
 - **VERIFIED on-chain**: both reactors are 17206 B. OrderQuoter `0x0000…7F58` is 3709 B on both.
 - These reactors settle swaps on a single chain. No cross-chain (ERC-7683) settler for either chain is listed (**VERIFIED in docs**, same page). Uniswap is a swap venue on each side, not a bridge.
 
+### 8b. Uniswap v4 Stock Token pools on Robinhood (checked for the value bridge)
+
+- **VERIFIED on-chain**: PoolManager `Initialize` logs, blocks 0–9,999,999 (the scan of later blocks was stopped once pools were found): 54,451 pools. 65 pair a Stock Token with USDG or ETH, and 31 have in-range liquidity (`StateView.getLiquidity`).
+- **VERIFIED on-chain** (V4Quoter `0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94`, eth_call on mainnet): NVDA/USDG 0.3% sells 1 / 10 / 100 NVDA for 184.63 / 1,843.42 / 18,201.37 USDG. That is 0.5% / 0.66% / 1.9% under Chainlink NVDA/USD $185.56 × amount, without NVDA's uiMultiplier (1.000775). TSLA/USDG 0.3% sells 1 TSLA for 345.88 USDG (Chainlink $347.56). AAPL/USDG 0.3% sells 1 AAPL for 341.77 USDG (Chainlink $343.56).
+- **VERIFIED on a fork**: the Universal Routers at `0x8876…0904` and `0x204F…0498` take a six-field `ExactInputSingleParams`. A swap of 1 NVDA through `NorenSettlementDesk` filled exactly at the V4Quoter quote.
+- So Stock Tokens convert to USDG on-chain at about 0.5% for a single share. Larger sizes cost more.
+
 ### 9. Chainlink CCIP (checked again for the "Best use of CCIP" track)
 
 There is no CCIP lane between Robinhood Chain and Arc, on mainnet or testnet. Checked 2026-11-06 about 05:00 UTC.

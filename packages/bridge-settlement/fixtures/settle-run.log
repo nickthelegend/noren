@@ -1,0 +1,43 @@
+== Robinhood Chain mainnet fork http://127.0.0.1:8732 (fork block 107342155, chain id 4663)
+== MockKeystoneForwarder installed at 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885 ("MockKeystoneForwarder 1.0.0")
+
+
+
+== NorenSettlementDesk on the fork at 0xD83C9f1B0DaFb1992eF92ac62D6509e54AD4eD48 (forwarder 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, keeper 0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65); Arc recipient 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc
+== A. 1 NVDA: Chainlink NVDA/USD 18556019809 (8 dp); Uniswap v4 V4Quoter 184373851 USDG6; desk floor (Chainlink - 2%) 181993715 USDG6
+   sellStockAndRequest tx 0xeafa43e0a1d03b01b1e17c7843fc9bcde4dd3fd7d643df5a3f2312e6b94cd86a: swapped on the v4 pool for 184373851 USDG6, settlement 0x15a13260201b6d58086118393b527a1c616212d0b0395698e9ee68059e5353af requested (max slippage 50 bps)
+   | 2026-11-06T11:11:48Z [USER LOG] SettlementRequested 0x15a13260201b6d58086118393b527a1c616212d0b0395698e9ee68059e5353af: 184373851 USDG6 from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 to 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc on Arc, max slippage 50 bps (tx 0xeafa43e0a1d03b01b1e17c7843fc9bcde4dd3fd7d643df5a3f2312e6b94cd86a)
+   | 2026-11-06T11:11:50Z [USER LOG] Relay quote: 184285896 USDC6 on Arc, ~1s
+   | 2026-11-06T11:11:50Z [USER LOG] Across quote: 184259067 USDC6 on Arc, ~1s
+   | 2026-11-06T11:11:50Z [USER LOG] USDG/USD (Chainlink 0x61B7e5650328764B076A108EFF5fa7282a1B9aD2 on chain 4663 at block 107342388): 99997934 (8 dp), round 18446744073709551770, updated 1793893815
+   | 2026-11-06T11:11:50Z [USER LOG] USDC/USD (Chainlink 0x84EA90AC252Dc437031461836DB5164219147905 on chain 5042 at block 29789781): 99981600 (8 dp), round 36893488147419103337, updated 1793892429
+   | 2026-11-06T11:11:50Z [USER LOG] Decision: approve Relay: quote 184285896 USDC6 (7 bps under fair 184403972), minimum 183481952
+   | 2026-11-06T11:11:51Z [USER LOG] NorenSettlementDesk updated on robinhood-testnet: tx 0x23a030574f6ca56d1b95da3d71565454e7f4603b9388feb8690e0ac6df48b76c
+   result: {"status":"written","decision":"approve","route":1,"id":"0x15a13260201b6d58086118393b527a1c616212d0b0395698e9ee68059e5353af","fairOutUsdc6":"184403972","minOutUsdc6":"183481952","quotedOutUsdc6":"184285896","relayOutUsdc6":"184285896","acrossOutUsdc6":"184259067","usdgUsd8":"99997934","usdcUsd8":"99981600","validUntil":"1793944310","txHash":"0x23a030574f6ca56d1b95da3d71565454e7f4603b9388feb8690e0ac6df48b76c"}
+   approval written through the forwarder: tx 0x23a030574f6ca56d1b95da3d71565454e7f4603b9388feb8690e0ac6df48b76c; settlement now (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 1793943701 [1.793e9], 50, 2, 1, 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc, 1793944310 [1.793e9], 184373851 [1.843e8], 183481952 [1.834e8], 184285896 [1.842e8])
+   keeper: {"route":"relay","txHash":"0xe63bb52363e0fbca91e42336685c65314c3335f63a2500a7446e463a14974dc6","target":"0x4cD00E387622C35bDDB9b4c962C136462338BC31","quotedOutUsdc6":"184285898","minOutUsdc6":"183481952","amountUsdg6":"184373851","fillSeconds":1,"relayRequestId":"0x1793943714474d2aac4a9819c312631a9d35c87ffb9f2b3800990baa52977582","feeUsd":"0.076777","gasUsed":"93914"}
+   real Relay Depository USDG balance +184373851 on the fork; settlement Executed
+== B. requestSettlement 100 USDG tx 0xf258accfb18fd980bc15bcb06a52ec5ae27bd84db7a235f48bbbcc7550b3a6cc, settlement 0x8f03362d44036bd1423e949098190290567ad0edc37c04759d51f9677d29e48e
+   | 2026-11-06T11:11:59Z [USER LOG] SettlementRequested 0x8f03362d44036bd1423e949098190290567ad0edc37c04759d51f9677d29e48e: 100000000 USDG6 from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 to 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc on Arc, max slippage 50 bps (tx 0xf258accfb18fd980bc15bcb06a52ec5ae27bd84db7a235f48bbbcc7550b3a6cc)
+   | 2026-11-06T11:12:00Z [USER LOG] Relay quote: 99942464 USDC6 on Arc, ~1s
+   | 2026-11-06T11:12:00Z [USER LOG] Across quote: 99935835 USDC6 on Arc, ~1s
+   | 2026-11-06T11:12:00Z [USER LOG] USDG/USD (Chainlink 0x61B7e5650328764B076A108EFF5fa7282a1B9aD2 on chain 4663 at block 107342491): 99997934 (8 dp), round 18446744073709551770, updated 1793893815
+   | 2026-11-06T11:12:01Z [USER LOG] USDC/USD (Chainlink 0x84EA90AC252Dc437031461836DB5164219147905 on chain 5042 at block 29789801): 99981600 (8 dp), round 36893488147419103337, updated 1793892429
+   | 2026-11-06T11:12:01Z [USER LOG] Decision: approve Relay: quote 99942464 USDC6 (8 bps under fair 100016337), minimum 99516255
+   | 2026-11-06T11:12:02Z [USER LOG] NorenSettlementDesk updated on robinhood-testnet: tx 0x10f2aa6fdb55235d8c267b7be80aca2c50e388b197dc2b9eb903a62033a0725e
+   result: {"status":"written","decision":"approve","route":1,"id":"0x8f03362d44036bd1423e949098190290567ad0edc37c04759d51f9677d29e48e","fairOutUsdc6":"100016337","minOutUsdc6":"99516255","quotedOutUsdc6":"99942464","relayOutUsdc6":"99942464","acrossOutUsdc6":"99935835","usdgUsd8":"99997934","usdcUsd8":"99981600","validUntil":"1793944321","txHash":"0x10f2aa6fdb55235d8c267b7be80aca2c50e388b197dc2b9eb903a62033a0725e"}
+   keeper (Across fallback): {"route":"across","txHash":"0x9630a6adb170d252d142d58e2b5dcc0dd65d7f88d76b5831c67d774571b3fd38","target":"0xD29C85F15DF544bA632C9E25829fd29d767d7978","quotedOutUsdc6":"99935835","minOutUsdc6":"99516255","amountUsdg6":"100000000","fillSeconds":1,"gasUsed":"112835"}
+   real Across SpokePool USDG balance +100000000 on the fork; FundsDeposited depositId topic 0x0000000000000000000000000000000000000000000000000000000000087d33
+== C. requestSettlement 100 USDG with max slippage 1 bp, tx 0x1580d87e16dda889dc07a7d451b317ff0b2096a69aebe826fcbde17f9b41f137
+   | 2026-11-06T11:12:08Z [USER LOG] SettlementRequested 0x770e462615cd5aac688931bc0948a3fcc59d5cf14e9e8719881510e3823cb8a8: 100000000 USDG6 from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 to 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc on Arc, max slippage 1 bps (tx 0x1580d87e16dda889dc07a7d451b317ff0b2096a69aebe826fcbde17f9b41f137)
+   | 2026-11-06T11:12:09Z [USER LOG] Relay quote: 99942565 USDC6 on Arc, ~1s
+   | 2026-11-06T11:12:09Z [USER LOG] Across quote: 99935835 USDC6 on Arc, ~1s
+   | 2026-11-06T11:12:10Z [USER LOG] USDG/USD (Chainlink 0x61B7e5650328764B076A108EFF5fa7282a1B9aD2 on chain 4663 at block 107342578): 99997934 (8 dp), round 18446744073709551770, updated 1793893815
+   | 2026-11-06T11:12:10Z [USER LOG] USDC/USD (Chainlink 0x84EA90AC252Dc437031461836DB5164219147905 on chain 5042 at block 29789820): 99981600 (8 dp), round 36893488147419103337, updated 1793892429
+   | 2026-11-06T11:12:10Z [USER LOG] Decision: reject: best quote Relay 99942565 is 8 bps under fair 100016337, max 1
+   | 2026-11-06T11:12:11Z [USER LOG] NorenSettlementDesk updated on robinhood-testnet: tx 0x4b5dfb7100178225f4f274a6a5088fb084e16c30e43cb23ba545978ff1502708
+   result: {"status":"written","decision":"reject","route":0,"id":"0x770e462615cd5aac688931bc0948a3fcc59d5cf14e9e8719881510e3823cb8a8","fairOutUsdc6":"100016337","minOutUsdc6":"0","quotedOutUsdc6":"99942565","relayOutUsdc6":"99942565","acrossOutUsdc6":"99935835","usdgUsd8":"99997934","usdcUsd8":"99981600","validUntil":"0","txHash":"0x4b5dfb7100178225f4f274a6a5088fb084e16c30e43cb23ba545978ff1502708"}
+   rejected on-chain; cancel tx 0x5608e96e43dcb03b880e3320ce06957271a669eb75cad5ebf2d779dc949aa429 refunded 100000000 USDG6
+== Not done here: the Arc-side fill. Relay's solver and Across relayers watch Robinhood mainnet; these deposits exist only on the fork.
+== transcript saved to fixtures/settle-run.json
+== PASS: stock sold on Uniswap v4, settlements approved/rejected by CRE on live quotes and Chainlink feeds, deposits made into the real Relay and Across contracts (fork)
