@@ -248,6 +248,8 @@ contract NorenAquaTest is RobinhoodBase {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 col = _nvdaFor(PRICE, 14_000);
     uint256 planId = _openPlan(keccak256('pay-in-3'), col);
+    assertEq(credit.INSTALLMENTS(), 3, 'Pay in 3');
+    assertEq(credit.MISSED_TO_DEFAULT(), 2);
     NorenCredit.Plan memory p = credit.plan(planId);
     for (uint8 k = 1; k <= 3; ++k) assertEq(credit.dueAt(planId, k), p.start + uint64(INTERVAL) * k);
     assertEq(credit.installmentAmount(planId, 1) + credit.installmentAmount(planId, 2) + credit.installmentAmount(planId, 3), PRICE);

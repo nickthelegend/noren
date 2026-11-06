@@ -38,7 +38,8 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   using Math for uint256;
 
   uint256 internal constant BPS = 10_000;
-  uint256 internal constant INSTALLMENTS = 3;
+  /// @notice Pay in 3: number of installments per plan (read by the Noren app and checkout).
+  uint256 public constant INSTALLMENTS = 3;
   /// @notice Missed installments (each past due plus grace) that make a plan liquidatable.
   uint8 public constant MISSED_TO_DEFAULT = 2;
   uint8 public constant MAX_TIER = 4;
