@@ -222,11 +222,156 @@ It uses Anvil's published dev keys, on the forks only.
 
 To run one handler yourself against running forks, call `cre workflow simulate credit-bridge --target local-fork --non-interactive --trigger-index <0|1|2> --evm-tx-hash <tx> --evm-event-index <i> [--broadcast] -e <env file>` from `packages/cre-bridge`. `--listen` keeps the simulator watching for new logs.
 
+## Value bridge: Robinhood Chain to Arc (packages/bridge-settlement)
+
+The credit line moves only messages. This second piece moves a merchant's value: Stock Tokens or USDG on Robinhood become USDC on Arc.
+
+### Flow
+
+```
+Merchant (Robinhood)                 NorenSettlementDesk (Robinhood)          CRE workflow (DON)                  Keeper
+────────────────────                 ───────────────────────────────          ──────────────────                  ──────
+sellStockAndRequest(NVDA pool, ...)  pull 1 NVDA, Uniswap v4 swap via
+  or requestSettlement(USDG, ...)      Universal Router, fill >= Chainlink
+                                       NVDA/USD x uiMultiplier - 2%
+                                     emits SettlementRequested ─────────▶ log trigger
+                                                                           HTTP + consensus: Relay POST /quote,
+                                                                             Across GET /api/suggested-fees
+                                                                           HTTP JSON-RPC: Chainlink USDG/USD
+                                                                             (Robinhood), USDC/USD (Arc), median block
+                                                                           fair = amount x USDG/USD / USDC/USD
+                                                                           approve the better quote within max
+                                                                             slippage, or reject
+                                     onReport (forwarder only) ◀──────────  signed report
+                                     Approved: route, minOut, validUntil
+                                                                                                               fresh Relay or Across
+                                                                                                               calldata from the API;
+                                                                                                               refuse if < minOut
+                                     executeSettlement ◀──────────────────────────────────────────────────────
+                                     checks calldata, approves exactly the
+                                     amount, calls the real Relay Depository
+                                     or Across SpokePool
+                                                                         ── Arc: Relay solver / Across relayer
+                                                                            pays USDC to the merchant's Arc address
+                                                                            (NOT reachable from a fork)
+```
+
+### Pieces
+
+**Uniswap v4: live pools with real liquidity.**
+- The PoolManager has 54,451 `Initialize` events in Robinhood's first 10M blocks. 65 of them pair a Stock Token with USDG or ETH, and 31 of those had in-range liquidity.
+- Quotes from V4Quoter `0x8Dc1…8F94` on mainnet (read-only), compared with Chainlink:
+
+  | Pool (fee) | Sell | Chainlink value | v4 out | Under Chainlink |
+  |---|---|---|---|---|
+  | NVDA/USDG (0.3%) | 1 | $185.56 | 184.63 USDG | 0.5% |
+  | NVDA/USDG (0.3%) | 10 | $1,855.60 | 1,843.42 USDG | 0.66% |
+  | NVDA/USDG (0.3%) | 100 | $18,556.02 | 18,201.37 USDG | 1.9% |
+  | TSLA/USDG (0.3%) | 1 | $347.56 | 345.88 USDG | 0.48% |
+  | AAPL/USDG (0.3%) | 1 | $343.56 | 341.77 USDG | 0.52% |
+
+  The Chainlink value column is price × amount without NVDA's `uiMultiplier` (1.000775); the desk's floor applies it. The NVDA rows were read before the fork run, which later quoted 184.37 USDG for 1 NVDA.
+- The desk swaps through Universal Router `0x8876…0904` with V4_SWAP (SWAP_EXACT_IN_SINGLE, SETTLE_ALL, TAKE_ALL) and Permit2.
+- The swap must clear the larger of the caller's minimum and the Chainlink floor. The floor is the price × `uiMultiplier` (NVDA's is 1.000775) ÷ USDG/USD, minus a bound of at most 5%.
+- A stale feed, a pool with hooks, or a stock without a configured feed is refused.
+- The deployed routers decode a six-field `ExactInputSingleParams`: a `uint256` sits before `hookData`. The five-field layout reverts, which was checked on the fork. Pass 0 for that field.
+- NorenGateway's Chainlink-priced vault buy is the alternative when a pool is thin or a stock market is closed. It was not needed here.
+
+**Relay first, Across as the fallback.**
+- **The workflow approves a route on two checks:**
+  - It checks the shape of the Relay deposit step: the Depository `0x4cD0…BC31`, `depositErc20(desk, USDG, amount, id)`, on chain 4663, with output in Arc USDC on chain 5042.
+  - It checks that Across's SpokePool matches the configured one.
+- **The keeper fetches fresh calldata:**
+  - It calls Relay `POST /quote` with `user` set to the desk, or Across `GET /api/swap/approval` with the desk as depositor.
+  - It refuses anything below the approved minimum, then calls `executeSettlement`.
+- **The desk checks the calldata again on-chain:**
+  - Relay is allowed only if the workflow approved Relay. The desk checks the depositor, token and exact amount. Relay's output amount is not in its calldata: the solver commits to it off-chain in the quote, and that quote is what the workflow and keeper checked.
+  - Across is always allowed, because its output amount is in the calldata. The desk checks it against the approved minimum, along with the recipient, Arc USDC, destination chain 5042, the depositor, the input amount and an empty message.
+- **The desk guards its own funds:**
+  - It approves exactly the amount and resets the approval afterwards.
+  - It checks that exactly the amount left the desk.
+  - Each settlement executes once and only before `validUntil`.
+  - A hard floor stops any report, including one from a compromised DON, from approving a minimum below 95% of the amount.
+
+**CRE orchestration (blockchain + external APIs).** One log-trigger handler does all of the following:
+1. Reads the desk state on-chain.
+2. Calls two bridge APIs over HTTP. `ok` and `reason` must match across nodes; amounts are taken by median.
+3. Reads two Chainlink feeds on two mainnets over JSON-RPC, at a median-agreed block, with byte-identical rounds. Each feed must be fresh (within 25 h) and within 1% of $1.
+4. Computes the fair output and the slippage of each quote.
+5. Writes an approve or reject report through the forwarder.
+
+### What is live and what needs a real relayer
+
+| Step | Status |
+|---|---|
+| Uniswap v4 pool state and quotes | Live mainnet reads |
+| Stock sale through the Universal Router | Real pool on the fork. The fill equalled the V4Quoter quote, 184.373851 USDG for 1 NVDA. |
+| Relay and Across quotes | Live public APIs, read-only, in both the workflow and the keeper |
+| Chainlink USDG/USD and USDC/USD | Live mainnet reads over JSON-RPC |
+| Approve and reject reports | `cre workflow simulate --broadcast` through the real robinhood-testnet MockKeystoneForwarder bytecode, on the fork |
+| Deposit calldata | Real, from the live APIs, for the desk address on the fork |
+| Deposit into Relay and Across | Executed on the fork against the real Depository and SpokePool. Balances rose by exactly the amount, and Across emitted `FundsDeposited`. |
+| **Arc-side fill (USDC to the merchant on Arc)** | **Not done and not claimed.** It needs Relay's solver or an Across relayer to see a deposit on real Robinhood mainnet. Fork deposits are invisible to them. A real fill needs a mainnet deposit with real USDG. This build makes no mainnet transactions. |
+
+### Fees and times observed (live quotes, 2026-11-06 about 05:40 UTC)
+
+| Amount | Relay out (Arc USDC) | Across out | Fair (Chainlink) | Relay time | Across time |
+|---|---|---|---|---|---|
+| 100 USDG | 99.942464 (fee about 5.8 bps, relayer fee $0.05) | 99.935835 (6.4 bps) | 100.016337 | about 1 s | about 1 s |
+| 184.373851 USDG | 184.285896 (4.8 bps) | 184.259067 (6.2 bps) | 184.403972 | about 1 s | about 1 s |
+
+- **What "fair" means.** Fair is the amount × USDG/USD (0.99997934) ÷ USDC/USD (0.999816). It is slightly above 1:1 because Chainlink had USDC a little under $1.
+- **Measured against fair.** Relay was 7–8 bps under fair and Across about 9 bps under.
+- **Gas on the fork.** The deposits cost 93,914 gas (Relay) and 112,835 gas (Across) for `executeSettlement`.
+
+### Fork run evidence (local fork only; these hashes exist on no public chain)
+
+The run is `packages/bridge-settlement/scripts/fork-settle.sh` on a Robinhood mainnet fork at block 107342155, with the desk at `0xD83C…ED48` on the fork.
+
+| Step | Fork tx |
+|---|---|
+| A. sellStockAndRequest: 1 NVDA → 184.373851 USDG on the v4 pool | `0xeafa43e0a1d03b01b1e17c7843fc9bcde4dd3fd7d643df5a3f2312e6b94cd86a` |
+| A. CRE approve (Relay, minimum 183.481952) via forwarder | `0x23a030574f6ca56d1b95da3d71565454e7f4603b9388feb8690e0ac6df48b76c` |
+| A. keeper executeSettlement → Relay Depository (requestId `0x1793…7582`) | `0xe63bb52363e0fbca91e42336685c65314c3335f63a2500a7446e463a14974dc6` |
+| B. requestSettlement 100 USDG | `0xf258accfb18fd980bc15bcb06a52ec5ae27bd84db7a235f48bbbcc7550b3a6cc` |
+| B. CRE approve (Relay best; minimum 99.516255) | `0x10f2aa6fdb55235d8c267b7be80aca2c50e388b197dc2b9eb903a62033a0725e` |
+| B. keeper executeSettlement → Across SpokePool (fallback route), FundsDeposited | `0x9630a6adb170d252d142d58e2b5dcc0dd65d7f88d76b5831c67d774571b3fd38` |
+| C. requestSettlement 100 USDG with max slippage 1 bp | `0x1580d87e16dda889dc07a7d451b317ff0b2096a69aebe826fcbde17f9b41f137` |
+| C. CRE reject (best quote 8 bps under fair) | `0x4b5dfb7100178225f4f274a6a5088fb084e16c30e43cb23ba545978ff1502708` |
+| C. merchant cancel, 100 USDG refunded | `0x5608e96e43dcb03b880e3320ce06957271a669eb75cad5ebf2d779dc949aa429` |
+
+The full output is in `packages/bridge-settlement/fixtures/settle-run.log` and the hashes are in `settle-run.json`.
+
+### Tests
+
+- **19 Foundry tests on a live Robinhood mainnet fork, with no mocks.** They cover:
+  - the v4 sale, matching the V4Quoter, and the Chainlink floor refusal
+  - real deposits into the Relay Depository and the Across SpokePool
+  - every calldata check
+  - the report states, retry and cancel
+  - access control and a stale feed
+- **15 bun tests for the workflow.** Five of them read the live Relay and Across APIs and both Chainlink feeds.
+- **3 vitest tests for the keeper** against the live APIs.
+
+### Run it
+
+```sh
+cd packages/bridge-settlement
+forge test                                             # 19, forks Robinhood mainnet at latest (needs network)
+npx vitest run keeper                                  # 3, live APIs
+cd cre/settlement-desk && bun install && bun test      # 15, 5 of them live
+cd ../.. && sh scripts/fork-settle.sh                  # fork on 127.0.0.1:8732, about 1 minute; NOREN_SETTLE_CAPTURE=1 rewrites fixtures
+```
+
+- **Fork state window.** A plain fork reads lazily from the public RPC, which keeps only about 10 minutes of state history. The script finishes well within that.
+- **Keeper key.** The keeper reads its key from `NOREN_KEEPER_PRIVATE_KEY`.
+- **Remote RPCs.** The keeper refuses a non-loopback RPC unless `NOREN_KEEPER_ALLOW_REMOTE=1` is set.
+
 ## Mapping to a real route
 
 - **CRE.** The workflow runs as-is on `robinhood-testnet` and `arc-testnet` once both receivers are deployed with the production KeystoneForwarders and the workflow owner is pinned. Neither mainnet has a CRE forwarder yet, so the mainnet version waits on Chainlink.
 - **CCIP.** CCIP has no lane between the two chains on either network. See BRIDGE-ROUTES.md §9.
-- **Value: Robinhood to Arc.** The credit line moves no tokens. When the treasury needs to rebalance (for example, after a liquidation on Robinhood pays USDG into the vault, which then refills the Arc USDC pool), the best real route today is an intent bridge from USDG on Robinhood to USDC on Arc:
+- **Value: Robinhood to Arc.** This is built as packages/bridge-settlement (above). The credit line itself moves no tokens. When the treasury needs to rebalance (for example, after a liquidation on Robinhood pays USDG into the vault, which then refills the Arc USDC pool), the best real route today is an intent bridge from USDG on Robinhood to USDC on Arc:
   - Relay: about 0.06–0.11%, about 1 s.
   - Across: 0.064–0.069%, 1–2 s, about 24.7k USDG instant limit.
 
