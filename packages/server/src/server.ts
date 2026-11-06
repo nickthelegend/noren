@@ -6,12 +6,13 @@ import { createPublicClient, createWalletClient, http, decodeErrorResult, encode
 import { privateKeyToAccount } from 'viem/accounts';
 import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork, parseInvoice, poolAbi, usdcAbi, type Deployment, type Invoice } from '@noren/core';
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
+import { creditDrawProblem, robinhoodFaucet, watchCreditDraws } from './credit.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
-export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string };
+export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex };
 type Endpoint = { id: string; merchant: string; url: string; createdAt: number; secret: string };
 type Delivery = { endpointId: string; url: string; attempt: number; status: number | null; ok: boolean; ms: number; error?: string; at: number };
-type MerchantEvent = { id: string; merchant: string; type: string; created: number; data: { invoiceId: Hex; amount: string; status: string; description: string | null; paymentTx: Hex | null; refundTx: Hex | null; refundAmount: string | null; quote: UsdcQuote | null }; deliveries: Delivery[] };
+type MerchantEvent = { id: string; merchant: string; type: string; created: number; data: { invoiceId: Hex; amount: string; status: string; method: string | null; description: string | null; paymentTx: Hex | null; refundTx: Hex | null; refundAmount: string | null; quote: UsdcQuote | null }; deliveries: Delivery[] };
 export function validatePayment(row: RecordRow, body: any, checkout: Address, now: bigint) {
   if (row.status === 'draft') throw new Error('InvoiceUnbound: customer must bind the invoice before paying');
   if (row.status !== 'open') throw new Error('AlreadyPaid: invoice is already paid');
@@ -33,7 +34,9 @@ export function readableError(error: any): string {
   } catch { /* inspect the next cause */ }
   return raw.includes('Setup required') ? raw : 'Transaction rejected: ' + raw.slice(0, 180);
 }
-export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint } };
+export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
+/** Tsuke credit: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
+export type CreditOptions = { creditLine: Address; fromBlock?: bigint; robinhoodRpc?: string; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -65,7 +68,7 @@ export function createMerchantServer(options: ServerOptions): Server {
     }
   }
   function publish(type: MerchantEvent['type'], row: RecordRow, created: number) {
-    emit(type, row); const event: MerchantEvent = { id: `evt_${randomBytes(8).toString('hex')}`, merchant: row.invoice.merchant.toLowerCase(), type, created, data: { invoiceId: row.invoice.invoiceId, amount: row.invoice.amount.toString(), status: row.status, description: row.description ?? null, paymentTx: row.paymentTx ?? null, refundTx: row.refundTx ?? null, refundAmount: row.refundAmount?.toString() ?? null, quote: row.quote ?? null }, deliveries: [] };
+    emit(type, row); const event: MerchantEvent = { id: `evt_${randomBytes(8).toString('hex')}`, merchant: row.invoice.merchant.toLowerCase(), type, created, data: { invoiceId: row.invoice.invoiceId, amount: row.invoice.amount.toString(), status: row.status, method: row.method ?? null, description: row.description ?? null, paymentTx: row.paymentTx ?? null, refundTx: row.refundTx ?? null, refundAmount: row.refundAmount?.toString() ?? null, quote: row.quote ?? null }, deliveries: [] };
     events.unshift(event); events.length = Math.min(events.length, 200); void persistEvents(); const raw = jsonBigints({ id: event.id, type: event.type, created: event.created, data: event.data });
     for (const endpoint of endpoints.filter(e => e.merchant === event.merchant)) void deliver(event, endpoint, raw);
   }
@@ -84,14 +87,25 @@ export function createMerchantServer(options: ServerOptions): Server {
   function emit(type: string, row: RecordRow) { const message = `event: ${type}\ndata: ${jsonBigints({ invoiceId: row.invoice.invoiceId, paymentTx: row.paymentTx, refundTx: row.refundTx })}\n\n`; for (const l of listeners) l.write(message); }
   async function body(req: any) { let s = ''; for await (const chunk of req) { s += chunk; if (s.length > 100_000) throw new Error('Request too large'); } return s ? JSON.parse(s) : {}; }
   function send(res: any, status: number, value: unknown) { res.writeHead(status, { 'content-type': 'application/json' }); res.end(jsonBigints(value)); }
-  return createHttpServer(async (req, res) => {
+  // Tsuke credit: a Drawn log on NorenCreditLine that matches an open invoice settles it. Mismatches are logged, never settled.
+  const creditWatch = options.credit ? watchCreditDraws({ rpcUrl: options.rpcUrl, creditLine: options.credit.creditLine, fromBlock: options.credit.fromBlock, onError: e => console.error('Credit watcher:', e.message), onDraw: async draw => {
+    await ready;
+    const row = rows.get(draw.invoiceId.toLowerCase());
+    const payout = row ? await publicClient.readContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'merchantPayout', args: [row.invoice.merchant] }) as string : undefined;
+    const problem = creditDrawProblem(row, draw, payout);
+    if (problem || !row) { console.warn(`Credit draw ${draw.txHash} not applied: ${problem}`); return; }
+    row.status = 'paid'; row.method = 'credit'; row.creditLineId = draw.lineId; row.paymentTx = draw.txHash; row.paidAt = draw.timestamp; row.paymentBlock = draw.blockNumber.toString();
+    const receipt = await publicClient.getTransactionReceipt({ hash: draw.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
+    await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
+  } }) : undefined;
+  const server = createHttpServer(async (req, res) => {
     try {
       await ready; await devReady;
       const url = new URL(req.url ?? '/', 'http://localhost');
       const path = url.pathname;
       if (options.dev && req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': req.headers.origin === 'http://localhost:5190' || req.headers.origin === 'http://127.0.0.1:5190' ? req.headers.origin : '', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' }); res.end(); return; }
       if (options.dev) { const origin = req.headers.origin; if (origin === 'http://localhost:5190' || origin === 'http://127.0.0.1:5190') res.setHeader('access-control-allow-origin', origin); }
-      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress });
+      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine, robinhoodRpc: options.credit.robinhoodRpc ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);
       if (req.method === 'GET' && path === '/pricing/quote') {
         const currency = url.searchParams.get('currency') ?? '';
@@ -114,6 +128,14 @@ export function createMerchantServer(options: ServerOptions): Server {
           const receipt = await publicClient.waitForTransactionReceipt({ hash }); if (receipt.status !== 'success') throw new Error('Faucet mint reverted');
           return send(res, 200, { gasTx, usdcTx: hash });
         } catch (e) { faucetUsed.delete(target); throw e; }
+      }
+      if (req.method === 'POST' && path === '/dev/robinhood-faucet' && options.dev) {
+        if (!options.credit?.robinhoodRpc) throw new Error('Setup required: start the Robinhood fork with pnpm dev:all');
+        const address = (await body(req)).address as string;
+        if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error('Invalid faucet address');
+        const target = 'rh:' + address.toLowerCase(); if (faucetUsed.has(target)) return send(res, 429, { error: 'Robinhood faucet already used for this address' });
+        faucetUsed.add(target);
+        try { return send(res, 200, await robinhoodFaucet(options.credit.robinhoodRpc, address as Address)); } catch (e) { faucetUsed.delete(target); throw e; }
       }
       if (req.method === 'GET' && path === '/events') { res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' }); res.write(': connected\n\n'); listeners.add(res); req.on('close', () => listeners.delete(res)); return; }
       if (req.method === 'GET' && path === '/asp/tree' && options.aspTree) return send(res, 200, options.aspTree());
@@ -171,11 +193,12 @@ export function createMerchantServer(options: ServerOptions): Server {
         await publicClient.simulateContract({ account: merchantAddress, address: options.deployment.checkout, abi: [...checkoutAbi, ...poolAbi], functionName: 'pay', args: [withdrawal, proof] });
         const hash = await wallet.writeContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'pay', args: [withdrawal, proof as any] });
         const receipt = await publicClient.waitForTransactionReceipt({ hash }); if (receipt.status !== 'success') throw new Error('Payment transaction reverted');
-        row.status = 'paid'; row.paymentTx = hash; row.paidAt = Number((await publicClient.getBlock()).timestamp); row.paymentGasUsed = receipt.gasUsed.toString(); row.paymentBlock = receipt.blockNumber.toString(); await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt); return send(res, 200, row);
+        row.status = 'paid'; row.method = 'private'; row.paymentTx = hash; row.paidAt = Number((await publicClient.getBlock()).timestamp); row.paymentGasUsed = receipt.gasUsed.toString(); row.paymentBlock = receipt.blockNumber.toString(); await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt); return send(res, 200, row);
       }
       if (req.method === 'POST' && match[2] === 'refund') {
         if (!authorized(req)) return send(res, 401, { error: 'Merchant bearer token required' });
         if (row.status !== 'paid') throw new Error('Invoice is not paid or has already been refunded');
+        if (row.method === 'credit') throw new Error('RefundUnsupported: this invoice was paid with Tsuke credit, not from the private pool');
         const amount = BigInt((await body(req)).amount); if (amount <= 0n || amount > row.invoice.amount) throw new Error('RefundTooLarge: amount must be positive and at most invoice amount');
         const approval = await wallet.writeContract({ address: options.deployment.usdc, abi: usdcAbi, functionName: 'approve', args: [options.deployment.checkout, amount] });
         const approved = await publicClient.waitForTransactionReceipt({ hash: approval }); if (approved.status !== 'success') throw new Error('Approval reverted');
@@ -187,4 +210,6 @@ export function createMerchantServer(options: ServerOptions): Server {
       return send(res, 405, { error: 'Method not allowed' });
     } catch (error: any) { const message = String(error?.message ?? error); send(res, /Setup required|StalePrice|InvalidPrice/.test(message) ? 503 : 400, { error: /StalePrice|InvalidPrice/.test(message) ? message : readableError(error) }); }
   });
+  server.on('close', () => creditWatch?.stop());
+  return server;
 }
