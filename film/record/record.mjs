@@ -663,7 +663,14 @@ try {
   if (take === "stockpay6") {
     // Pay with stocks or crypto from the checkout opened by shop6: the whole token list, then pay with one
     const url = (await import("node:fs")).readFileSync(`${HERE}state/checkout6.txt`, "utf8").trim();
-    await p.goto(url); await sleep(6000);
+    if (TW) {
+      // as in privpay6: the checkout restores the injected wallet (signer.ts) once the stored mode is read on a fresh load
+      await p.goto(`${MERCH}/#/`); await sleep(2500);
+      await p.evaluate(() => { localStorage.setItem("noren.wallet.mode", "browser"); localStorage.setItem("noren.wallet.browser", "dev.noren.film.testwallet"); });
+      await p.route(/\/config(\?|$)/, async (r) => { await sleep(2500); await r.continue(); });
+      await p.goto(url); await sleep(1500); await p.reload();
+    } else await p.goto(url);
+    await sleep(6000);
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(1500);
     await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks or crypto"); await sleep(2500);
@@ -690,7 +697,18 @@ try {
     // (real Arc testnet USDC), proves in the browser, paid
     const link = (await import("node:fs")).readFileSync(`${HERE}state/link4.txt`, "utf8").trim();
     await p.goto(`${APP}/#/app`); await sleep(7000);
-    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(8000);
+    if (TW) {
+      // the checkout restores a browser wallet the customer connected before (signer.ts): the injected test wallet
+      await p.goto(`${MERCH}/#/`); await sleep(2500);
+      await p.evaluate(() => { localStorage.setItem("noren.wallet.mode", "browser"); localStorage.setItem("noren.wallet.browser", "dev.noren.film.testwallet"); });
+      // makeWallet() binds the active account when /config arrives; hold that response briefly so the EIP-6963 restore
+      // (250 ms discovery + eth_accounts) has finished and the checkout signs with the injected wallet, not a fresh test key
+      await p.route(/\/config(\?|$)/, async (r) => { await sleep(2500); await r.continue(); });
+    }
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await sleep(1500);
+    if (TW) { await p.reload(); }   // a hash-only goto keeps the document: reload so signer.ts reads the stored mode
+    await sleep(8000);
+    log("checkout wallet", (await p.locator(".co-fund").innerText().catch(() => "")).match(/0x[0-9a-fA-F]{40}/)?.[0] ?? "(no fund panel)");
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(2000);
     result("default", await p.locator(".co-methods [aria-selected=true]").innerText().catch(() => ""));
@@ -734,6 +752,29 @@ try {
       result("paid down", (await card.innerText()).replace(/\n+/g, " | ").slice(0, 700));
     }
     await sleep(3000);
+    await cut(); await save();
+  }
+
+  if (take === "raise6") {
+    // After the real repayment record (dev-reputation-ladder.ts loan + attest via the VPS tunnel): the raised tier, the
+    // on-chain record, then one Reclaim provider's QR (shown, never completed). World ID is the separate World App take.
+    await p.goto(`${APP}/#/app/credit`); await sleep(9000);
+    const raise = p.locator("#nk-raise");
+    await raise.scrollIntoViewIfNeeded(); await sleep(1500);
+    await moveTo(640, 400, 1);
+    await rollCamera(); await sleep(1500);
+    await point(raise.locator(".nk-raise-now")); await sleep(3000);
+    result("raise now", (await raise.locator(".nk-raise-now").innerText()).replace(/\n+/g, " | "));
+    const rec = p.locator(".nk-onchain, .nk-rc-chain").first();
+    if (await rec.count()) { await point(rec); await sleep(3000); result("onchain", (await rec.innerText()).replace(/\n+/g, " | ").slice(0, 400)); }
+    else { const ot = raise.locator("li", { hasText: "Repay on time" }).first(); await point(ot); await sleep(3000); result("ontime", (await ot.innerText()).replace(/\n+/g, " | ").slice(0, 400)); }
+    await click(raise.getByRole("button", { name: "Prove", exact: true }), "reclaim task"); await sleep(1800);
+    const prov = raise.getByRole("button", { name: /^Prove / }).first();
+    result("reclaim provider", await prov.getAttribute("aria-label"));
+    await click(prov, "reclaim provider");
+    await until(async () => (await p.locator("[role=dialog] canvas, [role=dialog] svg, [role=dialog] img").count()) > 0, "reclaim QR", 60000).catch(() => {});
+    await sleep(6000);
+    result("reclaim modal", (await p.locator("[role=dialog]").last().innerText().catch(() => "")).replace(/\n+/g, " | ").slice(0, 500));
     await cut(); await save();
   }
 

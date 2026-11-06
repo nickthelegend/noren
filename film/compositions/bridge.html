@@ -1,0 +1,105 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif.woff2") format("woff2"); }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; }
+    #root { position: absolute; inset: 0; background: #efe8db; overflow: hidden; font-family: "Geist", sans-serif; color: #101a3c; }
+    .win { position: absolute; left: 160px; top: 24px; width: 1600px; height: 900px; border-radius: 22px; overflow: hidden;
+            background: #fff; box-shadow: 0 34px 90px rgba(16,26,60,.28), 0 0 0 1px rgba(16,26,60,.14); }
+    .cam { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+    .cam video { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; object-fit: cover; }
+    .bar { position: absolute; left: 160px; width: 1600px; top: 938px; height: 130px; }
+    .tag { position: absolute; left: 0; top: 6px; font: 600 28px/1 "Geist Mono", monospace; letter-spacing: .03em; color: #101a3c; white-space: nowrap; }
+    .tag i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #e8643c; margin-right: 12px; vertical-align: 3px; font-style: normal; }
+    .cap { position: absolute; left: 0; right: 0; top: 54px; height: 62px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .cap .in { display: block; font: 500 38px/1.1 "Geist", sans-serif; color: #101a3c; letter-spacing: -.01em; white-space: nowrap; }
+    .cap em { font: italic 400 44px/1 "Instrument Serif", serif; color: #b8411b; letter-spacing: 0; }
+    .net { position: absolute; right: 0; top: 0; font: 500 28px/1 "Geist Mono", monospace; color: #5d6480; padding: 6px 14px; border-radius: 999px; border: 1.5px solid rgba(16,26,60,.22); white-space: nowrap; }
+    .net.live { color: #0f6b40; border-color: rgba(18,122,74,.55); background: rgba(31,164,99,.08); }
+    .net.live b { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #1fa463; margin-right: 10px; vertical-align: 2px; }
+    .spd { position: absolute; right: 18px; bottom: 18px; font: 700 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .spd .in { display: inline-block; }
+    .wid { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .card { position: absolute; inset: 0; background: #101a3c; padding: 70px 110px; color: #efe8db; }
+    .card h3 { font: italic 400 64px/1 "Instrument Serif", serif; color: #efe8db; margin-bottom: 40px; }
+    .crow { display: grid; grid-template-columns: 520px 120px 230px 1fr; align-items: baseline; padding: 22px 0; border-bottom: 1px solid rgba(239,232,219,.16); }
+    .crow b { font: 600 38px/1 "Geist", sans-serif; }
+    .crow span { font: 500 32px/1 "Geist Mono", monospace; color: #aab0c8; }
+    .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
+    .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
+    .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .cap img.tk { display: inline-block; width: 38px; height: 38px; vertical-align: -8px; margin: 0 4px 0 2px; border-radius: 50%; }
+    .dia { position: absolute; inset: 0; background: #101a3c; color: #efe8db; padding: 56px 90px; }
+    .dia h3 { font: italic 400 62px/1 "Instrument Serif", serif; text-align: center; margin-bottom: 34px; }
+    .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
+    .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
+    .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .end .multis { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .dia .end img.multi { display: inline-block; width: 60px; height: 60px; margin: 0; border-radius: 16px; background: #efe8db; padding: 8px; object-fit: contain; }
+    .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
+    .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
+    .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
+    .dia .lane .lg img { width: 50px; height: 50px; object-fit: contain; }
+    .dia .lane .lg img.tok { position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+    .dia .lane b { display: block; font: 600 34px/1.1 "Geist", sans-serif; }
+    .dia .lane small { display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }
+    .dia .lane b .chs { display: inline-flex; gap: 8px; margin-left: 18px; vertical-align: -6px; }
+    .dia .lane b .chs img { width: 34px; height: 34px; border-radius: 9px; background: #efe8db; padding: 4px; object-fit: contain; }
+    .dia .lane .st { justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }
+    .dia .lane .st.live { color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }
+    .dia .arrow { position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, #e8643c, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }
+    .dia p { position: absolute; left: 90px; bottom: 34px; font: 500 24px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
+
+  </style>
+  <div id="root" data-composition-id="bridge" data-width="1920" data-height="1080">
+    <div class="win" id="bridge-win">
+      <div class="cam" id="bridge-cam0"><video id="bridge-v0" class="clip" data-start="0.000" data-duration="6.400" data-track-index="1" src="assets/footage/bridge-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam1"><video id="bridge-v1" class="clip" data-start="6.400" data-duration="1.800" data-track-index="1" src="assets/footage/bridge-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam2"><video id="bridge-v2" class="clip" data-start="8.200" data-duration="1.600" data-track-index="1" src="assets/footage/bridge-2.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam3"><video id="bridge-v3" class="clip" data-start="9.800" data-duration="1.500" data-track-index="1" src="assets/footage/bridge-3.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam4"><video id="bridge-v4" class="clip" data-start="11.300" data-duration="1.400" data-track-index="1" src="assets/footage/bridge-4.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam5"><video id="bridge-v5" class="clip" data-start="12.700" data-duration="1.500" data-track-index="1" src="assets/footage/bridge-5.mp4" muted playsinline></video></div>
+      <div class="cam" id="bridge-cam6"><video id="bridge-v6" class="clip" data-start="14.200" data-duration="1.400" data-track-index="1" src="assets/footage/bridge-6.mp4" muted playsinline></video></div>
+      <div id="bridge-k7" class="clip" data-start="15.600" data-duration="12.400" data-track-index="1" style="position:absolute;inset:0"><div class="dia"><h3>Any chain ⇄ Arc</h3><div class="arrow" id="bridge-k7a"></div><div class="ends"><div class="end" id="bridge-k7e0"><span class="multis"><img class="multi" src="assets/logos/eth.svg" alt="" /><img class="multi" src="assets/logos/base.svg" alt="" /><img class="multi" src="assets/logos/arbitrum.svg" alt="" /><img class="multi" src="assets/logos/robinhood-chain.png" alt="" /></span>Any chain</div><div class="end" id="bridge-k7e1"><img src="assets/logos/arc.svg" alt="" />Arc</div></div><div class="lanes"><div class="lane" id="bridge-k7l0"><span class="lg"><img src="assets/logos/circle.svg" alt="" /><img class="tok" src="assets/logos/usdc.svg" alt="" /></span><div><b>Circle CCTP V2<span class="chs"><img src="assets/logos/eth.svg" alt="" /><img src="assets/logos/base.svg" alt="" /><img src="assets/logos/arbitrum.svg" alt="" /><img src="assets/logos/robinhood-chain.png" alt="" /></span></b><small>USDC from any chain: burn → Circle attests → NorenArcHook mints on Arc</small></div><span class="st live">live on testnets</span></div><div class="lane" id="bridge-k7l1"><span class="lg"><img src="assets/logos/1inch.svg" alt="" /><img class="tok" src="assets/logos/nvda.svg" alt="" /></span><div><b>Cross-chain Aqua order<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /></span></b><small>Stocks → USDC: escrow → Chainlink CRE → Aqua maker settles on Arc</small></div><span class="st">local demo</span></div><div class="lane" id="bridge-k7l2"><span class="lg"><img src="assets/logos/chainlink.svg" alt="" /></span><div><b>Chainlink CCIP<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /><img src="assets/logos/base.svg" alt="" /></span></b><small>Credit messages: Robinhood → Base Sepolia hub → Arc</small></div><span class="st live">live on testnets</span></div></div><p>docs/CCTP.md · docs/AQUA-LIVE.md · docs/CCIP.md</p></div></div>
+      
+      
+    </div>
+    <div class="bar">
+      <div class="tag" id="bridge-tag"><i></i>05 · USDC from any chain</div>
+      <div id="bridge-c0" class="cap clip" data-start="0.100" data-duration="6.200" data-track-index="3"><span class="in">USDC from any chain to Arc: Ethereum · Base · Arbitrum · Robinhood</span></div>
+      <div id="bridge-c1" class="cap clip" data-start="6.450" data-duration="3.300" data-track-index="3"><span class="in">Live: Ethereum Sepolia → Arc, 0.5 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC in 31 s</span></div>
+      <div id="bridge-c2" class="cap clip" data-start="9.850" data-duration="2.850" data-track-index="3"><span class="in">Live: Base Sepolia → Arc in 19 s</span></div>
+      <div id="bridge-c3" class="cap clip" data-start="12.750" data-duration="2.850" data-track-index="3"><span class="in">Live: Arbitrum Sepolia → Arc in 16 s</span></div>
+      <div id="bridge-net0" class="clip" data-start="0.000" data-duration="6.400" data-track-index="6"><div class="net">Any chain → Arc · CCTP V2 testnets</div></div><div id="bridge-net1" class="clip" data-start="6.400" data-duration="1.800" data-track-index="6"><div class="net live"><b></b>Ethereum Sepolia · live · public explorer</div></div><div id="bridge-net2" class="clip" data-start="8.200" data-duration="1.600" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="bridge-net3" class="clip" data-start="9.800" data-duration="1.500" data-track-index="6"><div class="net live"><b></b>Base Sepolia · live · public explorer</div></div><div id="bridge-net4" class="clip" data-start="11.300" data-duration="1.400" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="bridge-net5" class="clip" data-start="12.700" data-duration="1.500" data-track-index="6"><div class="net live"><b></b>Arbitrum Sepolia · live · public explorer</div></div><div id="bridge-net6" class="clip" data-start="14.200" data-duration="1.400" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#bridge-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+    tl.fromTo("#bridge-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
+    tl.set("#bridge-cam1", { transformOrigin: "0% 10%", scale: 1.4 }, 0);
+    tl.set("#bridge-cam2", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#bridge-cam3", { transformOrigin: "30% 12%", scale: 1.45 }, 0);
+    tl.set("#bridge-cam4", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#bridge-cam5", { transformOrigin: "30% 12%", scale: 1.45 }, 0);
+    tl.set("#bridge-cam6", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.fromTo("#bridge-k7e0", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 15.700);
+    tl.fromTo("#bridge-k7e1", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 15.850);
+    tl.fromTo("#bridge-k7a", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, 16.050);
+    tl.fromTo("#bridge-k7l0", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 16.500);
+    tl.fromTo("#bridge-k7l1", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 18.100);
+    tl.fromTo("#bridge-k7l2", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 19.700);
+    tl.fromTo("#bridge-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
+    tl.to("#bridge-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 6.000);
+    tl.fromTo("#bridge-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.470);
+    tl.to("#bridge-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 9.450);
+    tl.fromTo("#bridge-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.870);
+    tl.to("#bridge-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 12.400);
+    tl.fromTo("#bridge-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.770);
+    tl.to("#bridge-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.300);
+    window.__timelines["bridge"] = tl;
+  </script>
+</template>

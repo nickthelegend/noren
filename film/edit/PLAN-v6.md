@@ -79,3 +79,29 @@ declaratives (full stops, no hedging) so the slower, firmer delivery still fits 
 | v6 | 11.79 | 167.6 (ends 179.4) |
 
 Characters used on Nov 7: about 5,650 in all (two full passes, the re-dos, the pronunciation test and the 3-variant test).
+
+## As recorded (Nov 7, hosted deployment, 02:15–03:00 IST)
+
+All app, shop and merchant takes were recorded on noren-merchant / noren-app-beta / noren-shop (vercel.app) against
+the hosted API, with the injected test wallet (EIP-6963). The checkout restores the injected wallet only on a fresh
+load with `noren.wallet.mode=browser` stored, so `privpay6` and `stockpay6` set it and reload (and hold `/config` for
+2.5 s so the restore lands before `makeWallet()` binds the account).
+
+| Film | Shot | Take | Badge | What is real |
+|---|---|---|---|---|
+| 0–15 | problem card, website scroll | `landing4` | the real website | hosted landing |
+| 15–35 | Privy modal · SIWE · business · payouts → store · API keys (secret boxed) | `merchant3` | Arc testnet · live | store tx 0xf5cbac…1fa3; the link step is cut (its text still says "Arc fork" on hosted) |
+| 35–54 | Aubelle → dress → size S → bag → Noren checkout | `shop6` | Arc testnet · live | invoice AUB-DF5722, 148 USDC |
+| 54–68 | Privy shown · injected wallet · Home · paste link · paid privately 0.50 | `applogin3`, `apphome3` | Arc testnet · live | private pay on Arc testnet |
+| 68–96 | bridge chain chips · Ethereum/Base/Arbitrum → Arc explorers · rails card | `bridge4`, `xexplorer4`, card | CCTP V2 testnets / each chain · live | earlier live CCTP runs |
+| 96–121 | Earn tiers · deposit 2 NVDA · Aqua maker · World ID (World App) · limit 66% · five steps | `credit4a`, `world` | Robinhood Chain · mainnet snapshot / World ID · production | deposit tx 0xa803…7212; 70% caption from ladder txs 0x7499…ab8 (loan repaid) and 0x2935…c6c7 (attestation) |
+| 121–126 | Swap quotes | `swap3` | Arc testnet · live quotes | |
+| 126–138 | checkout on Pay privately · shield 1 USDC → paid 0.40 · merchant "Private" · Arbitrum SHIELD | `privpay6`, `privcredit-m`, `xexplorer` | Arc testnet · live | pay tx 0x4613…df39, proof 5.66 s |
+| 138–152 | the token list · paid with NVDA (earlier local run, cropped, captioned) | `stockpay6`, `shop3` | mainnet snapshot (· earlier local run) | hosted quote refused: StalePrice |
+| 152–167 | pay-later tx 0xf3b7…723a · CCIP explorer | `xexplorer2`, `xexplorer` | Arc testnet · live / CCIP · live | |
+| 167–180 | live-on-testnets grid, end card | drawn | — | |
+
+Not filmed on hosted: Pay later / Pay in 3 cards (Setup required), the credit line, Borrow with Aqua fills, Reclaim QR,
+cross-chain Aqua (Setup required). The loan stage of `dev-reputation-ladder.ts` moved the hosted snapshot clock 24 h
+ahead (evm_increaseTime), so the snapshot's Chainlink rounds read as stale afterwards (gateway quotes and
+`creditLimitOf` revert with StalePrice); it was reported and the node was left as it is.
