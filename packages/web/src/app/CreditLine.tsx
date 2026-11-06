@@ -3,6 +3,7 @@
  * NorenCreditLine on Arc, spend it at any Noren checkout, repay in USDC on Arc.
  */
 import { useEffect, useMemo, useState } from "react";
+import { formatUnits, parseUnits } from "viem";
 import { api, short, usdc } from "../api";
 import { msgOf } from "../ui";
 import { STOCKS, usd8, units, type Line } from "../onchain";
@@ -51,7 +52,7 @@ export function CreditLineCard({ w }: { w: Wallet }) {
           <div className="nk-stats" style={{ margin: "0 0 6px" }}>
             <div className="nk-stat"><small>Limit</small><b>{usdc(line.limit)} USDC</b></div>
             <div className="nk-stat"><small>Available on Arc</small><b className="ok">{pos?.live ? usdc(pos.available) : "…"}</b></div>
-            <div className="nk-stat"><small>Owed</small><b className={line.drawn - line.repaid > 0n ? "warn" : ""}>{usdc(line.drawn - line.repaid)}</b></div>
+            <div className="nk-stat"><small>Owed on Arc</small><b className={line.drawn - line.repaid > 0n ? "warn" : ""}>{usdc(line.drawn - line.repaid)}</b></div>
             <div className="nk-stat"><small>Expires</small><b>{day(line.expiry)}</b></div>
           </div>
           <div className="nk-box"><Bridge line={line} pos={pos} log={log} /></div>
@@ -64,6 +65,8 @@ export function CreditLineCard({ w }: { w: Wallet }) {
   );
 }
 
+const parseUnitsSafe = (v: string, d: number) => { try { return parseUnits(v || "0", d); } catch { return 0n; } };
+
 function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<typeof creditActions>; busy: string | null; run: (k: string, f: () => Promise<ReactNode | void>) => void; say: (t: string) => void }) {
   const [cols, setCols] = useState<Collateral[] | null>(null);
   const [colErr, setColErr] = useState<string | null>(null);
@@ -75,7 +78,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
   // Shares first: deposit NVDA in Earn, lock the nNVDA shares here, and they keep earning.
   useEffect(() => { if (!sym && cols?.length) setSym((cols.find((c) => c.balance > 0n) ?? cols[0]).sym); }, [cols, sym]);
   const s = cols?.find((x) => x.sym === sym);
-  useEffect(() => { if (s?.kind === "shares" && s.balance > 0n) setAmt(String(Number(s.balance) / 10 ** s.decimals)); }, [s?.token]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (s?.kind === "shares" && s.balance > 0n) setAmt(formatUnits(s.balance, s.decimals)); }, [s?.token]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!s || !(Number(amt) > 0)) { setQ(null); return; }
     let on = true; setQe(null);
@@ -84,11 +87,11 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
   }, [actions, sym, amt, s?.balance, w.tick]); // eslint-disable-line react-hooks/exhaustive-deps
   if (colErr) return <div className="nk-pad"><div className="nk-err">{colErr}</div></div>;
   if (!cols) return <div className="nk-pad"><Skel rows={2} /></div>;
-  const tooMuch = s ? Number(amt) > Number(s.balance) / 10 ** s.decimals : true;
+  const tooMuch = s ? (() => { try { return parseUnits(amt || "0", s.decimals) > s.balance; } catch { return true; } })() : true;
   return (
     <>
       <div className="nk-chains" role="radiogroup" aria-label="Collateral to lock">
-        {cols.map((c) => (
+        {cols.filter((c) => c.kind === "shares" || c.balance > 0n).map((c) => (
           <button key={c.token} type="button" role="radio" aria-checked={c.sym === sym} className="nk-chain" data-on={c.sym === sym} onClick={() => setSym(c.sym)} aria-label={`${c.sym}${c.kind === "shares" ? ", Earn shares that keep earning" : ""}`}>
             <Mark id={c.kind === "shares" ? (TOKENS.find((t) => t.address.toLowerCase() === c.underlying?.toLowerCase())?.sym ?? "ETH") : c.sym} size={20} /><span>{c.sym}</span>{c.kind === "shares" && <small className="nk-earning">earning</small>}
           </button>
@@ -97,7 +100,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
       <div className="nk-box">
         <label htmlFor="nk-lock">You lock</label>
         <div className="nk-row"><input id="nk-lock" inputMode="decimal" value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} /><span className="nk-token" data-static="true">{s?.sym ?? "–"}</span></div>
-        <div className="nk-sub"><span>{s?.kind === "shares" ? "Aqua pool shares: they keep earning while locked" : s?.price8 ? `$${usd8(s.price8)} per share · Chainlink` : " "}</span><span>Balance {s ? (s.balance > 0n ? <button type="button" onClick={() => setAmt(String(Number(s.balance) / 10 ** s.decimals))}>{units(s.balance, s.decimals)}</button> : "0") : "–"}</span></div>
+        <div className="nk-sub"><span>{s?.kind === "shares" ? "Aqua pool shares: they keep earning while locked" : s?.price8 ? `$${usd8(s.price8)} per share · Chainlink` : " "}</span><span>Balance {s ? (s.balance > 0n ? <button type="button" onClick={() => setAmt(formatUnits(s.balance, s.decimals))}>{units(s.balance, s.decimals)}</button> : "0") : "–"}</span></div>
       </div>
       <div className="nk-box">
         <span className="nk-l"><span>Credit limit</span><span>{q ? `${q.ltvBps / 100}% of $${usd8(q.collateral8)}` : ""}</span></span>
@@ -113,7 +116,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
         </dl>
       )}
       <button className="nk-cta" disabled={!!busy || !q || tooMuch || !s} onClick={() => run("lock", async () => { const r = await actions.open(s!, amt, say); return <>{r.text} (tx <TxLink chain="robinhood" hash={r.hash} />). Chainlink CRE is bringing it to Arc.</>; })}>
-        {busy === "lock" ? <><Spin /> Locking on Robinhood…</> : !s ? "Nothing to lock yet" : tooMuch ? `Not enough ${sym}` : `Lock ${amt || 0} ${sym} and open the line`}
+        {busy === "lock" ? <><Spin /> Locking on Robinhood…</> : !s ? "Nothing to lock yet" : tooMuch ? `Not enough ${sym}` : `Lock ${units(parseUnitsSafe(amt, s.decimals), s.decimals)} ${sym} and open the line`}
       </button>
       {(!s || tooMuch) && <p className="nk-fine">Deposit NVDA, TSLA, AAPL or ETH in <a href="#/app/earn">Earn</a> to get shares that keep earning while they back the line. No stock yet? The wallet menu (top right) moves test NVDA to you on the fork.</p>}
     </>

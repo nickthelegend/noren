@@ -150,7 +150,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       await send({ address: s.token, abi: erc20Abi, functionName: "approve", args: [contract(), raw], chain });
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
       const h = await send({ address: contract(), abi: creditAbi, functionName: "openCreditLine", args: [s.token, raw, limit, expiry], chain });
-      return { text: `Locked ${amount} ${s.sym} and opened a ${(Number(limit) / 1e6).toFixed(2)} USDC line on Robinhood`, hash: h };
+      return { text: `Locked ${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 4 })} ${s.sym} and opened a ${(Number(limit) / 1e6).toFixed(2)} USDC line on Robinhood`, hash: h };
     },
     /** A share-backed line's yield (NorenCreditLens.lineYield) and what NorenCredit still counts as owed on Robinhood. */
     async lineYield(lineId: Hex): Promise<LineYield | null> {
