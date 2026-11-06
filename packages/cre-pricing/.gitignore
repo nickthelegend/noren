@@ -1,0 +1,6 @@
+*.env
+.env*
+rate-oracle/node_modules/
+rate-oracle/config.local-fork.json
+*.wasm
+rate-oracle/.cre_build_tmp.js

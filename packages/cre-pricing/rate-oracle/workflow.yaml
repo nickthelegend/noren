@@ -1,0 +1,16 @@
+# CRE workflow settings for the Noren rate oracle.
+local-fork:
+  user-workflow:
+    workflow-name: "noren-rate-oracle-fork"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.local-fork.json"
+    secrets-path: ""
+
+staging-settings:
+  user-workflow:
+    workflow-name: "noren-rate-oracle"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: ""
