@@ -14,8 +14,10 @@ import { Mark } from "../logos";
 import { CCTP_CHAINS, CCTP_RUNS, CHAIN_MARK, runLabel, SOURCE_CHAINS, shortChain, type CctpChainKey, type SourceChainKey } from "../crosschain";
 import { fmt6, fmtGas, useCctpFlow, useFastFee, useSourceBalances, type Flow } from "../cctp-flow";
 
-export function CctpCard({ w, from0 = "base-sepolia", lock, exclude, title = "Bring USDC to Arc", sub = "From 10 chains, burned and minted by Circle. No wrapped tokens.", bare }: { w: Wallet; from0?: SourceChainKey; lock?: boolean; exclude?: SourceChainKey[]; title?: string; sub?: string; bare?: boolean }) {
-  const [from, setFrom] = useState<SourceChainKey>(from0);
+export function CctpCard({ w, from0 = "base-sepolia", from: fromP, onFrom, lock, exclude, title = "Bring USDC to Arc", sub = "From 10 chains, burned and minted by Circle. No wrapped tokens.", bare }: { w: Wallet; from0?: SourceChainKey; from?: SourceChainKey; onFrom?: (k: SourceChainKey) => void; lock?: boolean; exclude?: SourceChainKey[]; title?: string; sub?: string; bare?: boolean }) {
+  const [fromS, setFromS] = useState<SourceChainKey>(from0);
+  const from = fromP ?? fromS;
+  const setFrom = (k: SourceChainKey) => (onFrom ? onFrom(k) : setFromS(k));
   const [amount, setAmount] = useState("1");
   const [fast, setFast] = useState(true);
   const [relay, setRelay] = useState<RelayMode | null>(null);
