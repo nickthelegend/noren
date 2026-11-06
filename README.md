@@ -10,7 +10,7 @@ ETHGlobal Mumbai entry. Everything below runs on local forks; every number was m
 
 | Surface | Route | What it does |
 |---|---|---|
-| **Noren Merchant** | `#/dashboard` | Payments with the method used (private pool, pay with stocks, pay later), payment links priced in 9 currencies by Chainlink, refunds, balances, webhooks, API keys, credit-line exposure. "Customers identified: 0" for private payments. |
+| **Noren Merchant** | `#/dashboard` | Payments with the method used (private pool, pay with stocks, pay later), payment links priced in 9 currencies by Chainlink, refunds, balances, webhooks, API keys, credit-line exposure, and **Settle to Arc** for USDG earned from stock payments. "Customers identified: 0" for private payments. |
 | **Noren app** | `#/app` | The customer's side: private balance, Stock Tokens at live Chainlink prices, a credit score from on-chain history (and a sealed AI second opinion on 0G), lock stock for a credit line, watch Chainlink CRE bridge it to Arc, repay. No stock? Verify with World ID for a small starter line. |
 | **Noren SDK** | `@noren/core` | `createNoren` (invoices, refunds, webhooks, `verifyWebhook`) for merchants; `shield`, `refundInbox`, `proveInvoicePayment` for customers. The hosted checkout `#/pay/:id` is the drop-in. |
 
@@ -43,6 +43,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
 | `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040588 NVDA at $185.56 pays a 7.50 invoice (merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |
 | One CRE simulator run (bridge workflow, `--broadcast` through the MockKeystoneForwarder) | 4.6–5.2 s per event |
+| Settle to Arc: CRE settlement-desk workflow on a 7.50 USDG request | live quotes Relay 7.475568 / Across 7.491332 USDC against a Chainlink fair value of 7.501225; approved Across with a 7.426212 minimum in 6.4–7.1 s |
 | CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
 | Browser, Noren app | fresh wallet, fork faucet, tier-1 terms (score 13/100, collateral-only floor), 1 NVDA locked → 123.80 USDC line, live on Arc after one CRE run (4.8 s), a ¥1,200 checkout (7.60 USDC via Chainlink) paid later, 1.90 USDC repaid |
 | Package suites | `NorenCredit`/`NorenGateway`/`NorenVault` **94** Foundry tests on a fresh Robinhood mainnet fork; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
@@ -122,6 +123,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 - **Local forks only.** Arc testnet and Robinhood Chain run as local Anvil nodes; no real money or stock moves. The public Arc testnet deploy is **BLOCKED** on testnet USDC for `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Circle faucet CAPTCHA, Nick). The Arc Studio app is **BLOCKED** on an Arc Studio login (Nick); steps in [docs/ARC.md](docs/ARC.md).
 - **Robinhood testnet has no Chainlink feeds**, so the Robinhood side is a snapshot of mainnet state. CRE only knows Robinhood *testnet*, so that node is served as chain 46630 with testnet's simulation forwarder. CRE workflows run in the CRE CLI simulator, not on a DON.
 - **Keys not yet created:** the 0G credit check needs `ZG_PC_API_KEY` and World ID needs `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY`. Until then both say "Setup required" and nothing is faked; the history underwriter's deterministic score (labelled as such) decides terms.
+- **Settle to Arc** runs the CRE approval for real, but no relayer fills a local fork, so the USDC fill on Arc stays pending. The Robinhood snapshot carries the Relay Depository's code but not the Across SpokePool, so an Across approval is shown and not deposited; `sh packages/bridge-settlement/scripts/fork-settle.sh` runs both deposits on a live fork.
 - Stock Tokens can't leave Robinhood Chain and their issuer can pause or block them; only stablecoin value crosses, as a credit limit carried by CRE. See [docs/BRIDGE-ROUTES.md](docs/BRIDGE-ROUTES.md).
 - The privacy pool on a fresh fork has few depositors, so timing can link a payment to a deposit; the checkout shows the anonymity set.
 - Browser proving was measured on a laptop, not yet on a phone. The contracts are unaudited.
@@ -137,6 +139,7 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 | `packages/web` | landing, Noren Merchant, Noren app, hosted checkout |
 | `packages/robinhood` | `NorenCredit`, `NorenGateway`, `NorenVault`, `NorenAssetOracle`, history underwriter, SDK |
 | `packages/arc-credit` | `NorenCreditLine` |
+| `packages/bridge-settlement` | `NorenSettlementDesk`, the settlement CRE workflow and keeper (USDG → USDC on Arc via Relay or Across) |
 | `packages/cre-bridge`, `packages/cre-pricing` | Chainlink CRE workflows (TypeScript) |
 | `packages/ai-underwriter` | credit check on 0G Private Computer |
 | `packages/world-id` | IDKit request signing, server verification, nullifier registry, `VerifyHuman` |
