@@ -18,7 +18,8 @@ contract Deploy is Script {
   bytes32 internal constant SALT = keccak256('noren-robinhood-v1');
 
   function run() external {
-    require(block.chainid == 4663, 'Robinhood Chain (4663) or its fork only');
+    // 46630 = a local mainnet fork re-tagged as Robinhood testnet for the CRE simulator.
+    require(block.chainid == 4663 || block.chainid == 46630, 'Robinhood Chain (4663) or a local fork (4663/46630) only');
     address owner = vm.envAddress('NOREN_RH_OWNER');
     address underwriter = vm.envAddress('NOREN_RH_UNDERWRITER');
     address forwarder = vm.envAddress('NOREN_RH_FORWARDER');

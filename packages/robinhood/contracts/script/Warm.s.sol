@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Script, console2} from 'forge-std/Script.sol';
+import {Vm} from 'forge-std/Vm.sol';
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
 import {Math} from '@oz/utils/math/Math.sol';
 import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
@@ -16,9 +17,11 @@ interface IPermit {
 }
 
 /// @notice Simulation only (never run with --broadcast). Walks every demo flow from the demo
-/// accounts so the fork caches each storage slot those flows touch. Robinhood's public RPC keeps
-/// state for only ~10 minutes of blocks, so scripts/fork-snapshot.sh warms the fork with this,
-/// dumps it, and serves the snapshot without an upstream.
+/// accounts with state-diff recording on, then prints every account and storage slot those flows
+/// read together with its real pre-state value ("WARM_SLOT account slot value", "WARM_ACCOUNT
+/// account"). Robinhood's public RPC keeps state for only ~10 minutes of blocks and Anvil's state
+/// dump only contains state its own transactions touched, so scripts/fork-snapshot.sh writes these
+/// real values into the temporary fork (anvil_setStorageAt / anvil_setCode) before dumping it.
 contract Warm is Script {
   // Anvil published dev keys (#1 customer, #9 underwriter): fork use only.
   uint256 internal constant CUSTOMER_KEY = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
@@ -36,6 +39,21 @@ contract Warm is Script {
   address owner;
 
   function run() external {
+    vm.startStateDiffRecording();
+    _flows();
+    Vm.AccountAccess[] memory acc = vm.stopAndReturnStateDiff();
+    for (uint256 i; i < acc.length; ++i) {
+      console2.log(string.concat('WARM_ACCOUNT ', vm.toString(acc[i].account)));
+      for (uint256 j; j < acc[i].storageAccesses.length; ++j) {
+        Vm.StorageAccess memory sa = acc[i].storageAccesses[j];
+        console2.log(
+          string.concat('WARM_SLOT ', vm.toString(sa.account), ' ', vm.toString(sa.slot), ' ', vm.toString(sa.previousValue))
+        );
+      }
+    }
+  }
+
+  function _flows() internal {
     oracle = NorenAssetOracle(vm.envAddress('NOREN_RH_ORACLE'));
     vault = NorenVault(vm.envAddress('NOREN_RH_VAULT'));
     gateway = NorenGateway(payable(vm.envAddress('NOREN_RH_GATEWAY')));

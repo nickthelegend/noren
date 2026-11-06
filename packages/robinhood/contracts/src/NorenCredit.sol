@@ -517,6 +517,13 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     _settleLine(lineId, l);
   }
 
+  /// @notice Arc utilisation as last reported through onReport (read by the CRE bridge).
+  function utilisation(bytes32 lineId) external view returns (uint256 drawn, uint256 repaid, uint64 asOf) {
+    Line storage l = _lines[lineId];
+    if (l.status == LineStatus.None) revert UnknownLine(lineId);
+    return (l.drawn, l.repaid, l.asOf);
+  }
+
   function lineOutstanding(bytes32 lineId) public view returns (uint256) {
     Line storage l = _lines[lineId];
     return l.drawn > l.repaid ? l.drawn - l.repaid : 0;
