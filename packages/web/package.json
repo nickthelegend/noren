@@ -21,7 +21,8 @@
     "qrcode-generator": "1.4.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "viem": "2.51.3"
+    "viem": "2.51.3",
+    "@noren/robinhood": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "18.3.12",

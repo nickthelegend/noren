@@ -238,6 +238,9 @@ importers:
       '@noren/core':
         specifier: workspace:*
         version: link:../core
+      '@noren/robinhood':
+        specifier: workspace:*
+        version: link:../robinhood
       '@noren/world-id':
         specifier: workspace:*
         version: link:../world-id

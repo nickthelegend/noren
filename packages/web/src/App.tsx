@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Landing } from "./Landing";
 import { Dashboard } from "./Dashboard";
 import { Checkout } from "./Checkout";
-import { NorenApp } from "./NorenApp";
+import { NorenApp } from "./app/NorenApp";
 import { Icon, Logo, useRoute } from "./ui";
 
 export function App() {
