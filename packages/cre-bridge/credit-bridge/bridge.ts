@@ -5,6 +5,8 @@ import {
   decodeAbiParameters,
   decodeEventLog,
   encodeAbiParameters,
+  getAddress,
+  keccak256,
   isAddress,
   parseAbi,
   parseAbiParameters,
@@ -26,9 +28,12 @@ export const robinhoodEventsAbi = parseAbi([
 export const creditLineAbi = parseAbi([
   "event Drawn(bytes32 indexed lineId, uint256 amount, bytes32 invoiceId, address merchant)",
   "event Repaid(bytes32 indexed lineId, uint256 amount)",
+  "event CreditLineFrozen(bytes32 indexed lineId)",
   "function utilisation(bytes32 lineId) view returns (uint256 drawnUsdc6, uint256 repaidUsdc6, uint64 asOf)",
   "struct Line { address borrower; uint64 expiry; uint64 updatedAt; bool closed; uint256 limitUsdc6; uint256 drawnUsdc6; uint256 repaidUsdc6; bool unsecured; }",
   "function lines(bytes32 lineId) view returns (Line)",
+  "function nullifierUsedBy(bytes32 nullifierHash) view returns (address)",
+  "function maxStarterLimitUsdc6() view returns (uint256)",
 ]);
 
 /**
@@ -51,6 +56,7 @@ export const TOPIC = {
   creditLineClosed: toEventSelector("CreditLineClosed(bytes32)"),
   drawn: toEventSelector("Drawn(bytes32,uint256,bytes32,address)"),
   repaid: toEventSelector("Repaid(bytes32,uint256)"),
+  creditLineFrozen: toEventSelector("CreditLineFrozen(bytes32)"),
 } as const;
 
 /** NorenCreditLine.onReport kind 2: World ID human starter limit (versioned, 160 bytes). */
@@ -83,6 +89,11 @@ export type BridgeConfig = {
   confidence: "SAFE" | "LATEST" | "FINALIZED";
   /** Refuse to bridge a line above this limit (USDC, 6 decimals) as a sanity cap. */
   maxLimitUsdc6: string;
+  /** HTTP trigger for World ID starter limits (handler 3). */
+  humanStarter?: {
+    /** EVM addresses allowed to sign HTTP trigger requests (the World ID server). Required for a DON deploy. */
+    authorizedKeys: string[];
+  };
 };
 
 export function validateConfig(config: BridgeConfig): void {
@@ -97,6 +108,9 @@ export function validateConfig(config: BridgeConfig): void {
   if (receiver !== "NorenCredit" && receiver !== "NorenCreditHarness") throw new Error("config.robinhood.receiver must be NorenCredit or NorenCreditHarness");
   if (!["SAFE", "LATEST", "FINALIZED"].includes(config.confidence)) throw new Error("config.confidence must be SAFE, LATEST or FINALIZED");
   if (!/^[0-9]+$/.test(config.maxLimitUsdc6) || BigInt(config.maxLimitUsdc6) === 0n) throw new Error("config.maxLimitUsdc6 must be a positive decimal string");
+  for (const k of config.humanStarter?.authorizedKeys ?? []) {
+    if (!isAddress(k)) throw new Error(`config.humanStarter.authorizedKeys: ${k} is not an EVM address`);
+  }
 }
 
 // ---------------------------------------------------------------- logs
@@ -104,7 +118,7 @@ export function validateConfig(config: BridgeConfig): void {
 export type RawLog = { address: Hex; topics: Hex[]; data: Hex };
 
 export type OpenedEvent = { borrower: Address; lineId: Hex; limitUsdc6: bigint; expiry: bigint; collateralValueUsd8: bigint };
-export type ArcActivity = { kind: "Drawn" | "Repaid"; lineId: Hex; amount: bigint; invoiceId?: Hex; merchant?: Address };
+export type ArcActivity = { kind: "Drawn" | "Repaid" | "CreditLineFrozen"; lineId: Hex; amount: bigint; invoiceId?: Hex; merchant?: Address };
 
 function expectSource(log: RawLog, expected: Address, what: string): void {
   if (log.address.toLowerCase() !== expected.toLowerCase()) throw new Error(`${what} log from ${log.address}, expected ${expected}`);
@@ -125,11 +139,13 @@ export function decodeClosed(log: RawLog, norenCredit: Address): Hex {
 }
 
 export function decodeArcActivity(log: RawLog, creditLine: Address): ArcActivity {
-  expectSource(log, creditLine, "Drawn/Repaid");
+  expectSource(log, creditLine, "Drawn/Repaid/CreditLineFrozen");
   const ev = decodeEventLog({ abi: creditLineAbi, topics: log.topics as [Hex, ...Hex[]], data: log.data, strict: true });
   if (ev.eventName === "Drawn") return { kind: "Drawn", lineId: ev.args.lineId, amount: ev.args.amount, invoiceId: ev.args.invoiceId, merchant: ev.args.merchant };
   if (ev.eventName === "Repaid") return { kind: "Repaid", lineId: ev.args.lineId, amount: ev.args.amount };
-  throw new Error("expected Drawn or Repaid");
+  // Frozen after a Robinhood close: report the final snapshot so a fully repaid line can settle at once.
+  if (ev.eventName === "CreditLineFrozen") return { kind: "CreditLineFrozen", lineId: ev.args.lineId, amount: 0n };
+  throw new Error("expected Drawn, Repaid or CreditLineFrozen");
 }
 
 // ---------------------------------------------------------------- reports
@@ -204,4 +220,62 @@ export function formatUsdc(v: bigint): string {
   const whole = v / 1_000_000n;
   const frac = (v % 1_000_000n).toString().padStart(6, "0").replace(/0+$/, "");
   return frac ? `${whole}.${frac}` : whole.toString();
+}
+
+// ---------------------------------------------------------------- World ID starter limit (HTTP trigger)
+
+/** Version tag shared with packages/world-id's httpTriggerPayload. */
+export const HUMAN_STARTER_TAG = "noren.human-starter.v1";
+/** NorenCreditLine.MAX_STARTER_DURATION. */
+export const MAX_STARTER_DURATION = 90n * 86_400n;
+
+/** NorenCreditLine.starterLineId(borrower) = keccak256(abi.encode("noren.human-starter.v1", borrower)). */
+export const starterLineId = (borrower: Address): Hex =>
+  keccak256(encodeAbiParameters(parseAbiParameters("string, address"), [HUMAN_STARTER_TAG, borrower]));
+
+export type HumanStarterRequest = { borrower: Address; nullifierHash: Hex; limitUsdc6: bigint; expiry: bigint; lineId: Hex };
+
+/**
+ * Parse and check the World ID server's JSON:
+ *   { kind: "noren.human-starter.v1", borrower, nullifierHash, limitUsdc6: "<decimal string>", expiry: <unix s>, lineId? }
+ * lineId is optional; if given it must equal starterLineId(borrower).
+ */
+export function parseHumanStarterPayload(input: unknown): HumanStarterRequest {
+  if (!input || typeof input !== "object") throw new Error("human starter payload must be a JSON object");
+  const p = input as Record<string, unknown>;
+  if (p.kind !== HUMAN_STARTER_TAG) throw new Error(`human starter payload kind must be "${HUMAN_STARTER_TAG}"`);
+  if (typeof p.borrower !== "string" || !isAddress(p.borrower) || BigInt(p.borrower) === 0n) throw new Error("human starter payload: bad borrower");
+  const borrower = getAddress(p.borrower);
+  if (typeof p.nullifierHash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(p.nullifierHash) || BigInt(p.nullifierHash) === 0n) {
+    throw new Error("human starter payload: nullifierHash must be a non-zero 32-byte hex string");
+  }
+  const limitRaw = typeof p.limitUsdc6 === "number" ? String(p.limitUsdc6) : p.limitUsdc6;
+  if (typeof limitRaw !== "string" || !/^[0-9]+$/.test(limitRaw) || BigInt(limitRaw) === 0n) throw new Error("human starter payload: limitUsdc6 must be a positive integer");
+  const expiryRaw = typeof p.expiry === "number" ? p.expiry : typeof p.expiry === "string" && /^[0-9]+$/.test(p.expiry) ? Number(p.expiry) : NaN;
+  if (!Number.isSafeInteger(expiryRaw) || expiryRaw <= 0) throw new Error("human starter payload: expiry must be a unix time in seconds");
+  const lineId = starterLineId(borrower);
+  if (p.lineId !== undefined && (typeof p.lineId !== "string" || p.lineId.toLowerCase() !== lineId.toLowerCase())) {
+    throw new Error(`human starter payload: lineId ${String(p.lineId)} is not NorenCreditLine.starterLineId(borrower) = ${lineId}`);
+  }
+  return { borrower, nullifierHash: p.nullifierHash.toLowerCase() as Hex, limitUsdc6: BigInt(limitRaw), expiry: BigInt(expiryRaw), lineId };
+}
+
+/** Arc-side state the workflow reads before signing, so it never signs a report the contract would revert. */
+export type HumanStarterArcState = { nullifierUsedBy: Address; maxStarterLimitUsdc6: bigint; line: ArcLine };
+
+export function decideHumanStarter(req: HumanStarterRequest, arc: HumanStarterArcState, nowSeconds: bigint): Decision {
+  if (arc.nullifierUsedBy !== zeroAddress) {
+    return { write: false, reason: `nullifier ${req.nullifierHash} already used by ${arc.nullifierUsedBy}` };
+  }
+  if (req.expiry <= nowSeconds) throw new Error(`starter expiry ${req.expiry} is in the past`);
+  if (req.expiry > nowSeconds + MAX_STARTER_DURATION) throw new Error(`starter expiry ${req.expiry} is more than 90 days out`);
+  if (arc.line.borrower !== zeroAddress && !arc.line.unsecured) throw new Error(`line ${req.lineId} exists on Arc and is not a starter line`);
+  if (arc.line.closed) return { write: false, reason: `starter line ${req.lineId} is frozen` };
+  const total = arc.line.limitUsdc6 + req.limitUsdc6;
+  if (total > arc.maxStarterLimitUsdc6) throw new Error(`starter limit ${total} would exceed the Arc cap ${arc.maxStarterLimitUsdc6}`);
+  return {
+    write: true,
+    report: encodeHumanStarterReport(req.borrower, req.nullifierHash, req.limitUsdc6, req.expiry),
+    summary: `human starter for ${req.borrower}: +${formatUsdc(req.limitUsdc6)} USDC (line ${req.lineId}, nullifier ${req.nullifierHash})`,
+  };
 }

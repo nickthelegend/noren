@@ -36,10 +36,19 @@ NorenCredit.closeCreditLine
                                      sign report(borrower, lineId, 0, expiry)
                                      ───────────────────────────────────────────▶ forwarder → NorenCreditLine.onReport
                                                                                    line frozen for good: draws revert
-                                                                                  borrower repays the rest; handler 2
-NorenCredit.onReport ◀────────────── reports repaid ≥ drawn
-  line settled, collateral returned
+                                    handler 2 on CreditLineFrozen ◀───────────────  (the freeze emits CreditLineFrozen)
+NorenCredit.onReport ◀────────────── fresh snapshot dated after the close:
+  if nothing is owed, the line                    a fully repaid line settles here
+  settles and the collateral returns              otherwise: borrower repays the rest; handler 2
+NorenCredit.onReport ◀────────────── reports repaid ≥ drawn, line settles, collateral returned
+
+World ID server ──HTTP──────────▶ handler 3: HTTP trigger
+                                     check payload + Arc state, sign kind 2 report
+                                     ───────────────────────────────────────────▶ forwarder → NorenCreditLine.onReport
+                                                                                   starter line opened (unsecured, Arc only)
 ```
+
+Handler 2 triggers on `Drawn`, `Repaid` and `CreditLineFrozen`. The freeze relay matters because `NorenCredit` returns collateral only after an Arc report dated at or after the close. Without it, a line that was fully repaid before the close would wait for an Arc event that never comes. Handler 2 skips starter lines: they have no Robinhood line behind them.
 
 Every write is a DON-signed report delivered by that chain's CRE forwarder. Both receivers accept `onReport` only from their configured forwarder.
 
@@ -82,7 +91,49 @@ A separate World ID service verifies a unique human and gets that person's nulli
 - **The starter line is separate from collateral lines.** It lives at `starterLineId(borrower) = keccak256(abi.encode("noren.human-starter.v1", borrower))` and is marked `unsecured`. The first grant opens it and later grants top it up. Kind 1 reports cannot touch it (`NotCollateralLine`).
 - **The workflow never reports starter-line draws to Robinhood.** Robinhood holds no collateral for them, and `NorenCredit`'s collateral accounting stays exact.
 - **The pool takes the unsecured risk.** The owner can freeze a starter line.
-- **Not built here:** a workflow handler that delivers kind 2. `encodeHumanStarterReport` in `credit-bridge/bridge.ts` produces the exact bytes. The safe delivery path is a CRE HTTP trigger restricted to the World ID service's signing key, and the workflow should check the World ID proof itself before it signs. Until that handler exists, kind 2 is covered by the Foundry tests only.
+- **Delivery: workflow handler 3 (HTTP trigger).** The World ID server sends the request after it has verified the proof. The handler parses and checks the payload. It then reads `nullifierUsedBy`, `maxStarterLimitUsdc6` and the starter line on Arc, so it never signs a report the contract would revert. A reused nullifier is skipped with a reason, and over-cap or bad-expiry requests fail loudly. For a DON deploy, `config.humanStarter.authorizedKeys` must list the server's signing address. The simulator does not check it.
+
+#### Exact formats (source of truth for packages/world-id)
+
+HTTP trigger payload (JSON), the same shape as `httpTriggerPayload` in packages/world-id:
+
+```json
+{
+  "kind": "noren.human-starter.v1",
+  "borrower": "0x…",
+  "nullifierHash": "0x<32 bytes>",
+  "limitUsdc6": "25000000",
+  "expiry": 1796534006,
+  "lineId": "0x…"
+}
+```
+
+- `kind` is the literal string `"noren.human-starter.v1"`, not its hash.
+- `limitUsdc6` is a decimal string, or a number.
+- `expiry` is in unix seconds. It must be in the future and at most 90 days out.
+- `lineId` is optional. If it is sent, it must equal `starterLineId(borrower)`; any other value is rejected.
+
+On-chain report that the workflow signs, built by `encodeHumanStarterReport` in credit-bridge/bridge.ts (160 bytes):
+
+```
+abi.encode(uint8 kind = 2, address borrower, bytes32 nullifierHash, uint256 starterLimitUsdc6, uint64 expiry)
+```
+
+Line ID, one per borrower wallet:
+
+```
+lineId = NorenCreditLine.starterLineId(borrower) = keccak256(abi.encode("noren.human-starter.v1", borrower))
+```
+
+The nullifier is the one-per-human guard. `nullifierUsedBy[nullifierHash]` is set once and never cleared.
+
+This differs from what packages/world-id assumed:
+- `kind` is `uint8 2`, not `bytes32 keccak256("noren.human-starter.v1")`.
+- The line ID is keyed by borrower, not `keccak256(abi.encode(kind, nullifierHash))`.
+- The event is `HumanStarterGranted(lineId, borrower, nullifierHash, addedUsdc6, limitUsdc6, expiry)`.
+- Reuse reverts `NullifierUsed`.
+
+The world-id sink should send the payload above, with `lineId` dropped or computed as shown, and run `cre workflow simulate credit-bridge -R packages/cre-bridge -T local-fork --non-interactive --trigger-index 3 --http-payload '<json>' --broadcast`. The written tx shows up as `NorenCreditLine updated on arc-testnet: tx 0x…`.
 
 ## Trust assumptions
 
@@ -93,7 +144,9 @@ A separate World ID service verifies a unique human and gets that person's nulli
   Both forwarders verify the DON's signatures over the report before they call `onReport`. A quorum of DON nodes therefore controls credit limits on Arc and utilisation on Robinhood.
 - **Workflow pinning.** `NorenCreditLine.setExpectedWorkflowOwner` and `NorenCredit.setWorkflowPolicy` pin the workflow owner and ID from the report metadata, so another workflow on the same DON cannot write. Both are off in the fork run, because the simulation forwarder sends no workflow metadata.
 - **Simulation forwarder.** The `MockKeystoneForwarder` used by `cre workflow simulate --broadcast` checks no signatures. A deployment pointed at it is for simulation only.
-- **Optional reads never fail the workflow.** Before writing to Robinhood, the workflow reads the receiver's last accepted asOf. It tries `utilisation(bytes32)` first, then `NorenCredit.line(bytes32)`. A revert or an empty result is caught and logged. If neither read works, the workflow writes without the pre-check and `NorenCredit`'s own stale check decides. In the recorded run, `utilisation` reverted on `NorenCredit` `02a58d5` and the read fell back to `line()`.
+- **Optional reads never fail the workflow.** Before writing to Robinhood, the workflow reads the receiver's last accepted asOf. It tries `utilisation(bytes32)` first, then `NorenCredit.line(bytes32)`. A revert or an empty result is caught and logged. If neither read works, the workflow writes without the pre-check and `NorenCredit`'s own stale check decides. Both paths ran on forks:
+  - At `02a58d5`, `utilisation` reverted, the revert was caught and the read fell back to `line()`.
+  - At `4d16701`, `utilisation()` answered directly.
 - **Determinism.** Each handler reads chain state at a fixed point: the log itself, or the line at the log's block number. Every DON node therefore builds the same report. Skips are logged with their reason: line already synced, frozen, stale, or a starter line.
 - **Liveness.** If the DON stops, Arc keeps allowing draws up to the limit until expiry, but Robinhood stops seeing them. The exposure is bounded by the limit. The collateral was locked at 120% or more of the limit at the Chainlink price.
 - **Settlement is not automated.** The USDC that Arc lends comes from the Arc pool. Repayments land in the same pool. A liquidation on Robinhood pays USDG to Robinhood's vault. Moving that value between the chains is a treasury step on a real route (below), not part of this workflow.
@@ -103,7 +156,7 @@ A separate World ID service verifies a unique human and gets that person's nulli
 | Piece | Status |
 |---|---|
 | `NorenCreditLine` | 47 Foundry tests (unit and fuzz) with a test ERC-20. Not deployed to Arc Testnet. |
-| CRE workflow | 25 bun tests for the decision logic, using real ABI encodings. `cre workflow simulate --broadcast` ran all three handlers on local forks. Never deployed to the DON. |
+| CRE workflow | 31 bun tests for the decision logic, using real ABI encodings. `cre workflow simulate --broadcast` ran all four handlers on local forks. Never deployed to the DON. |
 | Arc side of the fork run | Anvil fork of Arc Testnet (5042002) with the real arc-testnet MockKeystoneForwarder `0x6E9E…eDc1`. Arc's native USDC was replaced by the repo's fork-only `ForkUSDC` shim, because stock Anvil cannot execute it (same as `scripts/dev-stack.ts`). |
 | Robinhood side of the fork run | Anvil fork of Robinhood Chain **mainnet** (4663), using the real NVDA Stock Token and Chainlink NVDA/USD feed. The real `NorenCredit` was deployed from its branch with its own `Deploy.s.sol`, with an underwriter EIP-712 attestation. See the CRE note below. |
 | Robinhood forwarder on the fork | The robinhood-testnet MockKeystoneForwarder `0x0b93082D9b3C7C97fAcd250082899BAcf3af3885` does not exist on mainnet. Its bytecode and its two storage slots (owner, and `s_forwarders[self]`) were copied from the real Robinhood Testnet with `anvil_setCode` and `anvil_setStorageAt`. The code hash matches the testnet. |
@@ -112,27 +165,33 @@ A separate World ID service verifies a unique human and gets that person's nulli
 
 **CRE note.** CRE has no Robinhood mainnet target, so the workflow addresses the Robinhood fork through the `robinhood-testnet` selector. The CRE simulator (CLI v1.39.0) does not compare the RPC's chain ID with the selector. The full run passed with the fork at its real chain ID 4663. It also passed served as 46630 (`NOREN_RH_CHAIN_ID=46630 NOREN_BRIDGE_RECEIVER=harness`). A real DON deployment would point at Robinhood Testnet, which has no Chainlink stock feeds.
 
-**Fork clock.** The forks keep separate clocks. `NorenCredit` settles only on an Arc report dated at or after the close. So before the final repayment, the script moves Arc's next block to just after the Robinhood close if Arc is behind. It prints when it does this; in the recorded run it was not needed.
+**Fork state window.** A plain Anvil fork of Robinhood mainnet breaks after about 10 minutes, because the public RPC keeps only about 10 minutes of state history. The whole script runs in about 2.5 minutes. For longer demos, use the warmed snapshot from packages/robinhood (`scripts/fork-snapshot.sh` and `serve-snapshot.sh`).
+
+**Fork clock.** The forks keep separate clocks. `NorenCredit` settles only on an Arc report dated at or after the close. So before each freeze and the final repayment, the script moves Arc's next block to just after the Robinhood close if Arc is behind, and it prints when it does. In the recorded run it was needed twice: the Arc fork's clock trailed Robinhood's by 7–8 seconds.
 
 ### Fork run evidence (local forks only; these hashes exist on no public chain)
 
-The run used `NorenCredit` at branch commit `02a58d5`. Arc fork block 70975938, Robinhood fork block 107318238.
+The run used `NorenCredit` at branch commit `4d16701`, which has `utilisation(bytes32)`. Arc fork block 70977741, Robinhood fork block 107326963.
 
 - **Collateral and limit:** 10 NVDA at Chainlink NVDA/USD $185.56, with a 120% collateral ratio, gives a line of 1,547.533639 USDC.
 - **Cost of a forwarder write on the forks:** about 141k gas to open on Arc, 108k for a utilisation update on Robinhood, 83k to freeze on Arc, and 177k for the settling report on Robinhood.
 
 | Step | Fork tx |
 |---|---|
-| openCreditLine → CreditLineOpened (Robinhood) | `0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea` |
-| NorenCreditLine.onReport via forwarder (Arc) | `0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b` |
-| payInvoice → Drawn 120 USDC (Arc) | `0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b` |
-| NorenCredit.onReport via forwarder (Robinhood) | `0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8` |
-| repay → Repaid 50 USDC (Arc) | `0xb5d92857fcf77628726cc4056326ba5218047bb69b9b1ff3548e2a762b7950ca` |
-| NorenCredit.onReport via forwarder (Robinhood) | `0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34` |
-| closeCreditLine → CreditLineClosed (Robinhood) | `0x751d07d5b2514de773e61fe1e2d5f43fe6547eb4f7584779c4b3aab48b98c531` |
-| NorenCreditLine.onReport limit 0 via forwarder (Arc) | `0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f` |
-| repay → Repaid 70 USDC (Arc) | `0x32573d7d4279d8ba8dd406fd3ecfa4606f781d4dabca7238bd2de19bfce294e4` |
-| NorenCredit.onReport via forwarder: line settled, 10 NVDA returned (Robinhood) | `0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878` |
+| openCreditLine → CreditLineOpened (Robinhood) | `0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1` |
+| NorenCreditLine.onReport via forwarder (Arc) | `0x79fc2d970b7746cd469d019774d07c2a56044b7d235a02718f2f664e814722be` |
+| payInvoice → Drawn 120 USDC (Arc) | `0x8d55261bcaff66309838e33287e529aa15aa678a044bb62c1ee81b850bf5b42a` |
+| NorenCredit.onReport via forwarder (Robinhood) | `0x095357e3a6038422bcde7dd35b29380128f0664b4e2862d995db16c7c6d14772` |
+| repay → Repaid 50 USDC (Arc) | `0x23079857ae0be6b7fb167626d05db4f3557aef74805f86d4abd14bb5e31a8364` |
+| NorenCredit.onReport via forwarder (Robinhood) | `0xd1250dd824d0788c1662c055b61295340890c481f4fb3dcf8de58974b16932af` |
+| closeCreditLine → CreditLineClosed (Robinhood) | `0x40f9ed42f315f96226b48af93b72599f87ce4dd1b166b63042e87bc013f40a9b` |
+| NorenCreditLine.onReport limit 0 via forwarder (Arc) | `0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce` |
+| repay → Repaid 70 USDC (Arc) | `0x3b2ed2a8c38732fe73697913da6777b49af8384e6a4e17da00bbdd66a72e5625` |
+| NorenCredit.onReport via forwarder: line settled, 10 NVDA returned (Robinhood) | `0xaad75626e9d56bdcf5d5dd9b95956c46eec574fbe374f18a07aac3dabf837009` |
+| CreditLineFrozen → NorenCredit.onReport, fresh utilisation after the close (Robinhood) | `0x4f369435c008422359c53c31efae04cfb0e46098b11ed940d3cb15f20283457a` |
+| Line 2, fully repaid before close: the freeze report alone settles it and 10 NVDA return (Robinhood) | `0x3c0dcf3652a637c65ad77e13e424e1bdcd3eb0b5e3fffce2ec222b41fa3caa77` |
+| World ID starter via HTTP trigger → NorenCreditLine.onReport kind 2 (Arc) | `0x453fa3bab671ecd0cf75227a6c7cbc6e92765b0f98c5707c508a7c11eab5c7d6` |
+| payInvoice 10 USDC on the starter line (Arc); handler 2 skipped it for Robinhood | `0x9342b0d20aee774de9473182e90da3e5f8d7112b8b23da772ab8759bb0630c94` |
 
 The run also checked the following:
 - A dry run without `--broadcast` changed nothing.
@@ -148,7 +207,7 @@ The full output is in `packages/cre-bridge/fixtures/fork-run.log`, and the hashe
 ```sh
 pnpm install --store-dir "<repo>/.pnpm-store"          # packages/arc-credit deps (OpenZeppelin 5.1.0, forge-std)
 cd packages/arc-credit && forge test                  # 47 tests
-cd ../cre-bridge/credit-bridge && bun install && bun test && bunx tsc --noEmit   # 25 tests
+cd ../cre-bridge/credit-bridge && bun install && bun test && bunx tsc --noEmit   # 31 tests
 cd .. && sh scripts/fork-simulate.sh                  # both forks on 127.0.0.1:8730 (Arc) and :8731 (Robinhood), about 2 minutes
 ```
 

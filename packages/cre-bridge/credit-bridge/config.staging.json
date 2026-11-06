@@ -11,5 +11,8 @@
     "gasLimit": "500000"
   },
   "confidence": "SAFE",
-  "maxLimitUsdc6": "100000000000"
+  "maxLimitUsdc6": "100000000000",
+  "humanStarter": {
+    "authorizedKeys": []
+  }
 }
