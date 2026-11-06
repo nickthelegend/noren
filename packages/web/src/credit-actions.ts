@@ -61,6 +61,15 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       const e = r.evidence ?? {};
       return { status: r.status, tier: r.decision?.tier, limitUsdg: r.decision?.limitUsdg, collateralRatioBps: r.decision?.collateralRatioBps, rationale: r.decision?.rationale, riskFlags: r.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, provider: e.provider, model: e.model, reason: r.reason, setupRequired: r.setupRequired };
     },
+    /** The last stored 0G decision for this wallet (the server keeps every result; no new 0G call). */
+    async lastAiDecision(): Promise<(AiCheck & { at?: number }) | null> {
+      if (!c?.aiUnderwriterUrl) return null;
+      const r = await getJson(`${c.aiUnderwriterUrl}/v1/decisions?limit=200`);
+      const d = (r.decisions ?? []).find((x: any) => typeof x.subject === "string" && x.subject.toLowerCase() === oc.address.toLowerCase() && (x.status === "approved" || x.status === "declined"));
+      if (!d) return null;
+      const e = d.evidence ?? {};
+      return { status: d.status, tier: d.decision?.tier, limitUsdg: d.decision?.limitUsdg, collateralRatioBps: d.decision?.collateralRatioBps, rationale: d.decision?.rationale, riskFlags: d.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, provider: e.provider, model: e.model, at: d.decidedAt ?? d.at };
+    },
     /** What locking `amount` of a Stock Token would give, from NorenCredit's own terms and NorenAssetOracle's risk value. */
     async quote(s: Holding, amount: string): Promise<Quote> {
       const { pub } = oc.robinhood();

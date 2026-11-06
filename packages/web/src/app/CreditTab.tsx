@@ -61,6 +61,7 @@ export function CreditTab({ w }: { w: Wallet }) {
 
       <Card title="Verify you're human with World ID" sub="A boost for wallets without stock: one unsecured starter line per unique human, opened on Arc by Chainlink CRE">
         <div className="nk-pad nk-world">
+          <p className="nk-fine" style={{ margin: "0 4px 10px" }}>Production World ID: tap <b>Verify with World ID</b>, then scan the QR code with <b>World App</b> and finish the Selfie Check on your phone. The request stays open for 5 minutes; if it expires, start again.</p>
           <VerifyHuman serverUrl={SERVER} wallet={w.oc.address} onResult={() => { setVerified((n) => n + 1); w.refresh(); }} />
         </div>
       </Card>
@@ -94,20 +95,31 @@ function Score({ u }: { u: Underwriting }) {
 }
 
 function AiDecision({ actions }: { actions: ReturnType<typeof creditActions> }) {
-  const [r, setR] = useState<AiCheck | null>(null);
+  const [r, setR] = useState<(AiCheck & { at?: number; cached?: boolean }) | null>(null);
   const [e, setE] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const run = async () => { setBusy(true); setE(null); try { setR(await actions.aiCheck()); } catch (x) { setE(msgOf(x)); } finally { setBusy(false); } };
-  if (e) return <SetupCard title="0G credit check unavailable" text={e} />;
-  if (!r) return <button className="nk-cta soft" disabled={busy} onClick={run}>{busy ? <><Spin /> Asking 0G…</> : "Run the AI credit check"}</button>;
-  if (r.status === "refused") return r.setupRequired ? <SetupCard title="0G Private Computer key missing" text={r.reason ?? "ZG_PC_API_KEY"} /> : <div className="nk-err">Refused, no terms: {r.reason}</div>;
+  // A stored decision is shown first: each live check is a paid 0G call, so nothing calls 0G on page load.
+  useEffect(() => { actions.lastAiDecision().then((d) => d && setR({ ...d, cached: true })).catch(() => {}); }, [actions]);
+  const run = async () => {
+    if (!confirm("Run a live credit check on 0G Private Computer? Each check is a paid 0G call.")) return;
+    setBusy(true); setE(null);
+    try { setR(await actions.aiCheck()); } catch (x) { setE(msgOf(x)); } finally { setBusy(false); }
+  };
+  const providerDown = (t?: string) => !!t && /502|EOF|fetch provider|unavailable|provider quote|timed? ?out/i.test(t);
+  if (e) return providerDown(e) ? <div className="nk-err">0G provider unavailable, decision not made. {e}</div> : <SetupCard title="0G credit check unavailable" text={e} />;
+  if (!r) return <><button className="nk-cta soft" disabled={busy} onClick={run}>{busy ? <><Spin /> Asking 0G…</> : "Run the AI credit check"}</button><p className="nk-fine">One paid call to a model inside a TEE on 0G. The result is stored by the Noren server and shown here next time.</p></>;
+  if (r.status === "refused") return r.setupRequired ? <SetupCard title="0G Private Computer key missing" text={r.reason ?? "ZG_PC_API_KEY"} /> : providerDown(r.reason) ? <div className="nk-err">0G provider unavailable, decision not made. {r.reason}</div> : <div className="nk-err">Refused, no decision: {r.reason}</div>;
   return (
-    <dl className="nk-rows">
-      <dt>Decision</dt><dd className={r.status === "approved" ? "ok" : "bad"}>{r.status === "approved" ? `Approved · tier ${r.tier}` : "Declined"}</dd>
-      {r.status === "approved" && <><dt>Limit · collateral</dt><dd>{r.limitUsdg} USDG · {(r.collateralRatioBps ?? 0) / 100}%</dd></>}
-      <dt>Why</dt><dd>{r.rationale}</dd>
-      <dt>0G request</dt><dd className="nk-mono">{short(r.requestId, 8)}</dd>
-      <dt>TEE verified</dt><dd>{r.teeVerified === true ? "yes" : r.teeVerified === false ? "no" : "not checked"}</dd>
-    </dl>
+    <>
+      <dl className="nk-rows">
+        <dt>Decision</dt><dd className={r.status === "approved" ? "ok" : "bad"}>{r.status === "approved" ? `Approved · tier ${r.tier}` : "Declined"}</dd>
+        {r.status === "approved" && <><dt>Limit · collateral</dt><dd>{r.limitUsdg} USDG · {(r.collateralRatioBps ?? 0) / 100}%</dd></>}
+        <dt>Why</dt><dd>{r.rationale}</dd>
+        <dt>0G request</dt><dd className="nk-mono">{short(r.requestId, 8)}</dd>
+        <dt>TEE verified</dt><dd>{r.teeVerified === true ? "yes" : r.teeVerified === false ? "no" : "not checked"}</dd>
+        {r.model && <><dt>Model</dt><dd className="nk-mono">{r.model}</dd></>}
+      </dl>
+      {r.cached && <p className="nk-fine">Stored decision{r.at ? ` from ${new Date(Number(r.at) * (Number(r.at) < 1e12 ? 1000 : 1)).toLocaleString()}` : ""}; not a new 0G call.</p>}
+    </>
   );
 }
