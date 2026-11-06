@@ -3,13 +3,16 @@
  * Two modes:
  * - "privy": the user's Privy embedded wallet, through Privy's EIP-1193 provider. Transactions are filled from our own
  *   RPC (local fork or public testnet) and signed with eth_signTransaction, so the same wallet works on the forks.
+ * - "browser": an injected wallet (MetaMask, Rabby…, found over EIP-6963 or window.ethereum). It signs and sends
+ *   through its own EIP-1193 provider after switching to the right chain (browser-wallet.ts).
  * - "test": the original test key kept in this browser (localStorage "noren.customer.v1"). The fallback on local
- *   forks, and the only mode when VITE_PRIVY_APP_ID isn't set.
+ *   forks, and the default when VITE_PRIVY_APP_ID isn't set.
  * The private Kohaku balance's secrets come from the test seed in test mode, and from a deterministic signature by the
- * Privy wallet in privy mode (never sent anywhere; kept for this tab only).
+ * Privy or browser wallet otherwise (never sent anywhere; kept for this tab only).
  */
 import { useSyncExternalStore } from "react";
-import { getTypesForEIP712Domain, keccak256, numberToHex, stringify, toHex, type Address, type Hex, type LocalAccount } from "viem";
+import { getTypesForEIP712Domain, http, keccak256, numberToHex, stringify, toHex, type Account, type Address, type Hex, type HttpTransportConfig, type LocalAccount, type Transport } from "viem";
+import { connectWallet, discoverWallets, injectedTransport, walletAccount, type InjectedWallet } from "./browser-wallet";
 import { generatePrivateKey, privateKeyToAccount, toAccount } from "viem/accounts";
 
 export const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID as string | undefined)?.trim() || null;
@@ -26,13 +29,19 @@ export function testWallet(): Stored {
 
 export type Eip1193 = { request(a: { method: string; params?: unknown[] }): Promise<unknown> };
 export type PrivyWallet = { address: Address; provider: Eip1193; userId: string; login: string };
-export type WalletMode = "privy" | "test";
+/** A connected browser wallet. */
+export type BrowserWallet = { address: Address; provider: Eip1193; name: string; rdns: string };
+export type WalletMode = "privy" | "test" | "browser";
 /** Privy session as the app sees it. "off" = no app ID; "loading" = SDK starting; "out" = signed out; "in" = wallet ready. */
 export type PrivyStatus = "off" | "loading" | "out" | "creating" | "in" | "error";
 
-type State = { mode: WalletMode; status: PrivyStatus; wallet: PrivyWallet | null; error: string | null; version: number };
-const readMode = (): WalletMode => { try { return localStorage.getItem(MODE_KEY) === "test" ? "test" : "privy"; } catch { return "privy"; } };
-let state: State = { mode: PRIVY_APP_ID ? readMode() : "test", status: PRIVY_APP_ID ? "loading" : "off", wallet: null, error: null, version: 0 };
+type State = { mode: WalletMode; status: PrivyStatus; wallet: PrivyWallet | null; browser: BrowserWallet | null; error: string | null; version: number };
+const BROWSER_KEY = "noren.wallet.browser";
+const readMode = (): WalletMode => {
+  let m: string | null = null; try { m = localStorage.getItem(MODE_KEY); } catch { /* default below */ }
+  return m === "test" || m === "browser" ? m : PRIVY_APP_ID ? "privy" : "test";
+};
+let state: State = { mode: readMode(), status: PRIVY_APP_ID ? "loading" : "off", wallet: null, browser: null, error: null, version: 0 };
 const subs = new Set<() => void>();
 const set = (p: Partial<State>) => { state = { ...state, ...p, version: state.version + 1 }; subs.forEach((f) => f()); };
 
@@ -46,13 +55,40 @@ export function setWalletMode(mode: WalletMode) {
   try { localStorage.setItem(MODE_KEY, mode); } catch { /* tab-only */ }
   set({ mode });
 }
-/** "privy" only while a Privy wallet is ready; otherwise the test wallet signs. */
-export const activeMode = (): WalletMode => (state.mode === "privy" && state.status === "in" && state.wallet ? "privy" : "test");
+const activeOf = (s: State): WalletMode => (s.mode === "privy" && s.status === "in" && s.wallet ? "privy" : s.mode === "browser" && s.browser ? "browser" : "test");
+/** The wallet that signs: Privy or browser wallet once connected; otherwise the test wallet. */
+export const activeMode = (): WalletMode => activeOf(state);
+const external = () => (activeMode() === "privy" ? state.wallet! : activeMode() === "browser" ? state.browser! : null);
 export function useSigner() {
   const s = useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => state);
-  const active = s.mode === "privy" && s.status === "in" && s.wallet ? "privy" : "test";
-  return { ...s, active, address: active === "privy" ? s.wallet!.address : privateKeyToAccount(testWallet().gasKey).address, signerKey: `${active}:${active === "privy" ? s.wallet!.address : "test"}` };
+  const active = activeOf(s);
+  const address = active === "privy" ? s.wallet!.address : active === "browser" ? s.browser!.address : privateKeyToAccount(testWallet().gasKey).address;
+  return { ...s, active, address, signerKey: `${active}:${active === "test" ? "test" : address}` };
 }
+
+let unwatch: (() => void) | null = null;
+/** Connects a browser wallet (opens its prompt) and makes it the active wallet. */
+export async function connectBrowserWallet(w: InjectedWallet) {
+  const address = await connectWallet(w.provider);
+  adoptBrowser(w, address);
+}
+function adoptBrowser(w: InjectedWallet, address: Address) {
+  unwatch?.();
+  const onAccounts = (a: unknown) => { const next = (a as Address[])?.[0]; set({ browser: next ? { ...state.browser!, address: next } : null }); };
+  w.provider.on?.("accountsChanged", onAccounts);
+  unwatch = () => w.provider.removeListener?.("accountsChanged", onAccounts);
+  try { localStorage.setItem(MODE_KEY, "browser"); localStorage.setItem(BROWSER_KEY, w.info.rdns); } catch { /* tab-only */ }
+  set({ mode: "browser", browser: { address, provider: w.provider, name: w.info.name, rdns: w.info.rdns }, error: null });
+}
+/** On load in browser mode: reconnect, without a prompt, to the wallet used last time if it still lists this site. */
+export async function restoreBrowserWallet() {
+  if (state.mode !== "browser" || state.browser) return;
+  let rdns: string | null = null; try { rdns = localStorage.getItem(BROWSER_KEY); } catch { /* none */ }
+  const w = (await discoverWallets()).find((x) => x.info.rdns === rdns);
+  const address = w ? await walletAccount(w.provider) : null;
+  if (w && address) adoptBrowser(w, address);
+}
+export function disconnectBrowserWallet() { unwatch?.(); unwatch = null; set({ browser: null }); }
 
 /** viem account backed by Privy's EIP-1193 provider (embedded wallet). */
 function privyAccount(w: PrivyWallet): LocalAccount {
@@ -80,12 +116,20 @@ function privyAccount(w: PrivyWallet): LocalAccount {
   });
 }
 
-/** The account that signs right now (Privy embedded wallet, or the test key). */
-export function activeAccount(): LocalAccount {
-  return activeMode() === "privy" ? privyAccount(state.wallet!) : privateKeyToAccount(testWallet().gasKey);
+/**
+ * The account that signs right now: the Privy embedded wallet or the test key (local accounts), or a browser wallet
+ * (a JSON-RPC account: viem sends eth_sendTransaction, which walletTransport routes to the wallet).
+ */
+export function activeAccount(): Account {
+  const m = activeMode();
+  return m === "privy" ? privyAccount(state.wallet!) : m === "browser" ? { address: state.browser!.address, type: "json-rpc" } : privateKeyToAccount(testWallet().gasKey);
+}
+/** The transport every wallet client uses on `url`: plain HTTP, or HTTP plus the browser wallet for signing. */
+export function walletTransport(url: string, opts?: HttpTransportConfig): Transport {
+  return activeMode() === "browser" ? injectedTransport(state.browser!.provider, url, opts) : http(url, opts);
 }
 /** Stable key for the active wallet: namespaces caches (Kohaku sync state) and re-creates clients when it changes. */
-export const activeKey = () => (activeMode() === "privy" ? `privy:${state.wallet!.address.toLowerCase()}` : "test");
+export const activeKey = () => { const w = external(); return w ? `${activeMode()}:${w.address.toLowerCase()}` : "test"; };
 
 /** The message the Privy wallet signs to derive the private balance's secrets. Changing it changes the balance. */
 export const seedMessage = (a: Address) =>
@@ -98,11 +142,12 @@ const seeds = new Map<string, Promise<Hex>>();
  * non-deterministic signer fail loudly instead of silently opening an empty balance.
  */
 export function kohakuSeed(): Promise<Hex> {
-  if (activeMode() === "test") return Promise.resolve(testWallet().seed);
-  const w = state.wallet!, a = w.address.toLowerCase(), cacheKey = `noren.kohaku.seed.${a}`, fpKey = `noren.kohaku.fp.${a}`;
+  const w = external();
+  if (!w) return Promise.resolve(testWallet().seed);
+  const a = w.address.toLowerCase(), cacheKey = `noren.kohaku.seed.${a}`, fpKey = `noren.kohaku.fp.${a}`;
   if (!seeds.has(a)) seeds.set(a, (async () => {
     try { const c = sessionStorage.getItem(cacheKey) as Hex | null; if (c) return c; } catch { /* derive below */ }
-    const sig = await privyAccount(w).signMessage({ message: seedMessage(w.address) });
+    const sig = (await w.provider.request({ method: "personal_sign", params: [toHex(seedMessage(w.address)), w.address] })) as Hex;
     const seed = keccak256(sig), fp = keccak256(keccak256(seed));
     let known: string | null = null; try { known = localStorage.getItem(fpKey); } catch { /* no fingerprint store */ }
     if (known && known !== fp) throw new Error("This wallet signed the private-balance message differently than last time, so its private balance can't be reopened. Use the wallet you shielded with, or the Test wallet.");

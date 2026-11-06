@@ -7,13 +7,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createWalletClient, defineChain, formatUnits, http, type Address, type Hex } from "viem";
 import { bridgeToArc, fetchFeeBps, maxFeeFor, FINALITY_FAST, CCTP_CHAINS, type ArcAction, type BridgeStatus, type CctpChainKey, type RelayMode, type SourceChainKey } from "@noren/cctp";
 import { customerAccount } from "./onchain";
+import { walletTransport } from "./signer";
 import { balancesOn } from "./crosschain";
 
 const chainOf = (k: CctpChainKey) => {
   const c = CCTP_CHAINS[k];
   return defineChain({ id: c.chainId, name: c.name, nativeCurrency: { name: c.gas, symbol: c.gas, decimals: 18 }, rpcUrls: { default: { http: [c.rpcUrl] } }, blockExplorers: { default: { name: "explorer", url: c.explorer } } });
 };
-const walletOn = (k: CctpChainKey) => createWalletClient({ account: customerAccount(), chain: chainOf(k), transport: http(CCTP_CHAINS[k].rpcUrl, { timeout: 30_000 }) });
+const walletOn = (k: CctpChainKey) => createWalletClient({ account: customerAccount(), chain: chainOf(k), transport: walletTransport(CCTP_CHAINS[k].rpcUrl, { timeout: 30_000 }) });
 
 export type Flow = {
   phase: "idle" | "running" | "done" | "error";

@@ -6,7 +6,7 @@
  * same one the private checkout uses, so one address is the borrower on both chains. Nothing here is simulated: if a contract isn't deployed, calls fail and the UI says so.
  */
 import { createPublicClient, createWalletClient, defineChain, erc20Abi, http, parseAbi, parseAbiItem, type Address, type Hex } from "viem";
-import { activeAccount } from "./signer";
+import { activeAccount, walletTransport } from "./signer";
 import { localFork } from "@noren/core";
 import type { Config } from "./api";
 
@@ -70,7 +70,7 @@ export function makeOnchain(cfg: Config) {
   const account = activeAccount();
   const arcChain = localFork(cfg.rpcUrl);
   const arc = createPublicClient({ chain: arcChain, transport: http(cfg.rpcUrl) });
-  const arcWallet = createWalletClient({ chain: arcChain, transport: http(cfg.rpcUrl), account });
+  const arcWallet = createWalletClient({ chain: arcChain, transport: walletTransport(cfg.rpcUrl), account });
   const rhChain = credit?.robinhoodRpc ? robinhoodFork(credit.robinhoodRpc, credit.robinhoodChainId ?? 4663) : null;
   // A fresh fork fetches each contract from Robinhood mainnet on first touch, so allow slow first reads.
   const rh = rhChain ? createPublicClient({ chain: rhChain, transport: http(credit!.robinhoodRpc!, { timeout: 45_000, retryCount: 2 }) }) : null;
@@ -185,7 +185,7 @@ export function makeOnchain(cfg: Config) {
     /** Robinhood: approve the Stock Token to the gateway, then pay. maxAssetIn allows 1% price movement. */
     async payWithStock(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address, quoted: bigint) {
       const c = need(); const chain = rhChain!;
-      const w = createWalletClient({ chain, transport: http(credit!.robinhoodRpc!), account });
+      const w = createWalletClient({ chain, transport: walletTransport(credit!.robinhoodRpc!), account });
       const max = quoted + quoted / 100n;
       const allowance = await c.readContract({ address: asset, abi: erc20Abi, functionName: "allowance", args: [account.address, gateway] });
       if (allowance < max) {
@@ -212,7 +212,7 @@ export function makeOnchain(cfg: Config) {
     /** Raw access to the Robinhood fork for the credit-line calls (credit-actions.ts). */
     robinhood() {
       const c = need();
-      return { pub: c, wallet: createWalletClient({ chain: rhChain!, transport: http(credit!.robinhoodRpc!, { timeout: 45_000 }), account }), chain: rhChain!, account };
+      return { pub: c, wallet: createWalletClient({ chain: rhChain!, transport: walletTransport(credit!.robinhoodRpc!, { timeout: 45_000 }), account }), chain: rhChain!, account };
     },
     /** The Arc fork's public client (reads only). */
     arcPublic: () => arc,

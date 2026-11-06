@@ -4,7 +4,7 @@
  * here, on the device; no server ever sees the secrets.
  */
 import { createPublicClient, createWalletClient, erc20Abi, http, keccak256, toBytes, concatHex, parseAbiItem, type Hex } from "viem";
-import { activeAccount, activeKey, kohakuSeed } from "./signer";
+import { activeAccount, activeKey, kohakuSeed, walletTransport } from "./signer";
 import { createCustomer } from "@noren/core/customer";
 import { localFork, type Invoice } from "@noren/core";
 import type { Config } from "./api";
@@ -25,7 +25,7 @@ export function makeWallet(cfg: Config) {
   const account = activeAccount(), walletKey = activeKey();
   const chain = localFork(cfg.rpcUrl);
   const pub = createPublicClient({ chain, transport: http(cfg.rpcUrl) });
-  const wallet = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
+  const wallet = createWalletClient({ chain, transport: walletTransport(cfg.rpcUrl), account });
   const customer = createCustomer({
     deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage: storageFor(cfg, walletKey),
     // Same-origin prover artifacts (served from /zk by this app): the browser makes no third-party request.

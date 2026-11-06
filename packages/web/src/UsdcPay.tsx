@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { createPublicClient, createWalletClient, erc20Abi, http, type Address, type Hex } from "viem";
-import { activeAccount } from "./signer";
+import { activeAccount, walletTransport } from "./signer";
 import { localFork } from "@noren/core";
 import { SERVER, api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
@@ -36,7 +36,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
     setBusy("pay"); setNote(null);
     try {
       const account = activeAccount();
-      const w = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
+      const w = createWalletClient({ chain, transport: walletTransport(cfg.rpcUrl), account });
       await pub.simulateContract({ account, address: cfg.deployment.usdc, abi: erc20Abi, functionName: "transfer", args: [payout, amount] });
       const h = await w.writeContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "transfer", args: [payout, amount], chain });
       const r = await pub.waitForTransactionReceipt({ hash: h });
