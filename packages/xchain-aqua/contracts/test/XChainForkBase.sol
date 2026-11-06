@@ -67,6 +67,20 @@ abstract contract XChainForkBase is Test, XChainDeployer {
   uint16 internal constant BID = 50; // 0.50%
   uint16 internal constant CLOSED_EXTRA = 300;
 
+  /// @dev vm.warp on these forks leaks into the tests that run after it (the fork env is shared),
+  /// so a test that moves a clock puts both clocks back when it ends.
+  modifier restoresClocks() {
+    vm.selectFork(arcFork);
+    uint256 a = block.timestamp;
+    vm.selectFork(srcFork);
+    uint256 r = block.timestamp;
+    _;
+    vm.selectFork(arcFork);
+    vm.warp(a);
+    vm.selectFork(srcFork);
+    vm.warp(r);
+  }
+
   // ---------------------------------------------------------------- setup
 
   function _setUpArc() internal {

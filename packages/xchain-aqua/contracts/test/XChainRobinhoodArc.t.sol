@@ -120,17 +120,19 @@ contract XChainRobinhoodArcTest is XChainForkBase {
 
   // ================================================================ stale price, expiry and refunds
 
-  function test_stalePriceIsRejectedThenExpiresAndRefunds() public {
-    vm.selectFork(srcFork);
-    escrow.setWindows(1 hours, 5 days);
-    CrossChainOrder memory o = _happyOrder(5);
-    o.fillDeadline = o.fillDeadline + 4 days;
-    o.refundAfter = o.refundAfter + 4 days;
-    bytes memory payload = _open(o);
-    uint256 updatedAt = _price(payload).updatedAt;
-
+  function test_stalePriceIsRejectedThenExpiresAndRefunds() public restoresClocks {
+    // A strategy whose route only accepts Chainlink rounds younger than 60 s. The snapshot's NVDA
+    // round is hours old, so it is stale for this strategy without moving any clock by days.
     vm.selectFork(arcFork);
-    vm.warp(updatedAt + 259_201); // older than the 3-day closed-window age: stale on any day of the week
+    NorenCrossChainSettler.Route memory r = arc.settler.route(arc.nvdaRoute);
+    r.baseMaxAgeOpen = 60;
+    r.baseMaxAgeClosed = 60;
+    arc.settler.setRoute(XC.ROBINHOOD, XC.NVDA, r);
+    bytes32 strict = _ship(maker, arc.nvdaRoute, _terms(BID, 99), address(arc.rNvda), XC.ARC_USDC, 1_000e6, makerPayout);
+    CrossChainOrder memory o = _order(AMOUNT, 1e6, maker, strict, 5);
+    bytes memory payload = _open(o);
+    assertGt(block.timestamp - _price(payload).updatedAt, 60, 'the real round is older than 60 s');
+
     (bytes memory settlement, bytes memory rejection) = _toArc(payload);
     assertEq(settlement.length, 0, 'no fill');
     assertEq(bytes4(rejection), bytes4(keccak256('NorenOraclePegStalePrice(address,uint256,uint256)')), 'stale Chainlink price rejected by the SwapVM instruction');
@@ -161,7 +163,7 @@ contract XChainRobinhoodArcTest is XChainForkBase {
     assertEq(uint8(escrow.orderStatus(id)), uint8(NorenCrossChainEscrow.Status.Refunded));
   }
 
-  function test_timeoutRefundWithoutAnyReportAndLateFillCannotRelease() public {
+  function test_timeoutRefundWithoutAnyReportAndLateFillCannotRelease() public restoresClocks {
     CrossChainOrder memory o = _happyOrder(6);
     bytes memory payload = _open(o);
     bytes32 id = _id(o);
@@ -254,7 +256,7 @@ contract XChainRobinhoodArcTest is XChainForkBase {
     assertEq(bytes4(rejection), bytes4(keccak256('NorenOraclePegMakerUnderfunded(address,address,uint256,uint256)')));
   }
 
-  function test_fillAfterDeadlineIsRefusedOnArc() public {
+  function test_fillAfterDeadlineIsRefusedOnArc() public restoresClocks {
     CrossChainOrder memory o = _happyOrder(12);
     bytes memory payload = _open(o);
     vm.selectFork(arcFork);

@@ -57,6 +57,8 @@ Powered by SwapVM — © Degensoft Ltd 2025.
 | Base WETH (escrowed) | WETH locked on Base Sepolia | USDC | Chainlink ETH/USD on Base Sepolia (`0x4aDC…7cb1`) | maker buys at oracle − bid |
 | USDC → EURC (delivered) | USDC already on Arc (CCTP / router) | EURC | Chainlink EUR/USD on Ethereum Sepolia (`0x1a81…b910`), relayed by the CRE cron | maker sells at oracle + ask (40 bps) |
 
+**Reverse direction (same contracts).** USDC locked in an escrow on Arc buys NVDA on Robinhood Chain from a Robinhood maker's sell-side strategy. A settler on Robinhood mints an rUSDC receipt, and its NorenOraclePeg reads the real Chainlink NVDA/USD feed there, so nothing is relayed. The maker sells at Chainlink + ask and receives the USDC on Arc after CRE reports the fill (`test_usdcOnArcBuysNvdaOnRobinhood`, exact deltas on both forks). It is covered by the Foundry test only, not by the demo, because Noren's makers live on Arc.
+
 Adding a source chain takes one escrow deployment there, plus `setEscrow` and `setRoute` (a receipt and a relayed feed) on Arc. Nothing else changes.
 
 ## Contracts (MIT, `packages/xchain-aqua/contracts`)
@@ -129,7 +131,7 @@ CRE is wired now. The CCIP adapter can plug into `receiveXChain`/`IXChainOutbox`
 
 | Suite | Command | Result |
 |---|---|---|
-| Foundry, Arc Testnet fork + Robinhood snapshot | `sh packages/xchain-aqua/scripts/test-forks.sh` (phase 1) | **18 passed** (`XChainRobinhoodArcTest`) |
+| Foundry, Arc Testnet fork + Robinhood snapshot | `sh packages/xchain-aqua/scripts/test-forks.sh` (phase 1) | **19 passed** (`XChainRobinhoodArcTest` 18, `XChainReverseTest` 1) |
 | Foundry, Arc Testnet fork + Base Sepolia fork, delivered orders, live action router | same script (phase 2) | **12 passed** (`XChainBaseArcTest` 3, `XChainDeliveredTest` 6, `XChainActionRouterTest` 3) |
 | CRE courier logic (bun) | `cd packages/xchain-aqua/cre/xchain-aqua && bun test` | **14 passed** |
 | End to end: `cre workflow simulate --broadcast` on every hop | `bash packages/xchain-aqua/scripts/xchain-demo.sh` | PASS: 12 steps (below) |

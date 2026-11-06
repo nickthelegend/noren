@@ -125,3 +125,10 @@ start_base() {
   [ "$(cast chain-id --rpc-url "$BASE")" = 84532 ] || { echo "Base Sepolia fork has the wrong chain id" >&2; exit 1; }
   BASE_FORK_BLOCK=$(cast block-number --rpc-url "$BASE")
 }
+
+# Mine a block at the wall-clock time if the fork's head is behind it (an idle Anvil fork keeps its
+# fork block's timestamp, so a source-chain Chainlink round read later would look like a future price).
+align_clock() {
+  now=$(date +%s); ts=$(cast block latest --field timestamp --rpc-url "$1")
+  if [ "$ts" -lt "$now" ]; then cast rpc evm_setNextBlockTimestamp "$now" --rpc-url "$1" >/dev/null; cast rpc evm_mine --rpc-url "$1" >/dev/null; fi
+}

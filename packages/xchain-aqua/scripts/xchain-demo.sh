@@ -51,7 +51,6 @@ step() { echo; echo "== $*"; }
 msg_index() { # position of the XChainMessage (or $3) log inside the tx (CRE --evm-event-index)
   cast receipt "$2" --json --rpc-url "$1" | jq --arg t "$(cast keccak "${3:-XChainMessage(bytes32,uint64,address,bytes)}")" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key'
 }
-align_clock() { now=$(date +%s); ts=$(cast block latest --field timestamp --rpc-url "$1"); if [ "$ts" -lt "$now" ]; then cast rpc evm_setNextBlockTimestamp "$now" --rpc-url "$1" >/dev/null; cast rpc evm_mine --rpc-url "$1" >/dev/null; fi; }
 write_config() { # write_config <json array of chains> [json array of price relays]
   jq -n --argjson chains "$1" --argjson prices "${2:-[]}" '{chains: $chains, maxPriceAgeSec: 259200, confidence: "SAFE", prices: $prices, schedule: "0 */10 * * * *"}' >"$WF/config.local-fork.json"
 }
