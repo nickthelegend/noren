@@ -2,307 +2,277 @@
   {
     "text": "Don't",
     "start": 0,
-    "end": 0.39,
+    "end": 0.36,
     "id": "w0"
   },
   {
     "text": "sell",
-    "start": 0.39,
-    "end": 0.702,
+    "start": 0.36,
+    "end": 0.648,
     "id": "w1"
   },
   {
     "text": "your",
-    "start": 0.702,
-    "end": 1.014,
+    "start": 0.648,
+    "end": 0.936,
     "id": "w2"
   },
   {
     "text": "stocks.",
-    "start": 1.014,
-    "end": 1.56,
+    "start": 0.936,
+    "end": 1.44,
     "id": "w3"
   },
   {
     "text": "Deposit",
-    "start": 1.56,
-    "end": 2.145,
+    "start": 1.44,
+    "end": 1.966,
     "id": "w4"
   },
   {
     "text": "Nvidia",
-    "start": 2.145,
-    "end": 2.647,
+    "start": 1.966,
+    "end": 2.417,
     "id": "w5"
   },
   {
     "text": "into",
-    "start": 2.647,
-    "end": 2.982,
+    "start": 2.417,
+    "end": 2.718,
     "id": "w6"
   },
   {
-    "text": "No",
-    "start": 2.982,
-    "end": 3.149,
+    "text": "NoREN's",
+    "start": 2.718,
+    "end": 3.244,
     "id": "w7"
   },
   {
-    "text": "Ren's",
-    "start": 3.149,
-    "end": 3.567,
+    "text": "AquaPool.",
+    "start": 3.244,
+    "end": 3.92,
     "id": "w8"
   },
   {
-    "text": "Aqua",
-    "start": 3.567,
-    "end": 3.902,
+    "text": "It",
+    "start": 3.92,
+    "end": 4.039,
     "id": "w9"
   },
   {
-    "text": "Pool,",
-    "start": 3.902,
-    "end": 4.32,
+    "text": "becomes",
+    "start": 4.039,
+    "end": 4.454,
     "id": "w10"
   },
   {
-    "text": "borrow",
-    "start": 4.32,
-    "end": 4.87,
+    "text": "one-inch",
+    "start": 4.454,
+    "end": 4.929,
     "id": "w11"
   },
   {
-    "text": "up",
-    "start": 4.87,
-    "end": 5.053,
+    "text": "Aqua",
+    "start": 4.929,
+    "end": 5.166,
     "id": "w12"
   },
   {
-    "text": "to",
-    "start": 5.053,
-    "end": 5.237,
+    "text": "liquidity,",
+    "start": 5.166,
+    "end": 5.76,
     "id": "w13"
   },
   {
-    "text": "80%",
-    "start": 5.237,
-    "end": 5.512,
+    "text": "and",
+    "start": 5.76,
+    "end": 6.028,
     "id": "w14"
   },
   {
-    "text": "of",
-    "start": 5.512,
-    "end": 5.695,
+    "text": "66%",
+    "start": 6.028,
+    "end": 6.296,
     "id": "w15"
   },
   {
-    "text": "its",
-    "start": 5.695,
-    "end": 5.97,
+    "text": "of",
+    "start": 6.296,
+    "end": 6.475,
     "id": "w16"
   },
   {
-    "text": "value,",
-    "start": 5.97,
-    "end": 6.52,
+    "text": "its",
+    "start": 6.475,
+    "end": 6.744,
     "id": "w17"
   },
   {
-    "text": "and",
-    "start": 6.52,
-    "end": 6.764,
+    "text": "value",
+    "start": 6.744,
+    "end": 7.191,
     "id": "w18"
   },
   {
-    "text": "the",
-    "start": 6.764,
-    "end": 7.007,
+    "text": "is",
+    "start": 7.191,
+    "end": 7.369,
     "id": "w19"
   },
   {
-    "text": "fees",
-    "start": 7.007,
-    "end": 7.332,
+    "text": "your",
+    "start": 7.369,
+    "end": 7.727,
     "id": "w20"
   },
   {
-    "text": "it",
-    "start": 7.332,
-    "end": 7.495,
+    "text": "credit",
+    "start": 7.727,
+    "end": 8.264,
     "id": "w21"
   },
   {
-    "text": "earns",
-    "start": 7.495,
-    "end": 7.901,
+    "text": "limit.",
+    "start": 8.264,
+    "end": 8.8,
     "id": "w22"
   },
   {
-    "text": "pay",
-    "start": 7.901,
-    "end": 8.144,
+    "text": "Tasks",
+    "start": 8.8,
+    "end": 9.238,
     "id": "w23"
   },
   {
-    "text": "your",
-    "start": 8.144,
-    "end": 8.469,
+    "text": "raise",
+    "start": 9.238,
+    "end": 9.677,
     "id": "w24"
   },
   {
-    "text": "loan",
-    "start": 8.469,
-    "end": 8.794,
+    "text": "it.",
+    "start": 9.677,
+    "end": 9.94,
     "id": "w25"
   },
   {
-    "text": "back.",
-    "start": 8.794,
-    "end": 9.2,
+    "text": "World",
+    "start": 9.94,
+    "end": 10.322,
     "id": "w26"
   },
   {
-    "text": "Credit",
-    "start": 9.2,
-    "end": 9.689,
+    "text": "ID,",
+    "start": 10.322,
+    "end": 10.551,
     "id": "w27"
   },
   {
-    "text": "tasks,",
-    "start": 9.689,
-    "end": 10.178,
+    "text": "a",
+    "start": 10.551,
+    "end": 10.628,
     "id": "w28"
   },
   {
-    "text": "like",
-    "start": 10.178,
-    "end": 10.503,
+    "text": "reclaim",
+    "start": 10.628,
+    "end": 11.163,
     "id": "w29"
   },
   {
-    "text": "world",
-    "start": 10.503,
-    "end": 10.911,
+    "text": "proof",
+    "start": 11.163,
+    "end": 11.545,
     "id": "w30"
   },
   {
-    "text": "ID",
-    "start": 10.911,
-    "end": 11.074,
+    "text": "and",
+    "start": 11.545,
+    "end": 11.774,
     "id": "w31"
   },
   {
-    "text": "and",
-    "start": 11.074,
-    "end": 11.318,
+    "text": "repaying",
+    "start": 11.774,
+    "end": 12.385,
     "id": "w32"
   },
   {
-    "text": "repaying",
-    "start": 11.318,
-    "end": 11.97,
+    "text": "on",
+    "start": 12.385,
+    "end": 12.538,
     "id": "w33"
   },
   {
-    "text": "on",
-    "start": 11.97,
-    "end": 12.133,
+    "text": "time,",
+    "start": 12.538,
+    "end": 12.92,
     "id": "w34"
   },
   {
-    "text": "time,",
-    "start": 12.133,
-    "end": 12.54,
+    "text": "record",
+    "start": 12.92,
+    "end": 13.476,
     "id": "w35"
   },
   {
-    "text": "raise",
-    "start": 12.54,
-    "end": 13.027,
+    "text": "it",
+    "start": 13.476,
+    "end": 13.661,
     "id": "w36"
   },
   {
-    "text": "your",
-    "start": 13.027,
-    "end": 13.416,
+    "text": "on-chain",
+    "start": 13.661,
+    "end": 14.403,
     "id": "w37"
   },
   {
-    "text": "limit.",
-    "start": 13.416,
-    "end": 14,
+    "text": "as",
+    "start": 14.403,
+    "end": 14.588,
     "id": "w38"
   },
   {
-    "text": "Swap",
-    "start": 14,
-    "end": 14.498,
+    "text": "a",
+    "start": 14.588,
+    "end": 14.681,
     "id": "w39"
   },
   {
-    "text": "uses",
-    "start": 14.498,
-    "end": 14.996,
+    "text": "proof",
+    "start": 14.681,
+    "end": 15.144,
     "id": "w40"
   },
   {
-    "text": "Uniswap",
-    "start": 14.996,
-    "end": 15.867,
+    "text": "type",
+    "start": 15.144,
+    "end": 15.515,
     "id": "w41"
   },
   {
-    "text": "V4.",
-    "start": 15.867,
-    "end": 16.24,
+    "text": "only,",
+    "start": 15.515,
+    "end": 15.979,
     "id": "w42"
   },
   {
-    "text": "No",
-    "start": 16.24,
-    "end": 16.379,
+    "text": "up",
+    "start": 15.979,
+    "end": 16.164,
     "id": "w43"
   },
   {
-    "text": "Ren's",
-    "start": 16.379,
-    "end": 16.726,
+    "text": "to",
+    "start": 16.164,
+    "end": 16.349,
     "id": "w44"
   },
   {
-    "text": "Aqua",
-    "start": 16.726,
-    "end": 17.004,
+    "text": "80%.",
+    "start": 16.349,
+    "end": 16.72,
     "id": "w45"
-  },
-  {
-    "text": "Maker",
-    "start": 17.004,
-    "end": 17.351,
-    "id": "w46"
-  },
-  {
-    "text": "fills",
-    "start": 17.351,
-    "end": 17.698,
-    "id": "w47"
-  },
-  {
-    "text": "when",
-    "start": 17.698,
-    "end": 17.976,
-    "id": "w48"
-  },
-  {
-    "text": "it's",
-    "start": 17.976,
-    "end": 18.254,
-    "id": "w49"
-  },
-  {
-    "text": "better.",
-    "start": 18.254,
-    "end": 18.74,
-    "id": "w50"
   }
 ]

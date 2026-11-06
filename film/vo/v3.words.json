@@ -2,283 +2,241 @@
   {
     "text": "Obel,",
     "start": 0,
-    "end": 0.5,
+    "end": 0.493,
     "id": "w0"
   },
   {
     "text": "a",
-    "start": 0.5,
-    "end": 0.6,
+    "start": 0.493,
+    "end": 0.591,
     "id": "w1"
   },
   {
     "text": "demo",
-    "start": 0.6,
-    "end": 1,
+    "start": 0.591,
+    "end": 0.985,
     "id": "w2"
   },
   {
     "text": "boutique,",
-    "start": 1,
-    "end": 1.9,
+    "start": 0.985,
+    "end": 1.872,
     "id": "w3"
   },
   {
     "text": "added",
-    "start": 1.9,
-    "end": 2.4,
+    "start": 1.872,
+    "end": 2.364,
     "id": "w4"
   },
   {
     "text": "NoRen",
-    "start": 2.4,
-    "end": 2.9,
+    "start": 2.364,
+    "end": 2.857,
     "id": "w5"
   },
   {
     "text": "with",
-    "start": 2.9,
-    "end": 3.3,
+    "start": 2.857,
+    "end": 3.251,
     "id": "w6"
   },
   {
     "text": "the",
-    "start": 3.3,
-    "end": 3.6,
+    "start": 3.251,
+    "end": 3.546,
     "id": "w7"
   },
   {
     "text": "SDK.",
-    "start": 3.6,
-    "end": 4,
+    "start": 3.546,
+    "end": 3.94,
     "id": "w8"
   },
   {
     "text": "One",
-    "start": 4,
-    "end": 4.197,
+    "start": 3.94,
+    "end": 4.175,
     "id": "w9"
   },
   {
     "text": "file",
-    "start": 4.197,
-    "end": 4.459,
+    "start": 4.175,
+    "end": 4.489,
     "id": "w10"
   },
   {
     "text": "creates",
-    "start": 4.459,
-    "end": 4.918,
+    "start": 4.489,
+    "end": 5.038,
     "id": "w11"
   },
   {
     "text": "the",
-    "start": 4.918,
-    "end": 5.115,
+    "start": 5.038,
+    "end": 5.274,
     "id": "w12"
   },
   {
-    "text": "invoice,",
-    "start": 5.115,
-    "end": 5.64,
+    "text": "invoice",
+    "start": 5.274,
+    "end": 5.823,
     "id": "w13"
   },
   {
-    "text": "sends",
-    "start": 5.64,
-    "end": 5.968,
+    "text": "and",
+    "start": 5.823,
+    "end": 6.058,
     "id": "w14"
   },
   {
-    "text": "the",
-    "start": 5.968,
-    "end": 6.165,
+    "text": "trusts",
+    "start": 6.058,
+    "end": 6.529,
     "id": "w15"
   },
   {
-    "text": "shopper",
-    "start": 6.165,
-    "end": 6.624,
+    "text": "only",
+    "start": 6.529,
+    "end": 6.843,
     "id": "w16"
   },
   {
-    "text": "to",
-    "start": 6.624,
-    "end": 6.755,
+    "text": "a",
+    "start": 6.843,
+    "end": 6.922,
     "id": "w17"
   },
   {
-    "text": "NoRen's",
-    "start": 6.755,
-    "end": 7.214,
+    "text": "signed",
+    "start": 6.922,
+    "end": 7.392,
     "id": "w18"
   },
   {
-    "text": "checkout,",
-    "start": 7.214,
-    "end": 7.805,
+    "text": "webhook.",
+    "start": 7.392,
+    "end": 8.02,
     "id": "w19"
   },
   {
-    "text": "and",
-    "start": 7.805,
-    "end": 8.002,
+    "text": "The",
+    "start": 8.02,
+    "end": 8.248,
     "id": "w20"
   },
   {
-    "text": "trusts",
-    "start": 8.002,
-    "end": 8.395,
+    "text": "checkout",
+    "start": 8.248,
+    "end": 8.857,
     "id": "w21"
   },
   {
-    "text": "the",
-    "start": 8.395,
-    "end": 8.592,
+    "text": "offers",
+    "start": 8.857,
+    "end": 9.314,
     "id": "w22"
   },
   {
-    "text": "order",
-    "start": 8.592,
-    "end": 8.92,
+    "text": "four",
+    "start": 9.314,
+    "end": 9.619,
     "id": "w23"
   },
   {
-    "text": "only",
-    "start": 8.92,
-    "end": 9.293,
+    "text": "ways",
+    "start": 9.619,
+    "end": 9.923,
     "id": "w24"
   },
   {
-    "text": "after",
-    "start": 9.293,
-    "end": 9.76,
+    "text": "to",
+    "start": 9.923,
+    "end": 10.075,
     "id": "w25"
   },
   {
-    "text": "a",
-    "start": 9.76,
-    "end": 9.853,
+    "text": "pay.",
+    "start": 10.075,
+    "end": 10.38,
     "id": "w26"
   },
   {
-    "text": "signed",
-    "start": 9.853,
-    "end": 10.413,
+    "text": "Privately,",
+    "start": 10.38,
+    "end": 11.359,
     "id": "w27"
   },
   {
-    "text": "webhook.",
-    "start": 10.413,
-    "end": 11.16,
+    "text": "with",
+    "start": 11.359,
+    "end": 11.751,
     "id": "w28"
   },
   {
-    "text": "The",
-    "start": 11.16,
-    "end": 11.417,
+    "text": "USDC,",
+    "start": 11.751,
+    "end": 12.24,
     "id": "w29"
   },
   {
-    "text": "checkout",
-    "start": 11.417,
-    "end": 12.103,
+    "text": "with",
+    "start": 12.24,
+    "end": 12.632,
     "id": "w30"
   },
   {
-    "text": "offers",
-    "start": 12.103,
-    "end": 12.617,
+    "text": "stocks",
+    "start": 12.632,
+    "end": 13.219,
     "id": "w31"
   },
   {
-    "text": "four",
-    "start": 12.617,
-    "end": 12.96,
+    "text": "or",
+    "start": 13.219,
+    "end": 13.415,
     "id": "w32"
   },
   {
-    "text": "ways",
-    "start": 12.96,
-    "end": 13.303,
+    "text": "crypto,",
+    "start": 13.415,
+    "end": 14.1,
     "id": "w33"
   },
   {
-    "text": "to",
-    "start": 13.303,
-    "end": 13.474,
+    "text": "or",
+    "start": 14.1,
+    "end": 14.254,
     "id": "w34"
   },
   {
-    "text": "pay,",
-    "start": 13.474,
-    "end": 13.817,
+    "text": "later",
+    "start": 14.254,
+    "end": 14.641,
     "id": "w35"
   },
   {
-    "text": "privately,",
-    "start": 13.817,
-    "end": 14.674,
+    "text": "on",
+    "start": 14.641,
+    "end": 14.795,
     "id": "w36"
   },
   {
-    "text": "with",
-    "start": 14.674,
-    "end": 15.017,
+    "text": "credit,",
+    "start": 14.795,
+    "end": 15.336,
     "id": "w37"
   },
   {
-    "text": "USDC,",
-    "start": 15.017,
-    "end": 15.446,
+    "text": "still",
+    "start": 15.336,
+    "end": 15.722,
     "id": "w38"
   },
   {
-    "text": "with",
-    "start": 15.446,
-    "end": 15.789,
-    "id": "w39"
-  },
-  {
-    "text": "stocks,",
-    "start": 15.789,
-    "end": 16.389,
-    "id": "w40"
-  },
-  {
-    "text": "or",
-    "start": 16.389,
-    "end": 16.56,
-    "id": "w41"
-  },
-  {
-    "text": "later",
-    "start": 16.56,
-    "end": 16.989,
-    "id": "w42"
-  },
-  {
-    "text": "on",
-    "start": 16.989,
-    "end": 17.16,
-    "id": "w43"
-  },
-  {
-    "text": "credit,",
-    "start": 17.16,
-    "end": 17.76,
-    "id": "w44"
-  },
-  {
-    "text": "still",
-    "start": 17.76,
-    "end": 18.083,
-    "id": "w45"
-  },
-  {
     "text": "private.",
-    "start": 18.083,
-    "end": 18.6,
-    "id": "w46"
+    "start": 15.722,
+    "end": 16.34,
+    "id": "w39"
   }
 ]

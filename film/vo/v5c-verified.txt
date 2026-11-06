@@ -1,1 +1,1 @@
-Third, pay later, privately. The credit line tops up your private balance, and the shop is paid from the pool. Your lender knows you; the merchant doesn't. Repayments are public. It ran live on Arc testnet, and paying on credit ran live over Chainlink CCIP.
+Third, pay later, privately: the merchant sees only “private”. It ran live on Arc testnet, and over Chainlink CCIP.

@@ -35,6 +35,8 @@
     .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
     .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
     .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .end .multis { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .dia .end img.multi { display: inline-block; width: 60px; height: 60px; margin: 0; border-radius: 16px; background: #efe8db; padding: 8px; object-fit: contain; }
     .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
     .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
     .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
@@ -57,105 +59,158 @@
       <div class="cam" id="app-cam0"><video id="app-v0" class="clip" data-start="0.000" data-duration="2.300" data-track-index="1" src="assets/footage/app-0.mp4" muted playsinline></video></div>
       <div class="cam" id="app-cam1"><video id="app-v1" class="clip" data-start="2.300" data-duration="1.800" data-track-index="1" src="assets/footage/app-1.mp4" muted playsinline></video></div>
       <div class="cam" id="app-cam2"><video id="app-v2" class="clip" data-start="4.100" data-duration="3.500" data-track-index="1" src="assets/footage/app-2.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam3"><video id="app-v3" class="clip" data-start="7.600" data-duration="4.500" data-track-index="1" src="assets/footage/app-3.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam4"><video id="app-v4" class="clip" data-start="12.100" data-duration="6.200" data-track-index="1" src="assets/footage/app-4.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam5"><video id="app-v5" class="clip" data-start="18.300" data-duration="5.400" data-track-index="1" src="assets/footage/app-5.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam6"><video id="app-v6" class="clip" data-start="23.700" data-duration="3.400" data-track-index="1" src="assets/footage/app-6.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam7"><video id="app-v7" class="clip" data-start="27.100" data-duration="2.250" data-track-index="1" src="assets/footage/app-7.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam8"><video id="app-v8" class="clip" data-start="29.350" data-duration="2.250" data-track-index="1" src="assets/footage/app-8.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam9"><video id="app-v9" class="clip" data-start="31.600" data-duration="3.500" data-track-index="1" src="assets/footage/app-9.mp4" muted playsinline></video></div>
-      <div id="app-k10" class="clip" data-start="35.100" data-duration="8.500" data-track-index="1" style="position:absolute;inset:0"><div class="dia"><h3>Robinhood Chain ⇄ Arc</h3><div class="arrow" id="app-k10a"></div><div class="ends"><div class="end" id="app-k10e0"><img src="assets/logos/robinhood-chain.png" alt="" />Robinhood Chain</div><div class="end" id="app-k10e1"><img src="assets/logos/arc.svg" alt="" />Arc</div></div><div class="lanes"><div class="lane" id="app-k10l0"><span class="lg"><img src="assets/logos/circle.svg" alt="" /><img class="tok" src="assets/logos/usdc.svg" alt="" /></span><div><b>Circle CCTP V2<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /><img src="assets/logos/eth.svg" alt="" /><img src="assets/logos/base.svg" alt="" /><img src="assets/logos/arbitrum.svg" alt="" /></span></b><small>USDC both ways: burn → Circle attests → NorenArcHook mints</small></div><span class="st live">live on testnets</span></div><div class="lane" id="app-k10l1"><span class="lg"><img src="assets/logos/1inch.svg" alt="" /><img class="tok" src="assets/logos/nvda.svg" alt="" /></span><div><b>Cross-chain Aqua order<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /></span></b><small>Stocks → USDC: escrow → Chainlink CRE → Aqua maker settles on Arc</small></div><span class="st">fork demo</span></div><div class="lane" id="app-k10l2"><span class="lg"><img src="assets/logos/chainlink.svg" alt="" /></span><div><b>Chainlink CCIP<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /><img src="assets/logos/base.svg" alt="" /><img src="assets/logos/eth.svg" alt="" /></span></b><small>Credit messages: Robinhood → Base Sepolia hub → Arc</small></div><span class="st live">live on testnets</span></div></div><p>docs/CCTP.md · docs/AQUA-LIVE.md · docs/CCIP.md</p></div></div>
-      <div class="cam" id="app-cam11"><video id="app-v11" class="clip" data-start="43.600" data-duration="5.000" data-track-index="1" src="assets/footage/app-11.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam12"><video id="app-v12" class="clip" data-start="48.600" data-duration="2.500" data-track-index="1" src="assets/footage/app-12.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam13"><video id="app-v13" class="clip" data-start="51.100" data-duration="5.000" data-track-index="1" src="assets/footage/app-13.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam14"><video id="app-v14" class="clip" data-start="56.100" data-duration="3.000" data-track-index="1" src="assets/footage/app-14.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam15"><video id="app-v15" class="clip" data-start="59.100" data-duration="2.500" data-track-index="1" src="assets/footage/app-15.mp4" muted playsinline></video></div>
-      <div class="cam" id="app-cam16"><video id="app-v16" class="clip" data-start="61.600" data-duration="2.900" data-track-index="1" src="assets/footage/app-16.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam3"><video id="app-v3" class="clip" data-start="7.600" data-duration="4.400" data-track-index="1" src="assets/footage/app-3.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam4"><video id="app-v4" class="clip" data-start="12.000" data-duration="6.000" data-track-index="1" src="assets/footage/app-4.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam5"><video id="app-v5" class="clip" data-start="18.000" data-duration="2.000" data-track-index="1" src="assets/footage/app-5.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam6"><video id="app-v6" class="clip" data-start="20.000" data-duration="2.000" data-track-index="1" src="assets/footage/app-6.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam7"><video id="app-v7" class="clip" data-start="22.000" data-duration="1.750" data-track-index="1" src="assets/footage/app-7.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam8"><video id="app-v8" class="clip" data-start="23.750" data-duration="1.750" data-track-index="1" src="assets/footage/app-8.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam9"><video id="app-v9" class="clip" data-start="25.500" data-duration="1.750" data-track-index="1" src="assets/footage/app-9.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam10"><video id="app-v10" class="clip" data-start="27.250" data-duration="1.750" data-track-index="1" src="assets/footage/app-10.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam11"><video id="app-v11" class="clip" data-start="29.000" data-duration="5.000" data-track-index="1" src="assets/footage/app-11.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam12"><video id="app-v12" class="clip" data-start="34.000" data-duration="3.823" data-track-index="1" src="assets/footage/app-12.mp4" muted playsinline></video></div>
+      <div id="app-k13" class="clip" data-start="37.823" data-duration="8.200" data-track-index="1" style="position:absolute;inset:0"><div class="dia"><h3>Any chain ⇄ Arc</h3><div class="arrow" id="app-k13a"></div><div class="ends"><div class="end" id="app-k13e0"><span class="multis"><img class="multi" src="assets/logos/eth.svg" alt="" /><img class="multi" src="assets/logos/base.svg" alt="" /><img class="multi" src="assets/logos/arbitrum.svg" alt="" /><img class="multi" src="assets/logos/robinhood-chain.png" alt="" /></span>Any chain</div><div class="end" id="app-k13e1"><img src="assets/logos/arc.svg" alt="" />Arc</div></div><div class="lanes"><div class="lane" id="app-k13l0"><span class="lg"><img src="assets/logos/circle.svg" alt="" /><img class="tok" src="assets/logos/usdc.svg" alt="" /></span><div><b>Circle CCTP V2<span class="chs"><img src="assets/logos/eth.svg" alt="" /><img src="assets/logos/base.svg" alt="" /><img src="assets/logos/arbitrum.svg" alt="" /><img src="assets/logos/robinhood-chain.png" alt="" /></span></b><small>USDC from any chain: burn → Circle attests → NorenArcHook mints on Arc</small></div><span class="st live">live on testnets</span></div><div class="lane" id="app-k13l1"><span class="lg"><img src="assets/logos/1inch.svg" alt="" /><img class="tok" src="assets/logos/nvda.svg" alt="" /></span><div><b>Cross-chain Aqua order<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /></span></b><small>Stocks → USDC: escrow → Chainlink CRE → Aqua maker settles on Arc</small></div><span class="st">fork demo</span></div><div class="lane" id="app-k13l2"><span class="lg"><img src="assets/logos/chainlink.svg" alt="" /></span><div><b>Chainlink CCIP<span class="chs"><img src="assets/logos/robinhood-chain.png" alt="" /><img src="assets/logos/base.svg" alt="" /></span></b><small>Credit messages: Robinhood → Base Sepolia hub → Arc</small></div><span class="st live">live on testnets</span></div></div><p>docs/CCTP.md · docs/AQUA-LIVE.md · docs/CCIP.md</p></div></div>
+      <div class="cam" id="app-cam14"><video id="app-v14" class="clip" data-start="46.023" data-duration="6.000" data-track-index="1" src="assets/footage/app-14.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam15"><video id="app-v15" class="clip" data-start="52.023" data-duration="3.867" data-track-index="1" src="assets/footage/app-15.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam16"><video id="app-v16" class="clip" data-start="55.890" data-duration="3.667" data-track-index="1" src="assets/footage/app-16.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam17"><video id="app-v17" class="clip" data-start="59.557" data-duration="3.667" data-track-index="1" src="assets/footage/app-17.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam18"><video id="app-v18" class="clip" data-start="63.224" data-duration="2.960" data-track-index="1" src="assets/footage/app-18.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam19"><video id="app-v19" class="clip" data-start="66.184" data-duration="4.017" data-track-index="1" src="assets/footage/app-19.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam20"><video id="app-v20" class="clip" data-start="70.201" data-duration="3.800" data-track-index="1" src="assets/footage/app-20.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam21"><video id="app-v21" class="clip" data-start="74.001" data-duration="4.000" data-track-index="1" src="assets/footage/app-21.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam22"><video id="app-v22" class="clip" data-start="78.001" data-duration="3.000" data-track-index="1" src="assets/footage/app-22.mp4" muted playsinline></video></div>
+      <div class="cam" id="app-cam23"><video id="app-v23" class="clip" data-start="81.001" data-duration="3.000" data-track-index="1" src="assets/footage/app-23.mp4" muted playsinline></video></div>
       
       <div id="app-s1" class="spd clip" data-start="2.300" data-duration="1.800" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
       <div id="app-s2" class="spd clip" data-start="4.100" data-duration="3.500" data-track-index="4"><span class="in">▸▸ 2.4×</span></div>
-      <div id="app-s3" class="spd clip" data-start="7.600" data-duration="4.500" data-track-index="4"><span class="in">▸▸ 3.7×</span></div>
-      <div id="app-s4" class="spd clip" data-start="12.100" data-duration="6.200" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
-      <div id="app-s5" class="spd clip" data-start="18.300" data-duration="5.400" data-track-index="4"><span class="in">▸▸ 3.5×</span></div>
-      <div id="app-s9" class="spd clip" data-start="31.600" data-duration="3.500" data-track-index="4"><span class="in">▸▸ 2.4×</span></div>
-      <div id="app-s11" class="spd clip" data-start="43.600" data-duration="5.000" data-track-index="4"><span class="in">▸▸ 2.4×</span></div>
-      <div id="app-s12" class="spd clip" data-start="48.600" data-duration="2.500" data-track-index="4"><span class="in">▸▸ 4.4×</span></div>
-      <div id="app-s13" class="spd clip" data-start="51.100" data-duration="5.000" data-track-index="4"><span class="in">▸▸ 3.9×</span></div>
-      <div id="app-s14" class="spd clip" data-start="56.100" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 3.3×</span></div>
-      <div id="app-wl15" class="clip" data-start="59.100" data-duration="2.500" data-track-index="4" style="position:absolute;left:18px;top:18px"><div class="wid">World ID · production · World App</div></div>
-      <div id="app-s16" class="spd clip" data-start="61.600" data-duration="2.900" data-track-index="4"><span class="in">▸▸ 1.9×</span></div>
+      <div id="app-s3" class="spd clip" data-start="7.600" data-duration="4.400" data-track-index="4"><span class="in">▸▸ 3.7×</span></div>
+      <div id="app-s4" class="spd clip" data-start="12.000" data-duration="6.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
+      <div id="app-s11" class="spd clip" data-start="29.000" data-duration="5.000" data-track-index="4"><span class="in">▸▸ 3.8×</span></div>
+      <div id="app-s12" class="spd clip" data-start="34.000" data-duration="3.823" data-track-index="4"><span class="in">▸▸ 2.5×</span></div>
+      <div id="app-s14" class="spd clip" data-start="46.023" data-duration="6.000" data-track-index="4"><span class="in">▸▸ 3.5×</span></div>
+      <div id="app-s15" class="spd clip" data-start="52.023" data-duration="3.867" data-track-index="4"><span class="in">▸▸ 3.0×</span></div>
+      <div id="app-s16" class="spd clip" data-start="55.890" data-duration="3.667" data-track-index="4"><span class="in">▸▸ 3.0×</span></div>
+      <div id="app-s17" class="spd clip" data-start="59.557" data-duration="3.667" data-track-index="4"><span class="in">▸▸ 3.0×</span></div>
+      <div id="app-s18" class="spd clip" data-start="63.224" data-duration="2.960" data-track-index="4"><span class="in">▸▸ 2.5×</span></div>
+      <div id="app-s19" class="spd clip" data-start="66.184" data-duration="4.017" data-track-index="4"><span class="in">▸▸ 6.0×</span></div>
+      <div id="app-s20" class="spd clip" data-start="70.201" data-duration="3.800" data-track-index="4"><span class="in">▸▸ 13.9×</span></div>
+      <div id="app-s21" class="spd clip" data-start="74.001" data-duration="4.000" data-track-index="4"><span class="in">▸▸ 4.5×</span></div>
+      <div id="app-s22" class="spd clip" data-start="78.001" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 3.3×</span></div>
+      <div id="app-s23" class="spd clip" data-start="81.001" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 1.8×</span></div>
     </div>
     <div class="bar">
       <div class="tag" id="app-tag"><i></i>04 · Noren app</div>
-      <div id="app-c0" class="cap clip" data-start="0.100" data-duration="3.800" data-track-index="3"><span class="in">Noren app: Privy sign-in shown · connect the injected test wallet</span></div>
-      <div id="app-c1" class="cap clip" data-start="4.100" data-duration="3.300" data-track-index="3"><span class="in">Home: private, Arc, Robinhood and credit balances</span></div>
-      <div id="app-c2" class="cap clip" data-start="7.600" data-duration="4.300" data-track-index="3"><span class="in">Paste a Noren link · pay 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> privately in the app</span></div>
-      <div id="app-c3" class="cap clip" data-start="12.100" data-duration="6.000" data-track-index="3"><span class="in">Live: 0.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC, Robinhood Chain testnet → Arc testnet</span></div>
-      <div id="app-c4" class="cap clip" data-start="18.300" data-duration="5.300" data-track-index="3"><span class="in">Burn on Robinhood · Circle attests · NorenArcHook mints on Arc</span></div>
-      <div id="app-c5" class="cap clip" data-start="23.700" data-duration="3.300" data-track-index="3"><span class="in">Landed on Arc in 16 s · minted by this browser</span></div>
-      <div id="app-c6" class="cap clip" data-start="27.100" data-duration="2.200" data-track-index="3"><span class="in">Robinhood testnet: depositForBurn 0x2529…4855</span></div>
-      <div id="app-c7" class="cap clip" data-start="29.350" data-duration="2.100" data-track-index="3"><span class="in">Arc testnet: Mint 0.49993 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> · 0xb360…8293</span></div>
-      <div id="app-c8" class="cap clip" data-start="31.600" data-duration="3.300" data-track-index="3"><span class="in">Stocks → USDC on Arc: a cross-chain Aqua order (fork demo)</span></div>
-      <div id="app-c9" class="cap clip" data-start="43.600" data-duration="4.900" data-track-index="3"><span class="in">Deposit 0.9 <img class="tk" src="assets/logos/eth.svg" alt="ETH" /> ETH: Aqua liquidity · backs loans · earns fees · runs liquidations</span></div>
-      <div id="app-c10" class="cap clip" data-start="48.600" data-duration="2.400" data-track-index="3"><span class="in">Lock it · borrow 500 <img class="tk" src="assets/logos/usdg.svg" alt="USDG" /> USDG</span></div>
-      <div id="app-c11" class="cap clip" data-start="51.100" data-duration="2.400" data-track-index="3"><span class="in">Your collateral keeps earning: 1.6162 <img class="tk" src="assets/logos/usdg.svg" alt="USDG" /> from 3 Aqua fills</span></div>
-      <div id="app-c12" class="cap clip" data-start="53.600" data-duration="2.350" data-track-index="3"><span class="in">Use earnings: debt 500 → 498.38 <img class="tk" src="assets/logos/usdg.svg" alt="USDG" /> USDG</span></div>
-      <div id="app-c13" class="cap clip" data-start="56.100" data-duration="2.850" data-track-index="3"><span class="in">Lock 1 <img class="tk" src="assets/logos/nvda.svg" alt="NVDA" /> NVDA: a credit line, live on Arc via Chainlink CRE</span></div>
-      <div id="app-c14" class="cap clip" data-start="59.050" data-duration="2.400" data-track-index="3"><span class="in">World ID (Orb) verified in World App</span></div>
-      <div id="app-c15" class="cap clip" data-start="61.550" data-duration="2.900" data-track-index="3"><span class="in">Swap: Uniswap v4 first; Noren's Aqua maker when it's better</span></div>
-      <div id="app-net0" class="clip" data-start="0.000" data-duration="12.100" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="app-net1" class="clip" data-start="12.100" data-duration="15.000" data-track-index="6"><div class="net live"><b></b>Robinhood ⇄ Arc testnets · live · from the app</div></div><div id="app-net2" class="clip" data-start="27.100" data-duration="2.250" data-track-index="6"><div class="net live"><b></b>Robinhood Chain testnet · live · public explorer</div></div><div id="app-net3" class="clip" data-start="29.350" data-duration="2.250" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="app-net4" class="clip" data-start="31.600" data-duration="3.500" data-track-index="6"><div class="net">Fork demo · cross-chain Aqua order</div></div><div id="app-net6" class="clip" data-start="43.600" data-duration="12.500" data-track-index="6"><div class="net">Local fork · Robinhood Chain snapshot</div></div><div id="app-net7" class="clip" data-start="56.100" data-duration="3.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="app-net8" class="clip" data-start="59.100" data-duration="2.500" data-track-index="6"><div class="net">World ID · production · World App</div></div><div id="app-net9" class="clip" data-start="61.600" data-duration="2.900" data-track-index="6"><div class="net live"><b></b>Arc testnet · live quotes</div></div>
+      <div id="app-c0" class="cap clip" data-start="0.200" data-duration="3.800" data-track-index="3"><span class="in">Noren app: Privy sign-in shown · connect the injected test wallet</span></div>
+      <div id="app-c1" class="cap clip" data-start="4.200" data-duration="3.300" data-track-index="3"><span class="in">Home: private, Arc, Robinhood and credit balances</span></div>
+      <div id="app-c2" class="cap clip" data-start="7.700" data-duration="4.200" data-track-index="3"><span class="in">Paste a Noren link · pay 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> privately in the app</span></div>
+      <div id="app-c3" class="cap clip" data-start="12.100" data-duration="5.800" data-track-index="3"><span class="in">USDC from any chain to Arc: Ethereum · Base · Arbitrum · Robinhood</span></div>
+      <div id="app-c4" class="cap clip" data-start="18.050" data-duration="3.900" data-track-index="3"><span class="in">Live: Ethereum Sepolia → Arc, 0.5 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC in 31 s</span></div>
+      <div id="app-c5" class="cap clip" data-start="22.050" data-duration="3.400" data-track-index="3"><span class="in">Live: Base Sepolia → Arc in 19 s</span></div>
+      <div id="app-c6" class="cap clip" data-start="25.550" data-duration="3.400" data-track-index="3"><span class="in">Live: Arbitrum Sepolia → Arc in 16 s</span></div>
+      <div id="app-c7" class="cap clip" data-start="29.050" data-duration="4.900" data-track-index="3"><span class="in">Live from the app: Robinhood → Arc, minted by NorenArcHook</span></div>
+      <div id="app-c8" class="cap clip" data-start="34.100" data-duration="3.650" data-track-index="3"><span class="in">Stocks → USDC on Arc: a cross-chain Aqua order (fork demo)</span></div>
+      <div id="app-c9" class="cap clip" data-start="46.100" data-duration="3.000" data-track-index="3"><span class="in">Deposit 2 <img class="tk" src="assets/logos/nvda.svg" alt="NVDA" /> NVDA into the Aqua pool</span></div>
+      <div id="app-c10" class="cap clip" data-start="49.150" data-duration="2.800" data-track-index="3"><span class="in">Your stock is now <em>1inch Aqua liquidity</em></span></div>
+      <div id="app-c11" class="cap clip" data-start="52.100" data-duration="3.750" data-track-index="3"><span class="in">Credit limit $245.97: 66% of your NVDA</span></div>
+      <div id="app-c12" class="cap clip" data-start="55.950" data-duration="3.550" data-track-index="3"><span class="in">World ID QR · up to 80% with World ID and repayment history</span></div>
+      <div id="app-c13" class="cap clip" data-start="59.600" data-duration="3.550" data-track-index="3"><span class="in">Reclaim (zkTLS): a credit-score proof · waiting for the phone</span></div>
+      <div id="app-c14" class="cap clip" data-start="63.300" data-duration="2.850" data-track-index="3"><span class="in">Repaid on time (real fork txs) → 70% · on-chain: proof type only</span></div>
+      <div id="app-c15" class="cap clip" data-start="66.250" data-duration="3.900" data-track-index="3"><span class="in">Lock more NVDA: limit $391.63 → $522.07</span></div>
+      <div id="app-c16" class="cap clip" data-start="70.250" data-duration="3.700" data-track-index="3"><span class="in">Credit line 391.51 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC, live on Arc via Chainlink CRE</span></div>
+      <div id="app-c17" class="cap clip" data-start="74.050" data-duration="3.900" data-track-index="3"><span class="in">Pay later at checkout: 20.00 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC, privately</span></div>
+      <div id="app-c18" class="cap clip" data-start="78.050" data-duration="2.900" data-track-index="3"><span class="in">Fees from 3 real Aqua fills pay it down: 20.00 → 19.75</span></div>
+      <div id="app-c19" class="cap clip" data-start="81.100" data-duration="2.850" data-track-index="3"><span class="in">Swap: Uniswap v4 first; Noren's Aqua maker when it's better</span></div>
+      <div id="app-net0" class="clip" data-start="0.000" data-duration="12.000" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="app-net1" class="clip" data-start="12.000" data-duration="6.000" data-track-index="6"><div class="net">Any chain → Arc · CCTP V2 testnets</div></div><div id="app-net2" class="clip" data-start="18.000" data-duration="2.000" data-track-index="6"><div class="net live"><b></b>Ethereum Sepolia · live · public explorer</div></div><div id="app-net3" class="clip" data-start="20.000" data-duration="2.000" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="app-net4" class="clip" data-start="22.000" data-duration="1.750" data-track-index="6"><div class="net live"><b></b>Base Sepolia · live · public explorer</div></div><div id="app-net5" class="clip" data-start="23.750" data-duration="1.750" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="app-net6" class="clip" data-start="25.500" data-duration="1.750" data-track-index="6"><div class="net live"><b></b>Arbitrum Sepolia · live · public explorer</div></div><div id="app-net7" class="clip" data-start="27.250" data-duration="1.750" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="app-net8" class="clip" data-start="29.000" data-duration="5.000" data-track-index="6"><div class="net live"><b></b>Robinhood ⇄ Arc testnets · live · from the app</div></div><div id="app-net9" class="clip" data-start="34.000" data-duration="3.823" data-track-index="6"><div class="net">Fork demo · cross-chain Aqua order</div></div><div id="app-net11" class="clip" data-start="46.023" data-duration="9.867" data-track-index="6"><div class="net">Local fork · Robinhood Chain snapshot</div></div><div id="app-net12" class="clip" data-start="55.890" data-duration="3.667" data-track-index="6"><div class="net">World ID · production · World App</div></div><div id="app-net13" class="clip" data-start="59.557" data-duration="3.667" data-track-index="6"><div class="net">Reclaim · real request · not completed</div></div><div id="app-net14" class="clip" data-start="63.224" data-duration="6.977" data-track-index="6"><div class="net">Local fork · Robinhood Chain snapshot</div></div><div id="app-net15" class="clip" data-start="70.201" data-duration="7.800" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="app-net16" class="clip" data-start="78.001" data-duration="3.000" data-track-index="6"><div class="net">Local fork · Robinhood Chain snapshot</div></div><div id="app-net17" class="clip" data-start="81.001" data-duration="2.999" data-track-index="6"><div class="net live"><b></b>Arc testnet · live quotes</div></div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#app-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#app-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
-    tl.set("#app-cam4", { transformOrigin: "50% 50%", scale: 1.0 }, 0);
-    tl.fromTo("#app-cam4", { scale: 1.0, transformOrigin: "50% 50%" }, { scale: 1.3, transformOrigin: "50% 26%", duration: 5.80, ease: "power1.inOut" }, 12.300);
-    tl.set("#app-cam6", { transformOrigin: "50% 62%", scale: 1.25 }, 0);
-    tl.set("#app-cam7", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#app-cam5", { transformOrigin: "0% 10%", scale: 1.4 }, 0);
+    tl.set("#app-cam6", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#app-cam7", { transformOrigin: "30% 12%", scale: 1.45 }, 0);
     tl.set("#app-cam8", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.fromTo("#app-k10e0", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 35.200);
-    tl.fromTo("#app-k10e1", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 35.350);
-    tl.fromTo("#app-k10a", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, 35.550);
-    tl.fromTo("#app-k10l0", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 36.000);
-    tl.fromTo("#app-k10l1", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 37.600);
-    tl.fromTo("#app-k10l2", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 39.200);
-    tl.set("#app-cam11", { transformOrigin: "50% 32%", scale: 1.45 }, 0);
-    tl.set("#app-cam12", { transformOrigin: "50% 42%", scale: 1.45 }, 0);
-    tl.set("#app-cam13", { transformOrigin: "50% 58%", scale: 1.45 }, 0);
-    tl.fromTo("#app-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
-    tl.to("#app-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 3.600);
-    tl.fromTo("#app-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.120);
-    tl.to("#app-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 7.100);
-    tl.fromTo("#app-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 7.620);
+    tl.set("#app-cam9", { transformOrigin: "30% 12%", scale: 1.45 }, 0);
+    tl.set("#app-cam10", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.fromTo("#app-k13e0", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 37.923);
+    tl.fromTo("#app-k13e1", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 38.073);
+    tl.fromTo("#app-k13a", { scaleX: 0 }, { scaleX: 1, duration: 0.7, ease: "power2.inOut" }, 38.273);
+    tl.fromTo("#app-k13l0", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 38.723);
+    tl.fromTo("#app-k13l1", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 40.323);
+    tl.fromTo("#app-k13l2", { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 41.923);
+    tl.set("#app-cam14", { transformOrigin: "50.0% 45.0%", scale: 1.0 }, 0);
+    tl.to("#app-cam14", { scale: 1.45, duration: 0.9, ease: "power2.inOut" }, 46.652);
+    tl.to("#app-cam14", { transformOrigin: "42.9% 15.0%", duration: 0.351, ease: "power2.inOut" }, 46.299);
+    tl.to("#app-cam14", { transformOrigin: "50.0% 50.0%", duration: 0.354, ease: "power2.inOut" }, 47.458);
+    tl.to("#app-cam14", { transformOrigin: "45.6% 50.0%", duration: 0.350, ease: "power2.inOut" }, 48.452);
+    tl.to("#app-cam14", { transformOrigin: "50.0% 50.0%", duration: 0.353, ease: "power2.inOut" }, 49.210);
+    tl.to("#app-cam14", { transformOrigin: "50.0% 15.0%", duration: 0.350, ease: "power2.inOut" }, 50.289);
+    tl.to("#app-cam14", { transformOrigin: "50.0% 33.3%", duration: 0.353, ease: "power2.inOut" }, 50.820);
+    tl.set("#app-cam15", { transformOrigin: "48.7% 15.0%", scale: 1.45 }, 0);
+    tl.to("#app-cam15", { transformOrigin: "50.0% 50.0%", duration: 0.371, ease: "power2.inOut" }, 54.530);
+    tl.to("#app-cam15", { transformOrigin: "63.8% 65.0%", duration: 0.232, ease: "power2.inOut" }, 55.658);
+    tl.set("#app-cam16", { transformOrigin: "63.8% 65.0%", scale: 1.3 }, 0);
+    tl.to("#app-cam16", { transformOrigin: "42.4% 50.0%", duration: 0.367, ease: "power2.inOut" }, 56.785);
+    tl.set("#app-cam17", { transformOrigin: "63.8% 50.0%", scale: 1.3 }, 0);
+    tl.to("#app-cam17", { transformOrigin: "41.5% 25.8%", duration: 0.371, ease: "power2.inOut" }, 60.330);
+    tl.set("#app-cam18", { transformOrigin: "50.0% 45.0%", scale: 1.45 }, 0);
+    tl.to("#app-cam18", { transformOrigin: "50.0% 50.0%", duration: 0.395, ease: "power2.inOut" }, 63.247);
+    tl.to("#app-cam18", { transformOrigin: "50.0% 50.0%", duration: 0.396, ease: "power2.inOut" }, 64.407);
+    tl.to("#app-cam18", { transformOrigin: "42.9% 15.0%", duration: 0.251, ease: "power2.inOut" }, 65.933);
+    tl.set("#app-cam19", { transformOrigin: "42.9% 15.0%", scale: 1.45 }, 0);
+    tl.to("#app-cam19", { transformOrigin: "50.0% 50.0%", duration: 0.350, ease: "power2.inOut" }, 66.755);
+    tl.to("#app-cam19", { transformOrigin: "45.6% 50.0%", duration: 0.350, ease: "power2.inOut" }, 67.284);
+    tl.to("#app-cam19", { transformOrigin: "50.0% 50.0%", duration: 0.350, ease: "power2.inOut" }, 67.694);
+    tl.to("#app-cam19", { transformOrigin: "48.7% 15.0%", duration: 0.350, ease: "power2.inOut" }, 68.273);
+    tl.to("#app-cam19", { transformOrigin: "50.0% 50.0%", duration: 0.350, ease: "power2.inOut" }, 69.452);
+    tl.to("#app-cam19", { transformOrigin: "50.0% 15.0%", duration: 0.117, ease: "power2.inOut" }, 70.084);
+    tl.set("#app-cam20", { transformOrigin: "50.0% 15.0%", scale: 1.45 }, 0);
+    tl.to("#app-cam20", { transformOrigin: "50.4% 18.6%", duration: 0.350, ease: "power2.inOut" }, 70.262);
+    tl.to("#app-cam20", { transformOrigin: "64.8% 44.9%", duration: 0.350, ease: "power2.inOut" }, 70.446);
+    tl.to("#app-cam20", { transformOrigin: "50.0% 85.0%", duration: 0.350, ease: "power2.inOut" }, 70.630);
+    tl.set("#app-cam22", { transformOrigin: "50.0% 38.9%", scale: 1.45 }, 0);
+    tl.to("#app-cam22", { transformOrigin: "43.7% 66.4%", duration: 0.358, ease: "power2.inOut" }, 78.737);
+    tl.fromTo("#app-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.220);
+    tl.to("#app-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 3.700);
+    tl.fromTo("#app-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.220);
+    tl.to("#app-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 7.200);
+    tl.fromTo("#app-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 7.720);
     tl.to("#app-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.600);
     tl.fromTo("#app-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.120);
-    tl.to("#app-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.800);
-    tl.fromTo("#app-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 18.320);
-    tl.to("#app-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 23.300);
-    tl.fromTo("#app-c5 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 23.720);
-    tl.to("#app-c5 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 26.700);
-    tl.fromTo("#app-c6 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 27.120);
-    tl.to("#app-c6 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 29.000);
-    tl.fromTo("#app-c7 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 29.370);
-    tl.to("#app-c7 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 31.150);
-    tl.fromTo("#app-c8 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 31.620);
-    tl.to("#app-c8 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 34.600);
-    tl.fromTo("#app-c9 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 43.620);
-    tl.to("#app-c9 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 48.200);
-    tl.fromTo("#app-c10 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 48.620);
-    tl.to("#app-c10 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 50.700);
-    tl.fromTo("#app-c11 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 51.120);
-    tl.to("#app-c11 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 53.200);
-    tl.fromTo("#app-c12 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 53.620);
-    tl.to("#app-c12 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 55.650);
-    tl.fromTo("#app-c13 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 56.120);
-    tl.to("#app-c13 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 58.650);
-    tl.fromTo("#app-c14 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 59.070);
-    tl.to("#app-c14 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 61.150);
-    tl.fromTo("#app-c15 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 61.570);
-    tl.to("#app-c15 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 64.150);
+    tl.to("#app-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.600);
+    tl.fromTo("#app-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 18.070);
+    tl.to("#app-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 21.650);
+    tl.fromTo("#app-c5 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 22.070);
+    tl.to("#app-c5 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 25.150);
+    tl.fromTo("#app-c6 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 25.570);
+    tl.to("#app-c6 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 28.650);
+    tl.fromTo("#app-c7 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 29.070);
+    tl.to("#app-c7 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 33.650);
+    tl.fromTo("#app-c8 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 34.120);
+    tl.to("#app-c8 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 37.450);
+    tl.fromTo("#app-c9 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 46.120);
+    tl.to("#app-c9 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 48.800);
+    tl.fromTo("#app-c10 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 49.170);
+    tl.to("#app-c10 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 51.650);
+    tl.fromTo("#app-c11 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 52.120);
+    tl.to("#app-c11 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 55.550);
+    tl.fromTo("#app-c12 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 55.970);
+    tl.to("#app-c12 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 59.200);
+    tl.fromTo("#app-c13 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 59.620);
+    tl.to("#app-c13 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 62.850);
+    tl.fromTo("#app-c14 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 63.320);
+    tl.to("#app-c14 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 65.850);
+    tl.fromTo("#app-c15 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 66.270);
+    tl.to("#app-c15 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 69.850);
+    tl.fromTo("#app-c16 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 70.270);
+    tl.to("#app-c16 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 73.650);
+    tl.fromTo("#app-c17 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 74.070);
+    tl.to("#app-c17 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 77.650);
+    tl.fromTo("#app-c18 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 78.070);
+    tl.to("#app-c18 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 80.650);
+    tl.fromTo("#app-c19 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 81.120);
+    tl.to("#app-c19 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 83.650);
     window.__timelines["app"] = tl;
   </script>
 </template>

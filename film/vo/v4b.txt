@@ -1,1 +1,1 @@
-Don't sell your stocks. Deposit NVDA into Noren's Aqua pool, borrow up to 80% of its value, and the fees it earns pay your loan back. Credit tasks, like World ID and repaying on time, raise your limit. Swap uses Uniswap v4; Noren's Aqua maker fills when it's better.
+Don't sell your stocks. Deposit NVDA into Noren's Aqua pool: it becomes 1inch Aqua liquidity, and 66% of its value is your credit limit. Tasks raise it: World ID, a Reclaim proof, and repaying on time, recorded on-chain as a proof type only, up to 80%.

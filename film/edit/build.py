@@ -98,6 +98,8 @@ def base_css(dark=False):
     .dia .ends {{ position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }}
     .dia .end {{ width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }}
     .dia .end img {{ display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: {LINEN}; padding: 12px; object-fit: contain; }}
+    .dia .end .multis {{ display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }}
+    .dia .end img.multi {{ display: inline-block; width: 60px; height: 60px; margin: 0; border-radius: 16px; background: {LINEN}; padding: 8px; object-fit: contain; }}
     .dia .lanes {{ position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }}
     .dia .lane {{ display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }}
     .dia .lane .lg {{ position: relative; width: 76px; height: 76px; border-radius: 50%; background: {LINEN}; display: grid; place-items: center; }}
@@ -138,12 +140,13 @@ def scene_html(s):
         if seg["take"].startswith("@") and edl.CARDS[seg["take"][1:]].get("kind") == "diagram":
             c = edl.CARDS[seg["take"][1:]]; k = f'{sid}-k{seg["n"]}'
             (lf, ln), (rf, rn) = c["left"], c["right"]
+            lf_html = "".join(f'<img class="multi" src="assets/logos/{x}" alt="" />' for x in lf) if isinstance(lf, list) else f'<img src="assets/logos/{lf}" alt="" />'
             lanes = "".join(
                 f'<div class="lane" id="{k}l{j}"><span class="lg"><img src="assets/logos/{lg}" alt="" />{f"<img class=\"tok\" src=\"assets/logos/{tk}\" alt=\"\" />" if tk else ""}</span>'
                 f'<div><b>{html.escape(t)}<span class="chs">{"".join(f"<img src=\"assets/logos/{ch}\" alt=\"\" />" for ch in chs)}</span></b><small>{html.escape(d)}</small></div><span class="st{" live" if st.startswith("live") else ""}">{html.escape(st)}</span></div>'
                 for j, (lg, tk, t, d, st, chs) in enumerate(c["lanes"]))
             vids.append(f'<div id="{k}" class="clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="1" style="position:absolute;inset:0"><div class="dia">'
-                        f'<h3>{html.escape(c["title"])}</h3><div class="arrow" id="{k}a"></div><div class="ends"><div class="end" id="{k}e0"><img src="assets/logos/{lf}" alt="" />{html.escape(ln)}</div>'
+                        f'<h3>{html.escape(c["title"])}</h3><div class="arrow" id="{k}a"></div><div class="ends"><div class="end" id="{k}e0"><span class="multis">{lf_html}</span>{html.escape(ln)}</div>'
                         f'<div class="end" id="{k}e1"><img src="assets/logos/{rf}" alt="" />{html.escape(rn)}</div></div><div class="lanes">{lanes}</div><p>{html.escape(c["source"])}</p></div></div>')
             t0 = seg["at"]
             tl.append(f'tl.fromTo("#{k}e0", {{ x: -30, opacity: 0 }}, {{ x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }}, {t0 + 0.1:.3f});')
@@ -160,7 +163,29 @@ def scene_html(s):
                 tl.append(f'tl.fromTo("#{sid}-k{seg["n"]}r{j}", {{ x: -24, opacity: 0 }}, {{ x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }}, {seg["at"] + 0.15 + j * 0.22:.3f});')
             continue
         vids.append(f'<div class="cam" id="{cid}"><video id="{vid}" class="clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="1" src="assets/footage/{seg["file"]}" muted playsinline></video></div>')
-        z = zoom_of(seg["zoom"])
+        if isinstance(seg["zoom"], tuple) and seg["zoom"] and seg["zoom"][0] == "follow":
+            # a camera that follows the recorded pointer: scale `sc`, origin eased to each logged move (CSS px of 1280x720)
+            _, sc, ramp_at = seg["zoom"]
+            ev = json.load(open(TAKES / f"{seg['take']}.events.json"))["events"]
+            moves = [e for e in ev if e["type"] == "move" and seg["tin"] - 3 <= e["t"] <= seg["tout"]]
+            loc = lambda tt: seg["at"] + (tt - seg["tin"]) / seg["rate"]
+            pct = lambda x, y: (min(88, max(12, x / 12.8)), min(85, max(15, y / 7.2)))
+            prior = [m for m in moves if m["t"] <= seg["tin"]]
+            x0, y0 = pct(prior[-1]["x"], prior[-1]["y"]) if prior else (50, 45)
+            s_start = 1.0 if ramp_at is not None else sc
+            tl.append(f'tl.set("#{cid}", {{ transformOrigin: "{x0:.1f}% {y0:.1f}%", scale: {s_start} }}, 0);')
+            if ramp_at is not None:
+                tl.append(f'tl.to("#{cid}", {{ scale: {sc}, duration: 0.9, ease: "power2.inOut" }}, {max(seg["at"], loc(ramp_at)):.3f});')
+            for m in moves:
+                if m["t"] <= seg["tin"]: continue
+                st = max(seg["at"], loc(m.get("from") or m["t"]))
+                du = max(0.35, loc(m["t"]) - st + 0.25)
+                if st >= seg["at"] + seg["dur"]: break
+                x, y = pct(m["x"], m["y"])
+                tl.append(f'tl.to("#{cid}", {{ transformOrigin: "{x:.1f}% {y:.1f}%", duration: {min(du, seg["at"] + seg["dur"] - st):.3f}, ease: "power2.inOut" }}, {st:.3f});')
+            z = None
+        else:
+            z = zoom_of(seg["zoom"])
         if z:
             (s0, x0, y0), (s1, x1, y1) = z
             tl.append(f'tl.set("#{cid}", {{ transformOrigin: "{x0}% {y0}%", scale: {s0} }}, 0);')

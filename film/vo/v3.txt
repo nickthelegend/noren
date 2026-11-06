@@ -1,1 +1,1 @@
-Aubelle, a demo boutique, added Noren with the SDK. One file creates the invoice, sends the shopper to Noren's checkout, and trusts the order only after a signed webhook. The checkout offers four ways to pay: privately, with USDC, with stocks, or later on credit, still private.
+Aubelle, a demo boutique, added Noren with the SDK: one file creates the invoice and trusts only a signed webhook. The checkout offers four ways to pay: privately, with USDC, with stocks or crypto, or later on credit, still private.

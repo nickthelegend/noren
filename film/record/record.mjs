@@ -184,8 +184,13 @@ try {
     // Off camera: connect the injected wallet if signed out, then fork faucets to its address (Robinhood stock/ETH/USDG, Arc USDC)
     await p.goto(`${APP}/#/app`); await sleep(7000);
     if (await p.getByRole("button", { name: /Use a browser wallet/ }).isVisible().catch(() => false)) {
-      await p.getByRole("button", { name: /Use a browser wallet/ }).click(); await sleep(1500);
-      await p.getByRole("button", { name: /Connect Test wallet \(injected\)/ }).click();
+      if (TW) {
+        await p.getByRole("button", { name: /Use a browser wallet/ }).click(); await sleep(1500);
+        await p.getByRole("button", { name: /Connect Test wallet \(injected\)/ }).click();
+      } else {
+        // the app's own test wallet (a key kept in this browser), which every checkout method uses on the forks
+        await p.getByRole("button", { name: /Use a test wallet/ }).click();
+      }
       await until(async () => /TOTAL BALANCE/i.test(await p.locator("main").innerText()), "home", 60000); await sleep(2000);
     }
     await p.locator(".nk-chip").click(); await sleep(1500);
@@ -193,7 +198,8 @@ try {
     await until(async () => /faucet:/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 120000);
     await p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ }).click();
     await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000);
-    log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 300)); await save();
+    log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 300));
+    log("address", (await p.locator(".nk-menu-row span").first().innerText()).trim()); await save();
   }
 
   if (take === "apphome3") {
@@ -442,6 +448,189 @@ try {
     result("tx links", links.join(" "));
     await point(hero.locator(".nk-result, [class*=result]").first()).catch(() => {}); await sleep(5000);
     await cut(); await save();
+  }
+
+  // ---------------------------------------------------------------- v4 takes
+  const V4 = "/Volumes/Extreme SSD/Projects/grokbot/projects/_wt/noren-v4";
+  const forkScript = (args) => { log("fork script:", args.join(" ")); const out = execFileSync("pnpm", ["exec", "tsx", ...args], { cwd: V4, encoding: "utf8", timeout: 600000, stdio: ["ignore", "pipe", "pipe"] }); writeFileSync(`${HERE}state/fork-${args[0].split("/").pop()}-${Date.now()}.log`, out); return out; };
+  const walletAddr = async () => { await p.locator(".nk-chip").click(); await sleep(1200); const a = (await p.locator(".nk-menu-row span").first().innerText()).trim(); await p.locator(".nk-x").click(); await sleep(600); return a; };
+
+  if (take === "link4") {
+    // Off camera: Noren Merchant (merchant persona, injected wallet) sets up its store on this stack and makes a 20 USDC link
+    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(5000);
+    const inj = p.getByRole("button", { name: /Test wallet \(injected\)/ });
+    await until(() => inj.isVisible(), "injected wallet option", 30000);
+    await inj.click();
+    await until(() => p.getByText("What's your business called?").isVisible(), "signed in", 60000);
+    await p.locator(".ob-field input").first().fill("Juhu Chai House");
+    await p.getByRole("button", { name: /Continue/ }).click(); await sleep(1000);
+    await p.getByRole("radio", { name: /USDC on Arc to my wallet/ }).click();
+    await p.getByRole("button", { name: /Create store/ }).click();
+    await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 90000);
+    await p.locator(".ob-field input").nth(0).fill("20");
+    await p.locator(".ob-field input").nth(1).fill("Chai and samosas, office order");
+    await p.getByRole("button", { name: /Create link/ }).click();
+    await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
+    const link = await p.locator(".ob-url").innerText(); log("link4", link, (await p.locator(".ob-link").innerText()).replace(/\n+/g, " | ").slice(0, 120));
+    writeFileSync(`${HERE}state/link4.txt`, link); await save();
+  }
+
+  if (take === "credit4a") {
+    // Stocks -> credit, part 1: Home -> Earn (deposit 2 NVDA, the Aqua maker card) -> Credit (limit at 66%) ->
+    // Raise your limit: the World ID QR and one Reclaim provider's QR (shown, never completed)
+    await p.goto(`${APP}/#/app`); await sleep(8000);
+    await moveTo(640, 420, 1);
+    await rollCamera(); await sleep(2000);
+    await click(p.getByRole("tab", { name: "Earn" }), "earn tab"); await sleep(3000);
+    const nv = p.getByRole("radio", { name: /nNVDA/ });
+    await click(nv.first(), "nNVDA vault"); await sleep(1500);
+    await typeIn(p.locator("#nk-earn"), "2", "deposit amount"); await sleep(1200);
+    await click(p.locator(".nk-cta").first(), "deposit");
+    await until(async () => /Deposited|reverted|rror/.test(await status()), "deposit", 180000); result("deposit", await status()); await sleep(1800);
+    result("vault row", (await p.locator("[aria-label=Vault]").innerText()).replace(/\n+/g, " | ").slice(0, 300));
+    const aq = p.locator(".nk-aqua").first();
+    await point(aq); await sleep(1500);
+    await point(aq.locator(".nk-jobs")); await sleep(3500);
+    result("aqua maker", (await aq.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    await click(p.getByRole("tab", { name: "Credit" }), "credit tab"); await sleep(5000);
+    await scrollBy(-2000, 300); await sleep(1500);
+    result("credit top", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 900));
+    const raise = p.locator("#nk-raise");
+    await point(raise.locator(".nk-raise-now")); await sleep(3000);
+    result("raise now", (await raise.locator(".nk-raise-now").innerText()).replace(/\n+/g, " | "));
+    // World ID: the real IDKit request, its QR on screen (nobody scans it here)
+    await click(raise.getByRole("button", { name: "Verify", exact: true }), "world id task"); await sleep(1500);
+    const vw = p.getByRole("button", { name: /Verify with World ID/ }).first();
+    await click(vw, "verify with World ID");
+    await sleep(4500); ev("result", "world qr", { value: "IDKit request open" });
+    await sleep(3000);
+    await p.keyboard.press("Escape").catch(() => {}); await sleep(1200);
+    // Reclaim: one provider -> its QR -> waiting (not completed)
+    await click(raise.getByRole("button", { name: "Prove", exact: true }), "reclaim task"); await sleep(1800);
+    const prov = raise.getByRole("button", { name: /^Prove / }).first();
+    result("reclaim provider", await prov.getAttribute("aria-label"));
+    await click(prov, "reclaim provider");
+    await until(async () => (await p.locator("[role=dialog] canvas, [role=dialog] svg, [role=dialog] img").count()) > 0, "reclaim QR", 60000).catch(() => {});
+    await sleep(6000);
+    result("reclaim modal", (await p.locator("[role=dialog]").last().innerText().catch(() => "")).replace(/\n+/g, " | ").slice(0, 500));
+    await click(p.locator("[role=dialog] .nk-x").last(), "close reclaim"); await sleep(1500);
+    const me = await walletAddr(); writeFileSync(`${HERE}state/stocks-wallet.txt`, me);
+    await cut(); await save();
+  }
+
+  if (take === "credit4b") {
+    // Stocks -> credit, part 2 (after the real fork repayment steps): the limit at 70% with the on-chain record,
+    // more NVDA deposited (limit up), then the credit line opened with nNVDA shares
+    await p.goto(`${APP}/#/app/credit`); await sleep(9000);
+    await moveTo(640, 400, 1);
+    await rollCamera(); await sleep(1500);
+    const raise = p.locator("#nk-raise");
+    await point(raise.locator(".nk-raise-now")); await sleep(2500);
+    result("raise now", (await raise.locator(".nk-raise-now").innerText()).replace(/\n+/g, " | "));
+    const rec = p.locator(".nk-onchain, .nk-rc-chain").first();
+    if (await rec.count()) { await point(rec); await sleep(2500); result("onchain", (await rec.innerText()).replace(/\n+/g, " | ")); }
+    else { const ot = raise.getByText("Repay on time").first(); await point(ot); await sleep(2500); result("ontime", (await raise.locator("li", { hasText: "Repay on time" }).first().innerText()).replace(/\n+/g, " | ").slice(0, 400)); }
+    // lock more NVDA: one more NVDA into the nNVDA Aqua pool
+    await click(p.getByRole("tab", { name: "Earn" }), "earn tab"); await sleep(3000);
+    await click(p.getByRole("radio", { name: /nNVDA/ }).first(), "nNVDA vault"); await sleep(1200);
+    await typeIn(p.locator("#nk-earn"), "1", "deposit amount"); await sleep(1000);
+    await click(p.locator(".nk-cta").first(), "deposit");
+    await until(async () => /Deposited|reverted|rror/.test(await status()), "deposit", 180000); result("deposit2", await status()); await sleep(1500);
+    await click(p.getByRole("tab", { name: "Credit" }), "credit tab"); await sleep(6000);
+    await point(p.locator("#nk-raise .nk-raise-now")); await sleep(2500);
+    result("raise after lock", (await p.locator("#nk-raise .nk-raise-now").innerText()).replace(/\n+/g, " | "));
+    // open the credit line with nNVDA shares
+    const line = p.locator("#nk-line");
+    await point(line); await sleep(1200);
+    await click(line.getByRole("radio", { name: /^nNVDA/ }).first(), "nNVDA collateral"); await sleep(1500);
+    const max = line.locator(".nk-box .nk-sub button").first();
+    if (await max.count()) { await click(max, "all nNVDA"); await sleep(1500); }
+    result("open form", (await line.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    const cta = line.locator(".nk-cta").first();
+    await click(cta, "lock and open the line");
+    await until(async () => /Live on Arc|reverted|Declined|rror|Setup required/.test(await line.innerText()) && !/Locking on Robinhood/.test(await cta.innerText().catch(() => "")), "line opened", 300000);
+    await sleep(2500); result("line", (await line.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    await until(async () => /Live on Arc/.test(await line.innerText()) && !/Bridging|reporting…/.test(await line.innerText()), "live on Arc", 240000).catch(() => log("line not live on Arc yet"));
+    await sleep(3000); result("line live", (await line.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    await cut(); await save();
+  }
+
+  if (take === "credit4c") {
+    // Pay later at the checkout (20 USDC link) from the credit line, then Noren app: the line owes 20
+    const link = (await import("node:fs")).readFileSync(`${HERE}state/link4.txt`, "utf8").trim();
+    await p.goto(`${APP}/#/app`); await sleep(8000);   // the app reconnects the browser wallet first
+    log("app account", await p.locator(".nk-chip").innerText().catch(() => "?"));
+    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await p.reload(); await sleep(8000);
+    await moveTo(900, 300, 1);
+    await rollCamera(); await sleep(1500);
+    await click(p.getByRole("tab", { name: /Pay in 3 \/ Pay later/ }), "pay later"); await sleep(4000);
+    result("later panel", (await p.locator("body").innerText()).match(/Pay later[\s\S]{0,600}/)?.[0]?.replace(/\n+/g, " | "));
+    const go = p.locator(".btn.ink.full, .btn.kaki").first();
+    await until(async () => !(await go.isDisabled()), "pay later enabled", 90000);
+    result("button", await go.innerText());
+    await click(go, "pay later");
+    await until(async () => /Paid\s*(later|on credit)/i.test(await p.locator("body").innerText()), "paid later", 300000); await sleep(2000);
+    result("paid", (await p.locator("body").innerText()).match(/Paid[\s\S]{0,500}/)?.[0]?.replace(/\n+/g, " | ")); await sleep(4000);
+    await cut(); await save();
+  }
+
+  if (take === "credit4d") {
+    // After real Aqua fills (dev-maker-fill.ts): the line's NVDA fees pay it down
+    await p.goto(`${APP}/#/app/credit`); await sleep(9000);
+    await moveTo(640, 400, 1);
+    await rollCamera(); await sleep(1500);
+    const y = p.locator(".nk-yield").first();
+    await point(y); await sleep(2500);
+    result("yield before", (await y.innerText()).replace(/\n+/g, " | ").slice(0, 500));
+    const b = y.getByRole("button", { name: /Pay down with/ });
+    await click(b, "pay down with fees");
+    await until(async () => /paid down the line|reverted|rror/.test(await p.locator("#nk-line").innerText()), "pay down", 120000); await sleep(3000);
+    result("yield after", (await y.innerText()).replace(/\n+/g, " | ").slice(0, 500));
+    result("line after", (await p.locator("#nk-line").innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    await sleep(3000);
+    await cut(); await save();
+  }
+
+  if (take === "ethpay4") {
+    // Pay with stocks or crypto: Aubelle's checkout, the stock/ETH picker, pay with ETH
+    await p.goto(`${SHOP}/#/p/amelie-gingham`); await sleep(4000);
+    await p.getByRole("button", { name: "S", exact: true }).click(); await sleep(500);
+    await p.getByRole("button", { name: /Add to bag/ }).click(); await sleep(1500);
+    await p.locator(".drawer").getByRole("link", { name: "View bag" }).click(); await sleep(1500);
+    await p.getByRole("button", { name: /Checkout with/ }).click();
+    await p.waitForURL(/localhost:5190\/#\/pay\//, { timeout: 30000 }); await sleep(5000);
+    await moveTo(900, 300, 1);
+    await rollCamera(); await sleep(1500);
+    await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks or crypto"); await sleep(3000);
+    const pick = p.locator("[aria-label='Stock Token or ETH']");
+    await until(() => pick.isVisible(), "picker", 240000);
+    result("picker", (await pick.innerText()).replace(/\n+/g, " | "));
+    await point(pick); await sleep(1500);
+    await click(pick.getByRole("radio", { name: /^ETH/ }), "ETH"); await sleep(3000);
+    const pay = p.getByRole("button", { name: /Pay with [\d.]+ ETH/ }).first();
+    await until(() => pay.isEnabled(), "eth quote", 90000);
+    result("eth quote", (await p.locator("body").innerText()).match(/You pay[\s\S]{0,300}/)?.[0]?.replace(/\n+/g, " | "));
+    await point(pay); await sleep(1500);
+    await click(pay, "pay with ETH");
+    await until(async () => /Paid with/.test(await p.locator("body").innerText()), "eth payment", 180000); await sleep(2500);
+    result("eth paid", (await p.locator("body").innerText()).match(/Paid with[\s\S]{0,500}/)?.[0]?.replace(/\n+/g, " | ")); await sleep(4000);
+    await cut(); await save();
+  }
+
+  if (take === "bridge4") {
+    // USDC from any chain to Arc: the chain chips (Ethereum, Base, Arbitrum, Robinhood…), the path, the recent live runs
+    await p.goto(`${APP}/#/app/bridge`); await sleep(9000);
+    await moveTo(640, 360, 1);
+    await rollCamera(); await sleep(2000);
+    const hero = p.locator(".nk-rharc");
+    const chips = hero.locator("[role=radiogroup] [role=radio]");
+    result("chains", (await chips.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).join(" | "));
+    for (let i = 0; i < Math.min(await chips.count(), 5); i++) { await click(chips.nth(i), `chain ${i}`); await sleep(1600); }
+    await click(chips.first(), "chain 0 again"); await sleep(1200);
+    await point(hero.locator(".nk-path")); await sleep(2500);
+    const recent = p.locator("[aria-label='Recent live transfers into Arc']").first();
+    if (await recent.count()) { await point(recent); await sleep(2000); await scrollBy(320, 1400); await sleep(2500); result("recent", (await recent.innerText()).replace(/\n+/g, " | ").slice(0, 900)); }
+    await cut();
   }
 
   if (take === "landing4") {

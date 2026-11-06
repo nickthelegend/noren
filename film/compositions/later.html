@@ -35,6 +35,8 @@
     .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
     .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
     .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .end .multis { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .dia .end img.multi { display: inline-block; width: 60px; height: 60px; margin: 0; border-radius: 16px; background: #efe8db; padding: 8px; object-fit: contain; }
     .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
     .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
     .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
@@ -54,43 +56,32 @@
   </style>
   <div id="root" data-composition-id="later" data-width="1920" data-height="1080">
     <div class="win" id="later-win">
-      <div class="cam" id="later-cam0"><video id="later-v0" class="clip" data-start="0.000" data-duration="6.000" data-track-index="1" src="assets/footage/later-0.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam1"><video id="later-v1" class="clip" data-start="6.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-1.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam2"><video id="later-v2" class="clip" data-start="9.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-2.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam3"><video id="later-v3" class="clip" data-start="12.000" data-duration="2.500" data-track-index="1" src="assets/footage/later-3.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam4"><video id="later-v4" class="clip" data-start="14.500" data-duration="3.000" data-track-index="1" src="assets/footage/later-4.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam0"><video id="later-v0" class="clip" data-start="0.000" data-duration="2.000" data-track-index="1" src="assets/footage/later-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam1"><video id="later-v1" class="clip" data-start="2.000" data-duration="2.000" data-track-index="1" src="assets/footage/later-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam2"><video id="later-v2" class="clip" data-start="4.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-2.mp4" muted playsinline></video></div>
       
-      <div id="later-s0" class="spd clip" data-start="0.000" data-duration="6.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
-      <div id="later-s1" class="spd clip" data-start="6.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.7×</span></div>
-      <div id="later-s2" class="spd clip" data-start="9.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
+      <div id="later-s0" class="spd clip" data-start="0.000" data-duration="2.000" data-track-index="4"><span class="in">▸▸ 4.0×</span></div>
+      <div id="later-wl1" class="clip" data-start="2.000" data-duration="2.000" data-track-index="4" style="position:absolute;left:18px;top:18px"><div class="wid">World ID · production · World App</div></div>
     </div>
     <div class="bar">
-      <div class="tag" id="later-tag"><i></i>05c · Pay later, privately · repay</div>
-      <div id="later-c0" class="cap clip" data-start="0.100" data-duration="5.900" data-track-index="3"><span class="in">Pay later, privately: your lender knows you, Noren Merchant doesn't</span></div>
-      <div id="later-c1" class="cap clip" data-start="6.100" data-duration="2.900" data-track-index="3"><span class="in">Noren Merchant: 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> paid · Customer: <em>Private</em></span></div>
-      <div id="later-c2" class="cap clip" data-start="9.100" data-duration="2.900" data-track-index="3"><span class="in">Repay 4.17 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> in the Noren app · repayments are public</span></div>
-      <div id="later-c3" class="cap clip" data-start="12.100" data-duration="2.400" data-track-index="3"><span class="in">Live on Arc: 0.40 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> paid · no borrower, no line in the tx</span></div>
-      <div id="later-c4" class="cap clip" data-start="14.600" data-duration="2.850" data-track-index="3"><span class="in">Live over CCIP: Robinhood testnet → Base hub → Arc</span></div>
-      <div id="later-net0" class="clip" data-start="0.000" data-duration="6.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net1" class="clip" data-start="6.000" data-duration="3.000" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="later-net2" class="clip" data-start="9.000" data-duration="3.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net3" class="clip" data-start="12.000" data-duration="2.500" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="later-net4" class="clip" data-start="14.500" data-duration="3.000" data-track-index="6"><div class="net live"><b></b>CCIP · live · Robinhood testnet → Base → Arc</div></div>
+      <div class="tag" id="later-tag"><i></i>05c · Pay later, privately</div>
+      <div id="later-c0" class="cap clip" data-start="0.050" data-duration="1.900" data-track-index="3"><span class="in">Pay later, privately · Customer: <em>Private</em></span></div>
+      <div id="later-c1" class="cap clip" data-start="2.050" data-duration="1.900" data-track-index="3"><span class="in">World ID verified in World App (Orb)</span></div>
+      <div id="later-c2" class="cap clip" data-start="4.050" data-duration="2.900" data-track-index="3"><span class="in">Live over CCIP: Robinhood testnet → Base hub → Arc</span></div>
+      <div id="later-net0" class="clip" data-start="0.000" data-duration="2.000" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="later-net1" class="clip" data-start="2.000" data-duration="2.000" data-track-index="6"><div class="net">World ID · production · World App</div></div><div id="later-net2" class="clip" data-start="4.000" data-duration="3.000" data-track-index="6"><div class="net live"><b></b>CCIP · live · Robinhood testnet → Base → Arc</div></div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#later-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#later-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
-    tl.set("#later-cam2", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
-    tl.set("#later-cam3", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.set("#later-cam4", { transformOrigin: "50% 10%", scale: 1.2 }, 0);
-    tl.fromTo("#later-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
-    tl.to("#later-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.700);
-    tl.fromTo("#later-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.120);
-    tl.to("#later-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 8.700);
-    tl.fromTo("#later-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.120);
-    tl.to("#later-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.700);
-    tl.fromTo("#later-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.120);
-    tl.to("#later-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.200);
-    tl.fromTo("#later-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 14.620);
-    tl.to("#later-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.150);
+    tl.set("#later-cam2", { transformOrigin: "50% 10%", scale: 1.2 }, 0);
+    tl.fromTo("#later-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.070);
+    tl.to("#later-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 1.650);
+    tl.fromTo("#later-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 2.070);
+    tl.to("#later-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 3.650);
+    tl.fromTo("#later-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.070);
+    tl.to("#later-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 6.650);
     window.__timelines["later"] = tl;
   </script>
 </template>
