@@ -116,6 +116,9 @@ export function BridgeTab({ w }: { w: Wallet }) {
   );
 }
 
+/** The workflow logs "<USDC6> USDC6 on Arc, ~Ns"; show it as USDC. */
+const fmtQuote = (q?: string) => { if (!q) return "…"; const m = /^(\d+) USDC6(.*)$/.exec(q); return m ? `${usdc(m[1])} USDC${m[2]}` : q; };
+
 function Transfer({ s }: { s: Settlement }) {
   const approved = s.status === "approved" || s.status === "executed";
   const tone = s.status === "rejected" || s.status === "failed" ? "bad" : s.status === "executed" ? "good" : "";
@@ -123,7 +126,7 @@ function Transfer({ s }: { s: Settlement }) {
     <Result tone={tone} tag={`${usdc(s.amountUsdg6)} USDG → USDC`} link={<span title={s.requestTx}>{shortHex(s.requestTx, 6)}</span>}
       title={s.status === "requested" ? "Waiting for the CRE workflow…" : s.status === "rejected" ? "Rejected by the CRE workflow" : s.status === "failed" ? "Did not complete" : s.status === "approved" ? "Approved by Chainlink CRE" : "Deposited into Relay"}
       body={s.error ?? (s.cre?.decision ? `Decision: ${s.cre.decision}` : undefined)}
-      kv={[["Relay quote", s.quotes?.relay ?? "…"], ["Across quote", s.quotes?.across ?? "…"], ["Minimum on Arc", s.approved ? `${usdc(s.approved.minOutUsdc6)} USDC` : "…"]]}>
+      kv={[["Relay quote", fmtQuote(s.quotes?.relay)], ["Across quote", fmtQuote(s.quotes?.across)], ["Minimum on Arc", s.approved ? `${usdc(s.approved.minOutUsdc6)} USDC` : "…"]]}>
       <div style={{ marginTop: 16 }}>
         <Track steps={[
           { k: "Escrowed", on: true, d: "Robinhood" },
