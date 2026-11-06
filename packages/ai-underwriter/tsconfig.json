@@ -1,0 +1,1 @@
+{"compilerOptions":{"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","noEmit":true,"allowImportingTsExtensions":true,"esModuleInterop":true,"resolveJsonModule":true,"skipLibCheck":true,"strict":true,"types":["node"],"lib":["ES2022","DOM"]},"include":["src/**/*.ts","test/**/*.ts"]}
