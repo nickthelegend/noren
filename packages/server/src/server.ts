@@ -36,7 +36,7 @@ export function readableError(error: any): string {
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
 /** Tsuke credit: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
-export type CreditOptions = { creditLine: Address; fromBlock?: bigint; robinhoodRpc?: string; public?: Record<string, unknown> };
+export type CreditOptions = { creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -88,7 +88,7 @@ export function createMerchantServer(options: ServerOptions): Server {
   async function body(req: any) { let s = ''; for await (const chunk of req) { s += chunk; if (s.length > 100_000) throw new Error('Request too large'); } return s ? JSON.parse(s) : {}; }
   function send(res: any, status: number, value: unknown) { res.writeHead(status, { 'content-type': 'application/json' }); res.end(jsonBigints(value)); }
   // Tsuke credit: a Drawn log on NorenCreditLine that matches an open invoice settles it. Mismatches are logged, never settled.
-  const creditWatch = options.credit ? watchCreditDraws({ rpcUrl: options.rpcUrl, creditLine: options.credit.creditLine, fromBlock: options.credit.fromBlock, onError: e => console.error('Credit watcher:', e.message), onDraw: async draw => {
+  const creditWatch = options.credit?.creditLine ? watchCreditDraws({ rpcUrl: options.rpcUrl, creditLine: options.credit.creditLine, fromBlock: options.credit.fromBlock, onError: e => console.error('Credit watcher:', e.message), onDraw: async draw => {
     await ready;
     const row = rows.get(draw.invoiceId.toLowerCase());
     const payout = row ? await publicClient.readContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'merchantPayout', args: [row.invoice.merchant] }) as string : undefined;
@@ -105,7 +105,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       const path = url.pathname;
       if (options.dev && req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': req.headers.origin === 'http://localhost:5190' || req.headers.origin === 'http://127.0.0.1:5190' ? req.headers.origin : '', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' }); res.end(); return; }
       if (options.dev) { const origin = req.headers.origin; if (origin === 'http://localhost:5190' || origin === 'http://127.0.0.1:5190') res.setHeader('access-control-allow-origin', origin); }
-      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine, robinhoodRpc: options.credit.robinhoodRpc ?? null, ...options.credit.public } : null });
+      if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);
       if (req.method === 'GET' && path === '/pricing/quote') {
         const currency = url.searchParams.get('currency') ?? '';

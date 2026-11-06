@@ -11,7 +11,7 @@ import { localFork } from "@noren/core";
 import type { Config } from "./api";
 
 export type CreditCfg = {
-  creditLine: Address; robinhoodRpc: string | null;
+  creditLine: Address | null; robinhoodRpc: string | null;
   /** First block worth scanning on the Robinhood fork (the fork point), as a decimal string. */
   robinhoodFromBlock?: string; arcFromBlock?: string;
   tsuke?: Address; underwriterUrl?: string; [k: string]: unknown;
@@ -95,11 +95,12 @@ export function makeTsuke(cfg: Config) {
       const closed = await c.getLogs({ address: credit.tsuke, event: tsukeEvents.closed, fromBlock: fromRh ?? "earliest", toBlock: "latest" });
       const closedIds = new Set(closed.map((l) => l.args.lineId!.toLowerCase()));
       const fromArc = credit.arcFromBlock ? BigInt(credit.arcFromBlock) : BigInt(cfg.deployment.deploymentBlock);
+      const creditLine = credit.creditLine;
       return Promise.all(opened.map(async (l) => {
         const lineId = l.args.lineId!;
-        const [drawn, repaid] = await Promise.all([
-          arc.getLogs({ address: credit.creditLine, event: creditLineAbi[2], args: { lineId }, fromBlock: fromArc, toBlock: "latest" }),
-          arc.getLogs({ address: credit.creditLine, event: creditLineAbi[3], args: { lineId }, fromBlock: fromArc, toBlock: "latest" }),
+        const [drawn, repaid] = !creditLine ? [[], []] : await Promise.all([
+          arc.getLogs({ address: creditLine, event: creditLineAbi[2], args: { lineId }, fromBlock: fromArc, toBlock: "latest" }),
+          arc.getLogs({ address: creditLine, event: creditLineAbi[3], args: { lineId }, fromBlock: fromArc, toBlock: "latest" }),
         ]);
         return {
           lineId, limit: l.args.limitUsdc6!, expiry: Number(l.args.expiry!), collateral8: l.args.collateralValueUsd8!, openedTx: l.transactionHash!, openedBlock: l.blockNumber!,
@@ -111,24 +112,26 @@ export function makeTsuke(cfg: Config) {
     },
     /** Arc: pays a Noren invoice from the credit pool. The merchant server sees the Drawn log and settles the invoice. */
     async payInvoice(lineId: Hex, merchant: Address, amount: bigint, invoiceId: Hex) {
-      if (!credit) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
-      await arc.simulateContract({ account, address: credit.creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId] });
-      const hash = await arcWallet.writeContract({ address: credit.creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId], chain: arcChain });
+      const creditLine = credit?.creditLine;
+      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId] });
+      const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId], chain: arcChain });
       const r = await arc.waitForTransactionReceipt({ hash });
       if (r.status !== "success") throw new Error(`payInvoice reverted: ${hash}`);
       return { hash, gasUsed: r.gasUsed };
     },
     /** Arc: repays the line in USDC (approve, then repay). The CRE workflow carries the Repaid log back to TsukeCredit. */
     async repay(lineId: Hex, amount: bigint) {
-      if (!credit) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      const creditLine = credit?.creditLine;
+      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
       const usdc = cfg.deployment.usdc;
-      const allowance = await arc.readContract({ address: usdc, abi: erc20Abi, functionName: "allowance", args: [account.address, credit.creditLine] });
+      const allowance = await arc.readContract({ address: usdc, abi: erc20Abi, functionName: "allowance", args: [account.address, creditLine] });
       if (allowance < amount) {
-        const a = await arcWallet.writeContract({ address: usdc, abi: erc20Abi, functionName: "approve", args: [credit.creditLine, amount], chain: arcChain });
+        const a = await arcWallet.writeContract({ address: usdc, abi: erc20Abi, functionName: "approve", args: [creditLine, amount], chain: arcChain });
         if ((await arc.waitForTransactionReceipt({ hash: a })).status !== "success") throw new Error(`USDC approval reverted: ${a}`);
       }
-      await arc.simulateContract({ account, address: credit.creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount] });
-      const hash = await arcWallet.writeContract({ address: credit.creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount], chain: arcChain });
+      await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount] });
+      const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "repay", args: [lineId, amount], chain: arcChain });
       if ((await arc.waitForTransactionReceipt({ hash })).status !== "success") throw new Error(`repay reverted: ${hash}`);
       return hash;
     },

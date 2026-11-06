@@ -9,6 +9,7 @@
     "spike": "sh scripts/spike.sh",
     "e2e": "sh scripts/e2e-fork.sh",
     "dev:stack": "sh scripts/dev-stack.sh",
+    "dev:all": "sh scripts/dev-all.sh",
     "test": "pnpm exec vitest run",
     "build:contracts": "cd packages/contracts && forge build --skip 'test/**'"
   },

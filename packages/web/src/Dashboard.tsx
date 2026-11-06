@@ -221,13 +221,14 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
   const [exp, setExp] = useState<{ drawn: number; repaid: number } | null>(null);
   const [expErr, setExpErr] = useState<string | null>(null);
   useEffect(() => {
-    if (!credit || !lineIds.length) { setExp({ drawn: 0, repaid: 0 }); return; }
+    if (!credit?.creditLine || !lineIds.length) { setExp({ drawn: 0, repaid: 0 }); return; }
+    const creditLine = credit.creditLine;
     let live = true;
     const c = createPublicClient({ transport: http(cfg.rpcUrl) });
     const from = BigInt(credit.arcFromBlock ?? cfg.deployment.deploymentBlock);
     Promise.all([
-      c.getLogs({ address: credit.creditLine, event: creditLineAbi[2], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
-      c.getLogs({ address: credit.creditLine, event: creditLineAbi[3], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
+      c.getLogs({ address: creditLine, event: creditLineAbi[2], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
+      c.getLogs({ address: creditLine, event: creditLineAbi[3], args: { lineId: lineIds as `0x${string}`[] }, fromBlock: from, toBlock: "latest" }),
     ]).then(([d, rp]) => { if (live) { setExp({ drawn: d.reduce((a, l) => a + n6(l.args.amount), 0), repaid: rp.reduce((a, l) => a + n6(l.args.amount), 0) }); setExpErr(null); } })
       .catch((e) => live && setExpErr(`Couldn't read NorenCreditLine: ${msgOf(e)}`));
     return () => { live = false; };
@@ -241,7 +242,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
-        {!credit ? <p className="sd-muted">Setup required: Tsuke credit isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, TsukeCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+        {!credit?.creditLine ? <p className="sd-muted">Setup required: Tsuke credit isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, TsukeCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
           <>
             <dl className="sd-dl">
               <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
@@ -250,7 +251,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
               <dt>Owed to the credit pool</dt><dd className="num"><b>{exp ? `${fmt(Math.max(0, exp.drawn - exp.repaid))} USDC` : "…"}</b></dd>
               <dt>Your exposure</dt><dd><b>0.00 USDC</b> · paid upfront</dd>
             </dl>
-            <p className="sd-muted sm">Drawn and repaid amounts are summed from <code>Drawn</code> and <code>Repaid</code> logs on NorenCreditLine <span className="mono">{short(credit.creditLine, 6)}</span>. Collateral sits in TsukeCredit on Robinhood Chain.</p>
+            <p className="sd-muted sm">Drawn and repaid amounts are summed from <code>Drawn</code> and <code>Repaid</code> logs on NorenCreditLine <span className="mono">{short(credit.creditLine ?? "", 6)}</span>. Collateral sits in TsukeCredit on Robinhood Chain.</p>
           </>
         )}
       </div>
