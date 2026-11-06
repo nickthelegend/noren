@@ -65,18 +65,20 @@ run(async () => {
       const gaps = w.missingSettings(config);
       if (gaps.length) missing.push(`World ID: ${gaps.join(', ')} (Nick creates the World Developer Portal app, action "noren-credit")`);
       const workflow = resolve('packages/cre-bridge/credit-bridge');
-      const httpIndex = process.env.NOREN_STARTER_CRE_TRIGGER_INDEX ? Number(process.env.NOREN_STARTER_CRE_TRIGGER_INDEX) : undefined;
+      // The bridge workflow's HTTP trigger (onHumanStarter) is its fourth handler.
+      const bridgeMain = existsSync(resolve(workflow, 'main.ts')) ? (await import('node:fs')).readFileSync(resolve(workflow, 'main.ts'), 'utf8') : '';
+      const httpIndex = process.env.NOREN_STARTER_CRE_TRIGGER_INDEX ? Number(process.env.NOREN_STARTER_CRE_TRIGGER_INDEX) : /onHumanStarter,\s*\)/.test(bridgeMain) ? 3 : undefined;
       const sink = httpIndex === undefined ? undefined : {
         kind: 'cre-simulate' as const,
         async open(r: any) {
           const base = JSON.parse((await import('node:fs')).readFileSync(resolve(workflow, 'config.staging.json'), 'utf8'));
-          const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: w.httpTriggerPayload(r) });
+          const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: { ...w.httpTriggerPayload(r), lineId: undefined } }); // the bridge derives lineId = NorenCreditLine.starterLineId(borrower)
           const tx = /updated on [a-z-]+: tx (0x[0-9a-f]{64})/.exec(out)?.[1];
           if (!tx) throw new Error('CRE human-starter run wrote nothing');
           return { txHash: tx as `0x${string}` };
         },
       };
-      if (!sink) missing.push('World ID starter line: NOREN_STARTER_CRE_TRIGGER_INDEX unset (the bridge workflow\'s HTTP trigger handler index); verified humans are recorded and the line opens on retry');
+      if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
       return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink }))];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
