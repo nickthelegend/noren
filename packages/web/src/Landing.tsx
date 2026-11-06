@@ -69,15 +69,15 @@ const POWERS: Power[] = [
   { k: "in3", t: "Pay in 3", s: ["live"],
     d: "Pay later on your credit line, then repay in three parts in USDC before the line expires.",
     m: "14.02 USDC checkout → 4.67 × 3" },
-  { k: "earn", t: "Earn", s: ["live", "wip"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
-    d: "Lend USDG to the Noren vault. It keeps the 3% merchant fee on Pay in 3 and the spread when it backs an Aqua maker. The vault and its tests run on the fork; the Earn screen in the app is still being built." },
+  { k: "earn", t: "Earn", s: ["live"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
+    d: "Deposit NVDA, TSLA, AAPL or ETH into a deposit vault and get receipt shares. The vault backs its own 1inch Aqua maker, so its spread on real fills is your yield, and you can withdraw any time." },
   { k: "borrow", t: "Borrow at a Chainlink price", s: ["live"],
-    d: "Lock Stock Tokens on Robinhood Chain. NorenCredit values them with Chainlink feeds and a CRE workflow opens your USDC line on Arc.",
+    d: "Lock your Earn receipt shares and borrow USDG at your reputation LTV (66% up to 80%), with the health factor and liquidation price from Chainlink. Or lock Stock Tokens for a USDC line on Arc, opened by a CRE workflow.",
     m: "2 NVDA locked = $371.41 collateral" },
-  { k: "human", t: "Credit for real humans", s: ["key"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
-    d: "No stock? Verify with World ID for one small starter line per human. Noren keeps only the nullifier. A sealed second opinion on 0G Private Computer can weigh in. Both wait on API keys and say “Setup required” until then." },
-  { k: "bridge", t: "Swap and bridge", s: ["quotes", "wip"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
-    d: "Move USDG on Robinhood Chain to USDC on Arc through Relay or Across. A Chainlink CRE workflow approves the route against the Chainlink fair value. Uniswap v4 swaps are in progress.",
+  { k: "human", t: "Credit for real humans", s: ["live"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
+    d: "No stock? Verify with World ID (production, Selfie Check in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
+  { k: "bridge", t: "Swap and bridge", s: ["live", "quotes"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
+    d: "Swap stock, ETH and USDG at the better of a 1inch Aqua maker and Uniswap v4. Move USDG on Robinhood Chain to USDC on Arc through Relay or Across, with a Chainlink CRE workflow approving the route against the Chainlink fair value.",
     m: "7.50 USDG: Relay 7.475568 · Across 7.491332 USDC" },
 ];
 
@@ -85,14 +85,14 @@ const BUILT: { name: string; use: string; s: Status; note?: string }[] = [
   { name: "Kohaku privacy pools", use: "The Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools contracts: the pool customers pay from, with Groth16 proofs made in the browser.", s: "live" },
   { name: "Chainlink Data Feeds + CRE", use: "Fiat feeds price payment links, and stock and ETH feeds value collateral. CRE workflows bridge credit lines, write FX rates and approve settlements (CRE simulator).", s: "live" },
   { name: "1inch Aqua + SwapVM", use: "Makers fill stock payments at a Chainlink-pegged price through a SwapVM instruction we added, NorenOraclePeg.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
-  { name: "Uniswap v4", use: "Swaps in the Noren app through Robinhood Chain's v4 PoolManager.", s: "wip" },
-  { name: "World ID", use: "One starter credit line per verified human. Noren stores the nullifier, not the person.", s: "key", note: "Needs WORLD_APP_ID, WORLD_RP_ID, WORLD_RP_SIGNING_KEY" },
-  { name: "0G Private Computer", use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE.", s: "key", note: "Needs ZG_PC_API_KEY" },
+  { name: "Uniswap v4", use: "Best-execution quotes from the official V4Quoter and swaps through the Universal Router and Permit2 on Robinhood Chain, in the Noren app and at checkout.", s: "live" },
+  { name: "World ID", use: "One starter credit line per verified human and a NorenReputation milestone. Noren stores the nullifier, not the person.", s: "live", note: "Production World ID; a real check needs World App" },
+  { name: "0G Private Computer", use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE, and Noren verifies the TeeML provider independently.", s: "live" },
   { name: "Relay / Across", use: "USDG on Robinhood Chain to USDC on Arc for merchant settlement. Quotes are live; no relayer fills a local fork.", s: "quotes" },
 ];
 
 const ONBOARD: [string, string][] = [
-  ["Open Noren Merchant", "Run the stack and open the dashboard. You get a merchant key and a USDC payout address on Arc."],
+  ["Sign in and create your store", "Sign in with your wallet (Sign-In with Ethereum), name your store and choose where USDC lands on Arc. Noren registers the store on-chain and gives you API keys."],
   ["Create a payment link", "Price it in USDC, or in EUR, JPY and seven more currencies. Chainlink locks the USDC quote until the link expires. One SDK call does the same."],
   ["Get paid, then get the webhook", "USDC lands at your payout address and a signed payment.succeeded webhook arrives with the invoice, the amount and the tx. There's no payer field."],
 ];
@@ -287,7 +287,7 @@ export function Landing() {
               <li key={t} data-reveal style={{ transitionDelay: `${i * 80}ms` }}><span className="mono">0{i + 1}</span><div><b>{t}</b><p>{d}</p></div></li>
             ))}
           </ol>
-          <a className="lx-btn dark" href="#/dashboard">Open Noren Merchant</a>
+          <a className="lx-btn dark" href="#/dashboard/onboard">Set up your store</a>
         </div>
       </section>
 

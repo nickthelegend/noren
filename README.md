@@ -163,4 +163,4 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 No endorsement by 1inch, Degensoft or 0xbow is implied.
 
 ### Assets
-The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Screenshots are real captures of this app on the local forks. Fonts: Geist, Geist Mono, Instrument Serif (OFL), bundled from Fontsource.
+The app icon and the isometric illustrations were generated with ChatGPT; the vault film on the landing page (`vault.mp4`) was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Screenshots are real captures of this app on the local forks. Fonts: Geist, Geist Mono, Instrument Serif, and Urbanist + Space Mono in the Noren app (all OFL), bundled from Fontsource.
