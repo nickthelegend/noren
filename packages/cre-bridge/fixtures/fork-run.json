@@ -1,7 +1,7 @@
 {
   "note": "LOCAL FORKS ONLY. Captured by packages/cre-bridge/scripts/fork-simulate.sh with cre workflow simulate --broadcast. Arc = Anvil fork of Arc Testnet (5042002). Robinhood = Anvil fork of Robinhood Chain mainnet (4663). These hashes do not exist on any public chain.",
-  "arcForkBlock": "70975435",
-  "robinhoodForkBlock": "107315826",
+  "arcForkBlock": "70975938",
+  "robinhoodForkBlock": "107318238",
   "robinhoodForkChainId": "4663",
   "norenCreditLine": "0x459b5fa897d97cB096f8Eb508dEe494683bA90F4",
   "robinhoodReceiver": "NorenCredit",
@@ -13,43 +13,43 @@
   "flow": [
     {
       "step": "openCreditLine -> CreditLineOpened (Robinhood)",
-      "tx": "0x9d0964d3a7e1d577d8fd0c64ec2a7f5562fec35dd34dc780dbab6760ded0d3cb"
+      "tx": "0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea"
     },
     {
       "step": "NorenCreditLine.onReport via forwarder (Arc)",
-      "tx": "0xdaabbe13fb6335c4d0e8fcca17c9e3fcc995be0c6297d58d9aedc53fa1b2c575"
+      "tx": "0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b"
     },
     {
       "step": "payInvoice -> Drawn 120 USDC (Arc)",
-      "tx": "0x6afda5f04c56004b9c53815a82b0d4fc97b5d4476908d1118ef7b9dc420782d2"
+      "tx": "0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b"
     },
     {
       "step": "NorenCredit.onReport via forwarder (Robinhood)",
-      "tx": "0x20a01051ef3e335c7675386cfbe31d9b149fdb7de14da0b2b536dd87e2ef3ecd"
+      "tx": "0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8"
     },
     {
       "step": "repay -> Repaid 50 USDC (Arc)",
-      "tx": "0x8c36310b8ea98377e8484786fb92ab6b5cb2ba817e3538d2f8eb5a2e3b1591d5"
+      "tx": "0xb5d92857fcf77628726cc4056326ba5218047bb69b9b1ff3548e2a762b7950ca"
     },
     {
       "step": "NorenCredit.onReport via forwarder (Robinhood)",
-      "tx": "0x76f14ccff46cfef0acca2970cad2e63b4a002c8058411cf41cba6a878809cf17"
+      "tx": "0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34"
     },
     {
       "step": "closeCreditLine -> CreditLineClosed (Robinhood)",
-      "tx": "0xd80f9b29585a4a1e78c8b08df020deef26485c6e857836c057116106fded5bf5"
+      "tx": "0x751d07d5b2514de773e61fe1e2d5f43fe6547eb4f7584779c4b3aab48b98c531"
     },
     {
       "step": "NorenCreditLine.onReport limit 0 via forwarder (Arc)",
-      "tx": "0xbd69ffcd45245398c444c10affdf65c3021d6a95081bd28eb994657740ed2ae6"
+      "tx": "0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f"
     },
     {
       "step": "repay -> Repaid 70 USDC (Arc)",
-      "tx": "0x47baf3651249412f27aa4610db584879466447e007b3bb7ae75154a19daff1d7"
+      "tx": "0x32573d7d4279d8ba8dd406fd3ecfa4606f781d4dabca7238bd2de19bfce294e4"
     },
     {
       "step": "NorenCredit.onReport via forwarder, line settled (Robinhood)",
-      "tx": "0x3025f1d93a19a72e81c45d13750e9bac5bdeaeba22d0de1536ca8118cdadf4c5"
+      "tx": "0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878"
     }
   ]
 }

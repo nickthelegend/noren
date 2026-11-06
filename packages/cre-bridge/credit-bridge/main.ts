@@ -129,6 +129,44 @@ export const onCreditLineClosed = (runtime: Runtime<Config>, log: EVMLog): strin
   return deliver(runtime, arc, config.arc, decideClose(lineId, readArcLine(runtime, arc, lineId)), "NorenCreditLine");
 };
 
+/** One optional eth_call: decoded result, or null if the call reverts, returns nothing or fails to decode. */
+const tryRead = <T,>(runtime: Runtime<Config>, what: string, fn: () => T): T | null => {
+  try {
+    return fn();
+  } catch (e) {
+    runtime.log(`Optional read ${what} unavailable: ${(e instanceof Error ? e.message : String(e)).slice(0, 160)}`);
+    return null;
+  }
+};
+
+/**
+ * The Robinhood receiver's last accepted Arc asOf, used only to skip a write it would reject as
+ * stale. Tries utilisation(bytes32) (NorenCredit's dedicated view, and the test harness), then
+ * NorenCredit.line(bytes32). Neither is required: if both are missing or revert, the workflow writes
+ * without the pre-check and the receiver's own stale check decides. Never fails the workflow.
+ */
+export const readRobinhoodAsOf = (runtime: Runtime<Config>, robinhood: EVMClient, lineId: Hex): bigint | null => {
+  const { address } = runtime.config.robinhood;
+  const viaUtilisation = tryRead(runtime, "utilisation(bytes32)", () => {
+    const data = read(runtime, robinhood, address, encodeFunctionData({ abi: harnessUtilisationAbi, functionName: "utilisation", args: [lineId] }), LATEST_BLOCK_NUMBER);
+    return decodeFunctionResult({ abi: harnessUtilisationAbi, functionName: "utilisation", data });
+  });
+  if (viaUtilisation) {
+    runtime.log(`Robinhood utilisation: drawn ${formatUsdc(viaUtilisation[0])} repaid ${formatUsdc(viaUtilisation[1])} asOf ${viaUtilisation[2]}`);
+    return viaUtilisation[2];
+  }
+  const viaLine = tryRead(runtime, "line(bytes32)", () => {
+    const data = read(runtime, robinhood, address, encodeFunctionData({ abi: robinhoodLineAbi, functionName: "line", args: [lineId] }), LATEST_BLOCK_NUMBER);
+    return decodeFunctionResult({ abi: robinhoodLineAbi, functionName: "line", data });
+  });
+  if (viaLine) {
+    runtime.log(`NorenCredit line: status ${LINE_STATUS[viaLine.status] ?? viaLine.status}, drawn ${formatUsdc(viaLine.drawn)} repaid ${formatUsdc(viaLine.repaid)} asOf ${viaLine.asOf}`);
+    return viaLine.asOf;
+  }
+  runtime.log("Robinhood receiver has no readable asOf view; writing without the pre-check (its own stale check decides)");
+  return null;
+};
+
 // ---------------------------------------------------------------- handler 2: Arc -> Robinhood (utilisation)
 
 export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => {
@@ -149,20 +187,7 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
   if (snapshot.unsecured) return deliver(runtime, arc, config.arc, decideUtilisation(act.lineId, snapshot, null), "NorenCredit");
 
   const robinhood = evmFor(config.robinhood);
-  let robinhoodAsOf: bigint;
-  if ((config.robinhood.receiver ?? "NorenCredit") === "NorenCredit") {
-    const data = read(runtime, robinhood, config.robinhood.address, encodeFunctionData({ abi: robinhoodLineAbi, functionName: "line", args: [act.lineId] }), LATEST_BLOCK_NUMBER);
-    if (data === "0x") throw new Error(`NorenCredit not found at ${config.robinhood.address} on ${config.robinhood.chainSelectorName}`);
-    const l = decodeFunctionResult({ abi: robinhoodLineAbi, functionName: "line", data });
-    if (l.borrower === zeroAddress) throw new Error(`line ${act.lineId} is unknown to NorenCredit`);
-    robinhoodAsOf = l.asOf;
-    runtime.log(`NorenCredit line: status ${LINE_STATUS[l.status] ?? l.status}, drawn ${formatUsdc(l.drawn)} repaid ${formatUsdc(l.repaid)} asOf ${l.asOf}`);
-  } else {
-    const data = read(runtime, robinhood, config.robinhood.address, encodeFunctionData({ abi: harnessUtilisationAbi, functionName: "utilisation", args: [act.lineId] }), LATEST_BLOCK_NUMBER);
-    if (data === "0x") throw new Error(`NorenCreditHarness not found at ${config.robinhood.address}`);
-    robinhoodAsOf = decodeFunctionResult({ abi: harnessUtilisationAbi, functionName: "utilisation", data })[2];
-    runtime.log(`NorenCreditHarness (test harness) last asOf: ${robinhoodAsOf}`);
-  }
+  const robinhoodAsOf = readRobinhoodAsOf(runtime, robinhood, act.lineId);
   const decision = decideUtilisation(act.lineId, snapshot, robinhoodAsOf);
   return deliver(runtime, robinhood, config.robinhood, decision, "NorenCredit");
 };

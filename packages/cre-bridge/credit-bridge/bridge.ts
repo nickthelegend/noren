@@ -66,7 +66,8 @@ export const ROBINHOOD_REPORT_PARAMS = parseAbiParameters("bytes32 lineId, uint2
 // ---------------------------------------------------------------- config
 
 export type ChainTarget = {
-  /** Robinhood only: which receiver ABI to read asOf from. Defaults to "NorenCredit". */
+  /** Robinhood only, informational: "NorenCredit" or the labelled "NorenCreditHarness". The asOf read
+   *  tries utilisation(bytes32) then line(bytes32) on either, so this no longer changes behaviour. */
   receiver?: "NorenCredit" | "NorenCreditHarness";
   /** CRE chain selector name, e.g. "robinhood-testnet" or "arc-testnet". */
   chainSelectorName: string;
