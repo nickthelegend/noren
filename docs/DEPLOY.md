@@ -184,3 +184,25 @@ vercel deploy --prebuilt --prod                     # production, only after Nic
 ```
 
 `VITE_*` values are compiled into the public bundle, so only public values (URLs, the Privy app ID) go there, never a key.
+
+## Hosted (public demo, Nov 7 2026)
+
+| Surface | URL | Notes |
+|---|---|---|
+| Noren Merchant + hosted checkout | https://noren-merchant.vercel.app | `#/dashboard`, `#/pay/<invoiceId>` |
+| Noren app + landing | https://noren-app-beta.vercel.app | `#/app` (`noren-app.vercel.app` belongs to someone else) |
+| Aubelle demo shop | https://noren-shop.vercel.app | `/api/*` is proxied by Vercel to the shop backend |
+| Merchant API (server, relayer, `/private/*`, Reclaim) | https://noren-api.201-18-198-162.sslip.io | `GET /config` |
+| ASP postman tree | https://noren-asp.201-18-198-162.sslip.io/asp/tree | posts roots with a hot key granted `ASP_POSTMAN` |
+| Arc testnet RPC proxy | https://noren-arc-rpc.201-18-198-162.sslip.io | spreads calls over Arc's public providers, chunks `eth_getLogs` |
+| Robinhood Chain · mainnet snapshot RPC | https://noren-rh-rpc.201-18-198-162.sslip.io | Anvil with no upstream, read + `eth_sendRawTransaction` only |
+| Aubelle backend | https://noren-shop-api.201-18-198-162.sslip.io | |
+
+Arc is the **public Arc testnet** (5042002), never a fork. The Robinhood side is the warmed mainnet snapshot
+(`packages/robinhood/scripts/fork-snapshot.sh`, then `deploy/vps/noren-rh/prepare-snapshot.ts`).
+
+- Frontends: built on the Mac with `VITE_NOREN_HOSTED=1 VITE_NOREN_API=https://noren-api.201-18-198-162.sslip.io VITE_NOREN_RH_RPC=https://noren-rh-rpc.201-18-198-162.sslip.io pnpm --filter @noren/web build` (plus `packages/web/public/zk` prover artifacts), and only `dist/` is uploaded (`vercel deploy --prod --project <name>`).
+- Backends: `deploy/vps/` (compose files, Dockerfiles, `noren-api/sync.sh`). `/opt/hk/noren-api` runs `api`, `postman`, `shop`, `arc-rpc`; `/opt/hk/noren-rh` runs `anvil` + the read-only `rpc` proxy.
+- Keys: fresh hot testnet keys generated **on the VPS** (`.env`, `.env.postman`, `.env.shop`, mode 600), never on the Mac or in git. Env names: `NOREN_MERCHANT_KEY`, `NOREN_STORE_FUNDER_KEY`, `NOREN_RELAYER_KEY`, `NOREN_MERCHANT_TOKEN`, `NOREN_POSTMAN_KEY`, `NOREN_MERCHANT` / `NOREN_SECRET_KEY` (shop), `PRIVY_APP_ID`, `RECLAIM_APP_ID`, `RECLAIM_APP_SECRET`, `RECLAIM_PROVIDER_IDS`. Funded from the deployer: merchant/store funder 1.5 USDC, relayer 0.5, postman 0.5. Each new store gets 0.05 USDC of Arc gas (max 2 per wallet, 25 total).
+- Customers fund the hosted checkout from https://faucet.circle.com (Arc Testnet); the pool's minimum deposit is 1 USDC. There is no hosted Arc faucet.
+- First end-to-end on the hosted stack: store "Noren Live Check" created in the dashboard, 0.25 USDC link, 1.00 USDC shielded from the checkout, approved by the hosted postman, paid privately: [`0x38b8ce96…b0f5`](https://explorer.testnet.arc.io/tx/0x38b8ce96c9ad3a2957467def0194eeba8e2cf0d2d26f5aae9df7b7b8fa12b0f5).

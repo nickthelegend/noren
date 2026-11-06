@@ -3,17 +3,17 @@
 // public testnet RPC providers, retrying another one on 429/5xx, and (2) caches answers that can no longer change:
 // eth_chainId, and eth_getLogs / block reads whose range ends at least 64 blocks below the head. It never signs.
 import { createServer } from 'node:http';
-const UPSTREAMS = (process.env.UPSTREAMS ?? 'https://rpc.drpc.testnet.arc.io,https://rpc.quicknode.testnet.arc.io,https://arc-testnet.drpc.org,https://rpc.testnet.arc.io').split(',');
+const UPSTREAMS = (process.env.UPSTREAMS ?? 'https://rpc.blockdaemon.testnet.arc.io,https://rpc.quicknode.testnet.arc.io,https://rpc.testnet.arc.io,https://rpc.drpc.testnet.arc.io,https://arc-testnet.drpc.org,https://5042002.rpc.thirdweb.com').split(',');
 const cache = new Map(); const MAX = 20_000;
 let head = 0n, headAt = 0, rr = 0;
 const put = (k, v) => { if (cache.size >= MAX) cache.delete(cache.keys().next().value); cache.set(k, v); };
 // dRPC's free tier refuses eth_getLogs on this chain ("ranges over 10000 blocks" even for small ranges): logs skip it.
-const LOG_UPSTREAMS = UPSTREAMS.filter(u => !/drpc/.test(u));
+const LOG_UPSTREAMS = UPSTREAMS.filter(u => !/drpc|thirdweb/.test(u)); // thirdweb caps logs at 1,000 blocks
 async function upstream(body) {
   let last;
   const list = body?.method === 'eth_getLogs' && LOG_UPSTREAMS.length ? LOG_UPSTREAMS : UPSTREAMS;
-  for (let i = 0; i < list.length * 4; i++) {
-    if (i >= list.length) await new Promise(r => setTimeout(r, 300 * i)); // every provider tried once: back off
+  for (let i = 0; i < list.length * 5; i++) {
+    if (i >= list.length) await new Promise(r => setTimeout(r, 250 * (i - list.length + 1))); // every provider tried once: back off
     const url = list[rr++ % list.length];
     try {
       const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });

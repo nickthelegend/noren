@@ -61,7 +61,7 @@ services:
       NOREN_TREE_URL: https://noren-asp.201-18-198-162.sslip.io/asp/tree?v=1
       NOREN_POSTMAN_HOST: 0.0.0.0
       NOREN_POSTMAN_PORT: "8788"
-      NOREN_POSTMAN_TICK_MS: "3000"
+      NOREN_POSTMAN_TICK_MS: "5000"
       NOREN_POSTMAN_BATCH_MS: "10000"
     depends_on: [api]
     networks: [coolify]
