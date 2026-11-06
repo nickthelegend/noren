@@ -154,7 +154,8 @@ async function startShop() {
   const { readFileSync } = await import('node:fs');
   if (!existsSync(resolve(dir, 'node_modules'))) execFileSync('pnpm', ['install', '--ignore-workspace', '--prefer-offline'], { cwd: dir, stdio: 'ignore' });
   const env = existsSync(resolve(dir, '.env')) ? readFileSync(resolve(dir, '.env'), 'utf8') : '';
-  if (!/^NOREN_SECRET_KEY=/m.test(env)) execFileSync('pnpm', ['connect:local'], { cwd: dir, stdio: ['ignore', 'inherit', 'inherit'] });
+  // Async: the Noren server runs in this process, so a synchronous child calling it would deadlock.
+  if (!/^NOREN_SECRET_KEY=/m.test(env)) await new Promise<void>((ok, fail) => { const c = spawn('pnpm', ['connect:local'], { cwd: dir, stdio: ['ignore', 'inherit', 'inherit'], env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '' } }); c.on('exit', (code) => (code === 0 ? ok() : fail(new Error(`pnpm connect:local exited ${code}`)))); });
   if (!existsSync(resolve(dir, 'dist/index.html'))) execFileSync('pnpm', ['build'], { cwd: dir, stdio: 'ignore' });
   const shop = spawn('pnpm', ['start'], { cwd: dir, stdio: ['ignore', 'inherit', 'inherit'], env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', SHOP_PORT: '8780' } }); // no Noren keys passed on
   onStop(() => { shop.kill('SIGINT'); });
