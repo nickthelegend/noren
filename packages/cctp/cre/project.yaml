@@ -1,6 +1,7 @@
 # CRE project settings for Noren's CCTP relay (USDC from other chains into Arc via Circle CCTP V2).
 # Log triggers read each source testnet; the only write target is NorenArcHook on Arc Testnet through the
 # arc-testnet MockKeystoneForwarder 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 (cre workflow simulate --broadcast).
+# CRE allows 10 trigger subscriptions per workflow, so the relay watches 10 source chains.
 # --broadcast needs CRE_ETH_PRIVATE_KEY funded with USDC (Arc's gas token) on Arc Testnet.
 staging-settings:
   rpcs:
@@ -26,5 +27,3 @@ staging-settings:
       url: https://rpc.sepolia.linea.build
     - chain-name: ethereum-testnet-sepolia-worldchain-1
       url: https://worldchain-sepolia.g.alchemy.com/public
-    - chain-name: ink-testnet-sepolia
-      url: https://rpc-gel-sepolia.inkonchain.com

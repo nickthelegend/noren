@@ -19,7 +19,6 @@ export type CctpChainKey =
   | "unichain-sepolia"
   | "linea-sepolia"
   | "worldchain-sepolia"
-  | "ink-sepolia"
   | "robinhood-testnet"
   | "arc-testnet";
 
@@ -83,9 +82,6 @@ export const CCTP_CHAINS: Record<CctpChainKey, CctpChain> = {
   "worldchain-sepolia": chain({ key: "worldchain-sepolia", name: "World Chain Sepolia", chainId: 4801, domain: 14, gas: "ETH",
     rpcUrl: "https://worldchain-sepolia.g.alchemy.com/public", explorer: "https://sepolia.worldscan.org",
     usdc: "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88", creChain: "ethereum-testnet-sepolia-worldchain-1" }),
-  "ink-sepolia": chain({ key: "ink-sepolia", name: "Ink Sepolia", chainId: 763373, domain: 21, gas: "ETH",
-    rpcUrl: "https://rpc-gel-sepolia.inkonchain.com", explorer: "https://explorer-sepolia.inkonchain.com",
-    usdc: "0xFabab97dCE620294D2B0b0e46C68964e326300Ac", creChain: "ink-testnet-sepolia" }),
   "robinhood-testnet": chain({ key: "robinhood-testnet", name: "Robinhood Chain Testnet", chainId: 46630, domain: 35, gas: "ETH",
     rpcUrl: "https://rpc.testnet.chain.robinhood.com", explorer: "https://explorer.testnet.chain.robinhood.com",
     usdc: "0x2FD79307e37Ff0d60AE26A108FBA5B22bfC34b12", creChain: "robinhood-testnet" }),

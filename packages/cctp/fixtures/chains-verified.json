@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-06T11:27:47.207Z",
+  "checkedAt": "2026-11-06T11:29:21.318Z",
   "tokenMessengerV2": "0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA",
   "messageTransmitterV2": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
   "rows": [
@@ -82,15 +82,6 @@
       "usdc": "0x66145f38cBAC35Ca6F1Dfb4914dF98F1614aeA88",
       "linkedToArc": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
       "fastFeeBpsToArc": 1.3,
-      "ok": true
-    },
-    {
-      "key": "ink-sepolia",
-      "chainId": 763373,
-      "domain": 21,
-      "usdc": "0xFabab97dCE620294D2B0b0e46C68964e326300Ac",
-      "linkedToArc": "0x0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa",
-      "fastFeeBpsToArc": 2,
       "ok": true
     },
     {

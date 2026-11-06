@@ -55,11 +55,6 @@
       "key": "worldchain-sepolia",
       "chainSelectorName": "ethereum-testnet-sepolia-worldchain-1",
       "domain": 14
-    },
-    {
-      "key": "ink-sepolia",
-      "chainSelectorName": "ink-testnet-sepolia",
-      "domain": 21
     }
   ],
   "irisBaseUrl": "https://iris-api-sandbox.circle.com",
