@@ -104,7 +104,8 @@ export function Checkout({ id }: { id: string }) {
             </ul>
             <div className="co-privacy">
               <Icon.eyeOff />
-              <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
+              {method === "private" || !method ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
+                : <p><b>Only “Pay privately” hides you.</b> {method === "stocks" ? "Paying with stocks" : "Paying later"} comes from your Robinhood wallet, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
           <footer className="co-foot"><span>Powered by</span><a href="#/"><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
@@ -142,8 +143,8 @@ export function Checkout({ id }: { id: string }) {
             <>
               <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stock</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               <div className="co-methods" role="tablist" aria-label="Payment method">
-                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /><span><b>Private balance</b><small>Kohaku pool · zero-knowledge</small></span></button>
-                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Stock</b><small>Sell shares at the Chainlink price</small></span></button>
+                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
+                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Pay with stocks</b><small>Shares sold at the Chainlink price</small></span></button>
                 <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay later</b><small>Credit line backed by your stock</small></span></button>
               </div>
               {method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>

@@ -125,7 +125,7 @@ export function NorenApp() {
 
           <div className="na-col">
             <Panel title="Your credit score" sub="From this wallet's Robinhood Chain history, signed with EIP-712">
-              {actions ? <Score actions={actions} /> : <Skel rows={3} />}
+              {actions ? <><Score actions={actions} /><AiDecision actions={actions} /></> : <Skel rows={3} />}
             </Panel>
             <Panel title="No stock? Start with a small line" sub="World ID: one unsecured starter line per unique human. Noren keeps only the nullifier, never who you are.">
               <VerifyHuman serverUrl={SERVER} wallet={tk?.address} />
@@ -170,7 +170,6 @@ function Score({ actions }: { actions: ReturnType<typeof creditActions> }) {
       </div>
       <ul className="na-factors">{u.factors.map((f) => <li key={f.label} data-missing={f.missing}><span>{f.label}</span><b className="num">{f.value}</b>{f.max ? <i className="na-bar" aria-hidden><i style={{ width: `${Math.min(100, ((f.points ?? 0) / f.max) * 100)}%` }} /></i> : null}{f.note && <small>{f.note}</small>}</li>)}</ul>
       <p className="na-fine">{u.onchainTier ? `NorenCredit holds tier ${u.onchainTier} for this wallet. ` : ""}Read from this wallet's Robinhood Chain history. The underwriter signs an EIP-712 attestation and NorenCredit checks the signature on-chain; a better history means less collateral and a higher limit.</p>
-      <AiDecision actions={actions} />
     </div>
   );
 }

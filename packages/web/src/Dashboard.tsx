@@ -25,7 +25,7 @@ const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = 
 
 type Method = "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
-const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Kohaku pool", "Zero-knowledge withdrawal from the privacy pool", Icon.shield], credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Stock Tokens", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
+const METHOD: Record<Method, [string, string, () => JSX.Element]> = { private: ["Private pool", "Zero-knowledge withdrawal from the Kohaku privacy pool", Icon.shield], credit: ["Pay later", "Credit line backed by Stock Tokens on Robinhood Chain, bridged to Arc by Chainlink CRE", Icon.layers], stocks: ["Pay with stocks", "Paid with Stock Tokens, converted to stablecoin at the Chainlink price", Icon.chart] };
 const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span className="sd-muted">–</span>; const [t, d, I] = METHOD[m]; return <span className={`sd-pm ${m}`} title={d}><span className="sd-pm-ic"><I /></span>{t}</span>; };
 const Who = ({ r }: { r: Row }) => r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
@@ -70,7 +70,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
 
   return (
     <div className="sd">
-      <div className="sd-testbar">Test mode: payments settle on a local Arc testnet fork. No real funds.</div>
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
