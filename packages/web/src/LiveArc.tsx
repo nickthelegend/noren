@@ -27,7 +27,7 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
     <section className="la" aria-label="Noren live on Arc testnet">
       <header><span className="la-dot" aria-hidden /><Mark id="ARC" size={24} /><div><b>Live on Arc testnet</b><small>chain {LIVE.chainId} · real testnet USDC · {f ? `block ${f.block.toString()}` : err ? "RPC unreachable" : "reading…"}</small></div></header>
       {context === "checkout" && <p className="la-note">This hosted checkout runs on the local fork. On Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
-      {context === "app" && <p className="la-note">Only Arc has a live deployment. Swap, Earn, Borrow and the Robinhood side of credit run on the Robinhood Chain fork; switch back to “Local fork” to use them.</p>}
+      {context === "app" && <p className="la-note">Arc, the CCTP rail, the CCIP gateways and 1inch Aqua on Arc are live on public testnets (below). Swap, Earn, Borrow and the Robinhood side of credit run on the Robinhood Chain fork; switch back to “Local fork” to use them.</p>}
       <dl className="la-grid">
         <div><dt>NorenCheckout</dt><dd><a href={addrUrl(LIVE.checkout)} target="_blank" rel="noreferrer">{short(LIVE.checkout)}</a></dd></div>
         <div><dt>Privacy pool (USDC)</dt><dd><a href={addrUrl(LIVE.pool)} target="_blank" rel="noreferrer">{short(LIVE.pool)}</a>{f && <small>{usdc(f.poolBal)} USDC shielded now</small>}</dd></div>
@@ -44,12 +44,12 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
       <h3 className="la-sub">From other chains into Arc</h3>
       <ul className="la-tx">
         {CCTP_RUNS.filter((r) => r.to === "arc-testnet").map((r) => (
-          <li key={r.burnTx}><span className="lg-row"><Mark id={CHAIN_MARK[r.from]} size={16} /><b>{shortChain(r.from)} → Arc</b>&nbsp;· CCTP V2 · {runLabel(r)} · {usdc(r.minted)} USDC</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></span></li>
+          <li key={r.burnTx}><span className="la-x"><Mark id={CHAIN_MARK[r.from]} size={16} /><b>{shortChain(r.from)} → Arc</b> · CCTP V2 · {runLabel(r)} · {usdc(r.minted)} USDC</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></span></li>
         ))}
-        <li><span className="lg-row"><Mark id="1INCH" size={16} /><b>1inch Aqua on Arc</b>&nbsp;· USDC → EURC from a Chainlink-pegged maker</span><TxLink chain="arc-live" hash={AQUA_LIVE.directSwap} n={4} /></li>
-        {AQUA_LIVE.fills.map((f) => <li key={f.fill}><span className="lg-row"><Mark id={CHAIN_MARK[f.from]} size={16} /><b>{shortChain(f.from)} → Arc</b>&nbsp;· CCTP + Aqua order, filled by CRE</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[f.from].explorer} hash={f.burn} n={4}>burn</TxLink><TxLink chain="arc-live" hash={f.fill} n={4}>fill</TxLink></span></li>)}
+        <li><span className="la-x"><Mark id="1INCH" size={16} /><b>1inch Aqua on Arc</b> · USDC → EURC from a Chainlink-pegged maker</span><TxLink chain="arc-live" hash={AQUA_LIVE.directSwap} n={4} /></li>
+        {AQUA_LIVE.fills.map((f) => <li key={f.fill}><span className="la-x"><Mark id={CHAIN_MARK[f.from]} size={16} /><b>{shortChain(f.from)} → Arc</b> · CCTP + Aqua order, filled by CRE</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[f.from].explorer} hash={f.burn} n={4}>burn</TxLink><TxLink chain="arc-live" hash={f.fill} n={4}>fill</TxLink></span></li>)}
         {CCIP_MESSAGES.map((m) => (
-          <li key={m.id}><span className="lg-row"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b>&nbsp;· CCIP · {m.action} · delivered</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
+          <li key={m.id}><span className="la-x"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b> · CCIP · {m.action} · delivered</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
         ))}
       </ul>
       <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain, fiat-priced invoices and this browser checkout are fork-only. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>

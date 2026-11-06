@@ -26,3 +26,4 @@
 .la-sub { margin: 18px 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
 .la-pair { display: inline-flex; gap: 12px; flex: none; }
 .la-stale { color: #9a5a12; } .la-stale code { font-size: 11px; }
+.la-x { display: block; line-height: 1.45; } .la-x .lg-mark { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
