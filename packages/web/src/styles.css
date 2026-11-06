@@ -945,3 +945,9 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-sec-h h2 { margin: 0; font: 600 18px/1.25 var(--sans); letter-spacing: -.02em; color: var(--sd-ink); }
 .sd-sec-h p { margin: 4px 0 0; max-width: 640px; font-size: 13.5px; line-height: 1.5; color: var(--sd-muted); }
 .sd-callout.bad { border-color: var(--sd-bad); background: var(--sd-bad-wash); color: var(--sd-bad); }
+
+/* checkout: six methods (private, pay later privately, USDC, stocks, Pay in 3, another chain) in an even 2-column grid */
+.co-methods.six button:last-child { grid-column: auto; }
+.co-methods.six button[aria-selected="true"]:nth-child(2) svg { color: var(--moss); }
+.co-methods.six button[aria-selected="true"]:nth-child(5) svg { color: var(--kaki-2); }
+.co-methods.six button[aria-selected="true"]:last-child svg { color: var(--ai); }

@@ -110,6 +110,9 @@ export function createMerchantServer(options: ServerOptions): Server {
   // Pay later: a Drawn log on NorenCreditLine that matches an open invoice settles it. Mismatches are logged, never settled.
   const creditWatch = options.credit?.creditLine ? watchCreditDraws({ rpcUrl: options.rpcUrl, creditLine: options.credit.creditLine, fromBlock: options.credit.fromBlock, onError: e => console.error('Credit watcher:', e.message), onDraw: async draw => {
     await ready;
+    // Pay later, privately: drawToPool logs Drawn with merchant = the Kohaku Entrypoint and no invoice. It tops up the
+    // borrower's private balance; the invoice settles later through NorenCheckout.pay like any private payment.
+    if (draw.merchant.toLowerCase() === options.deployment.entrypoint.toLowerCase()) return;
     const row = rows.get(draw.invoiceId.toLowerCase());
     const payout = row ? await publicClient.readContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'merchantPayout', args: [row.invoice.merchant] }) as string : undefined;
     const problem = creditDrawProblem(row, draw, payout);

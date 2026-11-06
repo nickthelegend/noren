@@ -63,6 +63,9 @@ export async function deployCreditLine(arc: ArcContext, poolUsdc = 10_000_000_00
   const creditLine = r.contractAddress as Address;
   const mint = await arc.client.request({ method: 'eth_sendTransaction', params: [{ from: arc.deployer, to: arc.deployment.usdc, data: encodeFunctionData({ abi: parseAbi(['function mint(address to, uint256 value)']), functionName: 'mint', args: [creditLine, poolUsdc] }) }] }) as Hex;
   if ((await arc.client.waitForTransactionReceipt({ hash: mint })).status !== 'success') throw new Error(`Credit pool funding reverted: ${mint}`);
+  // Pay later, privately: let the line draw into this stack's Kohaku pool (NorenCreditLine.drawToPool).
+  const wire = await arc.client.request({ method: 'eth_sendTransaction', params: [{ from: arc.deployer, to: creditLine, data: encodeFunctionData({ abi: parseAbi(['function setPrivacyPool(address entrypoint, address pool)']), functionName: 'setPrivacyPool', args: [arc.deployment.entrypoint, arc.deployment.pool] }) }] }) as Hex;
+  if ((await arc.client.waitForTransactionReceipt({ hash: wire })).status !== 'success') throw new Error(`NorenCreditLine.setPrivacyPool reverted: ${wire}`);
   return { creditLine, deployBlock: r.blockNumber as bigint, deployTx: hash, poolUsdc };
 }
 

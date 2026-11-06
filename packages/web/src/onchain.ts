@@ -45,7 +45,11 @@ export const creditLineAbi = parseAbi([
   "event Repaid(bytes32 indexed lineId, uint256 amount)",
   "function lines(bytes32 lineId) view returns ((address borrower, uint64 expiry, uint64 updatedAt, bool closed, uint256 limitUsdc6, uint256 drawnUsdc6, uint256 repaidUsdc6))",
   "function available(bytes32 lineId) view returns (uint256)",
+  "function drawToPool(bytes32 lineId, uint256 amount, uint256 precommitment) returns (uint256)",
+  "function privacyEntrypoint() view returns (address)",
+  "event DrawnToPool(bytes32 indexed lineId, uint256 amount, uint256 precommitment, uint256 commitment)",
 ]);
+const entrypointConfigAbi = parseAbi(["function assetConfig(address asset) view returns (address pool, uint256 minimumDepositAmount, uint256 vettingFeeBPS, uint256 maxRelayFeeBPS)"]);
 
 export const gatewayAbi = parseAbi([
   "function quote(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)",
@@ -67,7 +71,7 @@ function customerKey(): Hex {
 export const customerAccount = () => privateKeyToAccount(customerKey());
 
 export type Holding = { sym: string; name: string; token: Address; balance: bigint; price8: bigint; updatedAt: number; value8: bigint };
-export type Line = { lineId: Hex; limit: bigint; expiry: number; collateral8: bigint; openedTx: Hex; openedBlock: bigint; closed: boolean; drawn: bigint; repaid: bigint; draws: { amount: bigint; invoiceId: Hex; merchant: Address; tx: Hex }[] };
+export type Line = { lineId: Hex; limit: bigint; expiry: number; collateral8: bigint; openedTx: Hex; openedBlock: bigint; closed: boolean; drawn: bigint; repaid: bigint; draws: { amount: bigint; invoiceId: Hex; merchant: Address; tx: Hex; toPool: boolean }[] };
 
 export function makeOnchain(cfg: Config) {
   const credit = creditOf(cfg);
@@ -121,7 +125,8 @@ export function makeOnchain(cfg: Config) {
           lineId, limit: l.args.limitUsdc6!, expiry: Number(l.args.expiry!), collateral8: l.args.collateralValueUsd8!, openedTx: l.transactionHash!, openedBlock: l.blockNumber!,
           closed: closedIds.has(lineId.toLowerCase()),
           drawn: drawn.reduce((a, d) => a + d.args.amount!, 0n), repaid: repaid.reduce((a, r) => a + r.args.amount!, 0n),
-          draws: drawn.map((d) => ({ amount: d.args.amount!, invoiceId: d.args.invoiceId!, merchant: d.args.merchant!, tx: d.transactionHash! })),
+          // drawToPool logs Drawn with merchant = the Kohaku Entrypoint: a draw into this borrower's private balance.
+          draws: drawn.map((d) => ({ amount: d.args.amount!, invoiceId: d.args.invoiceId!, merchant: d.args.merchant!, tx: d.transactionHash!, toPool: d.args.merchant!.toLowerCase() === cfg.deployment.entrypoint.toLowerCase() })),
         };
       }));
     },
@@ -133,6 +138,27 @@ export function makeOnchain(cfg: Config) {
       const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "payInvoice", args: [lineId, merchant, amount, invoiceId], chain: arcChain });
       const r = await arc.waitForTransactionReceipt({ hash });
       if (r.status !== "success") throw new Error(`payInvoice reverted: ${hash}`);
+      return { hash, gasUsed: r.gasUsed };
+    },
+    /** Pay later, privately: is drawToPool on, and the pool's minimum deposit (a draw can't be smaller). */
+    async poolDraw() {
+      const creditLine = credit?.creditLine;
+      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      const [entrypoint, cfgRow] = await Promise.all([
+        arc.readContract({ address: creditLine, abi: creditLineAbi, functionName: "privacyEntrypoint" }).catch(() => null),
+        arc.readContract({ address: cfg.deployment.entrypoint, abi: entrypointConfigAbi, functionName: "assetConfig", args: [cfg.deployment.usdc] }),
+      ]);
+      const on = !!entrypoint && entrypoint.toLowerCase() === cfg.deployment.entrypoint.toLowerCase();
+      return { on, minimum: cfgRow[1] };
+    },
+    /** Arc: draws on the line straight into the Kohaku pool under this wallet's precommitment (NorenCreditLine.drawToPool). */
+    async drawToPool(lineId: Hex, amount: bigint, precommitment: bigint) {
+      const creditLine = credit?.creditLine;
+      if (!creditLine) throw new Error("Setup required: NorenCreditLine isn't deployed on the Arc fork (packages/arc-credit)");
+      await arc.simulateContract({ account, address: creditLine, abi: creditLineAbi, functionName: "drawToPool", args: [lineId, amount, precommitment] });
+      const hash = await arcWallet.writeContract({ address: creditLine, abi: creditLineAbi, functionName: "drawToPool", args: [lineId, amount, precommitment], chain: arcChain });
+      const r = await arc.waitForTransactionReceipt({ hash });
+      if (r.status !== "success") throw new Error(`drawToPool reverted: ${hash}`);
       return { hash, gasUsed: r.gasUsed };
     },
     /** Arc: repays the line in USDC (approve, then repay). The CRE workflow carries the Repaid log back to NorenCredit. */

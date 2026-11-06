@@ -131,11 +131,14 @@ function Repay({ w, line, actions, busy, run }: { w: Wallet; line: Line; actions
           {plan.map((p, i) => <li key={i} data-done={p.paid}><span className="nk-check">{p.paid ? "✓" : i + 1}</span><div><b>{usdc(p.amount)} USDC</b><small>{p.paid ? "Paid" : p === next ? `Next · suggested by ${day(p.due)}` : `Suggested by ${day(p.due)}`}</small></div></li>)}
         </ul>
       )}
-      {line.drawn === 0n ? <p className="nk-fine">Nothing drawn yet. Choose <b>Pay later</b> at any Noren checkout; the merchant is paid upfront from the Arc credit pool. Paying on credit is not private: the line is tied to this wallet.</p> : (
+      {line.drawn === 0n ? <p className="nk-fine">Nothing drawn yet. At any Noren checkout, <b>Pay later, privately</b> tops up your private balance from this line, so the merchant never learns who paid. <b>Pay in 3</b> pays the merchant straight from the line, publicly. Either way your lender knows it's you.</p> : (
+        <>
         <div className="nk-btns">
           {short6 && <button className="nk-btn" disabled={!!busy} onClick={() => run("arcfaucet", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arcfaucet" ? "Sending…" : "Get test USDC"}</button>}
           <button className="nk-btn ink" disabled={!!busy || due <= 0n || short6} onClick={() => run("repay", async () => { const h = await w.oc.repay(line.lineId, due); return <>Repaid {usdc(due)} USDC on Arc (tx <TxLink chain="arc" cfg={w.cfg} hash={h} />). Chainlink CRE reports it to NorenCredit.</>; })}>{busy === "repay" ? "Repaying…" : due > 0n ? `Repay ${usdc(due)} USDC` : "All paid"}</button>
         </div>
+        <p className="nk-fine"><b>Public.</b> A repayment comes from this wallet and names your line, so anyone reading Arc can see it. Only the merchant side of “Pay later, privately” is private.</p>
+        </>
       )}
     </>
   );

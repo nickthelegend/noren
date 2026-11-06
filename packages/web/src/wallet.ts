@@ -71,6 +71,8 @@ export function makeWallet(cfg: Config) {
       const r = await customer.refundInbox();
       return { ...summarise(r.balances as never), nextPrecommitment: r.nextPrecommitment };
     },
+    /** The precommitment of this account's next pool deposit (Kohaku), for a deposit someone else makes for it. */
+    nextPrecommitment: () => customer.nextPrecommitment(),
     async prove(invoice: Invoice) {
       const t0 = performance.now();
       const result = await customer.proveInvoicePayment(invoice);

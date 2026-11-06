@@ -4,6 +4,7 @@ import { api, short, usdc, type InvoiceView } from "./api";
 import type { Wallet } from "./wallet";
 import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
+import { CreditPrivatePay } from "./CreditPrivatePay";
 import { StockPay } from "./StockPay";
 import { UsdcPay } from "./UsdcPay";
 import { CctpPay } from "./CctpPay";
@@ -42,7 +43,9 @@ export function Checkout({ id }: { id: string }) {
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
   // Private by default: every other method is a public payment and says so.
-  const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit" | "xchain">("private");
+  const [method, setMethod] = useState<"usdc" | "private" | "credit-private" | "stocks" | "credit" | "xchain">("private");
+  // Set when "Pay later, privately" drew on a credit line for this payment (the merchant still sees a private payment).
+  const [drawnOnCredit, setDrawnOnCredit] = useState<{ lineId: string; tx: string; amount: bigint } | null>(null);
   const [net] = useNet();
 
   useEffect(() => { if (cfg) import("./wallet").then((m) => setWallet(m.makeWallet(cfg))).catch((e) => setNote(`Couldn't load the private wallet: ${msgOf(e)}`)); }, [cfg]);
@@ -128,6 +131,7 @@ export function Checkout({ id }: { id: string }) {
             <div className="co-privacy">
               <Icon.eyeOff />
               {method === "private" ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
+                : method === "credit-private" ? <p><b>{shop} sees the amount, never you.</b> Your credit line tops up your private balance; {shop} never learns who paid. Your lender still knows you.</p>
                 : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks comes from your Robinhood wallet" : method === "xchain" ? "Paying from another chain comes from your wallet there" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
@@ -142,7 +146,7 @@ export function Checkout({ id }: { id: string }) {
           ) : settled ? (
             <div className="co-done">
               <div className="co-check" aria-hidden><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="m15 27 7.5 7.5L38 19" /></svg></div>
-              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : view?.method === "stocks" ? <>Paid with <em>stocks</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
+              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : view?.method === "credit" ? <>Paid on <em>credit</em></> : drawnOnCredit && view?.method !== "stocks" && view?.method !== "usdc" ? <>Paid <em>later</em>, privately</> : view?.method === "stocks" ? <>Paid with <em>stocks</em></> : view?.method === "usdc" ? <>Paid with <em>USDC</em></> : <>Paid <em>privately</em></>}</h2>
               <p>{usdc(view?.invoice.amount)} USDC to {shop}.{view?.status === "refunded" && ` ${usdc(view.refundAmount)} USDC came back to your private refund inbox.`}</p>
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
@@ -159,32 +163,38 @@ export function Checkout({ id }: { id: string }) {
                   <dt>Private</dt><dd>no: the line is tied to your Robinhood wallet</dd>
                 </> : <>
                   <dt>Your address in it</dt><dd className="unk">none</dd>
+                  {drawnOnCredit && <><dt>Paid from</dt><dd>private balance, topped up by line <span className="mono">{short(drawnOnCredit.lineId, 4)}</span></dd>
+                  <dt>Credit draw</dt><dd><TxLink chain="arc" cfg={cfg} hash={drawnOnCredit.tx} n={8} /> <span className="faint">(public)</span></dd></>}
                   <dt>Refund inbox</dt><dd>{inbox ? `${usdc(inbox.approved + inbox.pending)} USDC` : "…"}</dd>
                 </>}
               </dl>
               {doneUrl && view?.status === "paid" && <a className="btn ink full lg" href={doneUrl}>Return to {shop}{leaving ? ` (${leaving})` : ""} <Icon.arrow /></a>}
-              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool, out of your credit limit. Your repayment plan is in the <a href="#/app/credit">Noren app</a>.</p> : view?.method === "usdc" ? <p className="faint sm">A direct transfer on Arc, verified on-chain by {shop}'s Noren server.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
+              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool, out of your credit limit. Your repayment plan is in the <a href="#/app/credit">Noren app</a>.</p> : view?.method === "usdc" ? <p className="faint sm">A direct transfer on Arc, verified on-chain by {shop}'s Noren server.</p> : drawnOnCredit ? <p className="faint sm">{shop} was paid from the privacy pool and sees “Customer: Private”. Your lender sees a draw on your line, not where it went. Repay in the <a href="#/app/credit">Noren app</a>; repayments are public.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
             </div>
           ) : expired ? (
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
           ) : (
             <>
-              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
+              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "credit-private" ? <>Pay <em>later</em>, privately</> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
-              <div className="co-methods four five" role="tablist" aria-label="Payment method">
+              <div className="co-methods four six" role="tablist" aria-label="Payment method">
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · {shop} never learns who paid</small></span></button>
+                <button role="tab" aria-selected={method === "credit-private"} disabled={working} onClick={() => setMethod("credit-private")}><Icon.eyeOff /><span><b>Pay later, privately</b><small>Private · your credit line tops up your private balance</small></span></button>
                 <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Public · your wallet on Arc</small></span></button>
                 <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Public · sold to the best price</small></span></button>
                 <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>Public · from your credit line</small></span></button>
                 <button role="tab" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}><Mark id="CIRCLE" size={20} /><span><b>Pay from another chain</b><small>Public · USDC from Base, Arbitrum, Ethereum and 7 more over Circle CCTP</small></span></button>
               </div>
-              {method !== "private" && method !== "xchain" && (
+              {method !== "private" && method !== "credit-private" && method !== "xchain" && (
                 <div className="co-fund" role="note" aria-label="Public payment">
                   <p><b>This is a public payment.</b> {method === "usdc" ? "It comes straight from your Arc wallet (or from your wallet on another chain, if you bridge)" : method === "stocks" ? "It comes from your Robinhood Chain wallet" : "It draws on a credit line tied to your Robinhood Chain wallet"}, so {shop} and anyone reading the chain can link it to you.</p>
-                  <div className="row2"><button className="btn line" disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /> Make it private: shield first</button></div>
+                  <div className="row2">{method === "credit" ? <button className="btn line" disabled={working} onClick={() => setMethod("credit-private")}><Icon.eyeOff /> Make it private: pay later, privately</button> : <button className="btn line" disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /> Make it private: shield first</button>}</div>
                 </div>
               )}
-              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
+              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit-private" && cfg && view ? <>
+                <CreditPrivatePay cfg={cfg} view={view} shop={shop} wallet={wallet} bal={bal} payStep={step} proofSec={proofSec} onFunded={pay} onDrawn={setDrawnOnCredit} />
+                {note && <p className={step === "error" ? "err" : "note"} role="status">{note}</p>}
+              </> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
               <div className="co-bal">
                 <div><span>Private balance</span><b>{bal ? usdc(bal.approved) : <span className="skel-t sm" />}<em>USDC</em></b>{bal && bal.pending > 0n && <small className="pend"><span className="spin xs" /> +{usdc(bal.pending)} being screened</small>}</div>
                 <div><span>Refund inbox</span><b>{inbox ? usdc(inbox.approved + inbox.pending) : <span className="skel-t sm" />}<em>USDC</em></b></div>
