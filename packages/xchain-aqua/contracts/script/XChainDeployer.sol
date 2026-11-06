@@ -41,21 +41,25 @@ abstract contract XChainDeployer is Script {
   /// @dev Arc side: settler, receipts for NVDA (Robinhood) and WETH (Base Sepolia), relayed feeds,
   /// and three routes: NVDA->USDC and WETH->USDC (escrowed), USDC->EURC (delivered via CCTP/CCIP).
   function _deployArc(address owner, address forwarder) internal returns (ArcStack memory a) {
+    return _deployArc(owner, forwarder, XC.ROBINHOOD);
+  }
+
+  function _deployArc(address owner, address forwarder, uint64 robinhoodChainId) internal returns (ArcStack memory a) {
     a.router = _deployRouter(owner);
     a.settler = new NorenCrossChainSettler(owner, forwarder, IAqua(XC.AQUA), ISwapVMRouter(a.router));
     address s = address(a.settler);
-    a.rNvda = new NorenEscrowReceipt('Noren escrow receipt: NVDA on Robinhood Chain', 'rNVDA', 18, XC.ROBINHOOD, XC.NVDA, s);
+    a.rNvda = new NorenEscrowReceipt('Noren escrow receipt: NVDA on Robinhood Chain', 'rNVDA', 18, robinhoodChainId, XC.NVDA, s);
     a.rWeth = new NorenEscrowReceipt('Noren escrow receipt: WETH on Base Sepolia', 'rWETH', 18, XC.BASE_SEPOLIA, XC.BASE_WETH, s);
-    a.nvdaUsd = new NorenRelayedFeed(s, 8, XC.ROBINHOOD, XC.NVDA_USD, 'NVDA / USD (Chainlink on Robinhood Chain 4663, relayed by CRE)');
+    a.nvdaUsd = new NorenRelayedFeed(s, 8, robinhoodChainId, XC.NVDA_USD, 'NVDA / USD (Chainlink on Robinhood Chain, relayed by CRE)');
     a.ethUsd = new NorenRelayedFeed(s, 8, XC.BASE_SEPOLIA, XC.BASE_ETH_USD, 'ETH / USD (Chainlink on Base Sepolia 84532, relayed by CRE)');
     a.eurUsd = new NorenRelayedFeed(s, 8, XC.SEPOLIA, XC.SEPOLIA_EUR_USD, 'EUR / USD (Chainlink on Ethereum Sepolia 11155111, relayed by CRE)');
 
     // Stock Token: 24/5 feed, uiMultiplier, 25 h open age, 3 days in the closed window (as NorenAssetOracle).
-    a.settler.setRoute(XC.ROBINHOOD, XC.NVDA, _route(address(a.rNvda), XC.ARC_USDC, false, true, address(a.nvdaUsd), 90_000, 259_200, 0x03));
+    a.settler.setRoute(robinhoodChainId, XC.NVDA, _route(address(a.rNvda), XC.ARC_USDC, false, true, address(a.nvdaUsd), 90_000, 259_200, 0x03));
     a.settler.setRoute(XC.BASE_SEPOLIA, XC.BASE_WETH, _route(address(a.rWeth), XC.ARC_USDC, false, true, address(a.ethUsd), 86_400, 86_400, 0));
     // Delivered USDC buys EURC from the maker at the EUR/USD peg plus the maker's ask spread.
     a.settler.setRoute(0, XC.ARC_USDC, _route(XC.ARC_USDC, XC.ARC_EURC, true, false, address(a.eurUsd), 90_000, 259_200, 0));
-    a.nvdaRoute = a.settler.routeKey(XC.ROBINHOOD, XC.NVDA, XC.ARC_USDC);
+    a.nvdaRoute = a.settler.routeKey(robinhoodChainId, XC.NVDA, XC.ARC_USDC);
     a.wethRoute = a.settler.routeKey(XC.BASE_SEPOLIA, XC.BASE_WETH, XC.ARC_USDC);
     a.eurcRoute = a.settler.routeKey(0, XC.ARC_USDC, XC.ARC_EURC);
   }

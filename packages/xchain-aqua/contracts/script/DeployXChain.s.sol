@@ -22,7 +22,7 @@ contract DeployArc is XChainDeployer {
     require(XC.AQUA.codehash == XC.AQUA_CODEHASH, 'official Aqua bytecode missing (scripts/forks.sh installs it)');
     vm.startBroadcast();
     (, address deployer,) = vm.readCallers();
-    ArcStack memory a = _deployArc(deployer, XC.ARC_FORWARDER);
+    ArcStack memory a = _deployArc(deployer, XC.ARC_FORWARDER, uint64(vm.envOr('XCHAIN_RH_CHAIN_ID', uint256(XC.ROBINHOOD))));
     vm.stopBroadcast();
     string memory k = 'arc';
     vm.serializeAddress(k, 'router', a.router);
@@ -35,7 +35,7 @@ contract DeployArc is XChainDeployer {
     vm.serializeBytes32(k, 'nvdaRoute', a.nvdaRoute);
     vm.serializeBytes32(k, 'wethRoute', a.wethRoute);
     string memory out = vm.serializeBytes32(k, 'eurcRoute', a.eurcRoute);
-    vm.writeJson(out, '../.fork/arc-deployment.json');
+    vm.writeJson(out, vm.envOr('XCHAIN_OUT', string('../.fork/arc-deployment.json')));
   }
 }
 

@@ -20,6 +20,7 @@ import { creSimulate } from './cre.ts';
 import { deploySettlementDesk, requestSettlement, startSettlementRelay } from './dev-settlement.ts';
 import { relayDeposit, acrossDeposit } from '../packages/bridge-settlement/keeper/lib.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
+import { deployXChain, startXChainRelay, type XChainDev, type XChainEntry } from './dev-xchain.ts';
 
 // Keys (World ID, 0G) from the worktree's .env, else the main checkout's. Loaded before any service starts; never printed.
 for (const f of ['.env', mainCheckoutEnv()]) if (f && existsSync(f)) { process.loadEnvFile(f); break; }
@@ -68,10 +69,17 @@ run(async () => {
     catch (e: any) { missing.push(`CRE bridge setup failed: ${e.message}`); }
   }
   let bridgeLog: BridgeEntry[] | undefined, creditLineAddr: Address | undefined, arcCreditFrom: bigint | undefined;
+  let xchain: XChainDev | undefined, xchainRelay: ReturnType<typeof startXChainRelay> | undefined;
+  const xchainOrders = async (req: any, res: any) => {
+    if (new URL(req.url ?? '/', 'http://x').pathname !== '/xchain/orders') return false;
+    res.writeHead(req.method === 'GET' ? 200 : 405, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(req.method === 'GET' ? xchainRelay?.list() ?? [] : { error: 'Method not allowed' }));
+    return true;
+  };
   const stack = await startStack({
     mounts: async (arc) => {
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
-      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
+      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
       const gaps = w.missingSettings(config);
@@ -101,7 +109,7 @@ run(async () => {
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
       const worldId = w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }));
-      return [worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
+      return [xchainOrders, worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
@@ -115,6 +123,14 @@ run(async () => {
         try { const c = await deployCreditLine(arc); creditLine = creditLineAddr = c.creditLine; arcCreditFrom = c.deployBlock; pub.arcFromBlock = String(c.deployBlock); console.log(`NorenCreditLine on Arc fork: ${c.creditLine} (pool ${Number(c.poolUsdc) / 1e6} USDC)`); }
         catch (e: any) { missing.push(`NorenCreditLine deploy failed: ${e.message}`); }
       } else missing.push('packages/arc-credit (NorenCreditLine): merge the cre-bridge branch');
+      if (process.env.NOREN_SKIP_XCHAIN !== '1') {
+        try {
+          xchain = await deployXChain({ arcRpc: arc.rpcUrl, robinhoodRpc });
+          pub.xchain = { settler: xchain.settler, router: xchain.router, escrow: xchain.escrow,
+            strategyHash: xchain.strategyHash, maker: xchain.maker, tokenIn: xchain.tokenIn,
+            srcChainId: String(xchain.srcChainId), arcFromBlock: String(xchain.deployBlockArc), rhFromBlock: String(xchain.deployBlockRh) };
+        } catch (e: any) { missing.push(`Cross-chain Aqua: ${e.message}`); }
+      }
       if (has('packages/robinhood/underwriter/src/server.ts') && robinhood) {
         try {
           Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, NOREN_RH_DECISIONS_LOG: resolve('data/underwriter-decisions.jsonl') }); // history stays on Robinhood mainnet (read-only)
@@ -136,6 +152,11 @@ run(async () => {
       return { liquidity: robinhood?.liquidity, rateOracle: pub.rateOracle as Address | undefined, bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
     },
   });
+
+  if (xchain) {
+    try { xchainRelay = startXChainRelay({ arcRpc: stack.rpcUrl, robinhoodRpc, dev: xchain }); onStop(xchainRelay.stop); console.log('Cross-chain Aqua CRE (fork): relaying Robinhood ORDER and Arc FILLED/EXPIRED through the CRE simulator with --broadcast'); }
+    catch (e: any) { missing.push(`Cross-chain Aqua: relay setup failed: ${e.message}`); }
+  }
 
   if (bridgeReady && robinhood && creditLineAddr && arcCreditFrom !== undefined) {
     const relay = startBridgeRelay({ arcRpc: stack.rpcUrl, robinhoodRpc, credit: robinhood.credit, creditLine: creditLineAddr, arcFrom: arcCreditFrom, rhFrom: robinhood.deployBlock });
