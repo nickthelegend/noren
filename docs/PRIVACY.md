@@ -1,6 +1,6 @@
 # Privacy in Noren
 
-Noren is a DEX and stablecoin payment infrastructure on Arc: liquidity, credit lines and cross-chain settlement. Every payment is private: a merchant never learns which customer paid.
+Noren is a DEX and stablecoin payment infrastructure on Arc: liquidity, credit lines and cross-chain settlement. Payments are private by default: a merchant never learns which customer paid.
 
 The privacy comes from the Ethereum Foundation's **Kohaku** privacy pools (0xbow Privacy Pools) on Arc testnet. A customer holds USDC as a private balance in the pool. Each payment is a zero-knowledge withdrawal, so the money leaves the pool, and nothing on-chain links it to the deposit it came from.
 

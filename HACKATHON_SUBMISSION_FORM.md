@@ -11,7 +11,7 @@ DEX and stablecoin payments on Arc: liquidity, credit, cross-chain settlement. P
 (99 characters)
 
 ## Description
-**Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and every payment is private: a merchant never learns which customer paid.**
+**Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and payments are private by default: a merchant never learns which customer paid.**
 
 - **1inch Aqua** is the engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills.
 - **Circle CCTP V2 and Chainlink CCIP** bring money and orders from other chains to Arc, into one `NorenArcActionRouter`.

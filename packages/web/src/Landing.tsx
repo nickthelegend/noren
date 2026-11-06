@@ -206,7 +206,7 @@ export function Landing() {
         <div className="lx-hero-in">
           <span className="lx-pill mono"><i />Live on Arc, CCTP and CCIP testnets</span>
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
-          <p>Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and every payment is private: a merchant never learns which customer paid.</p>
+          <p>Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and payments are private by default: a merchant never learns which customer paid.</p>
           <div className="lx-ctas">
             <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
