@@ -67,14 +67,15 @@ export function SignIn() {
 export function WalletSwitch() {
   const s = useSigner();
   const [err, setErr] = useState<string | null>(null);
-  const modes: [WalletMode, string][] = [...(PRIVY_APP_ID ? [["privy", "Noren wallet"] as [WalletMode, string]] : []), ["browser", "Browser wallet"], ["test", "Test wallet"]];
-  const who = s.mode === "privy" ? (s.status === "in" ? `Signed in as ${s.wallet!.login} (Privy)` : "Not signed in")
-    : s.mode === "browser" ? (s.browser ? `${s.browser.name}, chain switches happen in your wallet` : "Not connected")
-    : "A key kept in this browser, for the local forks";
+  // Short labels so three fit one row at phone width; the line below names the wallet in full.
+  const modes: [WalletMode, string, string][] = [...(PRIVY_APP_ID ? [["privy", "Noren", "Noren wallet (email or wallet sign-in)"] as [WalletMode, string, string]] : []), ["browser", "Browser", "Browser wallet"], ["test", "Test", "Test wallet"]];
+  const who = s.mode === "privy" ? (s.status === "in" ? `Noren wallet: signed in as ${s.wallet!.login} (Privy)` : "Noren wallet: not signed in")
+    : s.mode === "browser" ? (s.browser ? `Browser wallet: ${s.browser.name}. It asks to switch chains when needed.` : "Browser wallet: not connected")
+    : "Test wallet: a key kept in this browser, for the local forks";
   return (
     <div className="nk-wmode">
       <div className="nk-seg" role="radiogroup" aria-label="Wallet" style={{ gridTemplateColumns: `repeat(${modes.length}, 1fr)` }}>
-        {modes.map(([m, label]) => <button key={m} role="radio" aria-checked={s.mode === m} onClick={() => setWalletMode(m)}>{label}</button>)}
+        {modes.map(([m, label, full]) => <button key={m} role="radio" aria-checked={s.mode === m} aria-label={full} title={full} onClick={() => setWalletMode(m)}>{label}</button>)}
       </div>
       <small className="nk-wmode-who">{who}{!PRIVY_APP_ID && " · Email sign-in: Setup required: VITE_PRIVY_APP_ID"}</small>
       {s.mode === "privy" && s.status === "in" && <button className="nk-btn ghost" onClick={() => privyActions()?.logout().catch((e) => setErr(msgOf(e)))}>Sign out</button>}
