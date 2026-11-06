@@ -7,7 +7,8 @@
   "scripts": {
     "build:swapvm": "cd swapvm-ext && forge build",
     "test:swapvm": "sh scripts/test-swapvm.sh",
-    "demo": "sh scripts/aqua-demo.sh"
+    "demo": "sh scripts/aqua-demo.sh",
+    "demo:dutch": "sh scripts/dutch-demo.sh"
   },
   "devDependencies": {
     "@1inch/aqua": "github:1inch/aqua#b51f3b6e3c02fa5208e1429f0f14706b025d9dd6",
