@@ -13,3 +13,4 @@ artifacts/zk/
 data/
 deployments/
 .DS_Store
+.claude/
