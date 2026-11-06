@@ -63,9 +63,9 @@ contract NorenSettlementDeskForkTest is Test {
     vm.prank(owner);
     desk.setStockFeed(NVDA, NVDA_USD);
     vm.prank(USDG_HOLDER);
-    IERC20(USDG).transfer(merchant, 1_000e6);
+    require(IERC20(USDG).transfer(merchant, 1_000e6), "usdg");
     vm.prank(POOL_MANAGER);
-    IERC20(NVDA).transfer(merchant, 10e18);
+    require(IERC20(NVDA).transfer(merchant, 10e18), "nvda");
     vm.startPrank(merchant);
     IERC20(USDG).approve(address(desk), type(uint256).max);
     IERC20(NVDA).approve(address(desk), type(uint256).max);
@@ -161,6 +161,8 @@ contract NorenSettlementDeskForkTest is Test {
     (, int256 nvda,,,) = IAggregatorV3(NVDA_USD).latestRoundData();
     (, int256 usdgUsd,,,) = IAggregatorV3(USDG_USD).latestRoundData();
     uint256 mult = IStockMultiplier(NVDA).uiMultiplier(); // not exactly 1e18: NVDA's split/dividend multiplier
+    // Same operation order as the desk (the lost precision is under 1e-8 USD).
+    // forge-lint: disable-next-line(divide-before-multiply)
     uint256 expected = (1e18 * mult / 1e18) * uint256(nvda) / 1e18 * 1e6 / uint256(usdgUsd);
     assertEq(desk.stockFloorUsdg6(NVDA, 1e18, 0), expected);
     assertEq(desk.stockFloorUsdg6(NVDA, 1e18, 100), expected * 9_900 / 10_000);
