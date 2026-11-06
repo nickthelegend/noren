@@ -3522,6 +3522,45 @@ export const norenCreditAbi = [
   },
   {
     "type": "function",
+    "name": "auctionSeize",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "seize",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "repayUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "firstFill",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "closed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "bad",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "badDebtUsdg",
     "inputs": [],
     "outputs": [
@@ -3638,6 +3677,30 @@ export const norenCreditAbi = [
   },
   {
     "type": "function",
+    "name": "cumulativeDue",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "n",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "domainSeparator",
     "inputs": [],
     "outputs": [
@@ -3669,6 +3732,19 @@ export const norenCreditAbi = [
         "name": "",
         "type": "uint64",
         "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dutchAuction",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -4616,6 +4692,19 @@ export const norenCreditAbi = [
   },
   {
     "type": "function",
+    "name": "setDutchAuction",
+    "inputs": [
+      {
+        "name": "a",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setForwarder",
     "inputs": [
       {
@@ -5096,6 +5185,19 @@ export const norenCreditAbi = [
   },
   {
     "type": "event",
+    "name": "DutchAuctionSet",
+    "inputs": [
+      {
+        "name": "auction",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "EIP712DomainChanged",
     "inputs": [],
     "anonymous": false
@@ -5351,6 +5453,55 @@ export const norenCreditAbi = [
   },
   {
     "type": "event",
+    "name": "PlanPartiallyLiquidated",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "borrower",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "seized",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "repaidUsdg",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "collateralLeft",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "outstandingUsdg",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "closed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "PlanRepaid",
     "inputs": [
       {
@@ -5564,6 +5715,11 @@ export const norenCreditAbi = [
   {
     "type": "error",
     "name": "NoLiquidity",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotAuction",
     "inputs": []
   },
   {
@@ -11036,6 +11192,1386 @@ export const norenBorrowAbi = [
     "type": "error",
     "name": "ZeroAmount",
     "inputs": []
+  }
+] as const
+export const norenDutchAuctionAbi = [
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "credit_",
+        "type": "address",
+        "internalType": "contract NorenCredit"
+      },
+      {
+        "name": "router_",
+        "type": "address",
+        "internalType": "contract ISwapVMRouter"
+      },
+      {
+        "name": "startBps",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "capBps",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "duration_",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "keeperShare",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "targetHealth",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "AQUA_TRAITS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MAX_STRATEGIES_PER_ASSET",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "OP_SALT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "acceptOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "aqua",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IAqua"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "auction",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct NorenDutchAuction.Auction",
+        "components": [
+          {
+            "name": "startedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "round",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fills",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "defaultRecorded",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "auctionStatus",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "s",
+        "type": "tuple",
+        "internalType": "struct NorenDutchAuction.Status",
+        "components": [
+          {
+            "name": "open",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "startedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "elapsed",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "discountWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "makerDiscountWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "keeperDiscountWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "healthWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "targetHealthWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "overdue",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "liquidatable",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "round",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "fills",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "collateral",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "collateralAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "outstandingUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "priceUsd8",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "error",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "buildOrder",
+    "inputs": [
+      {
+        "name": "maker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "salt",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "o",
+        "type": "tuple",
+        "internalType": "struct ISwapVMRouter.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "h",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "capDiscountBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "closeAuction",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "credit",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract NorenCredit"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decayOpcode",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "discountWad",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "duration",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dutchAuctionStart",
+    "inputs": [
+      {
+        "name": "auctionId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fill",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxRepayUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "f",
+        "type": "tuple",
+        "internalType": "struct NorenDutchAuction.Fill",
+        "components": [
+          {
+            "name": "strategyHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "sellAll",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "usdgOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "repayUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "excessUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "collateralSold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "keeperBonus",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "discountWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "closesPlan",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "badDebtUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "healthAfterWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "collateralLeft",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "outstandingAfterUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "healthOf",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "keeperShareBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "openAuction",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "oracle",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract NorenAssetOracle"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "order",
+    "inputs": [
+      {
+        "name": "h",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct ISwapVMRouter.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pegOpcode",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pendingOwner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewFill",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxRepayUsdg",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "f",
+        "type": "tuple",
+        "internalType": "struct NorenDutchAuction.Fill",
+        "components": [
+          {
+            "name": "strategyHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "sellAll",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "usdgOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "repayUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "excessUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "collateralSold",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "keeperBonus",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "discountWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "closesPlan",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "badDebtUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "healthAfterWad",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "collateralLeft",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "outstandingAfterUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "register",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "salt",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "h",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "remove",
+    "inputs": [
+      {
+        "name": "h",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "router",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISwapVMRouter"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "startDiscountBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "strategiesFor",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "strategy",
+    "inputs": [
+      {
+        "name": "h",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct NorenDutchAuction.Strategy",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "asset",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "active",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "salt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "fills",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "assetBought",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "usdgPaid",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "discountUsdg",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "targetHealthBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "usdg",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "vault",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "AuctionClosed",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "round",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "planClosed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AuctionFilled",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "keeper",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "round",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "discountWad",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "collateralSold",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "keeperBonus",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "repaidUsdg",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "healthAfterWad",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AuctionOpened",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "borrower",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "opener",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "round",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "healthWad",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "overdue",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferStarted",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "StrategyRegistered",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maker",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "asset",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "salt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "StrategyRemoved",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AssetNotSupported",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AuctionAlreadyOpen",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AuctionNotOpen",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BadConfig",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FillAboveOracle",
+    "inputs": [
+      {
+        "name": "paidUsd8",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "valueUsd8",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FillBelowCap",
+    "inputs": [
+      {
+        "name": "paidUsd8",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "floorUsd8",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FillMismatch",
+    "inputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NoMakerLiquidity",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotLiquidatable",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotRemovable",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NothingToFill",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PlanNotActive",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeERC20FailedOperation",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "StillLiquidatable",
+    "inputs": [
+      {
+        "name": "planId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "StrategyExists",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "StrategyNotShipped",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TooManyStrategies",
+    "inputs": [
+      {
+        "name": "asset",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "UnknownStrategy",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
   }
 ] as const
 export const aquaAbi = parseAbi(["function rawBalances(address maker, address app, bytes32 strategyHash, address token) view returns (uint248 balance, uint8 tokensCount)","function safeBalances(address maker, address app, bytes32 strategyHash, address token0, address token1) view returns (uint256, uint256)","function ship(address app, bytes strategy, address[] tokens, uint256[] amounts) returns (bytes32 strategyHash)","function dock(address app, bytes32 strategyHash, address[] tokens)","event Shipped(address maker, address app, bytes32 strategyHash, bytes strategy)","event Pulled(address maker, address app, bytes32 strategyHash, address token, uint256 amount)","event Pushed(address maker, address app, bytes32 strategyHash, address token, uint256 amount)"] as const)

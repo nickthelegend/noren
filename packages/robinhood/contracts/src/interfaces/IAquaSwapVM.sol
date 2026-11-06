@@ -32,6 +32,7 @@ interface ISwapVMRouter {
 
   function AQUA() external view returns (address);
   function NOREN_ORACLE_PEG_OPCODE() external view returns (uint8);
+  function NOREN_DUTCH_DECAY_OPCODE() external view returns (uint8);
   function hash(Order calldata order) external view returns (bytes32);
   function quote(Order calldata order, address tokenIn, address tokenOut, uint256 amount, bytes calldata takerTraitsAndData)
     external

@@ -40,6 +40,8 @@ export interface NorenAddresses {
   swapRouter?: Address
   /** Official 1inch Aqua registry. */
   aqua?: Address
+  /** NorenDutchAuction: partial Dutch-auction liquidations (needs the router with NorenDutchDecay, opcode 35). */
+  dutchAuction?: Address
   deployBlock?: number
   chainId?: number
   rpcUrl?: string

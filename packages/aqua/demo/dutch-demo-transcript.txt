@@ -1,0 +1,51 @@
+Noren partial Dutch-auction liquidation through 1inch SwapVM, on a local fork of Robinhood Chain mainnet (chain 4663)
+forked from block 107589797 | RPC http://127.0.0.1:8860 | every hash below is a transaction on this fork, not on mainnet
+
+=== 1. Deploy NorenDutchAuction and register a Dutch maker strategy
+  Noren SwapVM router 0x2a067d09ac287DAFA15BaCf09C3B4C181267296A: NorenOraclePeg = opcode 34, NorenDutchDecay = opcode 35 (redeployed on the fork)
+  fork tx  0x78aa0c6125cdac915f95e0690a31bca54ea918713c1ef282d2182c221a7a1bc4  deploy NorenDutchAuction 0x9505e8b8546cc9015b2c015826d25821cc48c153
+  discount 0.5% at open -> 8% cap over 60 min; keeper share 25% of the discount; target health 1.1
+  fork tx  0xfb79d9088705c45db6ed155e0acfd785464cf0ba7e2a5f5dd5f9365d7dd97425  owner NorenCredit.setDutchAuction
+  fork tx  0x9ab66923837e86a9da29043d70a01f7b8e2c4c441eaed95ed43c3c79882e0dab  maker Aqua.ship Salt | NorenDutchDecay | NorenOraclePeg(bid 0, buy-only), 10,000 USDG virtual, strategy 0x71382c6acf0a6cd0282fc47a57c4efc440782ec9b07edf0da54b6a64e89cc96b
+  fork tx  0x72a6dc3f52923f0dd7492008033068f8bc51942fd412740886326a5513021255  maker NorenDutchAuction.register
+
+=== 2. Borrower opens a Pay-in-3 plan: 300 USDG against 2.2 NVDA
+  fork tx  0x969ca466fc614b4980121b3af7f791a4763b5df612585995d729dcfbcf297784  applyAttestation (EIP-712, tier 3)
+  fork tx  0x83240d0210599c17694c6c14c8ce903bc6d647bdaf048f502c199d8e5635117b  merchant createInvoice 300 USDG
+  fork tx  0xa08939814a9b2635d0ded2e6aaa16909439a124b9ca4c078440adf4972ecd285  openPlan #1
+  NVDA $188.41 | collateral 2.2 NVDA | debt 300 USDG | health 1.257
+
+=== 3. NVDA's value falls and the position goes unhealthy
+  fork tx  0x9ce3056ab86e936001cf30a981e88c78c9c5bd815ea9ed184f32be2737b57b00  NVDA.updateMultiplier 1.000775 -> 0.764271 (real Stock Token admin path, impersonated on the fork: stands in for a 23.6% price fall)
+  collateral now worth $316.79 vs debt 300 USDG | health 0.9599 | Plan liquidatable (health 0.9599): anyone can open an auction
+
+=== 4. For comparison: the old full liquidation (run, measured, then reverted with evm_revert)
+  fork tx  0x421f71463297934c7e8b0e1f039f74a362fa9be09f6a20d9b1141a18fb66db13  liquidatePlanViaAqua (whole debt + 5% keeper bonus, peg maker bid 50 bps)
+  sold 2.093802 NVDA + keeper bonus 0.104166 NVDA; borrower gets back 0.00203 NVDA and owes 0
+  fork state reverted to before the full liquidation
+
+=== 5. Anyone opens the Dutch auction
+  fork tx  0x48df1d1b9711c4b161fdf99f99b2cc542e4618a72838bee57ce7c915dec79079  openAuction #1 (keeper)
+  Auction open for 2.2 NVDA: discount 0.5% (rising to 8%), health 0.9599 -> target 1.1
+
+=== 6. The discount climbs (fork time travel)
+  t+ 0 min  discount 0.5%   (maker 0.37%, keeper 0.12%)  fill: repay 225.38 USDG by selling 1.571075 NVDA + keeper 0.001963 NVDA -> health 1.1
+  t+10 min  discount 1.75%  (maker 1.31%, keeper 0.43%)  fill: repay 240.29 USDG by selling 1.690876 NVDA + keeper 0.007397 NVDA -> health 1.1
+  t+20 min  discount 3%     (maker 2.25%, keeper 0.75%)  fill: repay 257.65 USDG by selling 1.830456 NVDA + keeper 0.013728 NVDA -> health 1.1
+
+=== 7. Keeper fills: only enough collateral to restore health to 1.10
+  fork tx  0x8caa8fc9e64e5cae742d0d275ca153e296bb7f026c5d3325cc0d5083d7a5257a  NorenDutchAuction.fill -> NorenCredit.auctionSeize -> SwapVM.swap (NorenDutchDecay + NorenOraclePeg) -> Aqua.pull/push
+  maker               -257.71 USDG
+  maker               +1.83096 NVDA
+  keeper              +0.013751 NVDA
+  vault               +257.71 USDG
+  plan (NorenCredit)  -1.844711 NVDA
+  discount 3%: maker paid 257.71 USDG for 1.83096 NVDA (to the lender pool); keeper bonus 0.013751 NVDA; keeper paid nothing
+
+=== 8. Health restored; the auction closed; the rest stays with the borrower
+  health 1.1 (target 1.1) | auction open: false | plan status Active
+  plan: 0.355288 NVDA still locked for the borrower, 42.28 USDG left to repay, installments paid 2/3
+  borrower kept 0.355288 NVDA vs 0.00203 NVDA under full liquidation
+  borrower equity (collateral value - debt): $8.87 with the Dutch fill vs $0.29 after full liquidation
+
+Done. Fork only: no mainnet transaction was sent.

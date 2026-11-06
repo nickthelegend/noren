@@ -1,8 +1,10 @@
 # Noren's SwapVM extension: a custom instruction and a router that adds it to the SwapVM v1.0.2
 # Aqua instruction set (AquaSwapVMRouter, the release deployed at
 # 0x111111338c5091E8440b67B168bAe16a668AC0De on Robinhood Chain).
-# Compiler settings match upstream v1.0.2 except optimizer_runs: 700 -> 200, so the router with the
-# extra instruction fits the EIP-170 limit (24,652 B at 700 runs, 23,843 B at 200).
+# Compiler settings match upstream v1.0.2 except optimizer_runs: 700 -> 200 -> 50, so the router with the
+# extra instructions fits the EIP-170 limit (NorenOraclePeg only: 24,652 B at 700 runs, 23,843 B at 200;
+# with NorenDutchDecay: 24,637 B at 200, 24,546 B at 50). The Arc Testnet router (opcode 34 only) was
+# built at 200 runs from commit a044e6a.
 [profile.default]
 src = 'src'
 out = 'out'
@@ -13,7 +15,7 @@ allow_paths = ['../node_modules', '../../../node_modules', '../../robinhood/cont
 solc_version = '0.8.30'
 evm_version = 'cancun'
 optimizer = true
-optimizer_runs = 200
+optimizer_runs = 50
 via_ir = true
 fs_permissions = [{ access = 'read', path = './out' }]
 

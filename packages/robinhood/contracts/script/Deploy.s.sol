@@ -11,6 +11,7 @@ import {NorenLiquidity} from '../src/NorenLiquidity.sol';
 import {NorenDepositVault} from '../src/NorenDepositVault.sol';
 import {NorenReputation, INorenCreditHistory} from '../src/NorenReputation.sol';
 import {NorenBorrow} from '../src/NorenBorrow.sol';
+import {NorenDutchAuction} from '../src/NorenDutchAuction.sol';
 import {INorenReceivables} from '../src/interfaces/INorenVault.sol';
 import {IAqua, ISwapVMRouter} from '../src/interfaces/IAquaSwapVM.sol';
 import {INorenVault} from '../src/interfaces/INorenVault.sol';
@@ -20,7 +21,7 @@ import {RobinhoodMainnet as RH} from './RobinhoodMainnet.sol';
 /// @notice Deploys Noren with CREATE2 (salt "noren-robinhood-v1") so a fork deployment lands on the same
 /// addresses every time for the same code and constructor arguments. Also deploys the modified SwapVM
 /// router (packages/aqua/swapvm-ext build artifact, LicenseRef-Degensoft-SwapVM-1.1) against the
-/// official Aqua registry, and NorenLiquidity, and points the gateway and credit at it.
+/// official Aqua registry, NorenLiquidity and NorenDutchAuction, and points the gateway and credit at them.
 /// Earn and borrow: NorenReputation, NorenBorrow (a lender-pool module and its receivables source) and
 /// one NorenDepositVault per asset (nETH, nNVDA, nTSLA, nAAPL), each with its own Aqua strategy.
 /// Env: NOREN_RH_OWNER, NOREN_RH_UNDERWRITER, NOREN_RH_FORWARDER, NOREN_RH_WORLD_ID_SIGNER,
@@ -75,6 +76,10 @@ contract Deploy is Script {
     NorenLiquidity liquidity = new NorenLiquidity{salt: SALT}(owner, IAqua(RH.AQUA), router, oracle);
     gateway.setLiquidity(liquidity, true);
     credit.setLiquidity(liquidity);
+    // Partial Dutch-auction liquidations: 0.5% start discount rising to 8% over an hour, keeper takes 25% of the
+    // discount, each fill restores health to 1.10 (docs/AQUA.md).
+    NorenDutchAuction dutch = new NorenDutchAuction{salt: SALT}(owner, credit, router, 50, 800, 3600, 2500, 11000);
+    credit.setDutchAuction(address(dutch));
     address[8] memory stocks = [RH.TSLA, RH.AAPL, RH.NVDA, RH.SPY, RH.AMZN, RH.MSFT, RH.GOOGL, RH.META];
     for (uint256 i; i < stocks.length; ++i) gateway.setSpread(stocks[i], 50);
     (NorenReputation reputation, NorenBorrow borrow) = _deployEarn(owner, oracle, vault, credit, liquidity);
@@ -86,6 +91,7 @@ contract Deploy is Script {
     console2.log('NOREN_RH_CREDIT', address(credit));
     console2.log('NOREN_RH_SWAPVM_ROUTER', address(router));
     console2.log('NOREN_RH_LIQUIDITY', address(liquidity));
+    console2.log('NOREN_RH_DUTCH_AUCTION', address(dutch));
     console2.log('NOREN_RH_REPUTATION', address(reputation));
     console2.log('NOREN_RH_BORROW', address(borrow));
     NorenDepositVault[] memory vs = borrow.vaults();

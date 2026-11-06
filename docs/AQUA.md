@@ -159,7 +159,7 @@ The attacks covered:
 sh packages/aqua/scripts/aqua-demo.sh     # port 8760, ~2 min, stops its anvil on exit
 ```
 
-The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). It was recorded before NorenLiquidity gained its ask side (`bestAskForAsset`, `buyFromMakers`), when the fork deployed it at `0xF19E8291e051c543690e5A7B8B3A4A1b41e9f992`; the current deploy puts it at `0xb5D2237d8e79Fb6A0f16ecD02F435CE7063b49EC`. Apps read the address from `packages/robinhood/.fork/deployment.json`, never from the transcript. Highlights from it (all hashes are **fork** transactions, block 107370002, not mainnet):
+The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). It was recorded before NorenLiquidity gained its ask side (`bestAskForAsset`, `buyFromMakers`), when the fork deployed it at `0xF19E8291e051c543690e5A7B8B3A4A1b41e9f992`; the current deploy (router with NorenDutchDecay, `0x2a067d09ac287DAFA15BaCf09C3B4C181267296A`) puts it at `0x177763Ad96482f04a15da837E030009E2a7D9a22`. Apps read the address from `packages/robinhood/.fork/deployment.json`, never from the transcript. Highlights from it (all hashes are **fork** transactions, block 107370002, not mainnet):
 
 - Maker ships 4 strategies, e.g. `Aqua.ship` `0x8d14b67e…c760` and `NorenLiquidity.register` `0x670763f5…b2d9`.
 - A 250 USDG invoice paid with 1.359921 NVDA (`0x4c8e15d8…3e5d`): merchant +250 USDG, maker −250 USDG and +1.359921 NVDA, maker fee 1.25 USDG.
@@ -208,3 +208,118 @@ The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and r
 - **Oracle dependency.** Pricing is only as good as the Chainlink feeds. A feed that keeps reporting a wrong but fresh price is not detected beyond the maker's band and NorenLiquidity's 3% liquidation guard. Robinhood Chain has no listed L2 sequencer-uptime feed.
 - **Liquidity availability.** With no maker (or only under-funded ones) a liquidation needs a USDG-paying liquidator (`liquidatePlan`). A paused Stock Token can't be sold at all.
 - **Registry bound.** At most `maxStrategiesPerAsset` (8) strategies per asset are quoted on-chain, to bound gas.
+
+## Partial Dutch-auction liquidations (NorenDutchDecay, opcode 35)
+
+Instead of selling a defaulted plan's whole debt worth of collateral at once (with a 5% keeper bonus on top), a Dutch auction sells **only enough collateral to bring the plan back to health 1.10**. The price starts close to Chainlink and slowly gets cheaper until a keeper fills. The borrower keeps the rest of the collateral and the plan stays open.
+
+Fork-only, like everything on this page. The instruction is in the swapvm-ext build on this branch. It is **not** in the Arc Testnet router (`0x8717…e295`, built from commit `a044e6a` with opcode 34 only). It ships with the next router redeploy.
+
+### The instruction
+
+`NorenDutchDecay` is opcode 35 in `NorenAquaSwapVMRouter` (opcodes 0–34 are unchanged). It is licensed SwapVM-1.1 like NorenOraclePeg, lives in `packages/aqua/swapvm-ext/src/instructions/NorenDutchDecay.sol`, and is listed with a date in the folder's `NOTICE`.
+
+Program shape: `Salt(8) ‖ NorenDutchDecay(30) ‖ NorenOraclePeg(117, bid 0, buy-only, no weekend extra)`. Like upstream `Fee`, the instruction runs the rest of the program itself and then scales the amounts:
+
+```
+totalDiscount(t) = startBps + (capBps - startBps) · min(t - auctionStart, duration) / duration
+makerDiscount(t) = totalDiscount(t) · (1 - keeperShareBps)
+maker buy price  = Chainlink price · (1 - makerDiscount(t))
+```
+
+| Arg | Bytes | Meaning |
+| --- | --- | --- |
+| house | 20 | the auction house (NorenDutchAuction). It is the only taker accepted and the source of the auction start |
+| startBps / capBps | 2 + 2 | 50 / 800 (0.5% rising to 8%). The cap is never exceeded; the instruction rejects caps above 50% |
+| duration | 4 | seconds from start to cap (3,600 on the fork) |
+| keeperShareBps | 2 | part of the total discount that goes to the keeper, not the maker (2,500 = 25%) |
+
+- **Auction start.** The 32-byte taker instruction argument is the auction id (`bytes32(planId)`). The instruction reads the start on-chain with `house.dutchAuctionStart(id)`. A closed or unknown auction returns 0, which reverts (`NorenDutchDecayNoActiveAuction`), and so does a start in the future.
+- **Only the house can take.** `taker != house` reverts (`NorenDutchDecayTakerNotHouse`). Nobody can sell their own NVDA to a maker at the auction discount.
+- **Rounding.** Exact-in prices `amountIn − ceil(amountIn·d)`, and exact-out grows `amountIn` by a ceiling division. Both round in the maker's favour.
+- **Oracle checks.** Every Chainlink check (staleness, weekend window, USDG depeg, maker funding) is NorenOraclePeg's, unchanged.
+- **Router size.** To stay under EIP-170, the router is compiled with `optimizer_runs` 50 (24,546 B; 24,637 B at 200). The instruction decodes its args with shifts and calls the house with a raw `staticcall` for the same reason.
+
+### NorenDutchAuction (MIT)
+
+`packages/robinhood/contracts/src/NorenDutchAuction.sol` calls the router and Aqua through ABIs only, and builds the canonical Dutch maker order. NorenCredit gains `auctionSeize` (only the configured auction may call it), `cumulativeDue` and `setDutchAuction`. `repay()` now counts any part of an installment a fill already paid.
+
+| Function | Who | What |
+| --- | --- | --- |
+| `buildOrder(maker, asset, salt)`, `register(asset, salt)`, `remove(hash)` | maker | ship a Dutch strategy to Aqua (USDG stays in the maker's wallet), then register it |
+| `openAuction(planId)` | anyone | only when health < 1 (collateral below 110% of the debt) or two installments are missed (NorenCredit's rules) |
+| `previewFill(planId, maxRepayUsdg)` | view | the fill below, as a static call |
+| `fill(planId, maxRepayUsdg)` | anyone (keeper) | sells to the best Dutch maker. USDG goes straight to the lender pool, the keeper gets its bonus in collateral and pays nothing |
+| `closeAuction(planId)` | anyone | closes an auction whose plan is no longer liquidatable (repaid, or the price recovered) |
+| `auctionStatus(planId)`, `discountWad`, `healthOf` | view | for the app |
+
+**How much a fill sells.** Plan health is `H = collateral value / (debt · 1.10)`. With keeper share `dk` and maker discount `dm`, removing collateral worth `R · c` repays `R`, where `c = (1 + dk) / (1 − dm)` (1.005 at the start, 1.085 at the cap). The fill repays
+
+```
+R = (target · threshold · debt − value) / (target · threshold − c)      (target 1.10, threshold 1.10)
+```
+
+That is rounded up, plus 2e-8 USD to absorb the oracle's 8-decimal floor. For an overdue plan, `R` is at least the missed installments. `R` is never more than the debt or `maxRepayUsdg`. The maker sells exactly `R` USDG for collateral `S` (exact-out), and the keeper gets `S · dk`, which is its share of the discount. So the borrower's whole cost is `discount · value sold`, with no bonus on top. Fills can repeat while the plan is still liquidatable, and the auction keeps its clock. Once a fill leaves the plan healthy and current, the auction closes.
+
+**Limits, stated plainly.** A fill can restore the target only while collateral value ≥ `c · debt`. If a position falls further, or a fill waits until the cap, all collateral is sold (keeper share first) and the shortfall is recorded as `badDebtUsdg`, never hidden (`test_underwaterSellsAllAndRecordsBadDebt`). Fills cost the borrower least when keepers fill early.
+
+**Guards on every fill.**
+- The maker may pay no more than the oracle value of what it bought (`FillAboveOracle`) and no less than oracle · (1 − cap) (`FillBelowCap`).
+- There is no fill without an open auction, and none once the plan is no longer liquidatable (`NotLiquidatable`, `AuctionNotOpen`).
+- A stale feed reverts (NorenAssetOracle's rules). `auctionStatus` then sets `error` instead of showing a health.
+- `nonReentrant` is on the house and on `auctionSeize`. The Dutch orders are Aqua orders without hooks, so nothing calls back during settlement.
+
+### Demo (fork transactions)
+
+```
+sh packages/aqua/scripts/dutch-demo.sh     # port 8860, ~3 min, stops its anvil on exit (pnpm --filter @noren/aqua demo:dutch)
+```
+
+Transcript: [`packages/aqua/demo/dutch-demo-transcript.txt`](../packages/aqua/demo/dutch-demo-transcript.txt). The fork is of block 107589797, and every hash is a **fork** transaction.
+
+1. The borrower opens a 300 USDG Pay-in-3 plan against 2.2 NVDA (NVDA $188.41, health 1.257): `openPlan` `0xa0893981…d285`.
+2. NVDA's value falls 23.6%. On the fork, this is the real Stock Token multiplier admin path, impersonated (`0x9ce3056a…7b00`). Health is now 0.96.
+3. For comparison, the old `liquidatePlanViaAqua` (`0x421f7146…db13`, then reverted with `evm_revert`) gives the borrower back **0.00203 NVDA**.
+4. `openAuction` `0x48df1d1b…9079`. The discount climbs from 0.5% (t+0) to 1.75% (t+10 min) to 3% (t+20 min).
+5. `fill` at a 3% discount (`0x8caa8fc9…257a`):
+   - the maker paid 257.71 USDG for 1.83096 NVDA, straight to the vault;
+   - the keeper got 0.013751 NVDA and paid nothing;
+   - health is restored to **1.1**, and the auction closed.
+6. The plan stays Active with **0.355288 NVDA** still locked for the borrower and 42.28 USDG left to pay. **The borrower kept 0.355288 NVDA vs 0.00203 NVDA under full liquidation**: equity $8.87 vs $0.29.
+
+### Tests
+
+| Suite | Command | Result |
+| --- | --- | --- |
+| swapvm-ext (Foundry, fresh fork) | `NOREN_AQUA_TEST_PORT=8861 sh packages/aqua/scripts/test-swapvm.sh` | **27 passed, 1 skipped** (the weekend test skips on weekdays); 10 of them in `NorenDutchDecay.t.sol` |
+| Robinhood contracts (Foundry, fresh fork) | `NOREN_RH_TEST_PORT=8862 sh packages/robinhood/scripts/test-fork.sh --match-contract NorenDutch` | **16 passed** (`NorenDutch.t.sol`). The full suite was 149 of 150 on Nov 6. The failure, `test_weekendAllowsStaleStockButNotEth`, compares the live feed's age at fork time and is unrelated to this change |
+| Robinhood SDK on the warmed snapshot | `NOREN_RH_RPC=http://127.0.0.1:8864 pnpm --filter @noren/robinhood test` | **20 passed** (1 in `sdk/test/dutch.fork.test.ts`) |
+
+What the tests cover:
+- the discount grows over time (`vm.warp`) and is flat at the cap;
+- a partial fill restores health 1.10 exactly (1.1000000009);
+- multiple fills share one auction clock;
+- an overdue plan is cured by paying exactly the missed installments, and the plan then completes normally;
+- the borrower keeps more than under the old full liquidation;
+- no bad debt on six tested price paths;
+- the sell-all path records bad debt;
+- attacks:
+  - a direct taker can't take the discount;
+  - an early fill on a healthy plan is refused;
+  - a first fill happens at the start discount and never above the oracle;
+  - a fill after recovery is refused;
+  - a stale price blocks fills;
+  - only the auction may seize;
+  - a bad schedule is rejected.
+
+### SDK
+
+`createNorenDutch({ publicClient, walletClient, addresses })` from `@noren/robinhood/sdk`. `addresses.dutchAuction` is the NorenDutchAuction address.
+
+| Function | Returns |
+| --- | --- |
+| `auctionStatus(planId)` | `open`, `discountWad` (with maker and keeper parts), `healthWad`, `targetHealthWad`, `overdue`, `liquidatable`, `fills`, collateral and debt, `error`, `schedule`, `message` (the app sentence) |
+| `previewPartialLiquidation({ planId, maxRepayUsdg? })` | `repayUsdg`, `collateralSold`, `keeperBonus`, `discountWad`, `healthAfterWad`, `collateralLeft`, `outstandingAfterUsdg`, `sellAll`, `badDebtUsdg` |
+| `fillPartialLiquidation({ planId, maxRepayUsdg?, open? })` | receipt, `filled` (the `AuctionFilled` event), `preview`, `auctionClosed`; `open: true` opens the auction first |
+| `openAuction(planId)`, `closeAuction(planId)` | receipt and event |
+| `buildDutchStrategy`, `shipDutchStrategy({ asset, usdgAmount, salt? })` | maker onboarding: approve Aqua, ship, register |

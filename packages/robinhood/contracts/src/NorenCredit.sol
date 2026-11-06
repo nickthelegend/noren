@@ -31,6 +31,9 @@ import {IWETH} from './interfaces/IWETH.sol';
 ///   (NorenLiquidity): proceeds repay the vault, the liquidator keeps the bonus in collateral and
 ///   the rest goes back to the borrower. `liquidatePlan` (liquidator pays USDG) stays as the
 ///   fallback when no maker can fill.
+/// - Partial Dutch-auction liquidation (NorenDutchAuction): once a plan is liquidatable, anyone can
+///   open an auction; each fill sells only enough collateral to restore the plan's health target
+///   (or cure the missed installments) and the rest stays locked for the borrower.
 /// - Arc credit line: collateral locked here backs a USDC line on Arc. A Chainlink CRE workflow
 ///   carries CreditLineOpened to Arc and reports Arc utilisation back through onReport.
 contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INorenReceivables {
@@ -140,6 +143,8 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   address public underwriter;
   address public forwarder;
   INorenLiquidity public liquidity;
+  /// @notice NorenDutchAuction: the only caller of auctionSeize (partial liquidations).
+  address public dutchAuction;
   bytes32 public expectedWorkflowId; // zero = not checked
   address public expectedWorkflowOwner; // zero = not checked
   Params public params;
@@ -183,6 +188,12 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   event ArcUtilisationUpdated(bytes32 indexed lineId, uint256 drawnUsdc6, uint256 repaidUsdc6, uint64 asOf);
   event CollateralCredited(address indexed account, address indexed asset, uint256 amount);
   event LiquiditySet(address indexed liquidity);
+  event DutchAuctionSet(address indexed auction);
+  /// @notice A Dutch-auction fill took `seized` collateral and repaid `repaidUsdg`; the plan stays
+  /// open with `collateralLeft` and `outstandingUsdg` unless `closed`.
+  event PlanPartiallyLiquidated(
+    uint256 indexed planId, address indexed borrower, uint256 seized, uint256 repaidUsdg, uint256 collateralLeft, uint256 outstandingUsdg, bool closed
+  );
   /// @notice positionId = bytes32(planId) for plans, the lineId for Arc lines.
   event CollateralSoldToMakers(
     bytes32 indexed positionId, address indexed collateral, uint256 sold, uint256 bonus, uint256 returned, uint256 proceedsUsdg
@@ -213,6 +224,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   error BadConfig();
   error NothingToClaim();
   error NoLiquidity();
+  error NotAuction();
 
   constructor(
     address owner_,
@@ -251,6 +263,11 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   function setLiquidity(INorenLiquidity l) external onlyOwner {
     liquidity = l;
     emit LiquiditySet(address(l));
+  }
+
+  function setDutchAuction(address a) external onlyOwner {
+    dutchAuction = a;
+    emit DutchAuctionSet(a);
   }
 
   function setWorkflowPolicy(bytes32 workflowId, address workflowOwner) external onlyOwner {
@@ -383,6 +400,14 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     return installment < INSTALLMENTS ? base : principal - base * (INSTALLMENTS - 1);
   }
 
+  /// @notice USDG due in total through installment `n` (0..INSTALLMENTS).
+  function cumulativeDue(uint256 planId, uint8 n) public view returns (uint256) {
+    if (n >= INSTALLMENTS) return _plans[planId].principal;
+    // Same per-installment base as installmentAmount (the last installment takes the remainder).
+    // forge-lint: disable-next-line(divide-before-multiply)
+    return (_plans[planId].principal / INSTALLMENTS) * n;
+  }
+
   function dueAt(uint256 planId, uint8 installment) public view returns (uint64) {
     Plan storage p = _plans[planId];
     return p.start + uint64(p.interval) * installment;
@@ -394,9 +419,12 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     if (p.status != PlanStatus.Active) revert PlanNotActive();
     if (count == 0 || p.paid + count > INSTALLMENTS) revert NothingDue();
     History storage h = history[p.borrower];
+    uint256 covered = p.repaid; // a partial liquidation may already have paid part of an installment
     for (uint8 i; i < count; ++i) {
       uint8 n = p.paid + 1;
-      uint256 amt = installmentAmount(planId, n);
+      uint256 cum = cumulativeDue(planId, n);
+      uint256 amt = cum > covered ? cum - covered : 0;
+      covered += amt;
       bool late = block.timestamp > dueAt(planId, n);
       if (late) {
         h.late += 1;
@@ -494,6 +522,50 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     (proceeds, seized, bad) = _sellToMakers(bytes32(planId), p.collateral, p.collateralAmount, outstanding, p.borrower);
     badDebtUsdg += bad;
     emit PlanLiquidated(planId, p.borrower, msg.sender, proceeds, seized, bad);
+  }
+
+  /// @notice NorenDutchAuction only: take `seize` collateral from an active plan and book
+  /// `repayUsdg` (already sold to makers in the same transaction, paid to the vault) against it.
+  /// Installments the repayment covers are marked paid (not on time). The plan closes when nothing
+  /// is outstanding (the remaining collateral goes back to the borrower) or when no collateral is
+  /// left (the shortfall is bad debt). `firstFill` records the default in the borrower's history.
+  function auctionSeize(uint256 planId, uint256 seize, uint256 repayUsdg, bool firstFill)
+    external
+    nonReentrant
+    returns (bool closed, uint256 bad)
+  {
+    if (msg.sender != dutchAuction || msg.sender == address(0)) revert NotAuction();
+    Plan storage p = _plans[planId];
+    if (p.status != PlanStatus.Active) revert PlanNotActive();
+    uint256 outstanding = p.principal - p.repaid;
+    if (seize > p.collateralAmount || repayUsdg > outstanding) revert BadValue();
+    p.collateralAmount -= seize;
+    if (firstFill) history[p.borrower].defaults += 1;
+    if (repayUsdg != 0) {
+      p.repaid += repayUsdg;
+      planOutstanding -= repayUsdg;
+      creditUsed[p.borrower] -= repayUsdg;
+      outstanding -= repayUsdg;
+      p.hadLate = true;
+      while (p.paid < INSTALLMENTS && p.repaid >= cumulativeDue(planId, p.paid + 1)) {
+        p.paid += 1;
+        emit InstallmentPaid(planId, p.borrower, p.paid, installmentAmount(planId, p.paid), true);
+      }
+    }
+    closed = outstanding == 0 || p.collateralAmount == 0;
+    if (closed) {
+      bad = outstanding;
+      if (bad != 0) {
+        badDebtUsdg += bad;
+        planOutstanding -= bad;
+        creditUsed[p.borrower] -= bad;
+      }
+      p.status = PlanStatus.Liquidated;
+      if (p.collateralAmount != 0) _sendOrCredit(p.collateral, p.borrower, p.collateralAmount);
+      emit PlanLiquidated(planId, p.borrower, msg.sender, repayUsdg, seize, bad);
+    }
+    IERC20(p.collateral).safeTransfer(msg.sender, seize);
+    emit PlanPartiallyLiquidated(planId, p.borrower, seize, repayUsdg, p.collateralAmount, outstanding, closed);
   }
 
   // ================================================================ Arc credit line
