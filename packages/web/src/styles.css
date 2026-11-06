@@ -240,10 +240,12 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 /* ============================================================== dashboard (Stripe-grade) */
 .sd { --sd-bg: #ffffff; --sd-side: #f7f8fa; --sd-line: #e6e8ec; --sd-line-2: #d5d9e0; --sd-ink: #0b1022; --sd-text: #30364a; --sd-muted: #687385; --sd-faint: #9aa1ae;
   --sd-accent: #2f5fd0; --sd-accent-2: #244bb0; --sd-accent-wash: #eef3ff; --sd-ok: #1a7f52; --sd-ok-wash: #e5f5ec; --sd-bad: #c0362c; --sd-bad-wash: #fdecea; --sd-warn: #b54708; --sd-warn-wash: #fff4e5; --sd-private: #c4661f;
-  display: grid; grid-template-columns: 236px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; background: var(--sd-bg); color: var(--sd-text); font-size: 14px; }
+  display: grid; grid-template-columns: 236px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh;
+  /* the sidebar column is painted on the grid itself, so it reaches the bottom of any page length (full-page captures too) */
+  background: linear-gradient(90deg, var(--sd-side) 0 235px, var(--sd-line) 235px 236px, var(--sd-bg) 236px); color: var(--sd-text); font-size: 14px; }
 .sd .mono { font-family: var(--mono); font-size: .92em; }
 .sd-testbar { grid-column: 1 / -1; position: sticky; top: 0; z-index: 40; padding: 5px 16px; text-align: center; font: 500 11.5px var(--mono); letter-spacing: .04em; background: #d9772f; color: #fff; }
-.sd-side { position: sticky; top: 25px; height: calc(100vh - 25px); display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; background: var(--sd-side); border-right: 1px solid var(--sd-line); overflow-y: auto; }
+.sd-side { position: sticky; top: 25px; align-self: start; height: calc(100vh - 25px); height: calc(100dvh - 25px); display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; background: var(--sd-side); border-right: 1px solid var(--sd-line); overflow-y: auto; }
 .sd-acct { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
 .sd-acct:hover { background: #eceef2; }
 .sd-avatar { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #2f5fd0, #0b1022); color: #fff; font: 600 13px var(--sans); }
@@ -545,7 +547,7 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
   .sd-detail-grid, .sd-builder { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 860px) {
-  .sd { grid-template-columns: minmax(0, 1fr); }
+  .sd { grid-template-columns: minmax(0, 1fr); background: var(--sd-bg); }
   .sd-side { position: fixed; top: 25px; left: 0; bottom: 0; height: auto; z-index: 80; width: 260px; transform: translateX(-100%); transition: transform .25s var(--ease); box-shadow: 20px 0 40px -20px rgba(11, 16, 34, .3); }
   .sd-side.open { transform: none; }
   .sd-scrim { display: block; position: fixed; inset: 0; z-index: 70; background: rgba(11, 16, 34, .3); }
