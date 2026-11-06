@@ -200,6 +200,32 @@ Fees and times come from docs when the docs state them. Values from API quotes a
 - **VERIFIED on-chain**: both reactors are 17206 B. OrderQuoter `0x0000…7F58` is 3709 B on both.
 - These reactors settle swaps on a single chain. No cross-chain (ERC-7683) settler for either chain is listed (**VERIFIED in docs**, same page). Uniswap is a swap venue on each side, not a bridge.
 
+### 9. Chainlink CCIP (checked again for the "Best use of CCIP" track)
+
+There is no CCIP lane between Robinhood Chain and Arc, on mainnet or testnet. Checked 2026-11-06 about 05:00 UTC.
+
+- **VERIFIED in docs (API)**: `https://docs.chain.link/api/ccip/v1/chains?environment=testnet` lists Robinhood Chain Testnet (chain 46630, selector 2032988798112970440, Router `0x30D197C6F5bE050D5525dD94d01760FaCdB67e7C`) and Arc Network Testnet (chain 5042002, selector 3034092155422581607, Router `0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8`).
+- **VERIFIED in docs (API)**: `https://docs.chain.link/api/ccip/v1/lanes?environment=testnet` has 436 lanes and no `46630_to_5042002` or `5042002_to_46630`. Robinhood Testnet has 22 lanes and Arc Testnet has 12.
+- **VERIFIED in docs (API)**: the mainnet lane list has no `4663_to_5042` or `5042_to_4663` either.
+- **VERIFIED on-chain** (testnet routers, both 10761 B, `typeAndVersion()` = "Router 1.2.0"):
+  - Robinhood Testnet `isChainSupported(arc-testnet)` = false and `getOnRamp` = 0.
+  - Arc Testnet `isChainSupported(robinhood-testnet)` = false and `getOnRamp` = 0.
+  - Neither router's `getOffRamps()` has the other chain as a source.
+- **VERIFIED in docs (API)**: these chains share lanes with both testnets, so a two-hop route exists:
+  - Ethereum Sepolia (11155111)
+  - Base Sepolia (84532)
+  - Polygon Amoy (80002)
+  - 0G Galileo (16602)
+  - Solana Devnet
+
+  The mainnet equivalents are Ethereum, Base, Polygon, 0G and Solana. CCIP does not route through a hop chain for you, so this would need an app-owned relay contract on the hop chain. That contract would receive with `ccipReceive` and re-send with `ccipSend`, which is a third chain, two fees and two finality waits. Not checked: whether any token pool is enabled on those hops.
+- **Can the credit-line message go over CCIP inside the contracts?** Not directly today, because no lane exists. The message is small and the contracts could carry it in-contract:
+  - On Robinhood, `NorenCredit` would `ccipSend` the `(borrower, lineId, limit, expiry)` payload.
+  - On Arc, `NorenCreditLine` would apply it in `ccipReceive`.
+  - Repayments would flow back the same way.
+
+  That needs either a direct lane, which Chainlink has not listed, or the two-hop relay above. The build therefore keeps CRE for delivery: CRE has forwarders on both testnets. If a direct lane is published, the contracts can add a CCIP receiver next to `onReport`, with CRE kept for the off-chain steps (underwriting reads, World ID checks, monitoring). This is a recommendation, not built.
+
 ## Not available
 
 | Route | Status | Evidence |
@@ -253,7 +279,7 @@ Fees and times come from docs when the docs state them. Values from API quotes a
 
 - Keep collateral on Robinhood Chain. Stock Tokens cannot leave it.
 - Keep the lending pool's USDC on Arc. Draws pay out locally in Arc USDC, so the credit line itself needs no bridge.
-- The CRE workflow reads collateral balances and Chainlink prices on Robinhood and writes a signed report through the forwarder on Arc.
+- The CRE workflow (packages/cre-bridge) watches `NorenCredit` on Robinhood and writes a DON-signed report through the CRE forwarder on Arc. It also carries Arc draws and repayments back the same way (docs/BRIDGE.md).
 - Chainlink lists CRE forwarders only for `robinhood-testnet` and `arc-testnet` today (testnet forwarders: 8591 B each). The CRE leg must run on testnets until mainnet forwarders are published.
 - For settlement of repayments and liquidations:
   - **Testnet (build and demo now):** use CCTP V2 between Robinhood testnet (domain 35) and Arc testnet (domain 26). It is live both ways, with Circle attesters and a sandbox fee quote. This is real issuer settlement of USDC, not a third-party bridge.
@@ -266,6 +292,7 @@ Fees and times come from docs when the docs state them. Values from API quotes a
 - When, or whether, Circle enables CCTP domain 35 on mainnet.
 - Stargate pools on Robinhood or Arc.
 - Whether the Hyperlane default ISM on each chain accepts messages from the other.
+- Whether Chainlink will publish a direct CCIP lane between Robinhood Chain and Arc, on testnet or mainnet.
 - Whether LINK, VIRTUAL or syrupUSDC CCIP pools are enabled on the Robinhood to Ethereum to Arc lanes.
 - The Uniswap app's own cross-chain routing for this pair (the API needs a key).
 - Settlement and security details of Relay, Across and deBridge, beyond the contracts and quotes above.
