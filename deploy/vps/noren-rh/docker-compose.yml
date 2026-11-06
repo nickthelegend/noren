@@ -1,0 +1,54 @@
+# Noren: Robinhood Chain mainnet snapshot for the hosted demo (behind Coolify's Traefik, network "coolify").
+# Redeploy: cd /opt/hk/noren-rh && docker compose up -d
+# anvil loads a warmed snapshot of Robinhood Chain mainnet state with the Noren contracts deployed
+# (packages/robinhood/scripts/fork-snapshot.sh), with NO upstream fork URL, so it never depends on the public RPC.
+# State persists in the noren-rh-state volume (dumped every 5 min and on exit). It is test state: no real funds.
+# Only the read-only proxy is public; anvil itself (unlocked dev accounts, anvil_* methods) is reachable on the
+# private network by the Noren server only.
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.7.1
+    restart: unless-stopped
+    mem_limit: 768m
+    user: root
+    entrypoint: ["sh", "-c", "[ -s /data/state.json ] || cp /snap/robinhood-snapshot.json /data/state.json; exec anvil --host 0.0.0.0 --port 8545 --chain-id 4663 --state /data/state.json --state-interval 300 --silent"]
+    volumes:
+      - ./snapshot:/snap:ro
+      - noren-rh-state:/data
+    networks: [coolify]
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  rpc:
+    image: node:24-alpine
+    restart: unless-stopped
+    mem_limit: 96m
+    command: ["node", "/srv/rpc-proxy.mjs"]
+    environment:
+      UPSTREAM: http://anvil:8545
+      PORT: "8546"
+    volumes:
+      - ./rpc-proxy.mjs:/srv/rpc-proxy.mjs:ro
+    depends_on: [anvil]
+    networks: [coolify]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8546/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-noren-rh.rule=Host(`noren-rh-rpc.201-18-198-162.sslip.io`)
+      - traefik.http.routers.hk-noren-rh.entrypoints=https
+      - traefik.http.routers.hk-noren-rh.tls=true
+      - traefik.http.routers.hk-noren-rh.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-noren-rh.loadbalancer.server.port=8546
+volumes:
+  noren-rh-state:
+networks:
+  coolify:
+    external: true

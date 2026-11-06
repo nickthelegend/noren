@@ -154,7 +154,7 @@ const server = createServer(async (req, res) => {
 
 await load();
 await ensureWebhook();
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, process.env.SHOP_HOST ?? '127.0.0.1', () => {
   console.log(`Aubelle on ${SHOP_URL}`);
   if (missing().length) console.log(`Setup required: ${missing().join(', ')} (copy .env.example to .env)`);
 });

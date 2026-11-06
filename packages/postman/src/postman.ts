@@ -55,7 +55,7 @@ export function createPostman(options: PostmanOptions) {
       }
     } finally { busy = false; }
   }
-  function serve(port: number): Server {
+  function serve(port: number, host = '127.0.0.1'): Server {
     return createServer((req, res) => {
       // The ASP tree is public data that customers' browsers must read to build proofs.
       res.setHeader('access-control-allow-origin', '*');
@@ -65,7 +65,7 @@ export function createPostman(options: PostmanOptions) {
       const snapshot = url.searchParams.has('v') ? snapshots.get(url.searchParams.get('v')!) : tree;
       if (!snapshot) { res.writeHead(404); res.end(); return; }
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); res.end(jsonBigints(snapshot));
-    }).listen(port, '127.0.0.1');
+    }).listen(port, host);
   }
   return { tick, serve, get tree() { return tree; }, get approvedLabels() { return [...allowed].map(BigInt); }, get root() { return postedRoot; } };
 }

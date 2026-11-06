@@ -1,0 +1,5 @@
+# Aubelle (examples/shop) backend for the hosted demo: orders + the Noren SDK integration. The storefront is on Vercel.
+FROM hk-noren-api:latest
+RUN cd examples/shop && pnpm install --ignore-workspace --frozen-lockfile && rm -rf /root/.cache /root/.local/share/pnpm/store
+WORKDIR /app/examples/shop
+CMD ["node_modules/.bin/tsx", "server/index.ts"]
