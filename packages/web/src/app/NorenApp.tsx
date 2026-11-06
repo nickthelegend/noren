@@ -140,8 +140,8 @@ function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
       </div>
       <div className="nk-menu-row"><small className="lg-row"><Mark id="ARC" size={14} />Arc</small></div>
       <div className="nk-bal" style={{ gridTemplateColumns: "1fr" }}><span>{w.arcUsdc === null ? "–" : usdc(w.arcUsdc)}<em><Mark id="USDC" size={14} />USDC on Arc</em></span></div>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Test faucet (${RH_LABEL}): NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return `Test faucet (${ARC_LABEL}): test USDC and gas sent.`; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>
+      <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Test faucet (${RH_LABEL}): NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : HOSTED ? "Get test stock and USDG (mainnet snapshot)" : "Get test stock and USDG (Robinhood fork)"}</button>
+      <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { if (HOSTED) return `Arc testnet has no Noren faucet. Get test USDC (it also pays gas) at faucet.circle.com → Arc Testnet, sent to ${w.oc.address}.`; await api.faucet(w.oc.address); return `Test faucet (${ARC_LABEL}): test USDC and gas sent.`; })}>{busy === "arc" ? "Sending…" : HOSTED ? "Get test USDC (Circle faucet)" : "Get test USDC (Arc fork)"}</button>
       {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
       <button className="nk-x" onClick={onClose} aria-label="Close">×</button>
     </div>
