@@ -35,6 +35,7 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
 
 export const api = {
   config: () => call<Config>("/config"),
+  robinhoodFaucet: (address: string) => call<Record<string, string>>("/dev/robinhood-faucet", { method: "POST", body: JSON.stringify({ address }) }),
   faucet: (address: string) => call<{ hashes?: string[] }>("/dev/faucet", { method: "POST", body: JSON.stringify({ address }) }),
   listInvoices: (merchant: string) => call<InvoiceView[]>(`/merchants/${merchant}/invoices`),
   createInvoice: (merchant: string, amount: bigint, expiry: bigint, token: string, description?: string) =>
