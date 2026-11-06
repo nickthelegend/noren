@@ -46,7 +46,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 | Settle to Arc: CRE settlement-desk workflow on a 7.50 USDG request | live quotes Relay 7.475568 / Across 7.491332 USDC against a Chainlink fair value of 7.501225; approved Across with a 7.426212 minimum in 6.4–7.1 s |
 | CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
 | Browser, Noren app | fresh wallet, fork faucet, tier-1 terms (score 13/100, collateral-only floor), 1 NVDA locked → 123.80 USDC line, live on Arc after one CRE run (4.8 s), a ¥1,200 checkout (7.60 USDC via Chainlink) paid later, 1.90 USDC repaid |
-| Package suites | `NorenCredit`/`NorenGateway`/`NorenVault` **94** Foundry tests on a fresh Robinhood mainnet fork; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
+| Package suites | `NorenCredit`/`NorenGateway`/`NorenLiquidity`/`NorenVault` **111** Foundry tests on a fresh Robinhood mainnet fork (Aqua routing, Pay in 3, SwapVM liquidations); `NorenOraclePeg` + Aqua router **18**; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
 
 Fork transaction hashes vanish when the fork stops, so the numbers above are reproducible with the commands below rather than linked.
 

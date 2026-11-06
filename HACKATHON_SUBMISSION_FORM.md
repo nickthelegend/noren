@@ -47,7 +47,8 @@ The checkout says it plainly: only "Pay privately" hides you.
   | `pnpm test` | 99 offline tests |
   | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 39.0 s |
   | `pnpm e2e:credit` | 8/8 steps in 24.5 s; CRE Robinhood→Arc in 6.0 s |
-  | Robinhood contracts | 94 Foundry tests |
+  | Robinhood contracts incl. Aqua routing and Pay in 3 | 111 Foundry tests |
+  | `NorenOraclePeg` / Aqua router (SwapVM) | 18 Foundry tests |
   | `NorenCreditLine` | 47 tests |
   | `NorenRateOracle` | 22 tests |
   | CRE workflows | 31 + 8 bun tests |
