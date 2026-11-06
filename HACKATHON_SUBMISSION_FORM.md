@@ -58,7 +58,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 
 ## Partner prizes (pick at most 3)
 
-**Recommended three: 1inch Build an Aqua App, EF Best CROPS App, Chainlink Best workflow with CRE.** None of them needs a credential from Nick; the only action is making the repo public. 1inch Aqua is merged and runs in `pnpm e2e:credit`. World IDKit and 0G are the alternates if Nick creates the World app or the 0G key in time. Arc needs Nick's Arc Studio login and testnet USDC. One EF prize per project; Arc allows one track.
+**Recommended three: 1inch Build an Aqua App, EF Best CROPS App, Chainlink Best workflow with CRE.** None of them needs a credential from Nick; the only action is making the repo public. 1inch Aqua is merged and runs in `pnpm e2e:credit`. World IDKit and 0G are live alternates (World needs one real World App verification on camera). Arc is live on testnet with a Studio app and becomes fully qualified once the Studio app is shareable. One EF prize per project; Arc allows one track.
 
 ### ✅ 1. 1inch: Build an Aqua App (recommended)
 Requirements: a sophisticated DeFi position on the **official** Aqua / SwapVM contracts (custom SwapVM instructions score higher); **on-chain token transfers in the demo** (forks are allowed); **real, steady git history**.
@@ -92,20 +92,23 @@ Requirements: a real "trust moment", the minimum sufficient credential, verifica
 - [x] Trust moment: an unsecured credit line has no collateral, so each human must get only one (Sybil resistance). World ID unlocks a 25 USDC starter line.
 - [x] Minimum sufficient credential: Selfie Check by default (Proof of Human or Passport are configurable). Noren stores only the nullifier.
 - [x] Server-side verification with World's verify API, IDKit 4 server-signed requests and a nullifier registry. The success, cancelled and already-used paths are handled.
-- [ ] **BLOCKED (Nick):** create the World Developer Portal app (action `noren-credit`) and set `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY` in `.env`. Until then the app shows "Setup required". Then record the success and already-used paths.
+- [x] The World Developer Portal app exists (production RP `rp_84fc8425acb7b1e9`, action `noren-credit`); fake proofs are rejected with 403. A successful verification also records NorenReputation's `verifiedHuman` milestone (EIP-712 attestation), so the borrow LTV tier rises immediately.
+- [ ] **Nick:** do one real verification on camera (scan the IDKit QR with World App, Selfie Check; the Orb is paused in India and the simulator is staging-only), then show the already-used path.
 
 ### Alternate: 0G: Build with 0G Private Computer
 Requirements: inference on 0G Private Computer is in the main user flow; request IDs are shown.
-- [x] The credit decision for pay later runs on 0GM-1.0 in private (TeeML) mode, with independent TEE checks. The Noren app shows the decision, the rationale, the request ID and `tee_verified`.
-- [ ] **BLOCKED (Nick):** `ZG_PC_API_KEY` (a private-mode key from pc.0g.ai). Until it exists the check is refused ("Setup required") and the deterministic history score decides, labelled as such.
+- [x] Live: the pay-later credit decision runs in private (TeeML) mode on glm-5.3 (0GM-1.0's only TeeML provider fails its TLS handshake). A decision is accepted only when Noren's independent check verifies the enclave signature, the quote binding and the TeeML provider record. Live requests `a30b5e94-169c-4cf9-ad71-864acffa1881` and `e3fa908f-0a8e-4ca3-a5c2-0956b918345d` (the second opened a real credit line in the app e2e), both independently verified.
+- [x] The Noren app shows the decision, the rationale, the request ID and "verified independently (TeeML)". Each live call is paid, so the app shows the stored decision and asks before a new one.
 
 ### Alternate: Arc (Circle): Best DeFi / Onchain Finance App Built End to End in Arc Studio
 Requirements: start in Arc Studio, with a shareable Studio URL shown in the demo; a working frontend and backend; an architecture diagram; a video; a repo.
-- [x] Working frontend and backend on an Arc testnet fork; USDC settlement; credit pool on Arc; architecture diagram ([docs/img/architecture.png](docs/img/architecture.png)).
-- [ ] **BLOCKED (Nick):** run `arc-studio login`, then `pnpm studio:import`, then share the Studio URL. **Honest gap:** the code predates the Studio app, so Studio can only be where the Arc contracts are imported, built, tested and deployed. A strict reading of "starting point" may count against it.
-- [ ] **BLOCKED (Nick):** send at least 0.45 testnet USDC to `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Circle faucet), then run `pnpm deploy:arc`.
+**Now a strong option:** the Arc contracts are live on Arc testnet and the Studio app exists. Arc is fully qualified once Nick makes the Studio app shareable; the recommended three stay as they are.
+- [x] **Live on Arc testnet** (chain 5042002): NorenCheckout, the Privacy Pools Entrypoint and pool, NorenRateOracle and NorenCreditLine, with a real private 2.50 USDC payment, a 1.00 USDC refund and both Chainlink CRE writes ([docs/LIVE.md](docs/LIVE.md), README "Live on Arc testnet").
+- [x] **Arc Studio app:** https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b (24 Foundry tests pass locally). **Honest gap:** the code predates the Studio app, so Studio is where the Arc contracts are imported, built, tested and deployed. A strict reading of "starting point" may count against it.
+- [x] Working frontend and backend; USDC settlement; credit pool on Arc; architecture diagram ([docs/img/architecture.png](docs/img/architecture.png)). The app, checkout and Noren Merchant switch between the local fork and the live Arc testnet deployment.
+- [ ] **Nick:** make the Studio app shareable and show it in the demo video.
 
 ## Links
 - Repo: https://github.com/nickthelegend/noren (**private: make public before submitting**)
 - Demo video: _(record ≤ 3 min; paste link)_
-- Arc Studio URL: _(BLOCKED, see above)_
+- Arc Studio URL: https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b (make it shareable before submitting)
