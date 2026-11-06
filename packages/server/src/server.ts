@@ -56,6 +56,8 @@ export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   try { const info = await rpc('anvil_nodeInfo'); if (!info?.forkConfig?.forkUrl) throw new Error('Anvil is not forked'); }
   catch { throw new Error('Setup required: dev endpoints require an Anvil fork; anvil_nodeInfo has no fork configuration'); }
 }
+/** Anvil's published dev key #9: holds funds only on a local fork. Never used against a public RPC. */
+const ANVIL_DEV_KEY_9 = '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6' as const;
 export function createMerchantServer(options: ServerOptions): Server {
   const rows = new Map<string, RecordRow>();
   const listeners = new Set<any>();
@@ -184,7 +186,9 @@ export function createMerchantServer(options: ServerOptions): Server {
     }
     return { gateway, merchant, invoiceId: id, amountUsdg: row.invoice.amount.toString(), expiry: row.invoice.expiry.toString() };
   }
-  const privateRelay = options.privateRelay ? createPrivateRelay({ deployment: options.deployment, rpcUrl: options.rpcUrl, ...options.privateRelay }) : undefined;
+  // On the dev stack (a loopback Arc fork, checked by assertLocalFork) the relayer is Anvil's published dev account #9.
+  const relayConfig = options.privateRelay ?? (options.dev ? { relayerKey: ANVIL_DEV_KEY_9 } : undefined);
+  const privateRelay = relayConfig ? createPrivateRelay({ deployment: options.deployment, rpcUrl: options.rpcUrl, ...relayConfig }) : undefined;
   const server = createHttpServer(async (req, res) => {
     try {
       await ready; await devReady;
