@@ -90,7 +90,7 @@ if [ "$RECEIVER_MODE" = credit ]; then
   CREDIT_SOL=$(grep -l 'function openCreditLine' "$RH_SRC_DIR"/src/*.sol | head -1)
   [ -n "$CREDIT_SOL" ] || { echo "no contract with openCreditLine on $CREDIT_REF" >&2; exit 1; }
   RH_CONTRACT=$(sed -nE 's/^contract ([A-Za-z0-9_]+) .*/\1/p' "$CREDIT_SOL" | head -1)
-  ENV_PREFIX=$(sed -nE "s/.*vm\.envAddress\('([A-Z0-9]+)_OWNER'\).*/\1/p" "$RH_SRC_DIR/script/Deploy.s.sol" | head -1)
+  ENV_PREFIX=$(sed -nE "s/.*vm\.envAddress\('([A-Z0-9_]+)_OWNER'\).*/\1/p" "$RH_SRC_DIR/script/Deploy.s.sol" | head -1)
   [ -n "$RH_CONTRACT" ] && [ -n "$ENV_PREFIX" ] || { echo "could not read the contract name or deploy env prefix on $CREDIT_REF" >&2; exit 1; }
   # The contract pins @openzeppelin/contracts 5.1.0, the same version packages/arc-credit installs.
   # Copied, not symlinked: solc refuses imports that resolve outside the project's allowed paths.
@@ -298,7 +298,7 @@ echo "== 5. Robinhood fork: close requested, CreditLineClosed tx $CLOSE_TX; hand
 simulate 1 --evm-tx-hash "$CLOSE_TX" --evm-event-index "$CLOSE_IDX" --broadcast
 ARC_CLOSE_TX=$(written_tx); [ -n "$ARC_CLOSE_TX" ] || { echo "handler 1 did not write" >&2; exit 1; }
 check_forwarded "$ARC" "$ARC_CLOSE_TX" $ARC_FORWARDER
-echo "   Arc line (borrower, expiry, asOf, closed, limit, drawn, repaid): $(cast call "$CREDIT" 'lines(bytes32)((address,uint64,uint64,bool,uint256,uint256,uint256))' "$LINE" --rpc-url "$ARC")"
+echo "   Arc line (borrower, expiry, asOf, closed, limit, drawn, repaid, unsecured): $(cast call "$CREDIT" 'lines(bytes32)((address,uint64,uint64,bool,uint256,uint256,uint256,bool))' "$LINE" --rpc-url "$ARC")"
 if cast send "$CREDIT" 'payInvoice(bytes32,address,uint256,bytes32)' "$LINE" "$MERCHANT" 1000000 "$(cast keccak inv-after-close)" --rpc-url "$ARC" --private-key "$BORROWER_KEY" >"$WORK/after.log" 2>&1; then
   echo "draw after close unexpectedly succeeded" >&2; exit 1
 fi

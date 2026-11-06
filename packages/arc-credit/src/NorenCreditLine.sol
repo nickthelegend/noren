@@ -16,6 +16,16 @@ import {IReceiver, IERC165} from './interfaces/IReceiver.sol';
 ///      checks no DON signatures, so a deployment pointed at it is for simulation only. In
 ///      production `forwarder` is Arc's KeystoneForwarder, which verifies the DON's signatures, and
 ///      `expectedWorkflowOwner` pins the workflow.
+///
+///      Two report kinds arrive through onReport:
+///        kind 1  collateral line from Robinhood: abi.encode(address borrower, bytes32 lineId,
+///                uint256 limitUsdc6, uint64 expiry) (128 bytes, the original fixed interface), or the
+///                same fields versioned as abi.encode(uint8(1), borrower, lineId, limitUsdc6, expiry).
+///        kind 2  World ID human starter limit: abi.encode(uint8(2), address borrower,
+///                bytes32 nullifierHash, uint256 starterLimitUsdc6, uint64 expiry). Unsecured credit
+///                for a verified unique human, capped by maxStarterLimitUsdc6. Each nullifierHash is
+///                accepted once, ever. It opens or tops up the borrower's own starter line, kept apart
+///                from collateral lines so Robinhood's collateral accounting stays exact.
 contract NorenCreditLine is IReceiver, ReentrancyGuard {
   using SafeERC20 for IERC20;
 
@@ -29,7 +39,14 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     uint256 limitUsdc6;
     uint256 drawnUsdc6;
     uint256 repaidUsdc6;
+    /// @dev True for a World ID starter line (kind 2): no collateral behind it, lives only on Arc.
+    bool unsecured;
   }
+
+  uint8 public constant KIND_COLLATERAL_LINE = 1;
+  uint8 public constant KIND_HUMAN_STARTER = 2;
+  /// @notice Longest expiry a starter-limit report may set, from the time it lands.
+  uint64 public constant MAX_STARTER_DURATION = 90 days;
 
   IERC20 public immutable usdc;
   address public owner;
@@ -40,6 +57,11 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   bool public paused;
   /// @notice Sum of drawn minus repaid across all lines.
   uint256 public totalOutstandingUsdc6;
+  /// @notice Most unsecured starter credit one borrower's starter line can hold (USDC, 6 decimals).
+  uint256 public maxStarterLimitUsdc6;
+
+  /// @notice Borrower a World ID nullifier hash was spent on (zero = unused). Never cleared.
+  mapping(bytes32 nullifierHash => address) public nullifierUsedBy;
 
   mapping(bytes32 lineId => Line) private _lines;
   mapping(bytes32 lineId => mapping(bytes32 invoiceId => bool)) public invoicePaid;
@@ -48,6 +70,10 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   event Repaid(bytes32 indexed lineId, uint256 amount);
   event CreditLineSynced(bytes32 indexed lineId, address indexed borrower, uint256 limitUsdc6, uint64 expiry);
   event CreditLineFrozen(bytes32 indexed lineId);
+  event HumanStarterGranted(
+    bytes32 indexed lineId, address indexed borrower, bytes32 indexed nullifierHash, uint256 addedUsdc6, uint256 limitUsdc6, uint64 expiry
+  );
+  event MaxStarterLimitSet(uint256 maxStarterLimitUsdc6);
   event PoolFunded(address indexed from, uint256 amount);
   event PoolWithdrawn(address indexed to, uint256 amount);
   event ForwarderSet(address indexed forwarder);
@@ -73,6 +99,11 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   error LimitExceeded(uint256 available, uint256 requested);
   error PoolInsufficient(uint256 available, uint256 requested);
   error RepayTooMuch(uint256 outstanding, uint256 requested);
+  error UnknownReportKind(uint256 kind);
+  error NullifierUsed(bytes32 nullifierHash, address usedBy);
+  error StarterCapExceeded(uint256 cap, uint256 requested);
+  error StarterExpiryTooFar(uint64 expiry, uint64 latest);
+  error NotCollateralLine(bytes32 lineId);
 
   modifier onlyOwner() {
     if (msg.sender != owner) revert NotOwner();
@@ -84,6 +115,8 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     usdc = usdc_;
     forwarder = forwarder_;
     owner = owner_;
+    maxStarterLimitUsdc6 = 25e6;
+    emit MaxStarterLimitSet(25e6);
     emit ForwarderSet(forwarder_);
     emit OwnershipTransferred(address(0), owner_);
   }
@@ -91,9 +124,9 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
   // ---------------------------------------------------------------- CRE receiver
 
   /// @inheritdoc IReceiver
-  /// @dev report = abi.encode(address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry).
-  ///      First report for a lineId opens it. limitUsdc6 = 0 freezes it for good (NorenCredit
-  ///      emitted CreditLineClosed), which also stops an old "opened" report from being replayed.
+  /// @dev Kind 1 (collateral line): the first report for a lineId opens it; limitUsdc6 = 0 freezes
+  ///      it for good (NorenCredit emitted CreditLineClosed), which also stops an old "opened"
+  ///      report from being replayed. Kind 2 (human starter): see the contract notes.
   ///      Reports keep landing while paused, so Arc never misses a limit change.
   function onReport(bytes calldata metadata, bytes calldata report) external override {
     if (msg.sender != forwarder) revert NotForwarder(msg.sender);
@@ -102,16 +135,40 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
       address workflowOwner = metadata.length >= 62 ? address(bytes20(metadata[42:62])) : address(0);
       if (workflowOwner != expectedWorkflowOwner) revert InvalidWorkflowOwner(workflowOwner, expectedWorkflowOwner);
     }
-    if (report.length != 128) revert InvalidReport();
-    (address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry) = abi.decode(report, (address, bytes32, uint256, uint64));
-    if (borrower == address(0) || lineId == bytes32(0)) revert InvalidReport();
+    if (report.length == 128) {
+      (address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry) = abi.decode(report, (address, bytes32, uint256, uint64));
+      _applyCollateralLine(borrower, lineId, limitUsdc6, expiry);
+      return;
+    }
+    if (report.length != 160) revert InvalidReport();
+    uint256 kind = uint256(bytes32(report[0:32]));
+    if (kind == KIND_COLLATERAL_LINE) {
+      (, address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry) =
+        abi.decode(report, (uint8, address, bytes32, uint256, uint64));
+      _applyCollateralLine(borrower, lineId, limitUsdc6, expiry);
+    } else if (kind == KIND_HUMAN_STARTER) {
+      (, address borrower, bytes32 nullifierHash, uint256 starterLimitUsdc6, uint64 expiry) =
+        abi.decode(report, (uint8, address, bytes32, uint256, uint64));
+      _applyHumanStarter(borrower, nullifierHash, starterLimitUsdc6, expiry);
+    } else {
+      revert UnknownReportKind(kind);
+    }
+  }
 
+  /// @notice The lineId of a borrower's World ID starter line (whether or not it exists yet).
+  function starterLineId(address borrower) public pure returns (bytes32) {
+    return keccak256(abi.encode('noren.human-starter.v1', borrower));
+  }
+
+  function _applyCollateralLine(address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry) private {
+    if (borrower == address(0) || lineId == bytes32(0)) revert InvalidReport();
     Line storage l = _lines[lineId];
     if (l.borrower == address(0)) {
       if (limitUsdc6 == 0) revert UnknownLine(lineId);
       if (expiry <= block.timestamp) revert ReportExpired(expiry);
       l.borrower = borrower;
     } else {
+      if (l.unsecured) revert NotCollateralLine(lineId);
       if (l.borrower != borrower) revert BorrowerMismatch(l.borrower, borrower);
       if (l.closed) revert LineClosed(lineId);
     }
@@ -127,6 +184,32 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     l.expiry = expiry;
     _touch(l);
     emit CreditLineSynced(lineId, borrower, limitUsdc6, expiry);
+  }
+
+  function _applyHumanStarter(address borrower, bytes32 nullifierHash, uint256 starterLimitUsdc6, uint64 expiry) private {
+    if (borrower == address(0) || nullifierHash == bytes32(0) || starterLimitUsdc6 == 0) revert InvalidReport();
+    address usedBy = nullifierUsedBy[nullifierHash];
+    if (usedBy != address(0)) revert NullifierUsed(nullifierHash, usedBy);
+    if (expiry <= block.timestamp) revert ReportExpired(expiry);
+    uint64 latest = uint64(block.timestamp) + MAX_STARTER_DURATION;
+    if (expiry > latest) revert StarterExpiryTooFar(expiry, latest);
+
+    bytes32 lineId = starterLineId(borrower);
+    Line storage l = _lines[lineId];
+    if (l.borrower == address(0)) {
+      l.borrower = borrower;
+      l.unsecured = true;
+    } else if (l.closed) {
+      revert LineClosed(lineId);
+    }
+    uint256 newLimit = l.limitUsdc6 + starterLimitUsdc6;
+    if (newLimit > maxStarterLimitUsdc6) revert StarterCapExceeded(maxStarterLimitUsdc6, newLimit);
+
+    nullifierUsedBy[nullifierHash] = borrower;
+    l.limitUsdc6 = newLimit;
+    if (expiry > l.expiry) l.expiry = expiry;
+    _touch(l);
+    emit HumanStarterGranted(lineId, borrower, nullifierHash, starterLimitUsdc6, newLimit, l.expiry);
   }
 
   function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
@@ -219,6 +302,24 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     if (forwarder_ == address(0)) revert ZeroAddress();
     forwarder = forwarder_;
     emit ForwarderSet(forwarder_);
+  }
+
+  /// @notice Lowering the cap stops new starter credit above it; existing limits are kept.
+  function setMaxStarterLimit(uint256 maxStarterLimitUsdc6_) external onlyOwner {
+    maxStarterLimitUsdc6 = maxStarterLimitUsdc6_;
+    emit MaxStarterLimitSet(maxStarterLimitUsdc6_);
+  }
+
+  /// @notice Owner may freeze an unsecured starter line (risk control). Collateral lines are frozen
+  ///         only by a CRE report, so they never diverge from Robinhood.
+  function freezeStarterLine(address borrower) external onlyOwner {
+    bytes32 lineId = starterLineId(borrower);
+    Line storage l = _lines[lineId];
+    if (l.borrower == address(0)) revert UnknownLine(lineId);
+    l.closed = true;
+    l.limitUsdc6 = 0;
+    _touch(l);
+    emit CreditLineFrozen(lineId);
   }
 
   function setExpectedWorkflowOwner(address workflowOwner) external onlyOwner {

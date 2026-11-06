@@ -74,7 +74,7 @@ const readArcLine = (runtime: Runtime<Config>, evm: EVMClient, lineId: Hex): Arc
   const data = read(runtime, evm, address, encodeFunctionData({ abi: creditLineAbi, functionName: "lines", args: [lineId] }), LATEST_BLOCK_NUMBER);
   if (data === "0x") throw new Error(`NorenCreditLine not found at ${address} on ${runtime.config.arc.chainSelectorName}`);
   const l = decodeFunctionResult({ abi: creditLineAbi, functionName: "lines", data });
-  return { borrower: l.borrower, expiry: l.expiry, updatedAt: l.updatedAt, closed: l.closed, limitUsdc6: l.limitUsdc6 };
+  return { borrower: l.borrower, expiry: l.expiry, updatedAt: l.updatedAt, closed: l.closed, limitUsdc6: l.limitUsdc6, unsecured: l.unsecured };
 };
 
 /** Sign `decision.report` with the DON and deliver it to `target` through its CRE forwarder. */
@@ -142,9 +142,11 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
   const arc = evmFor(config.arc);
   // Cumulative totals at the log's block: every node reads the same block, so the report is deterministic.
   const at = toBlockNumber(protoBigIntToBigint(log.blockNumber));
-  const snapData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "utilisation", args: [act.lineId] }), at);
+  const snapData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "lines", args: [act.lineId] }), at);
   if (snapData === "0x") throw new Error(`NorenCreditLine not found at ${config.arc.address}`);
-  const [drawnUsdc6, repaidUsdc6, asOf] = decodeFunctionResult({ abi: creditLineAbi, functionName: "utilisation", data: snapData });
+  const snap = decodeFunctionResult({ abi: creditLineAbi, functionName: "lines", data: snapData });
+  const snapshot = { drawnUsdc6: snap.drawnUsdc6, repaidUsdc6: snap.repaidUsdc6, asOf: snap.updatedAt, unsecured: snap.unsecured };
+  if (snapshot.unsecured) return deliver(runtime, arc, config.arc, decideUtilisation(act.lineId, snapshot, null), "NorenCredit");
 
   const robinhood = evmFor(config.robinhood);
   let robinhoodAsOf: bigint;
@@ -161,7 +163,7 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
     robinhoodAsOf = decodeFunctionResult({ abi: harnessUtilisationAbi, functionName: "utilisation", data })[2];
     runtime.log(`NorenCreditHarness (test harness) last asOf: ${robinhoodAsOf}`);
   }
-  const decision = decideUtilisation(act.lineId, { drawnUsdc6, repaidUsdc6, asOf }, robinhoodAsOf);
+  const decision = decideUtilisation(act.lineId, snapshot, robinhoodAsOf);
   return deliver(runtime, robinhood, config.robinhood, decision, "NorenCredit");
 };
 

@@ -10,6 +10,7 @@ import {
   decodeClosed,
   decodeOpened,
   decodeRobinhoodReport,
+  encodeHumanStarterReport,
   formatUsdc,
   TOPIC,
   robinhoodEventsAbi,
@@ -26,7 +27,7 @@ const LINE: Hex = keccak256(stringToHex("line-1"));
 const INVOICE: Hex = keccak256(stringToHex("inv-1"));
 const NOW = 1_762_400_000n;
 
-const emptyLine: ArcLine = { borrower: zeroAddress, expiry: 0n, updatedAt: 0n, closed: false, limitUsdc6: 0n };
+const emptyLine: ArcLine = { borrower: zeroAddress, expiry: 0n, updatedAt: 0n, closed: false, limitUsdc6: 0n, unsecured: false };
 
 const openedLog = (address: Address = NOREN_CREDIT) => ({
   address,
@@ -105,11 +106,11 @@ describe("decideOpen", () => {
     expect((d.report.length - 2) / 2).toBe(128);
   });
   test("already synced is skipped", () => {
-    const d = decideOpen(ev(), { borrower: BORROWER, expiry: NOW + 86_400n, updatedAt: NOW, closed: false, limitUsdc6: 500_000_000n }, NOW, 10n ** 12n);
+    const d = decideOpen(ev(), { borrower: BORROWER, expiry: NOW + 86_400n, updatedAt: NOW, closed: false, limitUsdc6: 500_000_000n, unsecured: false }, NOW, 10n ** 12n);
     expect(d).toEqual({ write: false, reason: `line ${LINE} already synced to Arc` });
   });
   test("frozen line is never reopened", () => {
-    const d = decideOpen(ev(), { borrower: BORROWER, expiry: NOW + 86_400n, updatedAt: NOW, closed: true, limitUsdc6: 0n }, NOW, 10n ** 12n);
+    const d = decideOpen(ev(), { borrower: BORROWER, expiry: NOW + 86_400n, updatedAt: NOW, closed: true, limitUsdc6: 0n, unsecured: false }, NOW, 10n ** 12n);
     expect(d.write).toBe(false);
   });
   test("expired event is skipped", () => {
@@ -125,13 +126,13 @@ describe("decideOpen", () => {
 
 describe("decideClose", () => {
   test("freezes a synced line with limit 0", () => {
-    const d = decideClose(LINE, { borrower: BORROWER, expiry: NOW + 5n, updatedAt: NOW, closed: false, limitUsdc6: 9n });
+    const d = decideClose(LINE, { borrower: BORROWER, expiry: NOW + 5n, updatedAt: NOW, closed: false, limitUsdc6: 9n, unsecured: false });
     expect(d.write).toBe(true);
     if (d.write) expect(decodeArcReport(d.report)).toEqual([BORROWER, LINE, 0n, NOW + 5n]);
   });
   test("skips unknown and already frozen lines", () => {
     expect(decideClose(LINE, emptyLine).write).toBe(false);
-    expect(decideClose(LINE, { borrower: BORROWER, expiry: 1n, updatedAt: 1n, closed: true, limitUsdc6: 0n }).write).toBe(false);
+    expect(decideClose(LINE, { borrower: BORROWER, expiry: 1n, updatedAt: 1n, closed: true, limitUsdc6: 0n, unsecured: false }).write).toBe(false);
   });
 });
 
@@ -158,4 +159,24 @@ test("formatUsdc", () => {
   expect(formatUsdc(500_000_000n)).toBe("500");
   expect(formatUsdc(1_250_000n)).toBe("1.25");
   expect(formatUsdc(1n)).toBe("0.000001");
+});
+
+describe("World ID starter lines", () => {
+  const starter: ArcLine = { borrower: BORROWER, expiry: NOW + 5n, updatedAt: NOW, closed: false, limitUsdc6: 25_000_000n, unsecured: true };
+  test("Drawn/Repaid on a starter line is not reported to Robinhood", () => {
+    const d = decideUtilisation(LINE, { drawnUsdc6: 1n, repaidUsdc6: 0n, asOf: NOW, unsecured: true }, null);
+    expect(d.write).toBe(false);
+  });
+  test("a Robinhood close never touches a starter line", () => {
+    expect(decideClose(LINE, starter).write).toBe(false);
+  });
+  test("a Robinhood open colliding with a starter line fails loudly", () => {
+    expect(() => decideOpen(decodeOpened(openedLog(), NOREN_CREDIT), starter, NOW, 10n ** 12n)).toThrow("World ID starter line");
+  });
+  test("kind 2 report encodes to the 160-byte versioned layout", () => {
+    const nullifier = keccak256(stringToHex("nullifier"));
+    const r = encodeHumanStarterReport(BORROWER, nullifier, 25_000_000n, NOW + 86_400n);
+    expect((r.length - 2) / 2).toBe(160);
+    expect(BigInt(r.slice(0, 66))).toBe(2n);
+  });
 });
