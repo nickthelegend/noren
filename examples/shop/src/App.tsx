@@ -30,7 +30,7 @@ export function App() {
 }
 
 function Announcement() {
-  return <div className="announce"><span>Complimentary shipping on every order</span><span className="dot" aria-hidden>·</span><span>Pay privately with <b>Noren</b></span></div>;
+  return <div className="announce"><span className="hide-sm">Complimentary shipping on every order</span><span className="dot hide-sm" aria-hidden>·</span><span>Pay privately with <b>Noren</b></span></div>;
 }
 
 function Header() {
@@ -268,7 +268,7 @@ function CheckoutButton() {
 
 function SetupRequired({ config }: { config: Config }) {
   const items = [...config.missing, ...(config.webhookError ? [config.webhookError] : [])];
-  return <SetupNote title="Setup required" body={<>This shop has no Noren connection yet. Add {items.length ? items.map((m, i) => <code key={i}>{m}</code>) : 'the Noren webhook'} to <code>examples/shop/.env</code> (see <code>.env.example</code>), then restart the shop.</>} />;
+  return <SetupNote title="Setup required" body={<>This shop has no Noren connection yet. Add {items.length ? items.map((m, i) => <span key={i}>{i > 0 && (i === items.length - 1 ? ' and ' : ', ')}<code>{m}</code></span>) : 'the Noren webhook'} to <code>examples/shop/.env</code> (see <code>.env.example</code>), then restart the shop.</>} />;
 }
 function SetupNote({ title, body }: { title: string; body: ReactNode }) {
   return <div className="setup" role="status"><b>{title}</b><p>{body}</p></div>;

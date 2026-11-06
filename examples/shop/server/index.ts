@@ -15,7 +15,7 @@ const { noren, createCheckout, readWebhook } = await import('./noren.ts');
 
 const PORT = Number(process.env.SHOP_PORT ?? 8780);
 const SHOP_URL = (process.env.SHOP_URL ?? `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
-const CHECKOUT_BASE = (process.env.NOREN_CHECKOUT_URL ?? 'http://127.0.0.1:5190').replace(/\/$/, '');
+const CHECKOUT_BASE = (process.env.NOREN_CHECKOUT_URL ?? 'http://localhost:5190').replace(/\/$/, '');
 const DATA = join(root, 'data');
 const REQUIRED = ['NOREN_SERVER', 'NOREN_MERCHANT', 'NOREN_SECRET_KEY'] as const;
 const missing = () => REQUIRED.filter(k => !process.env[k]);

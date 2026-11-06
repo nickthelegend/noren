@@ -179,6 +179,7 @@ h1 em, h2 em { font-style: italic; color: var(--rose-deep); }
 .open .scrim { opacity: 1; }
 .drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); background: var(--cream); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .38s var(--ease); box-shadow: -20px 0 60px rgba(42, 29, 32, .12); }
 .open .drawer { transform: none; }
+.drawer-wrap:not(.open) .drawer { visibility: hidden; box-shadow: none; transition: transform .38s var(--ease), visibility 0s linear .38s, box-shadow 0s linear .38s; }
 .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 12px; border-bottom: 1px solid var(--line); }
 .drawer-head h2 { font-size: 34px; }
 .x { background: none; border: 0; font-size: 28px; line-height: 1; width: 40px; height: 40px; color: var(--ink-2); }

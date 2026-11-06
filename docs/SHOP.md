@@ -66,7 +66,7 @@ For storefront work, `pnpm dev` runs Vite on 8781 and proxies `/api` to the back
 | `NOREN_SERVER` | Noren API base URL, e.g. `http://127.0.0.1:8790` |
 | `NOREN_MERCHANT` | The store's merchant address on Noren |
 | `NOREN_SECRET_KEY` | The store's secret key (`sk_test_…`). Server-side only, never sent to the browser |
-| `NOREN_CHECKOUT_URL` | Hosted checkout origin, used when the API does not return a checkout URL (default `http://127.0.0.1:5190`) |
+| `NOREN_CHECKOUT_URL` | Hosted checkout origin, used when the API does not return a checkout URL (default `http://localhost:5190`) |
 | `NOREN_WEBHOOK_SECRET` | Optional: signing secret of an existing endpoint; otherwise the shop registers its own |
 | `SHOP_PORT`, `SHOP_URL` | Where the shop listens and the public base for redirects and the webhook (default 8780) |
 
