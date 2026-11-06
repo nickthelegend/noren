@@ -6,28 +6,29 @@
 Noren
 
 ## Short description (≤ 100 characters)
-DEX and stablecoin payments on Arc: liquidity, credit, cross-chain settlement. Payers stay private.
+DEX + stablecoin payments on Arc: private settlement, credit on collateral that earns Aqua fees.
 
-(99 characters)
+(96 characters)
 
 ## Description
-**Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and payments are private by default: a merchant never learns which customer paid.**
+**Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.**
 
-- **1inch Aqua** is the engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills.
+- **1inch Aqua is the shared-liquidity layer.** Funds stay in the maker's contract and one balance backs several strategies. Noren's lender pool and Earn vaults are Aqua makers: the same capital backs loans, earns trading fees from fills (pay-with-stocks, cross-chain orders, swaps when its Chainlink-pegged quote beats Uniswap) and buys liquidated collateral, including partial Dutch auctions.
+- **Uniswap v4 is the default swap route** (USDC/EURC on Arc testnet, stocks on Robinhood Chain); the Aqua maker fills only when it quotes better.
 - **Circle CCTP V2 and Chainlink CCIP** bring money and orders from other chains to Arc, into one `NorenArcActionRouter`.
 - **Chainlink CRE** orchestrates the chains and checks prices against Chainlink Data Feeds.
-- **World ID and 0G** grant credit safely to real humans; **Earn/Borrow** is where the credit comes from.
-- Swaps and bridges are public. The payment is what's private: Kohaku privacy pools on Arc.
+- **Credit against collateral:** stock locked on Robinhood Chain opens a USDC line on Arc; Earn shares back USDG loans. **World ID and 0G** keep unsecured starter credit to real humans.
+- Payments are private by default (Kohaku privacy pools on Arc). Swaps and bridges are public.
 
 Paying a shop from a crypto wallet hands it your whole wallet: your address, your balance and every other payment you've made, visible to the shop, its analytics vendor and anyone with a block explorer. Card networks never worked like that.
 
 Noren is a payments stack with three surfaces.
 
 - **Noren Merchant** is a dashboard with payment links, refunds, signed webhooks, balances and API keys. Links can be priced in EUR, JPY, GBP and six other currencies, quoted from Chainlink Data Feeds.
-- **The hosted checkout and the Noren app** are for customers. "Pay privately" pays from a Kohaku privacy pool on Arc. The proof is made in the customer's browser and binds the exact invoice, so the merchant gets USDC and a receipt but never the payer's wallet ("Customers identified: 0"). Tamper with the invoice, replay it, relay someone else's, pay after expiry or prove against a stale root, and the contract reverts. We test all five.
+- **The hosted checkout and the Noren app** are for customers. The app opens on a wallet-style Home: one balance, Pay (scan or paste a link and pay privately in place), Send privately, Bridge Robinhood ⇄ Arc, Earn, Credit and recent activity. "Pay privately" pays from a Kohaku privacy pool on Arc. The proof is made in the customer's browser and binds the exact invoice, so the merchant gets USDC and a receipt but never the payer's wallet ("Customers identified: 0"). Tamper with the invoice, replay it, relay someone else's, pay after expiry or prove against a stale root, and the contract reverts. We test all five.
 - **The Noren SDK** gives merchants `createNoren` and `verifyWebhook`, and gives wallets `shield` and `proveInvoicePayment`.
 
-Customers who want more than private USDC have two more options:
+Customers pay one of four ways (the same in the hosted checkout, the demo shop and the Noren app): **pay privately**, **pay with USDC**, **pay with stocks**, or **Pay in 3 / pay later, privately**. Beyond private USDC:
 
 - **Pay with stocks.** Robinhood Chain Stock Tokens (NVDA, TSLA, AAPL…) are sold to a 1inch Aqua maker at a Chainlink-pegged price, quoted by our own SwapVM instruction. Noren's vault is the fallback. The merchant receives USDG.
 - **Pay later.** The customer locks Stock Tokens on Robinhood Chain. An underwriter reads the wallet's on-chain history and signs an EIP-712 credit attestation, and a sealed model on 0G Private Computer gives a second opinion with a request ID. A Chainlink CRE workflow carries the credit line to Arc, where it pays any Noren checkout upfront. Repayments flow back to Robinhood through the same workflow.
@@ -43,10 +44,10 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 - **1inch Aqua + SwapVM:** `NorenOraclePeg` is a new SwapVM instruction (opcode 34) that prices a Stock Token from its Chainlink feed and `uiMultiplier`, with a maker-set spread. `NorenAquaSwapVMRouter` is the official AquaSwapVMRouter plus that opcode, against the official Aqua registry on Robinhood Chain. `NorenLiquidity` registers maker strategies, routes each stock payment to the best maker quote (vault fallback) and sells liquidated collateral to makers.
 - **Circle CCTP V2:** `NorenArcHook` on Arc testnet is the `destinationCaller` of every Noren burn, so only Noren can finish it; it mints through Circle's MessageTransmitterV2 and hands hook actions to `NorenArcActionRouter`. A CRE workflow (`packages/cctp/cre/cctp-relay`) watches `MessageSent` on 10 chains, fetches the Iris attestation with HTTP consensus and writes it to the hook. `@noren/cctp` (`bridgeToArc`, `burnFromArc`) drives the Noren app's "Bring USDC to Arc" and the checkout's "Pay from another chain".
 - **Chainlink CCIP:** `NorenCcipGateway` on Arc, Base Sepolia, Ethereum Sepolia and Robinhood testnet, a `NorenCcipHub` on Base Sepolia (Robinhood has no lane to Arc) and `NorenCcipInbox` for the reverse path. Every message carries a Noren envelope; replay, out-of-order and failed-action cases are handled and tested on forks of the real CCIP 2.0 contracts.
-- **Cross-chain Aqua:** `NorenCrossChainEscrow` on the source chain locks the taker's token and reads its Chainlink round; CRE carries the order to `NorenCrossChainSettler` on Arc, which fills it from a maker's `NorenOraclePeg` strategy through the official Aqua bytecode; CRE carries the fill back and the escrow releases the token. `pnpm dev:all` deploys it and the Noren app's Swap tab has a Cross-chain toggle.
+- **Cross-chain Aqua:** `NorenCrossChainEscrow` on the source chain locks the taker's token and reads its Chainlink round; CRE carries the order to `NorenCrossChainSettler` on Arc, which fills it from a maker's `NorenOraclePeg` strategy through the official Aqua bytecode; CRE carries the fill back and the escrow releases the token. `pnpm dev:all` deploys it; the Noren app runs it from Bridge → Stocks → USDC and Swap → Stock → USDC on Arc.
 - **Robinhood Chain:** `NorenCredit` (EIP-712 attestations, credit tiers that move with repayment history, liquidation), `NorenGateway` (pay an invoice with USDG, ETH or Stock Tokens), `NorenVault` (ERC-4626 USDG liquidity) and `NorenAssetOracle` (uiMultiplier-aware, with a haircut when markets are closed). They run against the real Stock Token, USDG and Chainlink contracts on a warmed snapshot of mainnet state, because Robinhood testnet has no feeds.
 - **Arc:** `NorenCheckout`, `NorenCreditLine` (revolving USDC credit pool, one draw per invoice) and `NorenRateOracle`. Gas and settlement are in USDC. `scripts/deploy-arc.ts` measures a dry run of the deploy on a fork from the real deployer.
-- **0G Private Computer:** model 0GM-1.0 in private (TeeML) mode, a strict JSON schema, policy caps, and independent checks of the TEE signer and TDX quote. The request ID and `tee_verified` are shown next to the decision. There is no fallback scorer.
+- **0G Private Computer:** glm-5.3 in private (TeeML) mode (0GM-1.0's only TeeML provider fails its TLS handshake), a strict JSON schema, policy caps, and independent checks of the TEE signer and TDX quote. The request ID and `tee_verified` are shown next to the decision. There is no fallback scorer.
 - **World ID:** IDKit 4 with server-signed requests, verification with World's API, and a nullifier registry (one starter line per human).
 - **Web:** React + Vite. Noren Merchant, the Noren app, the hosted checkout and the landing page. Geist and Instrument Serif fonts are self-hosted, so the client makes no third-party requests.
 - **Hacky bits:**
@@ -73,12 +74,12 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 
 ## Partner prizes (pick at most 3)
 
-**Recommended three: 1inch Build an Aqua App, Chainlink (CRE, with CCIP now live), Arc.** They match the positioning: Aqua is the engine, CCTP and CCIP bring money and orders to Arc, CRE orchestrates and checks prices, Arc is the hub. **World IDKit is the alternate** (needs one real World App verification on camera). EF CROPS and 0G remain eligible alternates. Arc allows one track; one EF prize per project.
+**Recommended three: 1inch Build an Aqua App, Chainlink (CRE, with CCIP now live), Arc.** They match the positioning: Aqua is the shared-liquidity layer under the lending pools, CCTP and CCIP bring money and orders to Arc, CRE orchestrates and checks prices, Arc is the hub. **World IDKit is the alternate** (needs one real World App verification on camera). EF CROPS and 0G remain eligible alternates. Arc allows one track; one EF prize per project.
 
-### ✅ 1. 1inch: Build an Aqua App (recommended): Aqua is the engine
+### ✅ 1. 1inch: Build an Aqua App (recommended): Aqua is the shared-liquidity layer
 Requirements: a sophisticated DeFi position on the **official** Aqua / SwapVM contracts (custom SwapVM instructions score higher); **on-chain token transfers in the demo** (forks are allowed); **real, steady git history**.
 - [x] Official contracts: the official Aqua registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Robinhood Chain (4663). SwapVM is the official AquaSwapVMRouter (`0x111111338c5091E8440b67B168bAe16a668AC0De`, v1.0.2) plus one custom opcode, `NorenOraclePeg` (custom instructions score higher). Because it has the added opcode, the router is redeployed on the fork rather than called at the official address.
-- [x] The position: Aqua makers quote Stock Tokens at Chainlink-pegged prices (`NorenOraclePeg`) from one wallet balance shared across strategies. They fill pay-with-stocks payments (best execution, with `NorenVault` as fallback) and buy collateral in Pay in 3 and credit-line liquidations.
+- [x] The position: Noren's lending pools are Aqua makers. The lender pool (`NorenVault`) and each Earn vault (`NorenDepositVault`) ship Chainlink-pegged strategies (`NorenOraclePeg`) whose balances never leave the vault; Earn shares are also Borrow collateral, so one balance backs loans, earns fees on fills and buys liquidated collateral. The demo maker's one USDG balance backs its stock peg strategies and the NVDA Dutch-auction strategy (partial Pay-in-3 liquidations). The app's Earn and Borrow tabs show each maker address, strategy, Aqua allocation and realised fees read from `MakerFill`/`MakerSale`. Swaps are not the pitch: they go to Uniswap v4 first, and the Aqua maker fills only when it quotes better.
 - [x] On-chain token transfers on a Robinhood mainnet fork: `pnpm e2e:credit` pays an invoice with 0.040798 NVDA, filled by an Aqua maker (`MakerFill`, fee 0.0377 USDG), and Noren Merchant shows the maker and strategy. Liquidation through SwapVM is covered by the package's fork tests.
 - [ ] Show the Aqua-filled stock payment (and a liquidation) in the demo.
 - [x] Steady commit history: separate commits per contract and test suite on `aqua-liquidity` (`git log origin/aqua-liquidity`).
@@ -107,6 +108,8 @@ Requirements: start in Arc Studio, with a shareable Studio URL shown in the demo
 Arc is where every payment, credit line and cross-chain transfer lands, in USDC. It is fully qualified once Nick makes the Studio app shareable.
 - [x] **Live on Arc testnet** (chain 5042002): NorenCheckout, the Privacy Pools Entrypoint and pool, NorenRateOracle and NorenCreditLine, with a real private 2.50 USDC payment, a 1.00 USDC refund and both Chainlink CRE writes ([docs/LIVE.md](docs/LIVE.md), README "Live on public testnets").
 - [x] **Circle CCTP V2 into Arc** from 10 testnets through `NorenArcHook` [`0x8845…B20d`](https://explorer.testnet.arc.io/address/0x8845ae4B87D706c31606182D5A9529b67ee6B20d): Base Sepolia → Arc with the invoice paid on arrival, Arbitrum Sepolia → Arc (plain and an Aqua order), Robinhood ↔ Arc ([docs/CCTP.md](docs/CCTP.md)).
+- [x] **Robinhood Chain ⇄ Arc from the app** (Bridge tab, public testnets, the browser's own test key): Arc → Robinhood 0.60 USDC [`0x03797d2e…`](https://explorer.testnet.arc.io/tx/0x03797d2e9a08af41a78b901d89860dcc30990a9edfc5d91a1e31e02ccbe41307) → [`0xa74ed6e3…`](https://explorer.testnet.chain.robinhood.com/tx/0xa74ed6e3965976538cfd4b37c044f169e80f8549dbec3bfcf149416ad739c954); Robinhood → Arc 0.50 USDC [`0x47a2e51a…`](https://explorer.testnet.chain.robinhood.com/tx/0x47a2e51abf964354da8feed31007ae2d3a7218f9a3a962d66e1e88d01b1927c9) → [`0x67711657…`](https://explorer.testnet.arc.io/tx/0x677116575e3ed4d77a8fa026bc51e9290a027b0072b283757414ededb8a2228d).
+- [x] **Swap on Arc testnet:** Uniswap v4 (USDC/EURC 0.05% pool through the Universal Router at Arc mainnet's addresses, which also run on Arc testnet but aren't in Uniswap's docs) [`0x599879f5…`](https://explorer.testnet.arc.io/tx/0x599879f5950f8eb59494cdd686e8fda57c9b9c0dd6aa697543206df4d9785b31), and the Aqua maker when it quotes better [`0x12df0a9c…`](https://explorer.testnet.arc.io/tx/0x12df0a9cafae3004c5625d83ce641457b7e9facdd8a065890c82503c15654440).
 - [x] **Arc Studio app:** https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b (24 Foundry tests pass locally). **Honest gap:** the code predates the Studio app, so Studio is where the Arc contracts are imported, built, tested and deployed. A strict reading of "starting point" may count against it.
 - [x] Working frontend and backend; USDC settlement; credit pool on Arc; architecture diagram ([docs/img/architecture.png](docs/img/architecture.png)). The app, checkout and Noren Merchant switch between the local fork and the live Arc testnet deployment.
 - [ ] **Nick:** make the Studio app shareable and show it in the demo video.

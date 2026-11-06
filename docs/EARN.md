@@ -32,6 +32,10 @@ Code: [`packages/robinhood`](../packages/robinhood) (contracts, SDK, underwriter
 
 **USDG deposits** go to the lender pool, `NorenVault` (nvUSDG). It earns borrow interest (`borrowRateBps`, 5% a year, simple between interactions), the 3% Pay-in-3 merchant fee, and any vault-backed maker strategy the owner ships. Withdrawals are capped at idle USDG. While USDG is lent out, OpenZeppelin's `ERC4626ExceededMaxWithdraw` names the amount available.
 
+### Your deposit is Aqua liquidity (what the app shows)
+
+Each deposit vault is itself the 1inch Aqua maker: it calls `Aqua.ship` from its own address, so the deposited tokens never leave the vault and Aqua only records what each strategy may trade. The Earn tab shows, for the selected vault, the maker address, every strategy it shipped (live or docked, bid/ask spread, the Aqua allocation still sitting in the vault) and the realised trading fees, read from `NorenLiquidity.strategy(h)`, `makerFeesUsdg(maker)` and the `MakerFill`/`MakerSale` logs. The same panel on the Borrow tab shows the lender pool (`NorenVault`), which `pnpm dev:all` has ship a vault-backed NVDA strategy on the fork. One balance, three jobs: Earn shares are Borrow collateral, the vault's strategy earns the spread on fills, and its bid is one of the makers liquidated collateral is sold into. Fees read zero until real fills happen.
+
 ## Borrow
 
 - **Lock** deposit shares in `NorenBorrow` with `lock(vault, shares)`. Locked shares stay in their vault and keep earning (`test_lockedSharesKeepEarningAndRaiseTheLimit`).

@@ -164,7 +164,7 @@ All hashes below are **fork** transactions. They do not exist on any public chai
 
 Result: the maker's one Arc wallet paid 1,482.676021 USDC to takers from two chains and received 2 NVDA on Robinhood and 0.5 WETH on Base Sepolia. It also sold 222.020698 EURC for 250 USDC that arrived through the Arc action router.
 
-## SDK (for the integrator: Swap "Cross-chain" toggle, Bridge "Swap across chains via Aqua")
+## SDK (used by the app: Swap → "Stock → USDC on Arc", Bridge → Robinhood Chain ⇄ Arc → "Stocks → USDC")
 
 `import { … } from "@noren/xchain-aqua"`. It uses viem clients and bigint base units.
 
@@ -194,6 +194,8 @@ Deployed addresses come from `packages/xchain-aqua/.fork/arc-deployment.json`, `
 | Product | liquidity infrastructure | part of Noren payments and credit: pay with stocks, the credit line and liquidation on Robinhood ([CREDIT.md](CREDIT.md), [AQUA.md](AQUA.md)) |
 
 Both build on Aqua's idea that one maker's capital backs many strategies. They are complementary rather than competing designs.
+
+**We don't integrate Aqua0.** It is third-party and unaudited, and it moves value over LayerZero. Noren's cross-chain settler uses Circle CCTP V2 and Chainlink (CRE, CCIP), which are the event's sponsors and the rails the rest of Noren already runs on.
 
 ## License
 
