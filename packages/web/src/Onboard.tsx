@@ -117,7 +117,7 @@ const { invoice } = await noren.invoices.create({
     <div className="ob">
       <aside className="ob-side">
         <div className="ob-brand"><Logo size={28} /><b>Noren Merchant</b></div>
-        <p>Set up your store in a minute. Customers can pay privately, with USDC, with stocks or in 3 parts; you get USDC on Arc.</p>
+        <p>Set up your store in a minute. Customers can pay privately, with USDC, with stocks or crypto, or in 3 parts; you get USDC on Arc.</p>
         <ol className="ob-steps">{STEPS.map((t, i) => <li key={t} data-state={i < step ? "done" : i === step ? "now" : "todo"}><i>{i < step ? <Icon.check /> : i + 1}</i><span>{t}</span></li>)}</ol>
         <p className="ob-fine">Test mode: Arc testnet and Robinhood Chain run as local forks. No real money.</p>
       </aside>

@@ -22,7 +22,7 @@ const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secre
 
 The same four in the hosted checkout, the demo shop (which sends customers to it) and the Noren app (the app pays privately in place and hands the other three to the checkout with the method chosen).
 
-| | Pay privately | Pay with USDC | Pay with stocks | Pay in 3 / Pay later, privately |
+| | Pay privately | Pay with USDC | Pay with stocks or crypto | Pay in 3 / Pay later, privately |
 |---|---|---|---|---|
 | Customer pays with | USDC in a Kohaku privacy pool (Arc) | USDC from their Arc wallet | NVDA, TSLA, AAPL… Stock Tokens (Robinhood Chain) | A USDC credit line on Arc, backed by locked Stock Tokens |
 | Merchant receives | USDC on Arc, in the payment tx | USDC on Arc | USDG on Robinhood Chain, from a 1inch Aqua maker (or Noren's vault as fallback) | USDC on Arc, upfront, from the credit pool |
@@ -32,7 +32,7 @@ The same four in the hosted checkout, the demo shop (which sends customers to it
 
 Only "Pay privately" (the default) and "Pay later, privately" hide you from the merchant, and the checkout says so. **Pay from another chain** (Circle CCTP V2 with a PAY_INVOICE hook; 10 testnets configured, live from Base Sepolia) is a fifth, collapsed option; it is public on the source chain.
 
-Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party licenses](../README.md#license-and-attributions)).
+Pay with stocks or crypto (any Stock Token you hold, or ETH): Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party licenses](../README.md#license-and-attributions)).
 
 ![Noren checkout: pay privately, pay with stocks, or pay later](img/checkout-methods.png)
 

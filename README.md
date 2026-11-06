@@ -103,7 +103,7 @@ On Nov 6 22:00 IST, all 115 transaction links in this README and `docs/` returne
 | **Send privately** | **Yes**: the recipient never learns the sender | A pool withdrawal relayed by Noren (`Entrypoint.relay`) |
 | **Pay later, privately** | **From the merchant, yes**. The lender still knows its borrower. | `NorenCreditLine.drawToPool` deposits under the borrower's precommitment, then the invoice is paid from the pool |
 | **Arrive private** | Yes on Arc; the source-chain burn is public | A CCTP burn with a SHIELD hook lands in the pool (`NorenShieldSink`) |
-| Pay with USDC, pay with stocks, Pay in 3 | **No**, and the checkout says so | Public wallets |
+| Pay with USDC, pay with stocks or crypto, Pay in 3 | **No**, and the checkout says so | Public wallets |
 | Swaps, bridges, deposits, amounts, credit draws and repayments | **No** | Public transactions |
 
 Limits: the testnet pool has few depositors, so timing can link a deposit to a payment (the checkout shows the anonymity set). The ASP screens only the on-chain depositor. Detail: [docs/PRIVACY.md](docs/PRIVACY.md).

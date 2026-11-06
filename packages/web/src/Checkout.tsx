@@ -138,7 +138,7 @@ export function Checkout({ id }: { id: string }) {
               <Icon.eyeOff />
               {method === "private" ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
                 : method === "credit-private" ? <p><b>{shop} sees the amount, never you.</b> Your credit line tops up your private balance; {shop} never learns who paid. Your lender still knows you.</p>
-                : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks comes from your Robinhood wallet" : method === "xchain" ? "Paying from another chain comes from your wallet there" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
+                : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks or crypto comes from your Robinhood wallet" : method === "xchain" ? "Paying from another chain comes from your wallet there" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
           <footer className="co-foot"><span>Powered by</span><a href="#/"><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
@@ -186,7 +186,7 @@ export function Checkout({ id }: { id: string }) {
               <div className="co-methods four" role="tablist" aria-label="Payment method">
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · USDC from your private balance; {shop} never learns who paid</small></span></button>
                 <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Public · your wallet on Arc</small></span></button>
-                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Public · sold to the best price</small></span></button>
+                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="ETH" size={20} /></span><span><b>Pay with stocks or crypto</b><small>Public · any Stock Token or ETH, sold to the best price</small></span></button>
                 <button role="tab" aria-selected={later} disabled={working} onClick={() => setMethod("credit-private")}><Icon.layers /><span><b>Pay in 3 / Pay later, privately</b><small>Your credit line · private by default</small></span></button>
               </div>
               {later && (
