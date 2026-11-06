@@ -1,0 +1,15 @@
+{
+  "chains": [
+    {
+      "name": "arc",
+      "chainSelectorName": "arc-testnet",
+      "chainId": 5042002,
+      "escrow": "0x0000000000000000000000000000000000000000",
+      "settler": "0xd9f90e397770faf66b228344af5fe285b349d016",
+      "actionRouter": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+      "gasLimit": "3000000"
+    }
+  ],
+  "maxPriceAgeSec": 259200,
+  "confidence": "SAFE"
+}

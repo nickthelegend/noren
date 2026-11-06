@@ -1,0 +1,366 @@
+{
+  "network": "Arc Testnet (5042002), PUBLIC. Real transactions; every hash below exists on explorer.testnet.arc.io.",
+  "contracts": {
+    "aqua": {
+      "name": "1inch Aqua registry (AquaRouter v1.0.0, 81c26e4, unmodified)",
+      "address": "0x550CD499f1E2da71527f14d6469364461966895B",
+      "url": "https://explorer.testnet.arc.io/address/0x550CD499f1E2da71527f14d6469364461966895B",
+      "deployTx": "0x73db5351607af37f2d129fd66300bac34c65f6a41f60f4652ae9ba23baddf549",
+      "deployUrl": "https://explorer.testnet.arc.io/tx/0x73db5351607af37f2d129fd66300bac34c65f6a41f60f4652ae9ba23baddf549",
+      "note": "Rescuable owner = deployer (can only rescue tokens sent to the registry contract itself)"
+    },
+    "swapVmRouter": {
+      "name": "NorenAquaSwapVMRouter: SwapVM v1.0.2 AquaOpcodes + NorenOraclePeg (opcode 34), modified redeploy",
+      "address": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+      "url": "https://explorer.testnet.arc.io/address/0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+      "deployTx": "0x340bc44c5033657979816d1193897ff8e4a49f1c50da1ebe15810940ae9ed43a",
+      "deployUrl": "https://explorer.testnet.arc.io/tx/0x340bc44c5033657979816d1193897ff8e4a49f1c50da1ebe15810940ae9ed43a"
+    },
+    "eurUsdFeed": {
+      "name": "NorenRateOracleFeed EUR/USD leg",
+      "address": "0x8f3a10ac41d1ac5779c8889b7a88384eda2a85af",
+      "url": "https://explorer.testnet.arc.io/address/0x8f3a10ac41d1ac5779c8889b7a88384eda2a85af",
+      "deployTx": "0x96dd3f0f307531971346efa98157fff1729e3c0b99084eeb53fc6ca0e72f7748",
+      "deployUrl": "https://explorer.testnet.arc.io/tx/0x96dd3f0f307531971346efa98157fff1729e3c0b99084eeb53fc6ca0e72f7748"
+    },
+    "usdcUsdFeed": {
+      "name": "NorenRateOracleFeed USDC/USD leg",
+      "address": "0xe9b8f18072ccc13e7143503f9c95ba8940dd8fa2",
+      "url": "https://explorer.testnet.arc.io/address/0xe9b8f18072ccc13e7143503f9c95ba8940dd8fa2",
+      "deployTx": "0x07d4904611928760be1e671cf84354c5cb3d43a5b3005b7fb0677f3685ebba1c",
+      "deployUrl": "https://explorer.testnet.arc.io/tx/0x07d4904611928760be1e671cf84354c5cb3d43a5b3005b7fb0677f3685ebba1c"
+    },
+    "settler": {
+      "name": "NorenCrossChainSettler (the Aqua order settler on Arc)",
+      "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+      "url": "https://explorer.testnet.arc.io/address/0xd9f90e397770faf66b228344af5fe285b349d016",
+      "deployTx": "0x7580063a34f2ee34137a1e5dda3bd4c812bb6e07cd0e56124e2ced66a6913a43",
+      "deployUrl": "https://explorer.testnet.arc.io/tx/0x7580063a34f2ee34137a1e5dda3bd4c812bb6e07cd0e56124e2ced66a6913a43"
+    }
+  },
+  "txs": [
+    {
+      "label": "deploy 1inch Aqua v1.0.0 (unmodified, CREATE2)",
+      "hash": "0x73db5351607af37f2d129fd66300bac34c65f6a41f60f4652ae9ba23baddf549",
+      "url": "https://explorer.testnet.arc.io/tx/0x73db5351607af37f2d129fd66300bac34c65f6a41f60f4652ae9ba23baddf549",
+      "gasUsed": "1290154",
+      "block": "71027040",
+      "events": [
+        {
+          "address": "0x550cd499f1e2da71527f14d6469364461966895b",
+          "event": "OwnershipTransferred",
+          "args": {
+            "previousOwner": "0x0000000000000000000000000000000000000000",
+            "newOwner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80"
+          }
+        }
+      ]
+    },
+    {
+      "label": "deploy NorenAquaSwapVMRouter (CREATE2)",
+      "hash": "0x340bc44c5033657979816d1193897ff8e4a49f1c50da1ebe15810940ae9ed43a",
+      "url": "https://explorer.testnet.arc.io/tx/0x340bc44c5033657979816d1193897ff8e4a49f1c50da1ebe15810940ae9ed43a",
+      "gasUsed": "5283161",
+      "block": "71027051",
+      "events": [
+        {
+          "address": "0x8717687866f988eebe3bd1d8999df820ffd9e295",
+          "event": "OwnershipTransferred",
+          "args": {
+            "previousOwner": "0x0000000000000000000000000000000000000000",
+            "newOwner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80"
+          }
+        }
+      ]
+    },
+    {
+      "label": "deploy NorenRateOracleFeed (EUR/USD)",
+      "hash": "0x96dd3f0f307531971346efa98157fff1729e3c0b99084eeb53fc6ca0e72f7748",
+      "url": "https://explorer.testnet.arc.io/tx/0x96dd3f0f307531971346efa98157fff1729e3c0b99084eeb53fc6ca0e72f7748",
+      "gasUsed": "494143",
+      "block": "71027061",
+      "events": []
+    },
+    {
+      "label": "deploy NorenRateOracleFeed (USDC/USD)",
+      "hash": "0x07d4904611928760be1e671cf84354c5cb3d43a5b3005b7fb0677f3685ebba1c",
+      "url": "https://explorer.testnet.arc.io/tx/0x07d4904611928760be1e671cf84354c5cb3d43a5b3005b7fb0677f3685ebba1c",
+      "gasUsed": "494155",
+      "block": "71027064",
+      "events": []
+    },
+    {
+      "label": "deploy NorenCrossChainSettler",
+      "hash": "0x7580063a34f2ee34137a1e5dda3bd4c812bb6e07cd0e56124e2ced66a6913a43",
+      "url": "https://explorer.testnet.arc.io/tx/0x7580063a34f2ee34137a1e5dda3bd4c812bb6e07cd0e56124e2ced66a6913a43",
+      "gasUsed": "5306868",
+      "block": "71027068",
+      "events": [
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "OwnershipTransferred",
+          "args": {
+            "previousOwner": "0x0000000000000000000000000000000000000000",
+            "newOwner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80"
+          }
+        },
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "ForwarderSet",
+          "args": {
+            "forwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1"
+          }
+        }
+      ]
+    },
+    {
+      "label": "settler.setRoute(USDC -> EURC, NorenRateOracle feeds)",
+      "hash": "0xf2dd01e46c4907c917a4d30d545cdd9523fda80f4ab378c6b5779ace4de0b666",
+      "url": "https://explorer.testnet.arc.io/tx/0xf2dd01e46c4907c917a4d30d545cdd9523fda80f4ab378c6b5779ace4de0b666",
+      "gasUsed": "172229",
+      "block": "71027071",
+      "events": [
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "RouteSet",
+          "args": {
+            "routeKey": "0x5104dc4035c639c685612c6558cab9b9c3caf4fb2f13b5b2c77703e4214ebf86",
+            "srcChainId": "0",
+            "srcToken": "0x3600000000000000000000000000000000000000",
+            "outToken": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "route": {
+              "inToken": "0x3600000000000000000000000000000000000000",
+              "outToken": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+              "delivered": true,
+              "takerSellsBase": false,
+              "baseFeed": "0x8F3A10ac41D1ac5779c8889b7a88384EdA2a85Af",
+              "relayed": false,
+              "quoteFeed": "0xe9B8f18072ccC13E7143503f9C95BA8940dD8fA2",
+              "baseMaxAgeOpen": 90000,
+              "baseMaxAgeClosed": 259200,
+              "quoteMaxAge": 90000,
+              "quoteMaxDepegBps": 200,
+              "flags": 2,
+              "enabled": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "label": "settler.setTransport(live NorenArcActionRouter)",
+      "hash": "0xefb416fa42952e1b73dc01ba77af01cd27024a34027d6b14a4760d7d60165140",
+      "url": "https://explorer.testnet.arc.io/tx/0xefb416fa42952e1b73dc01ba77af01cd27024a34027d6b14a4760d7d60165140",
+      "gasUsed": "47650",
+      "block": "71027074",
+      "events": [
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "TransportSet",
+          "args": {
+            "adapter": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "allowed": true
+          }
+        }
+      ]
+    },
+    {
+      "label": "NorenArcActionRouter.setAquaOperator(settler)",
+      "hash": "0x8f29dbcfbd62d904594b7614413b5bfd7b4050ce8bdb9b4f37d01735503161b6",
+      "url": "https://explorer.testnet.arc.io/tx/0x8f29dbcfbd62d904594b7614413b5bfd7b4050ce8bdb9b4f37d01735503161b6",
+      "gasUsed": "47227",
+      "block": "71027084",
+      "events": []
+    },
+    {
+      "label": "maker approves Aqua for EURC",
+      "hash": "0x6809bbf0db7b09fe02c1238f384bd0983f3b06ca37f254c87d50bae68600e40c",
+      "url": "https://explorer.testnet.arc.io/tx/0x6809bbf0db7b09fe02c1238f384bd0983f3b06ca37f254c87d50bae68600e40c",
+      "gasUsed": "55437",
+      "block": "71027104",
+      "events": [
+        {
+          "address": "0x89b50855aa3be2f677cd6303cec089b5f319d72a",
+          "event": "Approval",
+          "args": {
+            "owner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "spender": "0x550CD499f1E2da71527f14d6469364461966895B",
+            "value": "20000000"
+          }
+        }
+      ]
+    },
+    {
+      "label": "maker Aqua.ship(USDC -> EURC, 5 EURC)",
+      "hash": "0xd4497e36efc5199b84f94993da163e8cbb599d71270c0e15ac8926857b12da5b",
+      "url": "https://explorer.testnet.arc.io/tx/0xd4497e36efc5199b84f94993da163e8cbb599d71270c0e15ac8926857b12da5b",
+      "gasUsed": "82250",
+      "block": "71027107",
+      "events": []
+    },
+    {
+      "label": "maker settler.register(strategy)",
+      "hash": "0xb1f6654e58714b69453071b305505f42f1db0f0c3459715086f7247f01269317",
+      "url": "https://explorer.testnet.arc.io/tx/0xb1f6654e58714b69453071b305505f42f1db0f0c3459715086f7247f01269317",
+      "gasUsed": "297984",
+      "block": "71027117",
+      "events": [
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "StrategyRegistered",
+          "args": {
+            "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "routeKey": "0x5104dc4035c639c685612c6558cab9b9c3caf4fb2f13b5b2c77703e4214ebf86",
+            "payout": "0x0000000000000000000000000000000000000000",
+            "bidSpreadBps": 0,
+            "askSpreadBps": 30
+          }
+        }
+      ]
+    },
+    {
+      "label": "customer approves the SwapVM router for USDC",
+      "hash": "0xee657fc496fa451bf4c855d073cf6afbaedd4cba0f03f97d4feb2b8c4f0afd7d",
+      "url": "https://explorer.testnet.arc.io/tx/0xee657fc496fa451bf4c855d073cf6afbaedd4cba0f03f97d4feb2b8c4f0afd7d",
+      "gasUsed": "55438",
+      "block": "71027147",
+      "events": [
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0x519042674306F780C277152A38365547AF180b8a",
+            "spender": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "500000"
+          }
+        }
+      ]
+    },
+    {
+      "label": "customer SwapVM swap 0.5 USDC -> EURC (Aqua)",
+      "hash": "0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8",
+      "url": "https://explorer.testnet.arc.io/tx/0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8",
+      "gasUsed": "244314",
+      "block": "71027149",
+      "events": [
+        {
+          "address": "0x89b50855aa3be2f677cd6303cec089b5f319d72a",
+          "event": "Transfer",
+          "args": {
+            "from": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "to": "0x519042674306F780C277152A38365547AF180b8a",
+            "value": "444364"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x519042674306F780C277152A38365547AF180b8a",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "500000000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x519042674306F780C277152A38365547AF180b8a",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "500000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "spender": "0x550CD499f1E2da71527f14d6469364461966895B",
+            "value": "500000"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "500000000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "500000"
+          }
+        },
+        {
+          "address": "0x8717687866f988eebe3bd1d8999df820ffd9e295",
+          "event": "Swapped",
+          "args": {
+            "orderHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "taker": "0x519042674306F780C277152A38365547AF180b8a",
+            "tokenIn": "0x3600000000000000000000000000000000000000",
+            "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "amountIn": "500000",
+            "amountOut": "444364"
+          }
+        }
+      ]
+    }
+  ],
+  "routeKey": "0x5104dc4035c639c685612c6558cab9b9c3caf4fb2f13b5b2c77703e4214ebf86",
+  "checks": {
+    "aquaRuntimeBytes": 5619,
+    "aquaCodehash": "0x34801963ae1190d4b6787abf005751b60f3fd78a7970b45c66a617402716190c",
+    "officialArcMainnetCodehash": "0x720bc02d220db318164dc3bade86eec1f3655bdc00fc1174de7d816a95c341f8",
+    "aquaExecutableCodeIdenticalToArcMainnet": true,
+    "routerAqua": "0x550CD499f1E2da71527f14d6469364461966895B",
+    "routerPegOpcode": 34,
+    "routerEip712": {
+      "name": "Noren SwapVM",
+      "version": "1.0.2-noren.1"
+    },
+    "actionRouterAquaOperator": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+    "checkedAt": "2026-11-06T12:14:41.405Z"
+  },
+  "maker": {
+    "address": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+    "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+    "terms": {
+      "bidSpreadBps": 0,
+      "askSpreadBps": 30,
+      "closedExtraBps": 100,
+      "minPriceUsd8": "80000000",
+      "maxPriceUsd8": "150000000",
+      "salt": "1"
+    },
+    "eurcAllocation": 5000000,
+    "shipTx": "0xd4497e36efc5199b84f94993da163e8cbb599d71270c0e15ac8926857b12da5b",
+    "registerTx": "0xb1f6654e58714b69453071b305505f42f1db0f0c3459715086f7247f01269317"
+  },
+  "swaps": {
+    "direct-500000": {
+      "taker": "0x519042674306F780C277152A38365547AF180b8a",
+      "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+      "usdcIn": "500000",
+      "eurcOut": "444364",
+      "quotedEurc": "444364",
+      "rateE18": "1121836417900893764",
+      "askBps": "30",
+      "approveTx": "0xee657fc496fa451bf4c855d073cf6afbaedd4cba0f03f97d4feb2b8c4f0afd7d",
+      "swapTx": "0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8",
+      "swapUrl": "https://explorer.testnet.arc.io/tx/0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8",
+      "deltas": {
+        "customerEurc": "444364",
+        "makerEurc": "-444364",
+        "makerUsdc": "500000"
+      }
+    }
+  }
+}
