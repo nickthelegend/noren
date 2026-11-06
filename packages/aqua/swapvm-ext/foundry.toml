@@ -20,3 +20,6 @@ fs_permissions = [{ access = 'read', path = './out' }]
 [profile.default.optimizer_details]
 yul = true
 yulDetails = { stackAllocation = true, optimizerSteps = "dhfoDgvulfnTUtnIf[xa[r]EscLMcCTUtTOntnfDIulLculVcul Tpeul]jmul[jul] VcTOcul jmul : fDnTOcmu" }
+
+[lint]
+lint_on_build = false

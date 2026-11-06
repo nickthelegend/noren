@@ -16,6 +16,6 @@ trap cleanup EXIT
 for _ in $(seq 1 60); do cast chain-id --rpc-url "$RPC" >/dev/null 2>&1 && break; sleep 1; done
 [ "$(cast chain-id --rpc-url "$RPC")" = 4663 ] || { echo "Fork did not start; see .fork/test-anvil.log" >&2; exit 1; }
 # The modified SwapVM router is deployed from its build artifact (packages/aqua/swapvm-ext).
-(cd "$ROOT/../aqua/swapvm-ext" && forge build >/dev/null) || { echo "Setup required: pnpm install (1inch SwapVM sources), then forge build in packages/aqua/swapvm-ext" >&2; exit 1; }
+(cd "$ROOT/../aqua/swapvm-ext" && forge build >/dev/null 2>"$ROOT/.fork/swapvm-build.log") || { echo "Setup required: pnpm install (1inch SwapVM sources), then forge build in packages/aqua/swapvm-ext" >&2; exit 1; }
 cd "$ROOT/contracts"
 forge test --fork-url "$RPC" "$@"
