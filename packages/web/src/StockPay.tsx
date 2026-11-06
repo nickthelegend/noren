@@ -67,7 +67,8 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
       </div>
       <dl className="co-quote">
         <dt>You pay</dt><dd><b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
-        <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}${q.marketClosed ? " · market closed" : ""}` : "…"}</dd>
+        <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}` : "…"}</dd>
+        {q?.marketClosed && <><dt>US markets</dt><dd><span className="co-closed" title="Saturday, Sunday and Monday before 06:00 UTC the stock feeds pause, so makers add 3% to their spread">markets closed: wider spread</span></dd></>}
         <dt>Filled by</dt><dd>{q ? (q.route === "aqua-maker" ? "1inch Aqua maker · SwapVM, Chainlink-pegged" : `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread`) : "…"}</dd>
         <dt>{shop} receives</dt><dd>{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
       </dl>
@@ -80,6 +81,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
         {busy === "pay" ? <><span className="spin" /> Paying on Robinhood…</> : !enough ? `Not enough ${sym}` : eth === 0n ? "No ETH for gas on Robinhood" : <><Icon.chart /> Pay with {q ? units(q.assetIn, 18, 4) : ""} {sym}</>}
       </button>
       <p className="faint sm center">NorenGateway.pay on a local Robinhood Chain fork, signed by your test key in this browser.</p>
+      <p className="co-attrib mono">Powered by SwapVM — © Degensoft Ltd 2025</p>
     </div>
   );
 }
