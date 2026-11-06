@@ -139,13 +139,18 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
   const reply = evm
     .writeReport(runtime, { receiver: config.oracle.address, report, gasConfig: { gasLimit: config.oracle.gasLimit } })
     .result();
-  const txHash = reply.txHash ? bytesToHex(reply.txHash) : "none";
+  const txHash = reply.txHash && reply.txHash.length > 0 ? bytesToHex(reply.txHash) : null;
   if (reply.txStatus !== TxStatus.SUCCESS) {
     throw new Error(`writeReport failed: status ${TxStatus[reply.txStatus]} tx ${txHash} ${reply.errorMessage ?? ""}`);
   }
   // ReceiverContractExecutionStatus.REVERTED = 1: the forwarder tx succeeded but onReport reverted.
   if (reply.receiverContractExecutionStatus === 1) {
     throw new Error(`NorenRateOracle.onReport reverted inside the forwarder call (tx ${txHash})`);
+  }
+  if (!txHash) {
+    // `cre workflow simulate` without --broadcast signs the report but sends no transaction.
+    runtime.log(`Report signed for ${changed.length} changed of ${updates.length}; not broadcast, nothing sent`);
+    return JSON.stringify({ status: "not-broadcast", sourceBlock, currencies: updates.length, changed: changed.map((u) => u.currency) });
   }
   runtime.log(`NorenRateOracle updated: ${changed.length} changed of ${updates.length}, tx ${txHash}`);
   return JSON.stringify({ status: "written", sourceBlock, currencies: updates.length, changed: changed.map((u) => u.currency), txHash });

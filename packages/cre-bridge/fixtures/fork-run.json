@@ -1,0 +1,44 @@
+{
+  "note": "LOCAL FORKS ONLY. Captured by packages/cre-bridge/scripts/fork-simulate.sh. Arc = Anvil fork of Arc Testnet (5042002). Robinhood = Anvil fork of Robinhood Chain mainnet (4663) served as chain id 46630. These hashes do not exist on any public chain. The Robinhood receiver is TsukeCreditHarness (test harness).",
+  "arcForkBlock": "70973606",
+  "robinhoodForkBlock": "107306986",
+  "norenCreditLine": "0x459b5fa897d97cB096f8Eb508dEe494683bA90F4",
+  "tsukeCreditHarness": "0xD83C9f1B0DaFb1992eF92ac62D6509e54AD4eD48",
+  "lineId": "0x656c53bd494edb79a29a421966d69b15a086189a1d3e341d27c36b6de558ae44",
+  "nvdaUsd8": "18556019809",
+  "limitUsdc6": "927800990",
+  "flow": [
+    {
+      "step": "CreditLineOpened (Robinhood)",
+      "tx": "0x359de86c08968491e09bdc8e99194fa2d187d5fb01c99835bcf3467e9c42d916"
+    },
+    {
+      "step": "NorenCreditLine.onReport via forwarder (Arc)",
+      "tx": "0x4cbcc90527de4c7f376e481ca6e0539be99e28f65789c210310e75ea43d54513"
+    },
+    {
+      "step": "payInvoice -> Drawn 120 USDC (Arc)",
+      "tx": "0xb102ad2d177055b3537740852fc6f6b44a896dc3b0c965247d8e2a10ea55742f"
+    },
+    {
+      "step": "TsukeCredit.onReport via forwarder (Robinhood)",
+      "tx": "0xdf625438df5371eabdad7fe636823fd7012123700bfb5d26bf76d795ab9c2874"
+    },
+    {
+      "step": "repay -> Repaid 50 USDC (Arc)",
+      "tx": "0x8e6043a399bc803ba09b2d0a698536432c68773bfca1c7ea288bbdb19a1e0125"
+    },
+    {
+      "step": "TsukeCredit.onReport via forwarder (Robinhood)",
+      "tx": "0xb9d09b99636f9af4447150fe0126749b9f4bec14981011cc928bcb5aecdce82f"
+    },
+    {
+      "step": "CreditLineClosed (Robinhood)",
+      "tx": "0x526a94e07f48b32cacf77709c66b545452d36ba2e4ff32f0258352807c27e081"
+    },
+    {
+      "step": "NorenCreditLine.onReport limit 0 via forwarder (Arc)",
+      "tx": "0x1cfa3aae5b4327e59b273e72802f8262fc72aaf8514c191d192133aefb9372ca"
+    }
+  ]
+}

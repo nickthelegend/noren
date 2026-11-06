@@ -1,0 +1,16 @@
+# CRE workflow settings for the Noren credit bridge.
+local-fork:
+  user-workflow:
+    workflow-name: "noren-credit-bridge-fork"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.local-fork.json"
+    secrets-path: ""
+
+staging-settings:
+  user-workflow:
+    workflow-name: "noren-credit-bridge"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: ""

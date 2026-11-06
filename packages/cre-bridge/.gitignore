@@ -1,0 +1,6 @@
+*.env
+.env*
+credit-bridge/node_modules/
+credit-bridge/config.local-fork.json
+credit-bridge/.cre_build_tmp.js
+*.wasm

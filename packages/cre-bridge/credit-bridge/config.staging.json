@@ -1,0 +1,14 @@
+{
+  "robinhood": {
+    "chainSelectorName": "robinhood-testnet",
+    "address": "0x0000000000000000000000000000000000000000",
+    "gasLimit": "500000"
+  },
+  "arc": {
+    "chainSelectorName": "arc-testnet",
+    "address": "0x0000000000000000000000000000000000000000",
+    "gasLimit": "500000"
+  },
+  "confidence": "SAFE",
+  "maxLimitUsdc6": "100000000000"
+}
