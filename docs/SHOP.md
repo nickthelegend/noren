@@ -94,3 +94,17 @@ Both runs used the real Noren stack from `pnpm dev:all` (Arc testnet fork on 864
 Flow in both: product page → size → bag drawer → **Checkout with Noren** → the shop backend creates the invoice (description, `metadata.orderId`, `successUrl`, `cancelUrl`) → Noren's hosted checkout shows "Pay Aubelle" → **Pay with USDC** → Noren redirects to `successUrl` → the order page shows Paid, the Noren payment ID, the transaction and "Signed Noren webhook ✓ signature verified". "Back to Aubelle" on the checkout returns to the bag with the items intact (`cancelUrl`).
 
 The checkout's test faucet gives 50 USDC once per wallet and every Aubelle dress costs more, so for these runs the test wallet was topped up on the fork with `ForkUSDC.mint` (the fork-only USDC shim the faucet itself uses).
+
+## Screenshots
+
+Captured with headless Chrome against the running shop (`examples/shop/screenshots/`).
+
+| 1440 px | 375 px |
+| --- | --- |
+| ![Home](../examples/shop/screenshots/home-1440.webp) | ![Home](../examples/shop/screenshots/home-375.webp) |
+| ![Dresses](../examples/shop/screenshots/shop-1440.webp) | ![Dresses](../examples/shop/screenshots/shop-375.webp) |
+| ![Product](../examples/shop/screenshots/product-1440.webp) | ![Product](../examples/shop/screenshots/product-375.webp) |
+| ![Bag drawer](../examples/shop/screenshots/drawer-1440.webp) | ![Bag](../examples/shop/screenshots/bag-375.webp) |
+| ![Order paid](../examples/shop/screenshots/order-paid-1440.webp) | ![Order paid](../examples/shop/screenshots/order-paid-375.webp) |
+
+The integration panel: ![How this shop added Noren](../examples/shop/screenshots/integration-1440.webp)

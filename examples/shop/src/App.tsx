@@ -96,7 +96,7 @@ function Home() {
       </section>
 
       <section className="editorial">
-        <img src="/editorial/hero-2.webp" alt="A blush silk dress and a cream lace dress laid on linen with rose petals" loading="lazy" />
+        <img src="/editorial/hero-2.webp" alt="A blush silk dress and a cream lace dress laid on linen with rose petals" />
         <div className="editorial-copy">
           <p className="eyebrow">From the atelier</p>
           <h2>Silk that remembers <em>the shape of you.</em></h2>
