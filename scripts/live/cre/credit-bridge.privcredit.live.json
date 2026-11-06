@@ -1,0 +1,18 @@
+{
+  "robinhood": {
+    "chainSelectorName": "robinhood-testnet",
+    "receiver": "NorenCredit",
+    "address": "0x000000000000000000000000000000000000dEaD",
+    "gasLimit": "500000"
+  },
+  "arc": {
+    "chainSelectorName": "arc-testnet",
+    "address": "0x4e26d0bfc5ac22b3fe8579afe50cb9584b2a1f86",
+    "gasLimit": "500000"
+  },
+  "confidence": "SAFE",
+  "maxLimitUsdc6": "100000000000",
+  "humanStarter": {
+    "authorizedKeys": []
+  }
+}
