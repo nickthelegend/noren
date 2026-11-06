@@ -135,6 +135,7 @@ export function makeTsuke(cfg: Config) {
       if ((await arc.waitForTransactionReceipt({ hash })).status !== "success") throw new Error(`repay reverted: ${hash}`);
       return hash;
     },
+    arcGas: () => arc.getBalance({ address: account.address }),
     arcUsdc: () => arc.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),
   };
 }
