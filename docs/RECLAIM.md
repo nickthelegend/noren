@@ -1,93 +1,121 @@
-# Reclaim Protocol: prove an off-chain fact, raise your limit
+# Reclaim Protocol: prove off-chain facts, raise your limit
 
-Noren's Credit page lists tasks that raise a credit limit. One of them proves a fact from a website you already use
-(for example your credit score or an exchange KYC status) with [Reclaim Protocol](https://docs.reclaimprotocol.org)
-zkTLS, without sharing the account or the page with Noren.
+Noren's Credit page lists tasks that raise a credit limit. One of them proves facts from websites you already use (a
+credit score, exchange KYC, a balance, an identity) with [Reclaim Protocol](https://docs.reclaimprotocol.org) zkTLS,
+without sharing the account or the page with Noren.
 
-Status: **Setup required** until Nick creates the Reclaim app (steps below). Without `RECLAIM_APP_ID`,
-`RECLAIM_APP_SECRET` and `RECLAIM_PROVIDER_ID` the routes answer `503 Setup required: …`; nothing is faked.
+**Status (Nov 6 2026):** live with Nick's Reclaim app. `RECLAIM_APP_ID` and `RECLAIM_APP_SECRET` are set in the
+gitignored Noren `.env`; provider IDs are public and live in code (`packages/server/src/reclaim-providers.ts`). Real
+proof requests are created and their QR codes, request links and status URLs answer. **A completed proof needs a
+person's phone and their login at the provider**; none has been completed from here, and none is faked. Without the
+app values the routes answer `503 Setup required: <only the missing variable>`.
+
+## Providers and boosts
+
+Reclaim's current console doesn't attach providers to an app, so any public provider ID works with Nick's app ID.
+Each verified proof adds its group's points to the history underwriter's score, **capped at 20 in total**:
+
+| Group | Provider (label) | Provider ID | Points | What Noren keeps |
+|---|---|---|---|---|
+| Credit score | Credit Score - Bank Bazaar, Experian India (`credit_score_bankbazaar`, the default) | `047db3af-9f36-4e73-bb93-ed762b9e2094` | 15 | `credit score ≥ X` (rounded down to 50) |
+| Credit score | Experian credit score US (`credit_score_experian_us`) | `8149b711-aff6-4882-a98e-036253d52129` | 15 | same |
+| Credit score | Credit Karma (`credit_karma`) | `add9a3cc-a13e-4572-818d-62446bcae8ef` | 15 | same |
+| Exchange KYC | Binance KYC (`binance_kyc`) | `2b22db5c-78d9-4d82-84f0-a9e0a4ed0470` | 8 | `KYC level ≥ 1` |
+| Exchange KYC | Coinbase KYC (`coinbase_kyc`) | `285a345c-c6a6-4b9f-9e1e-23432082c0a8` | 8 | same |
+| Balances | Coinbase assets (`coinbase_assets`) | `f7a26442-ba57-416d-a303-18baec555b13` | 8 | `balance ≥ 10^n` |
+| Balances | Binance balance (`binance_balance`) | `aeeb5c0e-a9df-4eed-ab68-87e127c9dd1b` | 8 | same |
+| Balances | Bank of America balance (`bofa_balance`) | `831f6210-015d-458a-b0aa-accf9b76694c` | 8 | same |
+| Balances | Wise balance (`wise_balance`) | `fbe865ee-ad0d-4e59-88bc-10352dcc0427` | 8 | same |
+| Identity | GitHub account (`github`) | `6d3f6753-7ee6-49ee-a545-62f1b1822ae5` | 3 | `account exists` |
+
+`RECLAIM_PROVIDER_ID` picks the provider shown first; `RECLAIM_PROVIDER_IDS="label:id,…"` replaces an ID per label.
 
 ## How it works
 
-1. The app calls `POST /reclaim/request {address}` on the Noren server.
-2. The server runs `ReclaimProofRequest.init(APP_ID, APP_SECRET, PROVIDER_ID)` (`@reclaimprotocol/js-sdk` 5.8.3;
-   server-side only, the secret never reaches the browser), binds the wallet with `setContext(address, …)`, and
-   returns the request URL (shown as a QR code) and Reclaim's status URL. The server then polls the session itself
-   (`startSession`).
-3. The customer scans the QR with their phone and logs in to the provider's site inside Reclaim's verifier. Reclaim's
-   attestors sign the claim over the TLS session.
-4. When proofs arrive, the server accepts them only if:
-   - the proof context names this wallet and this Reclaim session;
-   - the proof identifier was not used before (replay);
-   - the SDK's `verifyProof` passes: it fetches Reclaim's attestor list, recovers the signers and checks the
-     provider's request hashes for the provider version used in the session.
-5. The app polls `GET /reclaim/session/:sessionId` (`pending | verified | failed`) and shows the verified state.
+1. The app calls `POST /reclaim/request {address, provider: label}` on the Noren server.
+2. The server runs `ReclaimProofRequest.init(APP_ID, APP_SECRET, providerId)` (`@reclaimprotocol/js-sdk` 5.8.3,
+   server-side only; the secret never reaches the browser), binds the wallet with `setContext(address, …)`, and returns
+   the request URL (QR code, **Copy link**, **Open on this phone**) and Reclaim's status URL. The server polls the
+   session itself (`startSession`); the modal polls `GET /reclaim/session/:id` every 3 s and updates live.
+3. On the phone the person logs in to the provider's site inside Reclaim's verifier; Reclaim's attestors sign the claim
+   over the TLS session.
+4. The server accepts proofs only if the context names this wallet and this session, the proof ID is new (replay), and
+   the SDK's `verifyProof` passes (attestor list, recovered signers, provider hashes for the session's provider version).
+5. It stores the minimal claim, then records the proof **type** on-chain (below).
 
-Code: `packages/server/src/reclaim.ts`; mounted on the Noren server by `scripts/dev-all.ts`.
+Code: `packages/server/src/reclaim.ts` (routes, `startReclaimRequest`, `verifyAndRecord`), `reclaim-providers.ts`
+(catalogue, points, statements), `reclaim-onchain.ts`; mounted on the Noren server by `scripts/dev-all.ts`.
 
 ## Routes
 
 | Route | Answer |
 |---|---|
-| `GET /reclaim/status?address=0x…` | `{ configured, missing[], error?, provider: {id,name} \| null, verified: {proofId, provider, claim, verifiedAt} \| null }` |
-| `POST /reclaim/request {address}` | `{ sessionId, requestUrl, statusUrl, provider, expiresAt }`; `503 {error:"Setup required: RECLAIM_APP_ID, …"}` without credentials |
+| `GET /reclaim/status?address=0x…` | `{ configured, missing[], error?, providers[{label,id,name,group,points}], maxPoints: 20, points, verified[{proofId, provider, points, claim:{statement, parameters, provedAt}, verifiedAt, onchain}] }` |
+| `POST /reclaim/request {address, provider?}` | `{ sessionId, requestUrl, statusUrl, provider, expiresAt }`; `503 Setup required: RECLAIM_APP_ID…` naming only what is missing; `400` for an unknown provider label |
 | `GET /reclaim/session/:sessionId` | `{ status: "pending" \| "verified" \| "failed", error?, verified? }`; sessions expire after 10 minutes |
 
 ## What Noren stores
 
-`data/reclaim-proofs.json` (gitignored, mode 0600), one row per wallet: the lowercased address, the proof identifier,
-the session ID, the provider ID and name, and `claim: { proved: true, parameters: [names], provedAt }`. Only the
-**names** of the extracted parameters are kept (for example `latestScore`), never their values, and no other
-personal data. The raw proof is discarded after verification.
+`data/reclaim-proofs.json` (gitignored, mode 0600), one row per wallet and provider: the lowercased address, the proof
+identifier, the session ID, the provider (ID, name, label, group), the points, the **names** of the extracted
+parameters and one coarse statement computed in memory from the values: `credit score ≥ 700`, `KYC level ≥ 1`,
+`balance ≥ 1,000`, `account exists`. Never names, dates of birth, exact scores or balances; the raw proof is discarded
+after verification. The row also keeps the salt of the on-chain commitment (never returned by the API).
+
+## On-chain, private
+
+After verification the server writes `NorenReputation.recordAttestation(borrower, kind, commitment, boostBps)` with
+the existing World ID attester key (fork: Anvil's published key #7):
+- `kind`: 1 credit score, 2 KYC, 3 balance, 4 identity; `boostBps` 1500 / 800 / 800 / 300;
+- `commitment = keccak256(abi.encode(uint8 kind, string proofId, bytes32 salt))`, salt kept off-chain.
+
+The chain learns "this wallet proved a credit score", nothing that identifies the proof or the person. The UI shows
+"Recorded on-chain: proof type only, no personal data" with the fork tx. `recordAttestation` comes with the
+contracts-audit branch; until the deployed NorenReputation has it, the server simulates the call first and reports
+`onchain: { status: "unavailable", reason: "…no recordAttestation yet…" }`, and the UI says so. Nothing is faked.
 
 ## Effect on the credit limit (contracts unchanged)
 
-A verified proof feeds the existing credit-attestation path, so no contract changes:
+1. The history underwriter (`packages/robinhood/underwriter`) reads the store and adds the factor **"Off-chain facts
+   proved with Reclaim (zkTLS)"** (`offchainProof`, the sum of the proofs' points, at most 20).
+2. The score sets the tier the underwriter signs into the EIP-712 `CreditAttestation` that `NorenCredit` verifies: a
+   better tier means a higher limit and a lower collateral ratio on the stock-backed credit line (150% → 140% → 130% →
+   125%, i.e. 67% → 80% of the stock's value). The NorenReputation multiplier still applies on top.
+3. `GET /score/:address` returns `reclaim: { verified, provider?, points, maxPoints, decidedBy, ifVerified: { score,
+   tier, limitUsdg, collateralRatioBps } }` ("if" = one more credit-score proof), so the app shows before and after.
 
-1. The history underwriter (`packages/robinhood/underwriter`) reads the proof store and adds the factor
-   **"Off-chain fact proved with Reclaim (zkTLS)"** (`offchainProof`, +10 points) to the wallet's score.
-2. The score sets the tier and limit, which the underwriter signs as the EIP-712 `CreditAttestation` that
-   `NorenCredit` already verifies when a credit line opens; the NorenReputation multiplier still applies on top.
-3. `GET /score/:address` also returns `reclaim: { verified, provider?, proofId?, points: 10, decidedBy, ifVerified:
-   { score, tier, limitUsdg } }`, so the app shows the limit before and after the task.
+Honest limits: the borrow LTV ladder (NorenReputation 66 → 80%) doesn't read Reclaim until `recordAttestation` and its
+`boostBps` are live. When the 0G credit check is configured (`ZG_PC_API_KEY`), the sealed 0G model sets the signed
+terms and does not read the proofs yet; `reclaim.decidedBy` says which path applies.
 
-Honest limit: when the 0G credit check is configured (`ZG_PC_API_KEY`), the sealed 0G model sets the signed terms
-and its inputs do not include the Reclaim fact; the factor then shows in the score but does not change those terms.
-`reclaim.decidedBy` says which path applies (`0g` or `deterministic-score`).
+## A proof from Nick's phone
 
-## Setup (Nick)
+```
+pnpm exec tsx scripts/live/reclaim-request.ts github            # or any label above; optional 2nd arg: wallet
+```
+It prints only the request URL (open it on the phone) and the status, waits up to 30 minutes, verifies the proof, stores
+the statement and records it on the local Robinhood fork when `pnpm dev:all` is running. GitHub is the default: the
+easiest phone login. In the app the same flow is Credit → Raise your limit → Prove with Reclaim → pick a provider.
 
-1. Open https://dev.reclaimprotocol.org and sign in.
-2. **Create an application.** Copy its **App ID** and **App Secret** (the secret is shown once).
-3. **Add a provider** to the application. Recommended: **`Experian - RW Credit Score`**
-   (provider ID `cf6dd149-8444-49de-9851-63ed3a4f8832`, in Reclaim's verified provider list on Nov 6 2026). It
-   logs in to consumer.experian.in and extracts a single parameter, `latestScore`, which is the most
-   credit-relevant fact with the least personal data. Alternative for an exchange account:
-   **`Binance KYC Status`** (`7d43d323-2c24-4f4c-9cce-dd4aa57301fb`; it also reads name and date of birth, which
-   Noren does not store).
-4. Copy the **Provider ID** from the application.
-5. Put the values in `/Volumes/Extreme SSD/Projects/grokbot/projects/noren/.env` (gitignored; names in
-   `packages/server/env.example`):
-   ```
-   RECLAIM_APP_ID=…
-   RECLAIM_APP_SECRET=…
-   RECLAIM_PROVIDER_ID=cf6dd149-8444-49de-9851-63ed3a4f8832
-   RECLAIM_PROVIDER_NAME=Experian - RW Credit Score
-   ```
-6. Restart `pnpm dev:all`; the "Setup required: Reclaim …" line disappears from the startup summary.
+## Live checks (Nov 6 2026, Nick's app)
 
-## Live check with Nick's app (Nov 6 2026)
-
-`RECLAIM_APP_ID` and `RECLAIM_APP_SECRET` are set in the Noren `.env`; `RECLAIM_PROVIDER_ID` is not yet. With Nick's app and the public provider ID above, `ReclaimProofRequest.init(APP_ID, APP_SECRET, "cf6dd149-8444-49de-9851-63ed3a4f8832")` succeeded against Reclaim's API: it returned a request URL on `portal.reclaimprotocol.org` (the QR) and a status URL on `api.reclaimprotocol.org` that answered HTTP 200 "Session fetched successfully" with that provider ID. No proof was completed: that needs a phone and an Experian login, and nothing is faked. Until `RECLAIM_PROVIDER_ID` is set, `/reclaim/request` answers 503 `Setup required: RECLAIM_PROVIDER_ID (add a provider to the Reclaim app …)`, naming only the missing variable.
+- `ReclaimProofRequest.init` with the Experian India provider (`cf6dd149-…`) and later with GitHub returned a request URL
+  on `portal.reclaimprotocol.org` and a status URL on `api.reclaimprotocol.org` that answered HTTP 200 "Session fetched
+  successfully".
+- In the app (dev:all, Credit → Prove GitHub account) the modal showed the QR for a real session, Copy link and
+  Open on this phone, and "Waiting for the proof from your phone…".
+- `scripts/live/reclaim-request.ts github` printed the request URL and "Status: pending" for a real session.
+- No proof was completed: that needs a phone.
 
 ## Tests
 
-- `packages/server/src/reclaim.test.ts` (offline, 6): 503 Setup required naming each missing variable,
-  `configured:false`, the secret never echoed, bad addresses and unknown sessions, and proofs bound to another
-  wallet or session or malformed are rejected with nothing stored.
-- `packages/server/src/reclaim.live.test.ts` (live, 4; `pnpm exec vitest run packages/server/src/reclaim.live.test.ts`):
-  fetches the real attestor list (fails if Reclaim is unreachable), then the real `verifyProof` rejects a
-  well-formed proof signed by a non-attestor and a tampered claim, and `verifyAndRecord` throws
-  `ReclaimProofRejected` and stores nothing. No Reclaim API or SDK is mocked.
-- `packages/robinhood/underwriter/test/score.test.ts`: the `offchainProof` factor adds 10 points, can move a wallet
-  from tier 0 to tier 1, and never lifts the score above 100.
+- `packages/server/src/reclaim.test.ts` (offline, 9): Setup required naming only the missing variables, the provider
+  catalogue in four groups and env overrides, unknown labels rejected, the secret never echoed, coarse statements
+  (score rounded to 50, balance to a power of ten, no names or DOB), salted commitments, and proofs bound to another
+  wallet or session or malformed rejected with nothing stored.
+- `packages/server/src/reclaim.live.test.ts` (live, 4): the real attestor list, then the real `verifyProof` rejects a
+  proof signed by a non-attestor and a tampered claim, and `verifyAndRecord` stores nothing. No Reclaim API or SDK mock.
+- `packages/server/src/reclaim-onchain.fork.test.ts` (fork, 1): against the deployed NorenReputation, records or says
+  exactly why not (today: no `recordAttestation` yet).
+- `packages/robinhood/underwriter/test/score.test.ts`: the factor adds the proofs' points, is capped at 20, can move a
+  wallet from tier 0 to tier 1, and never lifts the score above 100.
