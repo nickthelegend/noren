@@ -33,6 +33,8 @@ Robinhood's Stock Token API (`https://api.robinhood.com/rhj/assets`, documented 
 |---|---|---|
 | `arc.svg` | Arc | Circle Pressroom, Arc logos → https://6778953.fs1.hubspotusercontent-na1.net/hubfs/6778953/Brand/Arc/Arc_Logos.zip, `Arc Network Icon/Arc_network.svg` |
 | `robinhood-chain.png` | Robinhood Chain | Robinhood's CDN token logo for Robinhood Chain assets (the feather), as returned by `https://api.robinhood.com/rhj/assets`, e.g. https://cdn.robinhood.com/ncw_assets/logos/0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec.png |
+| `base.svg` | Base | Base's official brand kit repo (https://github.com/base-org/brand-kit), "The Square" mark → https://raw.githubusercontent.com/base-org/brand-kit/main/logo/TheSquare/Digital/Base_square_blue.svg |
+| `arbitrum.svg` | Arbitrum | Offchain Labs' official Arbitrum docs repo (https://github.com/OffchainLabs/arbitrum-docs) → https://raw.githubusercontent.com/OffchainLabs/arbitrum-docs/master/public/img/logo.svg |
 
 ## Protocols
 
