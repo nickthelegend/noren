@@ -20,7 +20,7 @@ afterAll(async () => { await standin.close(); });
 beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), 'noren-world-svc-')); standin.mode = 'accept'; standin.calls.length = 0; clock = Math.floor(Date.now() / 1000); });
 afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
 
-const env = (over: Record<string, string> = {}) => ({ WORLD_APP_ID: 'app_staging_test', WORLD_RP_ID: 'rp_test123', WORLD_RP_SIGNING_KEY: KEY, WORLD_VERIFY_BASE: standin.url, ...over });
+const env = (over: Record<string, string> = {}) => ({ WORLD_APP_ID: 'app_staging_test', WORLD_RP_ID: 'rp_00000000c0ffee01', WORLD_RP_SIGNING_KEY: KEY, WORLD_VERIFY_BASE: standin.url, ...over });
 function recordingSink(fail = false): StarterLineSink & { got: StarterLineRequest[] } {
   const got: StarterLineRequest[] = [];
   return { kind: 'cre-simulate', got, open: async r => { got.push(r); if (fail) throw new Error('CRE human-starter write failed: forwarder reverted'); return { txHash: `0x${'ab'.repeat(32)}` as Hex }; } };
@@ -61,7 +61,7 @@ describe('success path', () => {
 
     // The IDKit result reached the verifier unchanged (plus the asserted environment).
     expect(standin.calls).toHaveLength(1);
-    expect(standin.calls[0].rpId).toBe('rp_test123');
+    expect(standin.calls[0].rpId).toBe('rp_00000000c0ffee01');
     expect(standin.calls[0].body).toEqual({ ...result, environment: 'production' });
 
     // The bridge gets the human-starter report keyed by the nullifier.

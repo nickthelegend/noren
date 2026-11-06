@@ -43,7 +43,7 @@ export function loadWorldIdConfig(env: Record<string, string | undefined> = proc
   const appId = env.WORLD_APP_ID?.trim() || undefined;
   if (appId && !/^app_[A-Za-z0-9_]+$/.test(appId)) throw new Error('WORLD_APP_ID must look like app_...');
   const rpId = env.WORLD_RP_ID?.trim() || undefined;
-  if (rpId && !/^rp_[A-Za-z0-9_]+$/.test(rpId)) throw new Error('WORLD_RP_ID must look like rp_...');
+  if (rpId && !/^rp_[0-9a-fA-F]{1,16}$/.test(rpId)) throw new Error('WORLD_RP_ID must be rp_ followed by up to 16 hex digits');
   const limit = BigInt(env.NOREN_STARTER_LIMIT_USDC6 ?? DEFAULT_STARTER_LIMIT_USDC6);
   if (limit <= 0n || limit > MAX_STARTER_LIMIT_USDC6) throw new Error(`NOREN_STARTER_LIMIT_USDC6 must be 1..${MAX_STARTER_LIMIT_USDC6}`);
   const days = Number(env.NOREN_STARTER_DAYS ?? DEFAULT_STARTER_DAYS);

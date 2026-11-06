@@ -18,7 +18,7 @@ let server: Server, standin: Awaited<ReturnType<typeof startStandin>>, dir: stri
 beforeAll(async () => {
   standin = await startStandin(8755);
   dir = await mkdtemp(join(tmpdir(), 'noren-world-http-'));
-  const svc = new WorldIdService({ config: loadWorldIdConfig({ WORLD_APP_ID: 'app_test', WORLD_RP_ID: 'rp_test', WORLD_RP_SIGNING_KEY: KEY, WORLD_VERIFY_BASE: standin.url }), dataFile: join(dir, 'w.json') });
+  const svc = new WorldIdService({ config: loadWorldIdConfig({ WORLD_APP_ID: 'app_test', WORLD_RP_ID: 'rp_00000000c0ffee02', WORLD_RP_SIGNING_KEY: KEY, WORLD_VERIFY_BASE: standin.url }), dataFile: join(dir, 'w.json') });
   const worldId = createWorldIdHandler(svc);
   server = createServer(async (req, res) => { if (await worldId(req, res)) return; res.writeHead(418).end('host route'); });
   await new Promise<void>(r => server.listen(PORT, '127.0.0.1', () => r()));
@@ -47,7 +47,7 @@ describe('HTTP handler', () => {
     const text = await reqRes.text();
     expect(text).not.toContain(KEY.slice(2));
     const req = JSON.parse(text);
-    expect(req.rp_context).toMatchObject({ rp_id: 'rp_test', nonce: expect.stringMatching(/^0x/), signature: expect.stringMatching(/^0x[0-9a-f]{130}$/) });
+    expect(req.rp_context).toMatchObject({ rp_id: 'rp_00000000c0ffee02', nonce: expect.stringMatching(/^0x/), signature: expect.stringMatching(/^0x[0-9a-f]{130}$/) });
 
     const human = '0x' + '1a'.repeat(32);
     const ok = await post('/world-id/verify', { idkitResponse: idkitResult({ nonce: req.rp_context.nonce, wallet: ALICE, nullifier: human }) });
