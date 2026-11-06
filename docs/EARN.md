@@ -51,6 +51,47 @@ Each deposit vault is itself the 1inch Aqua maker: it calls `Aqua.ship` from its
   3. The rest goes back to the borrower, as the underlying asset. Anything a blocklisted account can't receive is credited for `claim`.
   4. Debt left with no collateral is written off as `badDebtUsdg`, and the pool's NAV drops by it.
 
+## Loans that pay themselves down
+
+Like keeping a fixed deposit and borrowing against it: you don't sell your ETH or stocks. You deposit them, the vault trades them as 1inch Aqua liquidity and earns the spread on every fill, you lock the shares and borrow USDG, and the fees your locked shares earn pay the loan down.
+
+**How the yield is measured.** `NorenDepositVault` keeps a fee-per-share accumulator, `feesPerShare()`. It is checkpointed at every mint and burn; fills never change the share supply, so each fee NorenLiquidity books (`feeBook()`) is split over exactly the shares that existed when it was booked. `NorenBorrow` records the accumulator for each position when shares are locked, unlocked or harvested. A position's yield is its locked shares × the growth since then, in USDG, rounded down. Time alone earns nothing, and neither does a price move: only booked fees count.
+
+**`harvestToRepay(account)`.** Anyone can call it, as a keeper. The caller gets nothing, and the USDG goes only to the lender pool against that account's debt. For each vault the account has shares locked in:
+1. It settles the yield since the last checkpoint. With no loan it reverts with `NoDebt`; with no yield anywhere, with `NoYield`.
+2. If the vault holds at least the yield in USDG (an ask fill leaves the buyer's USDG there), `NorenDepositVault.harvestUsdg` burns shares worth exactly the yield at Chainlink, rounded up in the other depositors' favour, and pays that USDG. Only NorenBorrow, the vault's `harvester`, may call it.
+3. Otherwise, shares worth the yield are redeemed in kind and the asset part is sold to the best Aqua maker bid (`NorenLiquidity.sellExactAsset`, no worse than 3% under Chainlink). The debt then drops by what the sale returned.
+4. The debt is repaid, interest first. The contract emits `YieldRepaid(account, vault, keeper, usdg, debtAfter, shares, fills)` per vault and keeps the running total in `yieldRepaidUsdg(account)`. Yield above the debt stays pending and closes the loan, and a closed loan counts toward the repaid-loan milestone as usual.
+5. It reverts with `HealthWorse` if the health factor would drop.
+
+Only yield shares leave: the principal shares stay locked and redeem for the deposit (`test_fullRepayReturnsTheCollateral`). Unlocking shares takes their unharvested yield with them, in their value. A liquidation seizes a vault's shares with their pending yield.
+
+**Liquidation is unchanged.** Fees can't save a position from a large price drop. A harvest on an unhealthy position improves its health but doesn't block the keeper, and `liquidateViaAqua` still sells one vault's collateral at a time: in `test_unhealthyPositionStillLiquidatesPartially`, a 60% NVDA cut makes 1 ETH + 10 NVDA liquidatable. Only the NVDA is sold, the ETH stays locked and keeps earning, and its next fees keep paying the loan down. Partial Dutch auctions (`NorenDutchAuction`) are for Pay-in-3 plans; loans liquidate per vault through `liquidateViaAqua`.
+
+**The lender side.** USDC/USDG holders deposit into `NorenVault` (nvUSDG). They earn the loan interest (5% a year, simple), the 3% Pay-in-3 merchant fee, and the fills of the pool's own Aqua strategy: `pnpm dev:all` has the pool ship a vault-backed NVDA bid, and its fees count in the pool's NAV. The Borrow tab shows it as "The lender pool is an Aqua maker". A harvest moves USDG from a deposit vault to the lender pool and lowers the receivable by the same amount, so the lender NAV is unchanged.
+
+**In the app (Borrow tab).** *Your collateral keeps earning* shows:
+- what your collateral's fees have already paid (from `YieldRepaid` events, checked against `yieldRepaidUsdg`) and from how many Aqua fills;
+- what was earned and not used yet, per vault, and whether it is already in USDG or would be sold to makers;
+- debt now, and debt without earnings (debt now plus the fees already applied; interest on that part isn't counted);
+- the **Use earnings to pay down loan** button.
+
+With no fills it says "No fills yet, so nothing earned yet". No APY is shown. In `pnpm dev:all`, after each borrow a demo trader makes three real Aqua fills against every vault the loan is locked in: two buys from the vault's ask and one sell to its bid (`scripts/dev-selfrepay.ts`, fork only, `NOREN_DEMO_FILLS=0` turns it off).
+
+**SDK.**
+- `previewYieldRepay(account)` returns the yield, the fills, the debt before and after, and per vault the yield and the path (`usdg` or `sell`), plus a sentence.
+- `harvestToRepay(account?)` returns the repaid amount, the fills, the debt before and after, and the tx. With nothing earned it fails with "No fills yet, so nothing earned yet".
+- `loanPaidByYield(account, { fromBlock })` returns the cumulative total from events, with the on-chain total, harvests, fills and history.
+
+**Demo (SDK fork test `sdk/test/selfrepay.fork.test.ts`, warmed snapshot of mainnet block 107689497; every hash is a fork transaction).** The customer deposits 1 ETH and 1 NVDA, locks both and borrows 500 USDG. The app reads "No fills yet, so nothing earned yet", and a harvest is refused. A trader then buys 0.3 ETH from the nETH vault's ask and 0.25 NVDA from the nNVDA vault's ask, two real SwapVM fills booking 2.661600 + 0.282737 USDG of fees (`0x1b7aaf23…61ef`, `0x53d2e8c0…22f3`). A keeper (Anvil #4, not the borrower) calls `harvestToRepay` (`0x30cc3c7e…31de`). It repays **2.944337 USDG**, exactly the previewed yield, and the debt goes from **500.000001 to 497.055664 USDG**. Both vaults paid in USDG they already held, and the principal shares stay locked. `loanPaidByYield` then reports 2.944337 USDG from 2 fills in 1 harvest, matching `yieldRepaidUsdg`.
+
+**Limits, honestly.**
+- **It depends on fills.** A vault earns only when someone trades against its strategy: buyers taking its ask, shoppers paying with ETH or stock through its bid, liquidations selling into it. No fills means no yield and no repayment, and the app says so. Fees are small next to a loan: in the demo above two fills paid down 0.59% of the debt. This lowers a loan; it doesn't replace repaying it.
+- **Fork only on Robinhood.** It runs on a local Anvil snapshot of Robinhood Chain mainnet, with real Stock Tokens and Chainlink feeds. The contracts aren't deployed on Robinhood mainnet, and Robinhood testnet has no Chainlink feeds. The demo fills come from a trader account on that fork, not from real market participants.
+- **Collateral sold in liquidation stops earning.** Liquidated shares are redeemed and sold, so their future fees are gone, and so is any yield that wasn't harvested yet. Harvest often. Anyone can, as a keeper.
+- **The sale path costs a spread.** When the vault holds too little USDG, the asset part is sold to a maker bid, up to 3% under Chainlink, so the loan drops by slightly less than the yield. Only the USDG path repays exactly the yield. Uniswap v4 is compared off-chain in the app's swap screen; the on-chain harvest sells only to Aqua makers.
+- **Oracle.** The harvest prices shares at Chainlink and fails closed when a feed is stale.
+
 ## Reputation, milestones and credit
 
 Points (computed live from on-chain sources):
@@ -123,6 +164,7 @@ The underwriter's `POST /attest-age {account}` signs `AccountAge` from the mainn
 | `health(account)` | debt, collateral (plain and haircut), limit, available, LTV, health factor, locked positions |
 | `liquidationPrice(account, asset)` | price, buffer and the app sentence |
 | `liquidateLoanViaAqua({borrower, asset})` | keeper action |
+| `previewYieldRepay(account)`, `harvestToRepay(account?)`, `loanPaidByYield(account, {fromBlock})` | loans that pay themselves down (above) |
 | `buyAsset({asset, amountOut})` | buy from makers at Chainlink + ask (the vaults' ask side) |
 | `reputation(account)`, `milestones(account)`, `creditLimit(account)` | points breakdown and next-tier hint; milestone labels; secured + starter + Pay-in-3 terms and multiplier |
 | `signVerifiedHuman`, `recordVerifiedHuman`, `applyVerifiedHuman`, `applyAccountAge`, `nullifierToBytes32` | World ID and account-age attestations |
@@ -155,8 +197,8 @@ Fork-only settings, all labelled in the transcript:
 
 | Suite | Command | Result |
 | --- | --- | --- |
-| Foundry, fresh mainnet fork | `NOREN_RH_TEST_PORT=8770 sh packages/robinhood/scripts/test-fork.sh` | **134 passed** (112 existing, none changed; 22 in `NorenEarn.t.sol`) |
-| Vitest, warmed snapshot + live mainnet reads | `NOREN_RH_RPC=http://127.0.0.1:8772 pnpm --filter @noren/robinhood test` | **19 passed** in 7 files (new: `sdk/test/earn.fork.test.ts`) |
+| Foundry, fresh mainnet fork | `NOREN_RH_TEST_PORT=8900 sh packages/robinhood/scripts/test-fork.sh` | **158 passed** in 11 suites (8 in `NorenSelfRepay.t.sol`; none of the existing tests changed) |
+| Vitest, warmed snapshot + live mainnet reads | `NOREN_RH_RPC=http://127.0.0.1:8902 pnpm --filter @noren/robinhood test` | **21 passed** in 9 files (new: `sdk/test/selfrepay.fork.test.ts`) |
 | Typecheck | `pnpm --filter @noren/robinhood typecheck` | passes |
 
 `NorenEarn.t.sol` covers:
@@ -165,6 +207,8 @@ Fork-only settings, all labelled in the transcript:
 - **Borrow:** 66% base LTV; tiers up to the 80% cap; milestone farming refused; locked shares keep earning; partial unlock only while healthy; the lender NAV counting loans and interest; lender withdrawals capped while USDG is lent.
 - **Liquidation:** at 0.1% either side of the liquidation price through Aqua (exact deltas); underwater bad debt.
 - **Reputation and attestations:** late payment and liquidation penalties; World ID wrong key, tampered, replayed, second wallet, second nullifier and expired; account age signer and monotonicity; `creditLimitOf` with the starter; vault allow-list and caps; the credit-limit story.
+
+`NorenSelfRepay.t.sol` covers loans that pay themselves down: the harvest repays exactly the realised yield from four real fills (two asks and two shopper payments, ETH and NVDA) with the principal shares still locked; zero yield and no debt revert; a keeper can't take anything, and only NorenBorrow can call `harvestUsdg`; yield follows the shares held at each fill; the sale path when a vault holds too little USDG; yield above the debt closes the loan and the rest stays pending until unlock; an unhealthy position still liquidates per vault; and a full repay returns the collateral.
 
 ## Risks
 

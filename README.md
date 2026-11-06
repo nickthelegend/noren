@@ -77,7 +77,7 @@ Everything below is detail.
 | Surface | Route | What it does |
 |---|---|---|
 | **Noren Merchant** | `#/dashboard` | Payments with the method used (private pool, pay with stocks, pay later), payment links priced in 9 currencies by Chainlink, refunds, balances, webhooks, API keys, credit-line exposure, and **Settle to Arc** for USDG earned from stock payments. "Customers identified: 0" for private payments. |
-| **Noren app** | `#/app` | The customer's side, opening on **Home**: one balance (private and public USDC on Arc, USDG and Stock Tokens on Robinhood Chain at Chainlink prices, credit available), Pay (scan or paste a link, pay privately in place), Send privately, Bridge Robinhood ⇄ Arc, Earn, Credit and recent activity. Earn and Borrow show the Aqua maker behind each pool and its realised fees; Credit scores on-chain history (with a sealed AI second opinion on 0G), locks stock for a line and watches Chainlink CRE bridge it to Arc. No stock? World ID unlocks a small starter line. |
+| **Noren app** | `#/app` | The customer's side, opening on **Home**: one balance (private and public USDC on Arc, USDG and Stock Tokens on Robinhood Chain at Chainlink prices, credit available), Pay (scan or paste a link, pay privately in place), Send privately, Bridge Robinhood ⇄ Arc, Earn, Credit and recent activity. Earn and Borrow show the Aqua maker behind each pool and its realised fees, and the trading fees your locked collateral earns can pay your loan down; Credit scores on-chain history (with a sealed AI second opinion on 0G), locks stock for a line and watches Chainlink CRE bridge it to Arc. No stock? World ID unlocks a small starter line. |
 | **Noren SDK** | `@noren/core` | `createNoren` (invoices, refunds, webhooks, `verifyWebhook`) for merchants; `shield`, `refundInbox`, `proveInvoicePayment` for customers. The hosted checkout `#/pay/:id` is the drop-in. |
 
 ```ts
@@ -110,7 +110,8 @@ Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party l
 
 | What | Result |
 |---|---|
-| All suites ([TESTING.md](TESTING.md)) | **590 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
+| All suites ([TESTING.md](TESTING.md)) | **599 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
+| **Loans that pay themselves down** (Robinhood fork, [docs/EARN.md](docs/EARN.md#loans-that-pay-themselves-down)) | 1 ETH + 1 NVDA locked, 500 USDG borrowed; two real Aqua fills on the vaults' asks booked 2.944337 USDG of fees; a keeper's `harvestToRepay` repaid exactly that, so the debt went from **500.000001 to 497.055664 USDG** and the principal shares stayed locked. No fills, no repayment: it depends on fills |
 | `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), first proof 5.03 s (cold), re-proof 1.06 s, 54.8 s total (v3 rerun, Nov 6) |
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
 | Pay from the Noren app's Home (headless Chromium, fresh wallet, `pnpm dev:all`) | open link picked → fork USDC moved into the private balance in one step → **proof 1.12 s on the device**, **tap to paid 6.2 s**, payer address in the tx: none |
