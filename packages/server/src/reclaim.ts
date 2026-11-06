@@ -34,7 +34,9 @@ const isAddress = (a: unknown): a is string => typeof a === 'string' && /^0x[0-9
 export function missingReclaimEnv(env: ReclaimEnv): string[] {
   return RECLAIM_ENV.filter((k) => !env[k]?.trim());
 }
-const setupError = (missing: string[]) => `Setup required: ${missing.join(', ')} (create the app and add a provider at dev.reclaimprotocol.org, then set them in the Noren .env; see docs/RECLAIM.md)`;
+const setupError = (missing: string[]) => `Setup required: ${missing.join(', ')} (${missing.length === 1 && missing[0] === 'RECLAIM_PROVIDER_ID'
+  ? 'add a provider to the Reclaim app at dev.reclaimprotocol.org and set its ID'
+  : 'create the app and add a provider at dev.reclaimprotocol.org, then set them'} in the Noren .env; see docs/RECLAIM.md)`;
 
 export async function readReclaimStore(file: string): Promise<ReclaimRecord[]> {
   try { return JSON.parse(await readFile(file, 'utf8')); } catch (e: any) { if (e.code === 'ENOENT') return []; throw e; }

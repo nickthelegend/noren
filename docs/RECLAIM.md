@@ -76,6 +76,10 @@ and its inputs do not include the Reclaim fact; the factor then shows in the sco
    ```
 6. Restart `pnpm dev:all`; the "Setup required: Reclaim …" line disappears from the startup summary.
 
+## Live check with Nick's app (Nov 6 2026)
+
+`RECLAIM_APP_ID` and `RECLAIM_APP_SECRET` are set in the Noren `.env`; `RECLAIM_PROVIDER_ID` is not yet. With Nick's app and the public provider ID above, `ReclaimProofRequest.init(APP_ID, APP_SECRET, "cf6dd149-8444-49de-9851-63ed3a4f8832")` succeeded against Reclaim's API: it returned a request URL on `portal.reclaimprotocol.org` (the QR) and a status URL on `api.reclaimprotocol.org` that answered HTTP 200 "Session fetched successfully" with that provider ID. No proof was completed: that needs a phone and an Experian login, and nothing is faked. Until `RECLAIM_PROVIDER_ID` is set, `/reclaim/request` answers 503 `Setup required: RECLAIM_PROVIDER_ID (add a provider to the Reclaim app …)`, naming only the missing variable.
+
 ## Tests
 
 - `packages/server/src/reclaim.test.ts` (offline, 6): 503 Setup required naming each missing variable,

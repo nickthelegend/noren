@@ -25,6 +25,16 @@ describe('Reclaim routes without credentials', () => {
     expect(r.status).toBe(503);
     expect((await r.json()).error).toMatch(/^Setup required: RECLAIM_APP_ID, RECLAIM_APP_SECRET, RECLAIM_PROVIDER_ID/);
   });
+  it('with the app set but no provider, names only RECLAIM_PROVIDER_ID and never the app values', async () => {
+    const { s, url } = await listen({ RECLAIM_APP_ID: 'app-id-value-123', RECLAIM_APP_SECRET: 'secret-value-456' });
+    try {
+      const r = await fetch(`${url}/reclaim/request`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ address: wallet }) });
+      expect(r.status).toBe(503);
+      const { error } = await r.json();
+      expect(error).toMatch(/^Setup required: RECLAIM_PROVIDER_ID \(add a provider/);
+      expect(error).not.toMatch(/RECLAIM_APP_ID|RECLAIM_APP_SECRET|app-id-value|secret-value/);
+    } finally { s.close(); }
+  });
   it('GET /reclaim/status says configured:false and nothing is verified', async () => {
     const j = await (await fetch(`${base}/reclaim/status?address=${wallet}`)).json();
     expect(j).toMatchObject({ configured: false, missing: ['RECLAIM_APP_ID', 'RECLAIM_APP_SECRET', 'RECLAIM_PROVIDER_ID'], provider: null, verified: null });
