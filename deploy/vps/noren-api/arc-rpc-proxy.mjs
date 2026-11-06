@@ -7,15 +7,23 @@ const UPSTREAMS = (process.env.UPSTREAMS ?? 'https://rpc.drpc.testnet.arc.io,htt
 const cache = new Map(); const MAX = 20_000;
 let head = 0n, headAt = 0, rr = 0;
 const put = (k, v) => { if (cache.size >= MAX) cache.delete(cache.keys().next().value); cache.set(k, v); };
+// dRPC's free tier refuses eth_getLogs on this chain ("ranges over 10000 blocks" even for small ranges): logs skip it.
+const LOG_UPSTREAMS = UPSTREAMS.filter(u => !/drpc/.test(u));
 async function upstream(body) {
   let last;
-  for (let i = 0; i < UPSTREAMS.length * 2; i++) {
-    const url = UPSTREAMS[rr++ % UPSTREAMS.length];
+  const list = body?.method === 'eth_getLogs' && LOG_UPSTREAMS.length ? LOG_UPSTREAMS : UPSTREAMS;
+  for (let i = 0; i < list.length * 4; i++) {
+    if (i >= list.length) await new Promise(r => setTimeout(r, 300 * i)); // every provider tried once: back off
+    const url = list[rr++ % list.length];
     try {
       const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });
       if (r.status === 429 || r.status >= 500) { last = `HTTP ${r.status} from ${new URL(url).host}`; continue; }
-      const j = await r.json();
-      if (j?.error && /rate limit|too many|capacity|timeout/i.test(String(j.error.message))) { last = j.error.message; continue; }
+      const text = await r.text(); let j; try { j = JSON.parse(text); } catch { last = `HTTP ${r.status} ${text.slice(0, 80)} from ${new URL(url).host}`; continue; }
+      const emsg = typeof j?.error === 'string' ? j.error : j?.error?.message;
+      if (j?.error) console.log(`${body.method} via ${new URL(url).host}: ${String(emsg).slice(0, 120)}`);
+      if (j?.error && typeof j.error === 'string') { last = j.error; continue; }
+      // Some providers cap eth_getLogs ranges or rate-limit with a JSON error: try the next provider.
+      if (j?.error && /rate limit|too many|capacity|timeout|exceed|limit|range|block range/i.test(String(emsg))) { last = j.error.message; continue; }
       return j;
     } catch (e) { last = String(e?.message ?? e); }
   }
@@ -38,6 +46,21 @@ async function cacheable(m) {
 }
 async function one(m) {
   if (!m || typeof m.method !== 'string') return { jsonrpc: '2.0', id: m?.id ?? null, error: { code: -32600, message: 'Invalid request' } };
+  // Arc's providers cap eth_getLogs ranges (5,000-10,000 blocks). Kohaku asks for its whole history at once, so split
+  // the range here into 5,000-block chunks (each cached once final) and merge the logs in block order.
+  if (m.method === 'eth_getLogs' && m.params?.[0] && !m.params[0].blockHash) {
+    const f = m.params[0], h = await latest();
+    const from = f.fromBlock === 'earliest' ? 0n : num(f.fromBlock), to = f.toBlock === undefined || f.toBlock === 'latest' ? h : num(f.toBlock);
+    if (from !== null && to !== null && h && to - from > 5000n) {
+      const parts = []; for (let a = from; a <= to; a += 5000n) { const b = a + 4999n < to ? a + 4999n : to; parts.push([a, b]); }
+      const out = []; let i = 0; let err = null;
+      await Promise.all(Array.from({ length: 2 }, async () => { while (i < parts.length && !err) { const k = i++; const [a, b] = parts[k];
+        const r = await one({ jsonrpc: '2.0', id: 1, method: 'eth_getLogs', params: [{ ...f, fromBlock: '0x' + a.toString(16), toBlock: '0x' + b.toString(16) }] });
+        if (r.error) err = r.error; else out[k] = r.result; } }));
+      if (err) return { jsonrpc: '2.0', id: m.id, error: err };
+      return { jsonrpc: '2.0', id: m.id, result: out.flat() };
+    }
+  }
   const key = JSON.stringify([m.method, m.params ?? []]);
   const hit = cache.get(key); if (hit) return { jsonrpc: '2.0', id: m.id, result: hit };
   const j = await upstream({ jsonrpc: '2.0', id: m.id ?? 1, method: m.method, params: m.params ?? [] });
