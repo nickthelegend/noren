@@ -53,6 +53,8 @@ contract NorenCcipHub is NorenCcipBase, ReentrancyGuard {
   mapping(bytes32 inboundId => Custody) public custody;
   /// @notice originKey -> inbound messageId, so the same Noren message is never forwarded twice.
   mapping(bytes32 originKey => bytes32 inboundId) public relayedBy;
+  /// @notice Tokens held in custody for origin senders; `withdrawToken` can never take them.
+  mapping(address token => uint256) public reserved;
 
   event HubRouteSet(uint64 indexed finalChain, address finalReceiver, uint32 gasLimit, uint16 finalityDepth);
   event FeeTokenSet(address feeToken);
@@ -77,6 +79,7 @@ contract NorenCcipHub is NorenCcipBase, ReentrancyGuard {
   error NotCustodyOwner(address caller);
   error NoCustody(bytes32 inboundId);
   error EnvelopeMismatch(bytes32 inboundId);
+  error ExceedsFree(uint256 amount, uint256 free);
 
   constructor(address router, uint64 localChain_, address owner_) NorenCcipBase(router, localChain_, owner_) {}
 
@@ -93,6 +96,15 @@ contract NorenCcipHub is NorenCcipBase, ReentrancyGuard {
     emit FeeTokenSet(feeToken_);
   }
 
+  /// @notice Owner withdrawal of surplus tokens only (e.g. unused LINK): custody balances stay put.
+  function withdrawToken(IERC20 token, address to, uint256 amount) external override onlyOwner {
+    uint256 bal = token.balanceOf(address(this));
+    uint256 res = reserved[address(token)];
+    uint256 free = bal > res ? bal - res : 0;
+    if (amount > free) revert ExceedsFree(amount, free);
+    token.safeTransfer(to, amount);
+  }
+
   // ---------------------------------------------------------------- receive + forward
 
   function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
@@ -105,6 +117,7 @@ contract NorenCcipHub is NorenCcipBase, ReentrancyGuard {
       // Onward lanes into Arc carry no tokens today; keep them here for the origin sender instead of losing them.
       Client.EVMTokenAmount memory t = message.destTokenAmounts[0];
       custody[message.messageId] = Custody({owner: e.originSender, token: t.token, amount: t.amount});
+      reserved[t.token] += t.amount;
       emit CustodyTaken(message.messageId, e.originSender, t.token, t.amount);
     }
 
@@ -154,6 +167,7 @@ contract NorenCcipHub is NorenCcipBase, ReentrancyGuard {
     if (c.amount == 0) revert NoCustody(inboundId);
     if (msg.sender != c.owner && msg.sender != owner()) revert NotCustodyOwner(msg.sender);
     delete custody[inboundId];
+    reserved[c.token] -= c.amount;
     IERC20(c.token).safeTransfer(to, c.amount);
     emit CustodyReleased(inboundId, to, c.token, c.amount);
   }
