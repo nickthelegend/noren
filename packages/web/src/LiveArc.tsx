@@ -1,9 +1,9 @@
 /** "Arc testnet (live)": the public deployment and its recorded payments, with explorer links and live reads. */
 import { useEffect, useState } from "react";
-import { LIVE, addrUrl, liveFacts, useNet, type Net } from "./network";
+import { LIVE, addrUrl, liveFacts, liveOracleFreshness, useNet, type Net, type OracleFreshness } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
-import { CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, runLabel, ccipMsgUrl, shortChain } from "./crosschain";
+import { AQUA_LIVE, CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, runLabel, ccipMsgUrl, shortChain } from "./crosschain";
 import "./live.css";
 
 const short = (h: string, n = 6) => `${h.slice(0, n + 2)}…${h.slice(-4)}`;
@@ -18,7 +18,8 @@ export function NetSwitch({ dark }: { dark?: boolean }) {
 export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" }) {
   const [f, setF] = useState<Awaited<ReturnType<typeof liveFacts>> | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { let on = true; liveFacts().then((x) => on && setF(x)).catch((e) => on && setErr(String(e?.message ?? e))); return () => { on = false; }; }, []);
+  const [fx, setFx] = useState<OracleFreshness | null>(null);
+  useEffect(() => { let on = true; liveFacts().then((x) => on && setF(x)).catch((e) => on && setErr(String(e?.message ?? e))); liveOracleFreshness().then((x) => on && setFx(x)); return () => { on = false; }; }, []);
   const e2e = LIVE.e2e;
   const pick = (re: RegExp) => e2e.steps.find((s) => re.test(s.step));
   const pay = pick(/^pay \d/i), refund = pick(/^refund \d/i), shield = pick(/^shield/i);
@@ -30,7 +31,7 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
       <dl className="la-grid">
         <div><dt>NorenCheckout</dt><dd><a href={addrUrl(LIVE.checkout)} target="_blank" rel="noreferrer">{short(LIVE.checkout)}</a></dd></div>
         <div><dt>Privacy pool (USDC)</dt><dd><a href={addrUrl(LIVE.pool)} target="_blank" rel="noreferrer">{short(LIVE.pool)}</a>{f && <small>{usdc(f.poolBal)} USDC shielded now</small>}</dd></div>
-        <div><dt>NorenRateOracle (CRE)</dt><dd><a href={addrUrl(LIVE.oracle)} target="_blank" rel="noreferrer">{short(LIVE.oracle)}</a><small>€100 = {usdc(LIVE.pricing.quoteEur100)} USDC at the written rounds</small></dd></div>
+        <div><dt>NorenRateOracle (CRE)</dt><dd><a href={addrUrl(LIVE.oracle)} target="_blank" rel="noreferrer">{short(LIVE.oracle)}</a><small>{!fx ? "checking freshness…" : fx.state === "fresh" ? <>€100 = {usdc(fx.usdcFor100Eur)} USDC now · rounds {Math.round(fx.ageSec / 3600)} h old</> : fx.state === "stale" ? <span className="la-stale">Price stale: the Chainlink round is older than {Math.round(fx.maxAge / 3600)} h, so quotes are refused until the next CRE run (<code>scripts/live/cre-live.ts</code>)</span> : <>€100 = {usdc(LIVE.pricing.quoteEur100)} USDC at the written rounds</>}</small></dd></div>
         <div><dt>NorenCreditLine (CRE)</dt><dd><a href={addrUrl(LIVE.creditLine)} target="_blank" rel="noreferrer">{short(LIVE.creditLine)}</a></dd></div>
       </dl>
       <ul className="la-tx">
@@ -45,8 +46,10 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
         {CCTP_RUNS.filter((r) => r.to === "arc-testnet").map((r) => (
           <li key={r.burnTx}><span className="lg-row"><Mark id={CHAIN_MARK[r.from]} size={16} /><b>{shortChain(r.from)} → Arc</b>&nbsp;· CCTP V2 · {runLabel(r)} · {usdc(r.minted)} USDC</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></span></li>
         ))}
+        <li><span className="lg-row"><Mark id="1INCH" size={16} /><b>1inch Aqua on Arc</b>&nbsp;· USDC → EURC from a Chainlink-pegged maker</span><TxLink chain="arc-live" hash={AQUA_LIVE.directSwap} n={4} /></li>
+        {AQUA_LIVE.fills.map((f) => <li key={f.fill}><span className="lg-row"><Mark id={CHAIN_MARK[f.from]} size={16} /><b>{shortChain(f.from)} → Arc</b>&nbsp;· CCTP + Aqua order, filled by CRE</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[f.from].explorer} hash={f.burn} n={4}>burn</TxLink><TxLink chain="arc-live" hash={f.fill} n={4}>fill</TxLink></span></li>)}
         {CCIP_MESSAGES.map((m) => (
-          <li key={m.id}><span className="lg-row"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b>&nbsp;· CCIP · {m.action}</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
+          <li key={m.id}><span className="lg-row"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b>&nbsp;· CCIP · {m.action} · delivered</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
         ))}
       </ul>
       <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain, fiat-priced invoices and this browser checkout are fork-only. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>

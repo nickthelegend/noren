@@ -39,14 +39,31 @@ export const CCTP_RUNS: CctpRun[] = (liveRuns as { runs: RawRun[] }).runs.map((r
 export const runLabel = (r: CctpRun) => r.kind === "pay-invoice" ? (r.events.includes("InvoicePaid") ? "Invoice paid on arrival" : "Invoice hook v1: USDC to the beneficiary") : (KIND_LABEL[r.kind] ?? r.kind);
 export const KIND_LABEL: Record<string, string> = { plain: "USDC to a wallet", "pay-invoice": "Invoice paid on arrival", "aqua-order": "Aqua order opened", "earn-deposit": "Earn deposit", "credit-line": "Credit line", "pay-on-credit": "Paid on credit" };
 
-/** Chainlink CCIP messages Noren sent on public testnets (docs/CCIP.md, Live runs). Status is read from ccip.chain.link. */
-export const CCIP_MESSAGES: { id: Hex; route: string; action: string; from: CctpChainKey; sendTx?: Hex }[] = [
-  { id: "0x8dc21f93991c32eb1319f9ce95907708c3fa7a27d577fe5b460e5bcc61639ceb", route: "Arc → Base Sepolia", action: "AQUA_ORDER probe", from: "arc-testnet", sendTx: "0x6131993bf7307dc79f74ed6214b148d3387b03816e1526dfa76d78fc339b1a25" },
-  { id: "0xc54e5cf92c21ef23e7784dd1148e48a91b75eb9a0ff2bc52ab6d4de80664d504", route: "Base Sepolia → Arc", action: "CREDIT_LINE, 1 USDC", from: "base-sepolia", sendTx: "0x5bfb5ec70d34f079924654a3906863750cca2c78bb8438a7364a2aa058203dd7" },
-  { id: "0x8bf11c2010e50817e88d2c61a896dbcffde95af5352cda9b0c342f073bac477d", route: "Robinhood → Base hub → Arc", action: "CREDIT_LINE update, 2 USDC", from: "robinhood-testnet", sendTx: "0x2b53e19627fc6e0f1821ef4b73b569ed45e8a19888c43207142c451b2293c715" },
-  { id: "0x5b04344b6baea78121553f912df5dc3e959e320df7712ca4d82a5763559df93d", route: "Robinhood → Base hub → Arc", action: "PAY_ON_CREDIT, 0.25 USDC", from: "robinhood-testnet", sendTx: "0x7ea8005fe373718ec5608b33944a2b3dc1e65aaae9c6e4cfa4fb1a89f6078ed1" },
-  { id: "0x3414a5d397f5c4222aa8a30bc75c085b53127533b62376dc132923b6ec2df1a4", route: "Ethereum Sepolia → Arc", action: "PAY_ON_CREDIT, 0.10 USDC", from: "ethereum-sepolia" },
+/**
+ * Chainlink CCIP messages Noren sent on public testnets (docs/CCIP.md, Live runs). All delivered. Messages into Arc carry
+ * instructions only: no CCIP lane carries USDC into Arc, so the value comes from Noren's Arc liquidity or from CCTP.
+ */
+export const CCIP_MESSAGES: { id: Hex; route: string; action: string; from: CctpChainKey; arcTx?: Hex }[] = [
+  { id: "0xc54e5cf92c21ef23e7784dd1148e48a91b75eb9a0ff2bc52ab6d4de80664d504", route: "Base Sepolia → Arc", action: "CREDIT_LINE opened, 1 USDC", from: "base-sepolia", arcTx: "0x7033c22339b8a4dc77c72151cd23a273caa46da19fd0d58a85863035d57e50a2" },
+  { id: "0x3414a5d397f5c4222aa8a30bc75c085b53127533b62376dc132923b6ec2df1a4", route: "Ethereum Sepolia → Arc", action: "PAY_ON_CREDIT 0.10 USDC (out of order, retried)", from: "ethereum-sepolia", arcTx: "0x78d3a38fd41c1c2b9bee066a94ad2c83837203cd5b00b9e0bd001155edc7d7ec" },
+  { id: "0x8bf11c2010e50817e88d2c61a896dbcffde95af5352cda9b0c342f073bac477d", route: "Robinhood → Base hub → Arc", action: "CREDIT_LINE update, 2 USDC", from: "robinhood-testnet", arcTx: "0xf55345779ffe0773f35f63ce45889a490bf90857253d8a4cfa2124b9e442b619" },
+  { id: "0x5b04344b6baea78121553f912df5dc3e959e320df7712ca4d82a5763559df93d", route: "Robinhood → Base hub → Arc", action: "PAY_ON_CREDIT 0.25 USDC", from: "robinhood-testnet", arcTx: "0x98a71c16434fbfe30dee4afcbcab6f21ac000b40b22a5b7a65c4d36806e3d867" },
+  { id: "0x56603748215991241c874b9dc17bc44e0dce534ed0f0fb7746e79922b4541009", route: "Arc → Base hub → Robinhood", action: "LINE_REPORT back to Robinhood", from: "arc-testnet" },
+  { id: "0x8dc21f93991c32eb1319f9ce95907708c3fa7a27d577fe5b460e5bcc61639ceb", route: "Arc → Base Sepolia", action: "AQUA_ORDER probe", from: "arc-testnet" },
+  { id: "0xff21b3a60d9d5592c5316a3b288acd0a08a0c8aa73774bf67b72be18026c728e", route: "Robinhood → Ethereum Sepolia", action: "1 CCIP-BnM + action (manual execution)", from: "robinhood-testnet" },
 ];
+
+/** 1inch Aqua live on Arc testnet (docs/AQUA-LIVE.md): official Aqua v1.0.0 at its own address, fills from other chains. */
+export const AQUA_LIVE = {
+  aqua: "0x550CD499f1E2da71527f14d6469364461966895B" as Address,
+  router: "0x8717687866f988EEBe3bd1d8999DF820ffD9e295" as Address,
+  settler: "0xd9f90e397770faf66b228344af5fe285b349d016" as Address,
+  directSwap: "0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8" as Hex,
+  fills: [
+    { from: "arbitrum-sepolia" as CctpChainKey, burn: "0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21" as Hex, mint: "0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae" as Hex, fill: "0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7" as Hex },
+    { from: "ethereum-sepolia" as CctpChainKey, burn: "0xd551e5f5ba4baf7fc04675d6a911f44c39644ce7b6440bd6690462ca31bfe0e2" as Hex, mint: "0xc4d1c483154c875e08c76253fe04d2e39450e57a18496f077a8440882c4e870d" as Hex, fill: "0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93" as Hex },
+  ],
+};
 
 /* ------------------------------------------------------------------ live reads */
 

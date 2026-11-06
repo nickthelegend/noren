@@ -4,7 +4,7 @@
  * Only Arc has a live deployment: Robinhood Chain, fiat invoices and the browser checkout run on the forks.
  */
 import { useEffect, useState } from "react";
-import { toFunctionSelector } from "viem";
+import { createPublicClient, http, parseAbi, toFunctionSelector } from "viem";
 import live from "../../../deployments/5042002.json";
 
 export type Net = "fork" | "live";
@@ -46,4 +46,31 @@ export async function liveFacts() {
     fetch(LIVE.rpcUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }) }).then((r) => r.json()).then((j) => BigInt(j.result)),
   ]);
   return { paid, payoutBal, poolBal, block };
+}
+
+/**
+ * Freshness of the live NorenRateOracle on Arc testnet. quote() reverts StalePrice once a stored Chainlink round is older
+ * than maxAge, which is an expected state between CRE runs, not an app error: the UI says "price stale" and how to refresh.
+ */
+const oracleAbi = parseAbi([
+  "function quote(string currency, uint256 fiatAmount) view returns (uint256 usdcAmount, uint80 fiatUsdRoundId, uint80 usdcUsdRoundId, uint256 oldestUpdatedAt)",
+  "function maxAge() view returns (uint256)",
+  "error StalePrice(bytes3 currency, uint256 updatedAt, uint256 maxAge)",
+]);
+export type OracleFreshness = { state: "fresh"; usdcFor100Eur: bigint; ageSec: number; maxAge: number } | { state: "stale"; updatedAt: number; maxAge: number } | { state: "unknown"; error: string };
+export async function liveOracleFreshness(): Promise<OracleFreshness> {
+  const c = createPublicClient({ transport: http(LIVE.rpcUrl) });
+  try {
+    const [q, maxAge, block] = await Promise.all([
+      c.readContract({ address: LIVE.oracle, abi: oracleAbi, functionName: "quote", args: ["EUR", 10_000n] }),
+      c.readContract({ address: LIVE.oracle, abi: oracleAbi, functionName: "maxAge" }),
+      c.getBlock(),
+    ]);
+    return { state: "fresh", usdcFor100Eur: q[0], ageSec: Number(block.timestamp - q[3]), maxAge: Number(maxAge) };
+  } catch (e) {
+    const err = e as { walk?: (f: (x: unknown) => boolean) => unknown; shortMessage?: string; message?: string };
+    const rev = err.walk?.((x) => !!(x as { data?: { errorName?: string } })?.data?.errorName) as { data?: { errorName: string; args: readonly unknown[] } } | undefined;
+    if (rev?.data?.errorName === "StalePrice") return { state: "stale", updatedAt: Number(rev.data.args[1] as bigint), maxAge: Number(rev.data.args[2] as bigint) };
+    return { state: "unknown", error: (err.shortMessage ?? err.message ?? String(e)).slice(0, 160) };
+  }
 }

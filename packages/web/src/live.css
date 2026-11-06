@@ -25,3 +25,4 @@
 @media (max-width: 720px) { .la-long { display: none; } .la-short { display: inline; } .la-switch button { padding: 0 10px; min-height: 36px; } }
 .la-sub { margin: 18px 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
 .la-pair { display: inline-flex; gap: 12px; flex: none; }
+.la-stale { color: #9a5a12; } .la-stale code { font-size: 11px; }

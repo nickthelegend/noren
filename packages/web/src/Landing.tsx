@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
 import { Mark } from "./logos";
-import { CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, ccipMsgUrl, explorerTx, shortChain } from "./crosschain";
+import { AQUA_LIVE, CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, ccipMsgUrl, explorerTx, shortChain } from "./crosschain";
 import { LIVE } from "./network";
 import "./landing.css";
 
@@ -86,7 +86,7 @@ const POWERS: Power[] = [
 
 /** Each partner's one job in Noren, in the order of the positioning: the engine, the rails, orchestration, credit. */
 const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: string }[] = [
-  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "The engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills, all priced by NorenOraclePeg, a SwapVM instruction we added that pegs makers to Chainlink.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
+  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "The engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills, all priced by NorenOraclePeg, a SwapVM instruction we added that pegs makers to Chainlink. Official Aqua v1.0.0 is live on Arc testnet.", s: "testnet", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
   { name: "Circle CCTP V2", logos: ["CIRCLE"], use: "Native USDC into Arc from 10 testnets, burned and minted by Circle. A hook can pay an invoice, open an Aqua order or fund Earn on arrival.", s: "testnet" },
   { name: "Chainlink CCIP", logos: ["CHAINLINK"], use: "Orders and credit instructions from Ethereum, Base and Robinhood Chain into Arc (Robinhood through a Base hub, since there is no direct lane).", s: "testnet" },
   { name: "Chainlink CRE + Data Feeds", logos: ["CHAINLINK"], use: "Orchestration and price checks: CRE relays CCTP burns, carries Aqua orders and credit lines between chains, writes FX rates and approves settlements. Feeds price every invoice and every stock.", s: "testnet", note: "CRE runs in the simulator with --broadcast; not on a DON" },
@@ -103,12 +103,14 @@ const LIVE_STRIP: { t: string; d: string; href: string; marks: string[] }[] = [
   { t: "Private payment on Arc", d: "2.50 USDC, no payer address in the tx", href: `${LIVE.explorer}/tx/${pick(/^pay \d/i)}`, marks: ["KOHAKU", "ARC"] },
   { t: "Refund into a shielded inbox", d: "1.00 USDC back, still private", href: `${LIVE.explorer}/tx/${pick(/^refund \d/i)}`, marks: ["ARC"] },
   { t: "CRE writes FX rates", d: "9 currencies from Chainlink feeds", href: `${LIVE.explorer}/tx/${LIVE.pricing.simulateTx}`, marks: ["CHAINLINK", "ARC"] },
-  ...([["base-sepolia", "pay-invoice", "Invoice paid on arrival"], ["arbitrum-sepolia", "aqua-order", "Aqua order opened on arrival"], ["robinhood-testnet", "plain", "USDC into Arc"]] as const).flatMap(([from, kind, t]) => {
+  ...([["base-sepolia", "pay-invoice", "Invoice paid on arrival"], ["robinhood-testnet", "plain", "USDC into Arc"]] as const).flatMap(([from, kind, t]) => {
     const r = cctpIn(from, kind); if (!r) return [];
     return [{ t: `${shortChain(r.from)} → Arc: ${t}`, d: `CCTP V2, relayed by CRE · ${(Number(r.minted) / 1e6).toFixed(2)} USDC`, href: explorerTx("arc-testnet", r.mintTx), marks: [CHAIN_MARK[r.from], "CIRCLE"] }];
   }),
   ...CCTP_RUNS.filter((r) => r.from === "arc-testnet" && r.to === "robinhood-testnet").map((r) => ({ t: "Arc → Robinhood", d: "CCTP V2 out of Arc, 1 USDC", href: explorerTx("robinhood-testnet", r.mintTx), marks: ["ARC", "ROBINHOOD"] })),
-  ...CCIP_MESSAGES.filter((m) => m.from !== "arc-testnet" && !(m.from === "robinhood-testnet" && /CREDIT_LINE/.test(m.action))).map((m) => ({ t: `CCIP: ${m.route}`, d: m.action, href: ccipMsgUrl(m.id), marks: [CHAIN_MARK[m.from], "CHAINLINK"] })),
+  { t: "1inch Aqua on Arc: USDC → EURC", d: "Official Aqua v1.0.0, maker strategy pegged to Chainlink", href: explorerTx("arc-testnet", AQUA_LIVE.directSwap), marks: ["1INCH", "ARC"] },
+  ...AQUA_LIVE.fills.slice(0, 1).map((f) => ({ t: `${shortChain(f.from)} → Arc: Aqua fill`, d: "CCTP burn with AQUA_ORDER, filled on Arc via CRE", href: explorerTx("arc-testnet", f.fill), marks: [CHAIN_MARK[f.from], "1INCH"] })),
+  ...CCIP_MESSAGES.filter((m) => m.arcTx && !(m.from === "robinhood-testnet" && /CREDIT_LINE/.test(m.action))).map((m) => ({ t: `CCIP: ${m.route}`, d: `${m.action} · delivered`, href: ccipMsgUrl(m.id), marks: [CHAIN_MARK[m.from], "CHAINLINK"] })),
 ];
 
 const ONBOARD: [string, string][] = [

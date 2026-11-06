@@ -103,7 +103,7 @@ export function XChainSwap({ w }: { w: Wallet }) {
       <button className="nk-cta" disabled={!!busy || !amountIn || !q || !!blocked || insufficient} onClick={open}>
         {busy ? <><Spin /> {busy}</> : !amountIn ? "Enter an amount" : insufficient ? "Not enough NVDA" : !q ? "Quoting the Arc maker…" : blocked ? "The maker can't fill this now" : `Sell ${amount} NVDA for USDC on Arc`}
       </button>
-      <p className="nk-fine"><b>Fork demo.</b> Robinhood runs as a local snapshot of mainnet and Arc as a local testnet fork; 1inch Aqua can't be deployed at its official address on Arc testnet, so the fork carries the official Aqua bytecode copied from Arc mainnet. The CRE workflow runs in the simulator with <code>--broadcast</code>.</p>
+      <p className="nk-fine"><b>Fork demo.</b> Robinhood runs as a local snapshot of mainnet and Arc as a local testnet fork; The NVDA route needs Robinhood's mainnet stock feeds, so it runs on forks. Aqua itself is live on Arc testnet (official v1.0.0 at <code>0x550C…895B</code>, USDC → EURC and CCTP orders, docs/AQUA-LIVE.md). The CRE workflow runs in the simulator with <code>--broadcast</code>.</p>
       <AnimatePresence initial={false}>{o && <XOrder key={o.id} o={o} />}</AnimatePresence>
     </>
   );
