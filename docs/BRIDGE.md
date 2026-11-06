@@ -321,7 +321,7 @@ sellStockAndRequest(NVDA pool, ...)  pull 1 NVDA, Uniswap v4 swap via
 | 184.373851 USDG | 184.285896 (4.8 bps) | 184.259067 (6.2 bps) | 184.403972 | about 1 s | about 1 s |
 
 - **What "fair" means.** Fair is the amount × USDG/USD (0.99997934) ÷ USDC/USD (0.999816). It is slightly above 1:1 because Chainlink had USDC a little under $1.
-- **Measured against fair.** Relay was 7–8 bps under fair and Across about 9 bps under.
+- **Measured against fair.** Relay was 7–8 bps under fair and Across about 8 bps under.
 - **Gas on the fork.** The deposits cost 93,914 gas (Relay) and 112,835 gas (Across) for `executeSettlement`.
 
 ### Fork run evidence (local fork only; these hashes exist on no public chain)
