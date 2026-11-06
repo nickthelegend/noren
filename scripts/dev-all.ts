@@ -138,10 +138,28 @@ run(async () => {
     try { settle.relay = startSettlementRelay({ robinhoodRpc, desk: settle.desk, fromBlock: settle.deployBlock, keeper: settle.keeper }); onStop(settle.relay.stop); console.log('Settle to Arc: CRE settlement-desk workflow + Relay keeper armed (the Arc fill needs a real relayer)'); }
     catch (e: any) { missing.push(`Settle to Arc relay failed: ${e.message}`); }
   }
+  // Aubelle, the demo shop (examples/shop): its own store on this server, its backend + built storefront on :8780.
+  if (has('examples/shop/server/index.ts')) {
+    try { await startShop(); } catch (e: any) { missing.push(`Demo shop: ${String(e.message).slice(0, 200)}`); }
+  }
   for (const m of missing) console.log(`Setup required: ${m}`);
   console.log(`Web: pnpm --filter @noren/web dev  →  http://localhost:${PORTS.web}/#/credit`);
   return stack;
 });
+
+/** Connects (first run only), builds and starts the demo shop. The store's secret key stays in examples/shop/.env (0600). */
+async function startShop() {
+  const dir = resolve('examples/shop');
+  const { spawn } = await import('node:child_process');
+  const { readFileSync } = await import('node:fs');
+  if (!existsSync(resolve(dir, 'node_modules'))) execFileSync('pnpm', ['install', '--ignore-workspace', '--prefer-offline'], { cwd: dir, stdio: 'ignore' });
+  const env = existsSync(resolve(dir, '.env')) ? readFileSync(resolve(dir, '.env'), 'utf8') : '';
+  if (!/^NOREN_SECRET_KEY=/m.test(env)) execFileSync('pnpm', ['connect:local'], { cwd: dir, stdio: ['ignore', 'inherit', 'inherit'] });
+  if (!existsSync(resolve(dir, 'dist/index.html'))) execFileSync('pnpm', ['build'], { cwd: dir, stdio: 'ignore' });
+  const shop = spawn('pnpm', ['start'], { cwd: dir, stdio: ['ignore', 'inherit', 'inherit'], env: { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', SHOP_PORT: '8780' } }); // no Noren keys passed on
+  onStop(() => { shop.kill('SIGINT'); });
+  console.log('Demo shop Aubelle: http://127.0.0.1:8780 (pays through this Noren server)');
+}
 
 /** Signs VerifiedHuman(account, nullifierHash, expiry) as the fork's World ID attester and records it on NorenReputation. */
 async function attestHuman(rpc: string, reputation: Address, account: Address, nullifierHash: `0x${string}`) {
