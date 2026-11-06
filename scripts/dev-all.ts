@@ -12,6 +12,7 @@ import type { Address } from 'viem';
 import { assertRobinhoodFork, ROBINHOOD } from '../packages/server/src/credit.ts';
 import type { CreditOptions } from '../packages/server/src/server.ts';
 import { PORTS, run, startFork, startStack, type ArcContext } from './stack.ts';
+import { startPricing } from './dev-pricing.ts';
 
 const has = (p: string) => existsSync(resolve(p));
 
@@ -24,6 +25,10 @@ run(async () => {
   const stack = await startStack({
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: rhFromBlock, arcFromBlock: String(await arc.client.getBlockNumber()) };
+      if (has('packages/cre-pricing')) {
+        try { const p = await startPricing(arc); pub.rateOracle = p.oracle; pub.rateOracleTx = p.tx; pub.rateSourceBlock = p.sourceBlock; }
+        catch (e: any) { missing.push(`CRE pricing run failed: ${e.message}`); }
+      } else missing.push('packages/cre-pricing: merge the cre-pricing branch');
       let creditLine: Address | undefined;
       if (!has('packages/tsuke')) missing.push('packages/tsuke (TsukeCredit + underwriter): merge the tsuke-credit branch');
       if (!has('packages/arc-credit')) missing.push('packages/arc-credit (NorenCreditLine): merge the cre-bridge branch');
