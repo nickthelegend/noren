@@ -9,7 +9,7 @@ Code: [`packages/robinhood`](../packages/robinhood) (package `@noren/robinhood`)
 | Contract | Role |
 | --- | --- |
 | `NorenAssetOracle` | Chainlink Data Feeds pricing with the safety rules below, Stock Token `uiMultiplier`, market-hours calendar, Stock Token pause/blocklist pre-checks |
-| `NorenVault` | ERC-4626 USDG vault (`nvUSDG`, 12 decimals). LPs fund merchant payouts. Holds the assets customers pay with as inventory and sells them back at the oracle price plus a spread. NAV = idle USDG + Pay-in-4 receivables + inventory at oracle prices. Withdrawals are capped at idle USDG |
+| `NorenVault` | ERC-4626 USDG vault (`nvUSDG`, 12 decimals). LPs fund Pay-in-3 merchant payouts. On the fallback route (no Aqua maker can fill) it holds the assets customers pay with as inventory and sells them back at the oracle price plus a spread; the owner can also let idle USDG back an Aqua maker strategy (`shipAquaStrategy`). NAV = idle USDG + Pay-in-3 receivables + inventory at oracle prices. Withdrawals are capped at idle USDG |
 | `NorenGateway` | Merchant invoices in USDG. `pay(invoiceId, merchant, asset, maxAssetIn)` with USDG, native ETH (`asset = address(0)`) or a Stock Token, plus `payWithPermit` (EIP-2612). Stock/ETH is sold to the best Aqua maker through SwapVM (the maker pays the merchant); the vault is the fallback when no maker can fill (`vaultFallback`), otherwise `NoMakerLiquidity` |
 | `NorenCredit` | EIP-712 underwriting, Pay in 3, liquidations (through Aqua makers or a USDG-paying liquidator), and the Arc credit line (`openCreditLine`, `onReport`, `closeCreditLine`) |
 | `NorenLiquidity` | Aqua maker registry, best-quote routing over SwapVM, maker fee book, collateral sales for liquidations ([AQUA.md](AQUA.md)) |
