@@ -19,7 +19,9 @@ contract Configure is Script {
 
   uint32 internal constant HUB_GAS = 400_000; // hub ccipReceive incl. its own ccipSend (fork-measured < 400k)
   uint32 internal constant ARC_GAS = 500_000; // Arc gateway + action router (fork-measured < 500k)
-  uint32 internal constant GATEWAY_GAS = 400_000; // Robinhood / Base / Sepolia gateway + inbox
+  uint32 internal constant GATEWAY_GAS = 400_000; // Robinhood / Base gateway + inbox
+  // Ethereum Sepolia reprices new storage slots: a 1-token delivery used ~1.31M gas there (manual execution, Nov 6).
+  uint32 internal constant SEPOLIA_GAS = 1_500_000;
 
   function run() external {
     uint256 pk = vm.envUint("NOREN_DEPLOYER_KEY");
@@ -42,7 +44,7 @@ contract Configure is Script {
       }
       if (sepGw != address(0)) {
         g.setPeer(SEP, sepGw, NorenCcipBase.Peer.GATEWAY);
-        g.setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, GATEWAY_GAS, 0));
+        g.setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, SEPOLIA_GAS, 0));
       }
     } else if (role == keccak256("hub")) {
       NorenCcipHub h = NorenCcipHub(payable(hub));
@@ -73,7 +75,9 @@ contract Configure is Script {
       NorenCcipInbox(vm.envAddress("RH_INBOX")).setReporter(ARC, vm.envAddress("ARC_ACTION_ROUTER"), true);
     } else if (role == keccak256("robinhood-to-sepolia")) {
       // Direct Robinhood -> Ethereum Sepolia lane (lists CCIP-BnM): programmable token transfers.
-      NorenCcipGateway(payable(rhGw)).setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, GATEWAY_GAS, 0));
+      NorenCcipGateway(payable(rhGw)).setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, SEPOLIA_GAS, 0));
+    } else if (role == keccak256("arc-to-sepolia")) {
+      NorenCcipGateway(payable(arcGw)).setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, SEPOLIA_GAS, 0));
     } else if (role == keccak256("sepolia-from-robinhood")) {
       NorenCcipGateway(payable(sepGw)).setPeer(RH, rhGw, NorenCcipBase.Peer.GATEWAY);
     } else {
