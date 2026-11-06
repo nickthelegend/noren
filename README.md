@@ -1,10 +1,38 @@
 # Noren (暖簾)
 
-**Private checkout for merchants on Arc.** A customer pays in USDC from a Kohaku shielded balance; the merchant gets paid and can refund; nobody, the merchant included, learns who the customer is.
+**Private payments for EVM.** Payment links, hosted checkout, refunds, signed webhooks and a TypeScript SDK, like the card-payments stack merchants already know, except the customer pays from a [Kohaku](https://github.com/ethereum/kohaku) privacy pool. The merchant gets the USDC and a receipt. Nobody, the merchant included, gets the customer's wallet.
 
+![Noren landing](docs/img/landing.png)
+
+| | A plain USDC transfer | A Noren payment |
+|---|---|---|
+| Merchant learns the payer's address | yes, forever | **no** |
+| Merchant (and everyone) sees the payer's balance and history | yes | **no** |
+| Paid in full, on time, for this invoice | trust the sender | **enforced by a ZK proof** |
+| Funds screened for compliance | no | **yes** (ASP checks USDC's blacklist) |
+| Refunds | back to the public wallet | **into a private inbox only the customer can see** |
+| Who pays gas | the customer | **the merchant (~$0.01 on Arc)** |
+
+## What a merchant gets
+- **Dashboard** (`#/dashboard`): gross and net volume, refunds, a 24-hour volume chart, a privacy ledger ("customers identified: 0"), payments with a detail drawer (timeline, gas, transactions) and inline refunds, payment links, developer keys, webhooks and a live event log, and a public business name.
+- **Hosted checkout** (`#/pay/:invoiceId`): merchant name, line item, countdown, private balance, the proof made on the customer's device, and a receipt.
+- **REST API + webhooks**: see [docs/API.md](docs/API.md). Events `invoice.created`, `invoice.bound`, `payment.succeeded` and `refund.succeeded` are HMAC-SHA256 signed (`noren-signature: t=…,v1=…`), retried 3 times, and every delivery is logged.
+- **SDK**: `@noren/core/merchant` (`createNoren`, `invoices.create/list/retrieve/refund`, `profile.set`, `webhooks.create/list/del`, `verifyWebhook`) and `@noren/core/customer` (`shield`, `refundInbox`, `proveInvoicePayment`).
+
+```ts
+import { createNoren, verifyWebhook } from "@noren/core/merchant";
+const noren = createNoren({ server, token: process.env.NOREN_SECRET_KEY, merchant });
+const { invoice } = await noren.invoices.create({ amount: 7_500_000n, description: "Flat white", expiresIn: 1800 });
+// later, in your webhook handler:
+const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secret); // payment.succeeded → fulfil
+```
+
+**Why "for EVM":** the contracts are plain Solidity on 0xbow's Privacy Pools, and the SDK is viem. Nothing is Arc-specific except the chain config and the USDC address, so it ports to any EVM chain with Circle USDC. The first (and only tested) network is Arc testnet, run as a local fork; the public deployment waits on testnet USDC.
+
+## How it works
 - **Invoice-bound proofs.** The customer's Privacy Pools withdrawal proof binds the invoice, the merchant, the amount and the refund address. Change any field and the pool rejects it (`ContextMismatch`).
-- **The merchant relays.** The merchant's server submits the payment and pays about $0.01 of USDC gas on Arc: the customer needs no gas, no public wallet, and no relayer company.
-- **Private refunds.** The merchant refunds into the customer's shielded "refund inbox". The customer's Kohaku wallet discovers it automatically; the merchant never learns who they refunded and can't take it back.
+- **The merchant relays.** The merchant's server submits the payment and pays the gas, so the customer needs no gas, no public wallet and no relayer company. Only the merchant can relay its own invoices, which closes invoice squatting.
+- **Private refunds.** The merchant refunds into the customer's shielded refund inbox, fixed when they paid. The customer's Kohaku wallet discovers it; the merchant never learns who they refunded.
 - **Selective receipts.** A receipt commitment the customer can later open for warranty or tax.
 
 Built on the Ethereum Foundation's [Kohaku](https://github.com/ethereum/kohaku) SDK and 0xbow's [Privacy Pools](https://github.com/0xbow-io/privacy-pools-core) (Apache-2.0, see NOTICE). Proofs are made on the customer's device.
@@ -39,11 +67,13 @@ The pinned prover artifacts come from the 0xbow `privacy-pools-core` commit `7bc
 
 MIT © 2026 Nivesh Gajengi (Noren code). Vendored Privacy Pools contracts keep their Apache-2.0 headers.
 
-## The app (merchant console + private checkout)
+## The app (dashboard + hosted checkout)
 
-![Customer checkout, paid privately](docs/img/checkout-paid.png)
+![Dashboard home](docs/img/dashboard.png)
 
-![Merchant console: paid, refunded, customer unknown](docs/img/console-refunded.png)
+![Payment drawer: timeline, refund, customer unknown](docs/img/drawer.png)
+
+![Hosted checkout after a private payment and refund](docs/img/checkout.png)
 
 Run it locally against an Arc testnet fork:
 
@@ -53,4 +83,7 @@ pnpm dev:stack                      # fork + contracts + merchant server (8790) 
 pnpm --filter @noren/web dev        # http://localhost:5190
 ```
 
-Measured in a real (headless Chromium) browser on the local fork, Nov 6 2026: 20 USDC shielded and approved by the ASP in ~6 s; a 7.50 USDC invoice paid privately with the **proof generated in the browser in 2.18 s** (~4.5 s click-to-paid); the merchant console showed it as paid with **customer: unknown**; a 2.50 refund landed in the customer's private refund inbox. The customer's wallet is a test-network key and seed kept in the browser; proofs never leave the device.
+Measured in a real browser on the local fork, Nov 6 2026 (three runs): 20 USDC shielded and approved by the ASP in ~6 s; a 7.50 USDC invoice paid privately with the **proof generated in the browser in 1.06–4.77 s** (warm vs first proof after page load; 1.6–5.9 s click-to-paid); the merchant console showed it as paid with **customer: unknown**; a 2.50 refund landed in the customer's private refund inbox. The customer's wallet is a test-network key and seed kept in the browser; proofs never leave the device.
+
+### Assets
+The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Product screenshots on the landing page are real captures of this app on the local Arc fork. Fonts: Geist, Geist Mono, Instrument Serif (Google Fonts, OFL).

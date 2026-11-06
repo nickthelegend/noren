@@ -29,11 +29,12 @@ export function Checkout({ id }: { id: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const started = useRef(0);
   const [total, setTotal] = useState<number | null>(null);
+  const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
 
   useEffect(() => { if (cfg) import("./wallet").then((m) => setWallet(m.makeWallet(cfg))).catch((e) => setNote(`Couldn't load the private wallet: ${msgOf(e)}`)); }, [cfg]);
   const load = useCallback(async () => {
     try { setView(await api.invoice(id)); setLoadErr(null); } catch (e) { setLoadErr(msgOf(e)); }
-    if (wallet) { try { setBal(await wallet.balances()); setInbox(await wallet.refundInbox()); } catch (e) { setNote(msgOf(e)); } }
+    if (wallet) { try { setBal(await wallet.balances()); setInbox(await wallet.refundInbox()); } catch (e) { setNote(msgOf(e)); } wallet.anonymitySet().then(setCrowd).catch(() => setCrowd(null)); }
   }, [id, wallet]);
   useEffect(() => { load(); const t = setInterval(load, 6000); return () => clearInterval(t); }, [load]);
   const cd = useCountdown(view?.invoice.expiry);
@@ -105,7 +106,7 @@ export function Checkout({ id }: { id: string }) {
           ) : settled ? (
             <div className="co-done">
               <div className="co-check" aria-hidden><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="m15 27 7.5 7.5L38 19" /></svg></div>
-              <h2>{view?.status === "refunded" ? "Paid, then refunded" : "Paid privately"}</h2>
+              <h2>{view?.status === "refunded" ? <>Paid, then <em>refunded</em></> : <>Paid <em>privately</em></>}</h2>
               <p>{usdc(view?.invoice.amount)} USDC to {shop}.{view?.status === "refunded" && ` ${usdc(view.refundAmount)} USDC came back to your private refund inbox.`}</p>
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
@@ -120,11 +121,19 @@ export function Checkout({ id }: { id: string }) {
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
           ) : (
             <>
-              <div className="co-pay-h"><h2>Pay privately</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
+              <div className="co-pay-h"><h2>Pay <em>privately</em></h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               <div className="co-bal">
                 <div><span>Private balance</span><b>{bal ? usdc(bal.approved) : <span className="skel-t sm" />}<em>USDC</em></b>{bal && bal.pending > 0n && <small className="pend"><span className="spin xs" /> +{usdc(bal.pending)} being screened</small>}</div>
                 <div><span>Refund inbox</span><b>{inbox ? usdc(inbox.approved + inbox.pending) : <span className="skel-t sm" />}<em>USDC</em></b></div>
               </div>
+
+              {crowd && (
+                <div className={`co-crowd ${crowd.depositors < 5 ? "thin" : ""}`}>
+                  <div className="co-crowd-h"><span>Anonymity set</span><b>{crowd.depositors} depositor{crowd.depositors === 1 ? "" : "s"} · {crowd.deposits} deposit{crowd.deposits === 1 ? "" : "s"}</b></div>
+                  <div className="co-crowd-bar" aria-hidden><i style={{ width: `${Math.min(100, (crowd.depositors / 50) * 100)}%` }} /></div>
+                  <p>{crowd.depositors < 5 ? "This pool is new and small. Your payment hides among few people, so timing could link it to your deposit. Waiting helps." : "Your payment hides among everyone who has deposited into this pool."}</p>
+                </div>
+              )}
 
               {!enough && !working && bal && (
                 <div className="co-fund">

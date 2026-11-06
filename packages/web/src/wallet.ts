@@ -2,7 +2,7 @@
  * The customer's private wallet, in this browser. Test networks only: a local key pays gas for shielding, and a local
  * seed derives the Kohaku note secrets. Proofs are generated here, on the device; no server ever sees the secrets.
  */
-import { createPublicClient, createWalletClient, erc20Abi, http, keccak256, toBytes, concatHex, type Hex } from "viem";
+import { createPublicClient, createWalletClient, erc20Abi, http, keccak256, toBytes, concatHex, parseAbiItem, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createCustomer } from "@noren/core/customer";
 import { localFork, type Invoice } from "@noren/core";
@@ -69,6 +69,11 @@ export function makeWallet(cfg: Config) {
       const t0 = performance.now();
       const result = await customer.proveInvoicePayment(invoice);
       return { ...result, seconds: (performance.now() - t0) / 1000 };
+    },
+    /** How many deposits the pool holds: the crowd a payment hides in. Read straight from the pool's Deposited logs. */
+    async anonymitySet() {
+      const logs = await pub.getLogs({ address: cfg.deployment.pool, event: parseAbiItem("event Deposited(address indexed depositor,uint256 commitment,uint256 label,uint256 value,uint256 precommitment)"), fromBlock: BigInt(cfg.deployment.deploymentBlock), toBlock: "latest" });
+      return { deposits: logs.length, depositors: new Set(logs.map((l) => l.args.depositor?.toLowerCase())).size };
     },
     createReceipt: customer.createReceipt,
     rememberReceipt: (i: Invoice, o: { secret: Hex; commitment: Hex }) => customer.rememberReceipt(i, o),

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
 
-/* Every number on this page was measured on the local Arc testnet fork (TESTING.md). No invented volume, logos or quotes. */
+/* Every number on this page was measured on the local Arc testnet fork (TESTING.md). Screens are real captures of this app. */
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
   link: { file: "server.ts", lines: [
@@ -34,11 +34,26 @@ const CODE: Record<string, { file: string; lines: [string, string][] }> = {
     ["", ""],
     ["", "const me = createCustomer({ deployment, rpcUrl, aspUrl, deriveAt });"],
     ["", "await me.shield(20_000_000n);           // once: USDC into the pool"],
-    ["", "const { nextPrecommitment } = await me.refundInbox();"],
     ["", "const proof = await me.proveInvoicePayment(invoice);"],
-    ["s", "// 2–5 s in a browser. The merchant relays it and pays the gas."],
+    ["s", "// ~1–5 s in a browser (warm vs first proof). The merchant relays it and pays the gas."],
   ] },
 };
+
+const SPECS: [string, string][] = [
+  ["Payment links", "Create a link in the dashboard or with one SDK call. It carries the amount, a private description and an expiry. Share it anywhere."],
+  ["Hosted checkout", "The customer opens the link, binds the invoice, proves on their own device and is done in seconds. No gas, no public wallet, no extension."],
+  ["Private refunds", "Full or partial refunds go back into the customer's shielded inbox, fixed at payment time. You can't redirect it and you never learn whose it is."],
+  ["Signed webhooks", "invoice.created, invoice.bound, payment.succeeded and refund.succeeded. HMAC-SHA256 signed, retried 3 times, every delivery logged."],
+  ["Compliance built in", "An ASP postman screens every deposit against USDC's own blacklist before it can pay you. Blocked funds never reach your till."],
+  ["Selective receipts", "Each payment carries a receipt commitment the customer can open later for a warranty or tax, and only if they choose to."],
+];
+
+const SCREENS: [string, string, string][] = [
+  ["dash-home", "Dashboard", "Gross volume, net, refunds and the privacy ledger. Customers identified: 0."],
+  ["dash-drawer", "Payment", "Timeline from link to refund, with gas and transactions. The customer is unknown."],
+  ["dash-events", "Events", "Every webhook event and delivery attempt, newest first."],
+  ["checkout-refunded", "Checkout", "The hosted checkout after a private payment and a partial refund."],
+];
 
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -46,72 +61,131 @@ function useReveal() {
     const root = ref.current; if (!root) return;
     const els = root.querySelectorAll<HTMLElement>("[data-reveal]");
     if (!("IntersectionObserver" in window)) { els.forEach((e) => e.classList.add("in")); return; }
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -10% 0px" });
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, []);
   return ref;
 }
 
+/** A field of tiny noren marks that brightens toward a horizon, with a slow shimmer. Deterministic, cheap, pauses offscreen. */
+function GlyphField() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current!; const ctx = c.getContext("2d")!;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let w = 0, h = 0, raf = 0, visible = true, last = 0;
+    const dpr = Math.min(devicePixelRatio || 1, 2), cell = 15;
+    const hash = (x: number, y: number) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+    const resize = () => { const r = c.getBoundingClientRect(); w = r.width; h = r.height; c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw(performance.now()); };
+    const draw = (t: number) => {
+      ctx.clearRect(0, 0, w, h);
+      const cols = Math.ceil(w / cell), rows = Math.ceil(h / cell), time = reduce ? 0 : t / 1000;
+      for (let j = 0; j < rows; j++) {
+        const fy = j / rows;
+        for (let i = 0; i < cols; i++) {
+          const n = hash(i, j), cx = i / cols - .5;
+          // vertical light: strongest near the horizon (bottom), shaped like a wide dome, rippled by a slow wave
+          const dome = Math.max(0, 1 - (cx * cx) * 2.2 - Math.pow(1 - fy, 1.6) * 1.15);
+          const wave = .55 + .45 * Math.sin(time * .8 + i * .21 + j * .13 + n * 6.28);
+          // keep the copy legible: clear an ellipse behind the headline and paragraph
+          const dx = cx / .3, dy = (fy - .5) / .26, hole = Math.min(1, Math.max(0, (dx * dx + dy * dy - .55) / .9));
+          const a = dome * (n > .42 ? 1 : .25) * wave * hole;
+          if (a < .04) continue;
+          const x = i * cell + 4, y = j * cell + 4;
+          ctx.fillStyle = `rgba(${150 + 90 * fy | 0}, ${185 + 60 * fy | 0}, 255, ${Math.min(1, a * 1.1)})`;
+          ctx.fillRect(x, y, 1.6, 6); ctx.fillRect(x + 3, y, 1.6, 7); ctx.fillRect(x + 6, y, 1.6, 6);
+        }
+      }
+    };
+    const loop = (t: number) => { raf = requestAnimationFrame(loop); if (!visible || t - last < 50) return; last = t; draw(t); };
+    resize(); addEventListener("resize", resize);
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }); io.observe(c);
+    if (!reduce) raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); removeEventListener("resize", resize); io.disconnect(); };
+  }, []);
+  return <canvas ref={ref} className="lx-field" aria-hidden />;
+}
+
 export function Landing() {
   const [tab, setTab] = useState<keyof typeof CODE>("link");
+  const [spec, setSpec] = useState(0);
+  const [screen, setScreen] = useState(0);
   const ref = useReveal();
   return (
     <div className="lp" ref={ref}>
       {/* ---------------------------------------------------------------- hero */}
-      <section className="lp-hero">
-        <div className="lp-hero-grid" aria-hidden />
-        <div className="lp-hero-in">
-          <div className="lp-hero-copy">
-            <span className="tag dark"><i />Private payments for EVM · USDC</span>
-            <h1>Take payments on&nbsp;EVM.<br /><em>Never see who paid.</em></h1>
-            <p>Payment links, hosted checkout, refunds, signed webhooks and a TypeScript SDK. Customers pay from a Kohaku privacy pool, so you get the money and the receipt, and nobody gets their wallet.</p>
-            <div className="lp-ctas">
-              <a className="btn kaki lg" href="#/dashboard">Open the dashboard <Icon.arrow /></a>
-              <a className="btn glass lg" href="#developers">Read the API</a>
-            </div>
-            <ul className="lp-hero-meta">
-              <li><b>2–5 s</b> proof, in the browser</li>
-              <li><b>0</b> payer addresses stored</li>
-              <li><b>MIT</b> open source</li>
-            </ul>
+      <section className="lx-hero">
+        <GlyphField />
+        <div className="lx-hero-in">
+          <span className="lx-pill mono"><i />New: private payments for EVM</span>
+          <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
+          <p>Payment links, hosted checkout, refunds and signed webhooks. Customers pay from a Kohaku privacy pool. You get the USDC and the receipt; nobody gets their wallet.</p>
+          <div className="lx-ctas">
+            <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
+            <a className="lx-btn dark" href="#developers">Read the API</a>
           </div>
+        </div>
+        <div className="lx-horizon" aria-hidden />
+      </section>
 
-          <div className="lp-stage" aria-label="Noren hosted checkout and the merchant's payment record">
-            <div className="lp-rod" />
-            <div className="lp-curtain l" /><div className="lp-curtain r" />
-            <div className="lp-checkout">
-              <div className="lp-co-top"><span className="lp-co-shop">Takumi Coffee</span><span className="pill moss sm"><Icon.check /> Paid</span></div>
-              <small>Flat white</small>
-              <b className="lp-co-amt">7.50 <em>USDC</em></b>
-              <ol className="lp-co-steps">
-                <li><i /><span>Invoice bound to your private refund inbox</span></li>
-                <li><i /><span>Proof made on this device <b className="mono">2.18 s</b></span></li>
-                <li><i /><span>Merchant relayed it and paid the gas</span></li>
-              </ol>
-            </div>
-            <div className="lp-record">
-              <div className="lp-rec-h"><small>Dashboard · Payments</small><span className="mono faint">0x7c1e…a3f0</span></div>
-              <dl>
-                <dt>Amount</dt><dd>7.50 USDC</dd>
-                <dt>Status</dt><dd><span className="pill moss sm">Succeeded</span></dd>
-                <dt>Customer</dt><dd className="unk"><Icon.eyeOff /> unknown</dd>
-              </dl>
-            </div>
+      {/* ---------------------------------------------------------------- statement */}
+      <section className="lx-statement">
+        <h2 data-reveal>Get paid like a card.<br /><span>Links, checkout, refunds and webhooks</span><br /><span>for any EVM chain. Private by default.</span></h2>
+        <figure className="lx-film" data-reveal>
+          <video src="/art/curtain.mp4" poster="/art/curtain-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="A noren curtain parts and light comes through" />
+          <figcaption className="mono">The curtain parts for the payment, not for the payer · film generated with Google Gemini (Veo)</figcaption>
+        </figure>
+        <div className="lx-icon" data-reveal aria-hidden><img src="/art/icon.jpg" alt="" width={320} height={320} /></div>
+        <div className="lx-beam" aria-hidden />
+      </section>
+
+      {/* ---------------------------------------------------------------- what */}
+      <section className="lx-what">
+        <div className="lx-what-grid">
+          <div className="lx-what-copy" data-reveal>
+            <span className="lx-tag mono">■ What Noren does</span>
+            <h2>The payments stack you know. <span>The privacy you can't get anywhere else.</span></h2>
           </div>
+          <div className="lx-what-art" data-reveal><img className="lx-iso" src="/art/iso-pool.jpg" alt="Invoices drop into a privacy pool; a single receipt leaves for the shop, with no payer attached" width={900} height={900} loading="lazy" /><span className="lx-scroll mono">Keep scrolling <i /></span></div>
+          <ul className="lx-specs">
+            {SPECS.map(([t, d], i) => (
+              <li key={t} data-open={spec === i}>
+                <button className="mono" onClick={() => setSpec(i)} aria-expanded={spec === i}>{t}</button>
+                <p className="mono">{d}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- product */}
+      <section className="lx-product">
+        <div className="lx-product-head" data-reveal>
+          <h2>Know every payment. <span>Know none of your customers.</span></h2>
+          <div className="lx-big"><b>0</b><span>payer addresses in the merchant's records. On-chain, the payment comes from the pool, not a person.</span></div>
+        </div>
+        <div className="lx-frame" data-reveal>
+          <div className="lx-frame-bar">
+            <div className="lx-frame-tabs" role="tablist">{SCREENS.map(([k, t], i) => <button key={k} role="tab" aria-selected={screen === i} onClick={() => setScreen(i)} className="mono">{t}</button>)}</div>
+            <a className="lx-btn dark sm" href="#/dashboard">Open it</a>
+          </div>
+          <div className="lx-frame-shot"><img key={SCREENS[screen][0]} src={`/shots/${SCREENS[screen][0]}.jpg`} alt={`${SCREENS[screen][1]}: ${SCREENS[screen][2]}`} loading="lazy" width={1440} height={900} /></div>
+          <p className="lx-frame-cap mono">{SCREENS[screen][2]} Real capture, local Arc testnet fork.</p>
         </div>
       </section>
 
       {/* ---------------------------------------------------------------- problem */}
-      <section className="lp-sec">
+      <section className="lp-sec split">
         <div className="lp-head" data-reveal>
-          <span className="eyebrow">The problem with crypto checkout</span>
-          <h2>Paying with a wallet hands over your whole wallet.</h2>
-          <p>Send USDC to a shop and the shop, its analytics vendor and everyone on a block explorer can see your balance, your salary and every shop you've paid. Card networks never worked like that. Noren puts the curtain back.</p>
+          <span className="lx-tag mono">■ The problem with crypto checkout</span>
+          <h2>Paying with a wallet hands over <em>your whole wallet.</em></h2>
+          <p>Send USDC to a shop and the shop, its analytics vendor and anyone on a block explorer can see your balance, your salary and every shop you've paid. Card networks never worked like that. Noren puts the curtain back.</p>
         </div>
+        <img className="lp-head-art" data-reveal src="/art/iso-shop.jpg" alt="A coffee stand with a noren curtain and a card terminal; the payment goes to a safe, not to a public wallet" width={900} height={900} loading="lazy" />
         <div className="lp-compare">
           <div className="lp-cmp bad" data-reveal>
-            <span className="eyebrow">A plain USDC transfer</span>
+            <span className="lx-tag mono">A plain USDC transfer</span>
             <h3>What the merchant learns</h3>
             <ul>
               <li><Icon.x /> The payer's address, forever</li>
@@ -122,40 +196,16 @@ export function Landing() {
             <div className="lp-trace mono"><span>0x9f2c…41aa</span><Icon.arrow /><span>Takumi Coffee</span><em>visible to anyone</em></div>
           </div>
           <div className="lp-cmp good" data-reveal>
-            <span className="eyebrow">A Noren payment</span>
+            <span className="lx-tag mono">A Noren payment</span>
             <h3>What the merchant learns</h3>
             <ul>
               <li><Icon.check /> The invoice was paid, in full, on time</li>
-              <li><Icon.check /> The money came from screened, compliant funds</li>
+              <li><Icon.check /> The money came from screened funds</li>
               <li><Icon.check /> A receipt the customer can open later, if they choose</li>
-              <li><Icon.check /> Refunds land in a private inbox only the customer can see</li>
+              <li><Icon.check /> Refunds land in a private inbox only the customer sees</li>
             </ul>
             <div className="lp-trace mono"><span>privacy pool</span><Icon.arrow /><span>Takumi Coffee</span><em>payer: unknown</em></div>
           </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------- product */}
-      <section className="lp-sec">
-        <div className="lp-head" data-reveal>
-          <span className="eyebrow">Everything a merchant expects</span>
-          <h2>The payments stack you know. The privacy you don't get anywhere else.</h2>
-        </div>
-        <div className="lp-bento">
-          <article className="bx big" data-reveal>
-            <Icon.link /><h3>Payment links and hosted checkout</h3>
-            <p>Create a link in the dashboard or with one SDK call. The customer opens it, proves on their own device and is done in a few seconds. No gas, no public wallet, no browser extension.</p>
-            <div className="bx-art link"><span className="mono">/pay/0x7c1e…a3f0</span><span className="pill ink sm">7.50 USDC</span></div>
-          </article>
-          <article className="bx" data-reveal><Icon.refund /><h3>Private refunds</h3><p>Full or partial refunds go back into the customer's shielded inbox. Their wallet finds them; you never learn whose they are.</p></article>
-          <article className="bx" data-reveal><Icon.hook /><h3>Signed webhooks</h3><p><span className="mono">payment.succeeded</span> and <span className="mono">refund.succeeded</span>, HMAC-SHA256 signed with retries and a delivery log.</p></article>
-          <article className="bx" data-reveal><Icon.shield /><h3>Compliance built in</h3><p>Deposits are screened against USDC's own blacklist before they can pay you. Blocked funds can't reach your till.</p></article>
-          <article className="bx" data-reveal><Icon.receipt /><h3>Selective receipts</h3><p>Each payment carries a receipt commitment. The customer can open it for a warranty claim or for tax.</p></article>
-          <article className="bx wide" data-reveal>
-            <Icon.lock /><h3>Bound to the invoice, enforced on-chain</h3>
-            <p>The zero-knowledge proof commits to the invoice, the merchant, the amount and the refund address. Change any of them and the pool rejects it. Only the merchant can relay, so nobody can grab a customer's invoice first.</p>
-            <div className="bx-art chips"><span>replay <b>rejected</b></span><span>tampered amount <b>rejected</b></span><span>invoice squatting <b>rejected</b></span><span>expired <b>rejected</b></span><span>stale compliance root <b>rejected</b></span></div>
-          </article>
         </div>
       </section>
 
@@ -163,9 +213,9 @@ export function Landing() {
       <section className="lp-dev" id="developers">
         <div className="lp-dev-in">
           <div className="lp-dev-copy" data-reveal>
-            <span className="eyebrow light">For developers</span>
-            <h2>Get paid in about ten lines.</h2>
-            <p>A REST API, a TypeScript SDK and webhooks that feel familiar. It's plain Solidity on 0xbow's Privacy Pools contracts, so it ports to any EVM chain with USDC. We launch on Arc.</p>
+            <span className="lx-tag mono dark">■ For developers</span>
+            <h2>Get paid in <em>about ten lines.</em></h2>
+            <p>A REST API, a TypeScript SDK and webhooks that feel familiar. Plain Solidity on 0xbow's Privacy Pools contracts, so it ports to any EVM chain with USDC. We start on Arc.</p>
             <ul className="lp-endpoints mono">
               <li><b>POST</b> /merchants/:id/invoices</li>
               <li><b>GET</b>  /invoices/:id</li>
@@ -177,48 +227,50 @@ export function Landing() {
           <div className="lp-code" data-reveal>
             <div className="lp-code-tabs" role="tablist">
               {(Object.keys(CODE) as (keyof typeof CODE)[]).map((k) => (
-                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>{k === "link" ? "Create a link" : k === "hook" ? "Webhooks" : "Customer pays"}</button>
+                <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className="mono">{k === "link" ? "Create a link" : k === "hook" ? "Webhooks" : "Customer pays"}</button>
               ))}
             </div>
-            <div className="lp-code-file mono"><span>{CODE[tab].file}</span><span className="faint">TypeScript</span></div>
+            <div className="lp-code-file mono"><span>{CODE[tab].file}</span><span>TypeScript</span></div>
             <pre className="mono" key={tab}>{CODE[tab].lines.map(([t, l], i) => <span key={i} className={`ln ${t}`}><i>{i + 1}</i>{l || " "}</span>)}</pre>
           </div>
         </div>
       </section>
 
       {/* ---------------------------------------------------------------- how */}
-      <section className="lp-sec">
+      <section className="lp-sec split">
         <div className="lp-head" data-reveal>
-          <span className="eyebrow">How a payment works</span>
-          <h2>Four steps. The customer's address shows up in none of them.</h2>
+          <span className="lx-tag mono">■ How a payment works</span>
+          <h2>Four steps. The customer's address <em>shows up in none.</em></h2>
+          <p>The last step fires a signed <span className="mono">payment.succeeded</span> webhook to your server, with the invoice, the amount and the transaction. There's no payer field to fill.</p>
         </div>
+        <img className="lp-head-art" data-reveal src="/art/iso-dev.jpg" alt="A laptop sends a signed webhook, sealed like a letter" width={900} height={900} loading="lazy" />
         <ol className="lp-steps">
           {[
             ["Shield", "The customer deposits USDC into a Kohaku privacy pool once. A compliance postman approves it in seconds."],
-            ["Bind", "Opening your link binds the invoice to their private refund inbox and a receipt commitment. It can't be changed after that."],
+            ["Bind", "Opening your link binds the invoice to their private refund inbox and a receipt commitment. It's fixed from then on."],
             ["Prove", "Their browser makes a zero-knowledge proof for exactly this invoice. Secrets never leave the device."],
-            ["Relay", "Your server submits the proof and pays about a cent of gas. USDC lands at your payout address, and you get a webhook."],
-          ].map(([t, d], i) => <li key={t} data-reveal style={{ transitionDelay: `${i * 70}ms` }}><span className="lp-step-n">{["一", "二", "三", "四"][i]}</span><b>{t}</b><p>{d}</p></li>)}
+            ["Relay", "Your server submits the proof and pays about a cent of gas. USDC lands at your payout address and your webhook fires."],
+          ].map(([t, d], i) => <li key={t} data-reveal style={{ transitionDelay: `${i * 70}ms` }}><span className="lp-step-n mono">0{i + 1}</span><b>{t}</b><p>{d}</p></li>)}
         </ol>
       </section>
 
       {/* ---------------------------------------------------------------- proof */}
       <section className="lp-sec">
         <div className="lp-proof" data-reveal>
-          <div><b>2.2–4.8<em>s</em></b><span>to prove a payment in a browser</span></div>
+          <div><b>1.1–4.8<em>s</em></b><span>to prove a payment in a browser (warm / first proof)</span></div>
           <div><b>583k</b><span>gas per checkout, paid by the merchant</span></div>
           <div><b>0</b><span>payer addresses in the merchant's records</span></div>
-          <div><b>5 / 5</b><span>attacks rejected on-chain</span></div>
+          <div><b>5/5</b><span>attacks rejected on-chain: replay, tamper, squat, expiry, stale root</span></div>
         </div>
-        <p className="lp-proof-note">Measured on a local fork of Arc testnet (chain 5042002), Nov 6 2026. The public Arc testnet deployment is next. See TESTING.md in the repo.</p>
+        <p className="lp-proof-note mono">Measured on a local fork of Arc testnet (chain 5042002), Nov 6 2026. Public Arc testnet deployment is next. See TESTING.md.</p>
       </section>
 
       {/* ---------------------------------------------------------------- cta */}
-      <section className="lp-cta" data-reveal>
-        <h2>Open your shop's curtain.</h2>
+      <section className="lx-cta" data-reveal>
+        <h2>Open your shop's <em>curtain.</em></h2>
         <p>Run it locally in two commands and take a private payment in under a minute.</p>
         <pre className="mono">pnpm dev:stack{"\n"}pnpm --filter @noren/web dev</pre>
-        <div className="lp-ctas center"><a className="btn ink lg" href="#/dashboard">Open the dashboard <Icon.arrow /></a><a className="btn line lg" href="https://github.com/nickthelegend/noren" target="_blank" rel="noreferrer">Source on GitHub</a></div>
+        <div className="lx-ctas"><a className="lx-btn light" href="#/dashboard">Open dashboard</a><a className="lx-btn dark" href="https://github.com/nickthelegend/noren" target="_blank" rel="noreferrer">Source on GitHub</a></div>
       </section>
     </div>
   );

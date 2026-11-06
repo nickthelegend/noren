@@ -58,13 +58,7 @@ export function Setup({ err, compact }: { err: string; compact?: boolean }) {
 }
 
 export const Logo = ({ size = 26 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-    <rect x="2" y="4" width="28" height="3" rx="1.5" fill="currentColor" opacity=".55" />
-    <path d="M4 8h7v15.5a2.5 2.5 0 0 1-2.5 2.5h-2A2.5 2.5 0 0 1 4 23.5z" fill="currentColor" />
-    <path d="M12.5 8h7v18.5a2.5 2.5 0 0 1-2.5 2.5h-2a2.5 2.5 0 0 1-2.5-2.5z" fill="currentColor" />
-    <path d="M21 8h7v15.5a2.5 2.5 0 0 1-2.5 2.5h-2a2.5 2.5 0 0 1-2.5-2.5z" fill="currentColor" />
-    <circle cx="16" cy="15" r="2.2" fill="var(--kaki)" />
-  </svg>
+  <img src="/art/mark.png" width={size} height={size} alt="" aria-hidden style={{ borderRadius: size * 0.24, display: "block" }} />
 );
 
 const S = ({ children, size = 16 }: { children: ReactNode; size?: number }) => (

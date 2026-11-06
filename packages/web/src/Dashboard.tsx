@@ -77,7 +77,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   );
 }
 
-const Head = ({ title, sub, children }: { title: string; sub?: ReactNode; children?: ReactNode }) => (
+const Head = ({ title, sub, children }: { title: ReactNode; sub?: ReactNode; children?: ReactNode }) => (
   <header className="db-head"><div><h1>{title}</h1>{sub && <p>{sub}</p>}</div>{children && <div className="db-head-act">{children}</div>}</header>
 );
 
@@ -93,7 +93,7 @@ function HomeTab({ rows, shop }: { rows: InvoiceView[] | null; shop: string }) {
   }, [rows]);
   return (
     <>
-      <Head title={`${greeting()}, ${shop}`} sub="Everything here is read from your merchant server and the chain. Nothing about your customers is." />
+      <Head title={<>{greeting()}, <em>{shop}</em></>} sub="Everything here is read from your merchant server and the chain. Nothing about your customers is." />
       <div className="kpis">
         <Kpi k="Gross volume" v={usdc(s.gross)} u="USDC" note={`${s.count} payment${s.count === 1 ? "" : "s"}`} />
         <Kpi k="Net volume" v={usdc(s.net)} u="USDC" note="after refunds" />

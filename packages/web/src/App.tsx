@@ -18,11 +18,13 @@ function Site() {
     <div className="site">
       <header className={`site-nav ${scrolled ? "solid" : ""}`}>
         <a className="site-brand" href="#/"><Logo /><span>Noren</span></a>
-        <nav>
+        <nav className="mono">
+          <a href="#/" className="hide-s">Home</a>
           <a href="#developers" className="hide-s">Developers</a>
+          <a href="#/dashboard">Dashboard</a>
           <a href="https://github.com/nickthelegend/noren" target="_blank" rel="noreferrer" className="hide-s">GitHub</a>
-          <a className="btn kaki sm" href="#/dashboard">Dashboard <Icon.arrow /></a>
         </nav>
+        <a className="lx-btn light sm" href="#/dashboard">Start <Icon.arrow /></a>
       </header>
       <Landing />
       <footer className="site-foot">
