@@ -11,6 +11,8 @@ import {NorenLiquidity} from '../src/NorenLiquidity.sol';
 import {NorenDepositVault} from '../src/NorenDepositVault.sol';
 import {NorenReputation, INorenCreditHistory} from '../src/NorenReputation.sol';
 import {NorenBorrow} from '../src/NorenBorrow.sol';
+import {NorenCreditLens} from '../src/NorenCreditLens.sol';
+import {INorenReputationLtv} from '../src/NorenCredit.sol';
 import {NorenDutchAuction} from '../src/NorenDutchAuction.sol';
 import {INorenReceivables} from '../src/interfaces/INorenVault.sol';
 import {IAqua, ISwapVMRouter} from '../src/interfaces/IAquaSwapVM.sol';
@@ -83,6 +85,10 @@ contract Deploy is Script {
     address[8] memory stocks = [RH.TSLA, RH.AAPL, RH.NVDA, RH.SPY, RH.AMZN, RH.MSFT, RH.GOOGL, RH.META];
     for (uint256 i; i < stocks.length; ++i) gateway.setSpread(stocks[i], 50);
     (NorenReputation reputation, NorenBorrow borrow) = _deployEarn(owner, oracle, vault, credit, liquidity);
+    // New credit lines are capped at the borrower's on-chain reputation LTV (66 -> 70 -> 75 -> 80%), so the
+    // limit rises with recorded attestations. NOREN_RH_REPUTATION_CAP=0 leaves the attested ratio alone.
+    if (vm.envOr('NOREN_RH_REPUTATION_CAP', uint256(1)) == 1) credit.setReputation(INorenReputationLtv(address(reputation)));
+    NorenCreditLens lens = new NorenCreditLens{salt: SALT}(credit);
     vm.stopBroadcast();
 
     console2.log('NOREN_RH_ORACLE', address(oracle));
@@ -94,6 +100,7 @@ contract Deploy is Script {
     console2.log('NOREN_RH_DUTCH_AUCTION', address(dutch));
     console2.log('NOREN_RH_REPUTATION', address(reputation));
     console2.log('NOREN_RH_BORROW', address(borrow));
+    console2.log('NOREN_RH_CREDIT_LENS', address(lens));
     NorenDepositVault[] memory vs = borrow.vaults();
     for (uint256 i; i < vs.length; ++i) console2.log('NOREN_RH_DEPOSIT_VAULT', vs[i].asset(), address(vs[i]));
   }
@@ -130,6 +137,9 @@ contract Deploy is Script {
       v.shipStrategy(NorenLiquidity.PegTerms(eth ? 25 : 40, eth ? 40 : 60, eth ? 0 : 300, 0, 0, 0));
       v.setHarvester(address(borrow)); // loans repaid by the collateral's realised fees (harvestToRepay)
       borrow.addVault(v);
+      // The same shares can back an Arc credit line; their yield repays it (harvestLineToRepay).
+      v.setHarvesterAllowed(address(credit), true);
+      credit.setShareCollateral(address(v), true);
     }
   }
 
