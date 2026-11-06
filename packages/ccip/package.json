@@ -1,0 +1,30 @@
+{
+  "name": "@noren/ccip",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./sdk/index.ts"
+  },
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test && vitest run --exclude '**/*.live.test.ts'",
+    "test:sol": "forge test",
+    "test:fork": "FOUNDRY_PROFILE=fork forge test",
+    "test:sdk": "vitest run --exclude '**/*.live.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "test:live": "vitest run -c vitest.live.config.ts"
+  },
+  "dependencies": {
+    "viem": "2.51.3"
+  },
+  "devDependencies": {
+    "@chainlink/contracts-ccip": "2.0.0",
+    "@openzeppelin/contracts": "5.4.0",
+    "@types/node": "24.10.1",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.7",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

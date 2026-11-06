@@ -1,0 +1,26 @@
+[profile.default]
+src = 'src'
+out = 'out'
+test = 'test'
+script = 'script'
+libs = ['node_modules']
+solc_version = '0.8.28'
+evm_version = 'cancun'
+optimizer = true
+optimizer_runs = 2000
+via_ir = true
+bytecode_hash = 'none'
+cbor_metadata = false
+
+[profile.default.lint]
+exclude_lints = ['block-timestamp', 'unsafe-typecast', 'asm-keccak256', 'mixed-case-variable', 'mixed-case-function']
+
+# Forks of the three public testnets (real Chainlink CCIP routers, onRamps and offRamps).
+[profile.fork]
+test = 'fork-test'
+
+[rpc_endpoints]
+robinhood_testnet = "https://rpc.testnet.chain.robinhood.com"
+base_sepolia = "https://sepolia.base.org"
+arc_testnet = "https://rpc.testnet.arc.io"
+ethereum_sepolia = "https://ethereum-sepolia-rpc.publicnode.com"
