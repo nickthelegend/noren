@@ -113,7 +113,7 @@ Partner picks: **1inch, Chainlink and Arc**. World IDKit is the alternate.
 
 ## Live on public testnets
 
-On Nov 7 at 03:40 IST, all 135 distinct transaction links in this README, `HACKATHON_SUBMISSION_FORM.md`, `TESTING.md` and `docs/` returned status 1 (`cast receipt`), all 32 linked contract addresses had code (`cast codesize`), and all 10 CCIP message IDs reported SUCCESS on `api.ccip.chain.link`.
+On Nov 7 at 03:00 IST, all 135 distinct transaction links in this README, `HACKATHON_SUBMISSION_FORM.md`, `TESTING.md` and `docs/` returned status 1 (`cast receipt`), all 32 linked contract addresses had code (`cast codesize`), and all 10 CCIP message IDs reported SUCCESS on `api.ccip.chain.link`.
 
 | What | Transactions |
 |---|---|
@@ -157,7 +157,7 @@ Limits: the testnet pool has few depositors, so timing can link a deposit to a p
 
 ## Tests
 
-**650+ tests pass, 0 fail** (one weekend-only skip). The per-suite table, what was re-run on Nov 7 and the commands are in [TESTING.md](TESTING.md#current-totals-main-nov-7-2026).
+**656 tests pass, 0 fail, across 21 suites** (one weekend-only skip); 18 of the suites were re-run on Nov 7 for this release. The per-suite table, what was re-run on Nov 7 and the commands are in [TESTING.md](TESTING.md#current-totals-main-nov-7-2026).
 
 | Suite | Command | Passed |
 |---|---|---|
