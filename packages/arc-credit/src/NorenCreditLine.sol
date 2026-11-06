@@ -7,10 +7,10 @@ import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
 import {IReceiver, IERC165} from './interfaces/IReceiver.sol';
 
 /// @title NorenCreditLine
-/// @notice Arc side of the Tsuke credit line. A Chainlink CRE workflow watches TsukeCredit on
+/// @notice Arc side of the Noren credit line. A Chainlink CRE workflow watches NorenCredit on
 ///         Robinhood Chain and, through the CRE forwarder, writes each opened line (borrower, limit,
 ///         expiry) here. The borrower then pays Noren merchants in USDC from this contract's pool,
-///         up to the limit, and repays in USDC. Every Drawn/Repaid is carried back to TsukeCredit by
+///         up to the limit, and repays in USDC. Every Drawn/Repaid is carried back to NorenCredit by
 ///         the same workflow, so the collateral on Robinhood tracks the debt on Arc.
 /// @dev Unaudited. Only `forwarder` may call onReport. The CRE simulation MockKeystoneForwarder
 ///      checks no DON signatures, so a deployment pointed at it is for simulation only. In
@@ -23,7 +23,7 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     address borrower;
     uint64 expiry;
     /// @dev Strictly increasing per change: max(block.timestamp, previous + 1). The bridge sends it
-    ///      to TsukeCredit as `asOf`, which rejects any report not newer than the last one.
+    ///      to NorenCredit as `asOf`, which rejects any report not newer than the last one.
     uint64 updatedAt;
     bool closed;
     uint256 limitUsdc6;
@@ -92,7 +92,7 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
 
   /// @inheritdoc IReceiver
   /// @dev report = abi.encode(address borrower, bytes32 lineId, uint256 limitUsdc6, uint64 expiry).
-  ///      First report for a lineId opens it. limitUsdc6 = 0 freezes it for good (TsukeCredit
+  ///      First report for a lineId opens it. limitUsdc6 = 0 freezes it for good (NorenCredit
   ///      emitted CreditLineClosed), which also stops an old "opened" report from being replayed.
   ///      Reports keep landing while paused, so Arc never misses a limit change.
   function onReport(bytes calldata metadata, bytes calldata report) external override {
@@ -194,7 +194,7 @@ contract NorenCreditLine is IReceiver, ReentrancyGuard {
     return _available(l);
   }
 
-  /// @notice The snapshot the bridge sends to TsukeCredit.onReport: (lineId, drawn, repaid, asOf).
+  /// @notice The snapshot the bridge sends to NorenCredit.onReport: (lineId, drawn, repaid, asOf).
   function utilisation(bytes32 lineId) external view returns (uint256 drawnUsdc6, uint256 repaidUsdc6, uint64 asOf) {
     Line storage l = _lines[lineId];
     return (l.drawnUsdc6, l.repaidUsdc6, l.updatedAt);
