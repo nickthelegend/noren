@@ -197,6 +197,101 @@
           "explorer": "https://explorer.testnet.arc.io/tx/0xb4c1119e165e6207242d926192274c01cb34d270485480d88838fbc80a9f5642"
         }
       ]
+    },
+    "pricing": {
+      "oracle": "0xdb828bdcf33ef0a5a32861e4831ff3dd87be831c",
+      "deployTx": "0x00c1df9c222572210a8b6787482a11efe19d7f20b2ec076979a9932a4de9c7d0",
+      "forwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1",
+      "dryRun": "no --broadcast: report signed, nothing sent, oracle unchanged",
+      "simulateTx": "0xa7f67bcc1b1a7095c1b9ffb9c20a357abea78ddbaa4b1a255b65854633321b64",
+      "lastSourceBlock": "29801897",
+      "quoteEur100": "112183642",
+      "quoteJpy10000": "63337655",
+      "directOnReport": "reverts UnauthorizedForwarder (eth_call, no tx)",
+      "deployTxReceipt": {
+        "block": "70992900",
+        "timestamp": "2026-11-06T07:23:37.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": null,
+        "gasUsed": "3716785",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x00c1df9c222572210a8b6787482a11efe19d7f20b2ec076979a9932a4de9c7d0"
+      },
+      "simulateTxReceipt": {
+        "block": "70992970",
+        "timestamp": "2026-11-06T07:24:12.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": "0x6e9ee680ef59ef64aa8c7371279c27e496b5edc1",
+        "gasUsed": "1466429",
+        "explorer": "https://explorer.testnet.arc.io/tx/0xa7f67bcc1b1a7095c1b9ffb9c20a357abea78ddbaa4b1a255b65854633321b64"
+      }
+    },
+    "credit": {
+      "creditLine": "0x7140aad0bb38dc6908a857b446897c78b0d88876",
+      "deployTx": "0x1287a4453d3f8a44dd55d94997437309ddb3752d14ccddcc7f3a49da2dc90077",
+      "forwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1",
+      "owner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+      "nullifierHash": "0x4ad9b2c30105cfd37abd8c931e4039457384a6d2ac88f3f939a7e6403dc2547f",
+      "starterTx": "0x2b066d786b83c7fbe9d51035fbf543667139c74304e414aa6a91d50fe0f9f42e",
+      "borrower": "0x519042674306F780C277152A38365547AF180b8a",
+      "lineId": "0x4dda0e01592c0d742c552df1d3b7c36c0735417353b58da6f978a8c2d794b674",
+      "limitUsdc6": "1000000",
+      "fundApproveTx": "0x201c7bddf53e089e54c354596132f414f630d4d7da330e839ac24042bd21ebc1",
+      "fundTx": "0x6555e644e766bad6dc28479854be822ccdd67e9f9eb5a05ec7f7872627faeb30",
+      "drawInvoiceId": "0x85800f78561342e259779044bc96a5e7d2ce8d9218267cef689f4bbbc10d9527",
+      "drawTx": "0xa4cff3c47d71bb93d7f7d1e5519999894d8cbe38f2ea4ef4a56dae55f18edb79",
+      "drawMerchant": "0x32EeabA92847DB5D6fD74248b82BB05d82a1F821",
+      "drawUsdc6": "500000",
+      "drawHandled": "handler 2 read the live Drawn log and skipped: a starter line has no Robinhood collateral line",
+      "withdrawTx": "0x05300f102cbaafdddf6fc5ae5ea70d42f6fb6065dbca722b9164c6e45c7b17f5",
+      "withdrawUsdc6": "500000",
+      "deployTxReceipt": {
+        "block": "70992990",
+        "timestamp": "2026-11-06T07:24:22.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": null,
+        "gasUsed": "2228998",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x1287a4453d3f8a44dd55d94997437309ddb3752d14ccddcc7f3a49da2dc90077"
+      },
+      "starterTxReceipt": {
+        "block": "70993003",
+        "timestamp": "2026-11-06T07:24:29.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": "0x6e9ee680ef59ef64aa8c7371279c27e496b5edc1",
+        "gasUsed": "189193",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x2b066d786b83c7fbe9d51035fbf543667139c74304e414aa6a91d50fe0f9f42e"
+      },
+      "fundApproveTxReceipt": {
+        "block": "70993008",
+        "timestamp": "2026-11-06T07:24:32.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": "0x3600000000000000000000000000000000000000",
+        "gasUsed": "55438",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x201c7bddf53e089e54c354596132f414f630d4d7da330e839ac24042bd21ebc1"
+      },
+      "fundTxReceipt": {
+        "block": "70993010",
+        "timestamp": "2026-11-06T07:24:33.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": "0x7140aad0bb38dc6908a857b446897c78b0d88876",
+        "gasUsed": "54664",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x6555e644e766bad6dc28479854be822ccdd67e9f9eb5a05ec7f7872627faeb30"
+      },
+      "drawTxReceipt": {
+        "block": "70993020",
+        "timestamp": "2026-11-06T07:24:38.000Z",
+        "from": "0x519042674306f780c277152a38365547af180b8a",
+        "to": "0x7140aad0bb38dc6908a857b446897c78b0d88876",
+        "gasUsed": "143297",
+        "explorer": "https://explorer.testnet.arc.io/tx/0xa4cff3c47d71bb93d7f7d1e5519999894d8cbe38f2ea4ef4a56dae55f18edb79"
+      },
+      "withdrawTxReceipt": {
+        "block": "70993040",
+        "timestamp": "2026-11-06T07:24:48.000Z",
+        "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+        "to": "0x7140aad0bb38dc6908a857b446897c78b0d88876",
+        "gasUsed": "55888",
+        "explorer": "https://explorer.testnet.arc.io/tx/0x05300f102cbaafdddf6fc5ae5ea70d42f6fb6065dbca722b9164c6e45c7b17f5"
+      }
     }
   }
 }
