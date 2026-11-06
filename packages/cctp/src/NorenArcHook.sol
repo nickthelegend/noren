@@ -12,7 +12,7 @@ import {IERC20Min} from "./interfaces/IERC20Min.sol";
 ///         - Plain transfer (`mintRecipient` is someone else): Circle mints to them; this contract emits `Bridged`.
 ///         - Hook transfer (`depositForBurnWithHook`, `mintRecipient` is this contract): the minted USDC and the
 ///           hookData `action` go to Noren's shared action router NorenArcActionRouter (pay an invoice, Earn
-///           deposit, Aqua order, credit line, pay on credit). Malformed hookData never strands funds: they go to the beneficiary, or back to the
+///           deposit, Aqua order, credit line, pay on credit, shield into the privacy pool). Malformed hookData never strands funds: they go to the beneficiary, or back to the
 ///           depositor's address on Arc when no beneficiary can be read.
 ///         A Chainlink CRE workflow is the relayer: a log trigger on the source chain's `MessageSent`, the Circle
 ///         Iris attestation fetched with DON consensus, and a report through the CRE forwarder into `onReport`.
@@ -32,6 +32,11 @@ contract NorenArcHook is IReceiver {
   uint8 public constant PAY_ON_CREDIT = 5;
   /// @dev Arc -> other chains only (sent by the router); never accepted inbound.
   uint8 public constant LINE_REPORT = 6;
+  /// @dev "Arrive private": params = abi.encode(uint256 precommitment); the router side (NorenShieldSink) deposits
+  ///      the minted USDC into the Kohaku privacy pool under it.
+  uint8 public constant SHIELD = 7;
+  /// @dev BN254 scalar field: a precommitment is a Poseidon hash, so it must be a field element.
+  uint256 private constant SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   uint256 public constant MAX_PARAMS = 2048;
 
   // CCTP V2 message header offsets (MessageV2.sol)
@@ -220,6 +225,10 @@ contract NorenArcHook is IReceiver {
     } else if (kind == PAY_ON_CREDIT) {
       if (len != 128) return (false, kind, beneficiary, "PAY_ON_CREDIT params must be (bytes32,address,bytes32,uint256)");
       if (!_isAddressWord(_word(a, 192)) || _word(a, 192) == 0) return (false, kind, beneficiary, "merchant is not an address");
+    } else if (kind == SHIELD) {
+      if (len != 32) return (false, kind, beneficiary, "SHIELD params must be (uint256 precommitment)");
+      uint256 pre = uint256(_word(a, 160));
+      if (pre == 0 || pre >= SNARK_SCALAR_FIELD) return (false, kind, beneficiary, "precommitment is not a field element");
     } else if (kind == LINE_REPORT) {
       return (false, kind, beneficiary, "LINE_REPORT is outbound only");
     }

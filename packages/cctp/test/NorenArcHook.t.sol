@@ -315,6 +315,18 @@ contract NorenArcHookTest is Test {
     (ok,,, reason) = hook.validateAction(_action(6, alice, abi.encode(bytes32("l"), uint256(1), uint256(0), uint64(1))));
     assertFalse(ok);
     assertEq(reason, "LINE_REPORT is outbound only");
+    // SHIELD: one field element (the user's precommitment)
+    (ok, kind,,) = hook.validateAction(_action(7, alice, abi.encode(uint256(123456789))));
+    assertTrue(ok);
+    assertEq(kind, 7);
+    (ok,,, reason) = hook.validateAction(_action(7, alice, abi.encode(uint256(0))));
+    assertFalse(ok);
+    assertEq(reason, "precommitment is not a field element");
+    (ok,,,) = hook.validateAction(_action(7, alice, abi.encode(uint256(21888242871839275222246405745257275088548364400416034343698204186575808495617))));
+    assertFalse(ok);
+    (ok,,, reason) = hook.validateAction(_action(7, alice, abi.encode(uint256(1), uint256(2))));
+    assertFalse(ok);
+    assertEq(reason, "SHIELD params must be (uint256 precommitment)");
   }
 
   function testFuzz_validateActionNeverReverts(bytes calldata a) public view {

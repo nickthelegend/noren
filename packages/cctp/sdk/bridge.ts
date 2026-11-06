@@ -38,6 +38,8 @@ export type BridgeToArcParams = {
   amount: string | bigint;
   /** Who gets the USDC on Arc (and the default action beneficiary). */
   recipient: Address;
+  /** NorenArcHook to name as destinationCaller (default: deployments.json). The privacy hook takes SHIELD. */
+  hook?: Address;
   /** Optional Noren action run on Arc with the minted USDC (CCTP V2 hook). */
   action?: ArcAction;
   /** Signs on the source chain. */
@@ -86,7 +88,8 @@ export class BridgeError extends Error {
 const clientFor = (c: CctpChain): PublicClient => createPublicClient({ transport: http(c.rpcUrl) }) as PublicClient;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const requireHook = (): Address => {
+const requireHook = (override?: Address): Address => {
+  if (override) return override;
   if (!NOREN_ARC_HOOK) throw new BridgeError("Setup required: NorenArcHook is not deployed on Arc Testnet (packages/cctp/deployments.json)");
   return NOREN_ARC_HOOK;
 };
@@ -101,7 +104,7 @@ export const toUsdcUnits = (amount: string | bigint): bigint => {
 export const bridgeToArc = async (p: BridgeToArcParams): Promise<BridgeResult> => {
   const src = CCTP_CHAINS[p.fromChain];
   if (!src || p.fromChain === ("arc-testnet" as SourceChainKey)) throw new BridgeError(`${p.fromChain} is not a Noren source chain`);
-  const hook = requireHook();
+  const hook = requireHook(p.hook);
   const relay = p.relay ?? "cre";
   if (relay === "self" && !p.arcWallet) throw new BridgeError("relay 'self' needs arcWallet");
   const account = p.walletClient.account;
@@ -168,6 +171,8 @@ export type TrackParams = {
   expectedAmount?: bigint;
   recipient?: Address;
   hasHook?: boolean;
+  /** NorenArcHook named as destinationCaller (default: deployments.json). */
+  hook?: Address;
   onStatus?: (s: BridgeStatus) => void;
   irisBaseUrl?: string;
   pollMs?: number;
@@ -179,7 +184,7 @@ export type TrackResult = Pick<BridgeResult, "nonce" | "message" | "attestation"
 /** Polls Iris until Circle attests the burn, then relays (self) or waits for the CRE relay (cre) on Arc. */
 export const trackToArc = async (p: TrackParams): Promise<TrackResult> => {
   const src = CCTP_CHAINS[p.fromChain];
-  const hook = requireHook();
+  const hook = requireHook(p.hook);
   const relay = p.relay ?? "cre";
   const pollMs = p.pollMs ?? 4000;
   const deadline = Date.now() + (p.timeoutMs ?? 30 * 60_000);

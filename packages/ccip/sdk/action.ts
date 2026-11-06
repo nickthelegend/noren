@@ -11,7 +11,11 @@ export const ActionKind = {
   CREDIT_LINE: 4,
   PAY_ON_CREDIT: 5,
   LINE_REPORT: 6,
+  SHIELD: 7,
 } as const;
+
+/** BN254 scalar field (Privacy Pools' SNARK_SCALAR_FIELD); a precommitment is a Poseidon hash in this field. */
+export const SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 export type ActionKind = (typeof ActionKind)[keyof typeof ActionKind];
 
 export const RAIL_CCIP = keccak256(toHex("CCIP"));
@@ -68,6 +72,20 @@ export const payOnCredit = (p: { borrower: Address; lineId: Hex; merchant: Addre
       [p.lineId, p.merchant, p.invoiceId, p.amountUsdc6],
     ),
   });
+
+/**
+ * "Arrive private": the delivered USDC is deposited into the Kohaku privacy pool under `precommitment`, which the
+ * user's wallet computes client-side (@noren/core/customer `nextPrecommitment`). Handled on Arc by NorenShieldSink.
+ */
+export const shield = (p: { beneficiary: Address; precommitment: bigint; ref?: Hex }): Hex => {
+  if (p.precommitment <= 0n || p.precommitment >= SNARK_SCALAR_FIELD) throw new Error("precommitment must be a non-zero BN254 field element");
+  return encodeAction({
+    kind: ActionKind.SHIELD,
+    beneficiary: p.beneficiary,
+    ref: p.ref ?? keccak256(toHex("noren-shield")),
+    params: encodeAbiParameters([{ type: "uint256" }], [p.precommitment]),
+  });
+};
 
 export const decodeLineReport = (params: Hex) => {
   const [lineId, drawnUsdc6, repaidUsdc6, asOf] = decodeAbiParameters(

@@ -1,7 +1,7 @@
 import { createPublicClient, http, keccak256, parseAbi, toHex, type Hex } from "viem";
 import { describe, expect, it } from "vitest";
 import { norenArcHookAbi } from "../sdk/abi";
-import { decodeAction, encodeAction, toBytes32 } from "../sdk/actions";
+import { SNARK_SCALAR_FIELD, decodeAction, encodeAction, toBytes32 } from "../sdk/actions";
 import { ARC, NOREN_ARC_HOOK } from "../sdk/chains";
 
 const alice = "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80";
@@ -17,6 +17,11 @@ describe("encodeAction (shared Arc action ABI)", () => {
     expect(decodeAction(encodeAction({ kind: "aqua-order", order: "0x0102" }, alice)).params).toBe("0x0102");
     expect(decodeAction(encodeAction({ kind: "credit-line", lineId: toBytes32("line"), limitUsdc6: 5_000_000n, expiry: 2_000_000_000, asOf: 1_999_999_000 }, alice)).kind).toBe(4);
     expect(decodeAction(encodeAction({ kind: "pay-on-credit", lineId: toBytes32("line"), merchant, invoiceId: "inv-9", amountUsdc6: 1_000_000n }, alice)).kind).toBe(5);
+    const sh = decodeAction(encodeAction({ kind: "shield", precommitment: 123456789n }, alice));
+    expect(sh.kind).toBe(7);
+    expect(BigInt(sh.params)).toBe(123456789n);
+    expect(() => encodeAction({ kind: "shield", precommitment: 0n }, alice)).toThrow(/field element/);
+    expect(() => encodeAction({ kind: "shield", precommitment: SNARK_SCALAR_FIELD }, alice)).toThrow(/field element/);
   });
   it("rejects bad inputs", () => {
     expect(() => encodeAction({ kind: "aqua-order", order: "0x" }, alice)).toThrow();

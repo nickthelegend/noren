@@ -9,6 +9,8 @@ import {
   decodeEnvelope,
   encodeEnvelope,
   payOnCredit,
+  shield,
+  SNARK_SCALAR_FIELD,
 } from "../sdk/action.ts";
 import { CHAINS, hasDirectLane, routeOf } from "../sdk/chains.ts";
 
@@ -31,6 +33,15 @@ describe("Noren action ABI", () => {
     const a = decodeAction(hex);
     expect(a.kind).toBe(ActionKind.PAY_ON_CREDIT);
     expect(a.ref).toBe(INVOICE);
+  });
+
+  it("shield matches the Solidity encoding and rejects non-field precommitments", () => {
+    // cast abi-encode "f(uint8,address,bytes32,bytes)" 7 <beneficiary> keccak256("noren-shield") abi.encode(uint256(123456789))
+    const hex = shield({ beneficiary: "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80", precommitment: 123456789n });
+    expect(hex).toBe("0x00000000000000000000000000000000000000000000000000000000000000070000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f80eae8be53a47541e72362bfd94d76ab05c65e10646a06378e38bc3b29bdb8caca0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000075bcd15");
+    expect(decodeAction(hex).kind).toBe(ActionKind.SHIELD);
+    expect(() => shield({ beneficiary: "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80", precommitment: 0n })).toThrow(/field element/);
+    expect(() => shield({ beneficiary: "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80", precommitment: SNARK_SCALAR_FIELD })).toThrow(/field element/);
   });
 
   it("round-trips credit lines and Aqua orders", () => {
