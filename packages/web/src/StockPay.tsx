@@ -23,12 +23,17 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [tx, setTx] = useState<string | null>(null);
 
   useEffect(() => { import("./tsuke").then((m) => setTk(m.makeTsuke(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
-  useEffect(() => { api.mirrorOnRobinhood(view.invoice.invoiceId).then(setMirror).catch((e) => setErr(msgOf(e))); }, [view.invoice.invoiceId]);
+  useEffect(() => {
+    let on = true;
+    // The server mirrors once per invoice (it serialises concurrent calls), so a double effect in dev mode is harmless.
+    api.mirrorOnRobinhood(view.invoice.invoiceId).then((m) => on && setMirror(m)).catch((e) => on && setErr(msgOf(e)));
+    return () => { on = false; };
+  }, [view.invoice.invoiceId]);
   const load = useCallback(async () => {
     if (!tk) return;
-    try { const h = await tk.holdings(); setHold(h.stocks.filter((s) => s.balance > 0n)); setEth(h.eth); } catch (e) { setErr(msgOf(e)); }
+    try { const h = await tk.holdings(); setHold(h.stocks.filter((s) => s.balance > 0n)); setEth(h.eth); setErr(null); } catch (e) { setErr(msgOf(e)); }
   }, [tk]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); const t = setInterval(() => { if (!hold) load(); }, 6000); return () => clearInterval(t); }, [load, hold]);
   useEffect(() => { if (!sym && hold?.length) setSym(hold[0].sym); }, [hold, sym]);
   const s = hold?.find((h) => h.sym === sym);
   useEffect(() => {

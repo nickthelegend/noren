@@ -72,7 +72,8 @@ export function makeTsuke(cfg: Config) {
   const arc = createPublicClient({ chain: arcChain, transport: http(cfg.rpcUrl) });
   const arcWallet = createWalletClient({ chain: arcChain, transport: http(cfg.rpcUrl), account });
   const rhChain = credit?.robinhoodRpc ? robinhoodFork(credit.robinhoodRpc, credit.robinhoodChainId ?? 4663) : null;
-  const rh = rhChain ? createPublicClient({ chain: rhChain, transport: http(credit!.robinhoodRpc!) }) : null;
+  // A fresh fork fetches each contract from Robinhood mainnet on first touch, so allow slow first reads.
+  const rh = rhChain ? createPublicClient({ chain: rhChain, transport: http(credit!.robinhoodRpc!, { timeout: 45_000, retryCount: 2 }) }) : null;
   const need = () => { if (!rh || !credit?.robinhoodRpc) throw new Error("Setup required: the Robinhood fork isn't running. Start everything with pnpm dev:all"); return rh; };
 
   return {
