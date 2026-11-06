@@ -13,6 +13,7 @@ import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import { SWAPVM_ATTRIBUTION } from "./SwapTab";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
+import { StockLtv } from "./StockCredit";
 import { AquaMakerPanel } from "./AquaMaker";
 
 /** Length of the observed window. Yield is shown as fees earned in a window, never as a projected APY. */
@@ -74,6 +75,7 @@ export function EarnTab({ w }: { w: Wallet }) {
   const open = v ? v.assetsNow - v.netDeposited : 0n;
   return (
     <div className="nk-col">
+      <StockLtv w={w} />
       <section className="nk-card" aria-label="Earn">
         <div className="nk-card-h"><div><b>Earn</b><p>Don't sell your ETH or stocks: deposit them, they earn trading fees as 1inch Aqua liquidity, borrow USDG against them, and the fees pay your loan down.</p></div>
           <div className="nk-band" style={{ padding: 0 }} role="group" aria-label="Deposit or withdraw">{(["deposit", "withdraw"] as const).map((m) => <button key={m} aria-pressed={mode === m} onClick={() => { setMode(m); setAmount(""); }}>{m === "deposit" ? "Deposit" : "Withdraw"}</button>)}</div>

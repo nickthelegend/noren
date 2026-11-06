@@ -16,6 +16,9 @@ import type { Address } from "viem";
 import { fmtUnits } from "./tokens";
 import { CreditLineCard } from "./CreditLine";
 import { RaiseLimit } from "./RaiseLimit";
+import { StockCreditFlow } from "./StockCredit";
+
+const jump = (h: string) => { if (h.startsWith("#/")) { location.hash = h; return; } document.getElementById(h.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
 export function CreditTab({ w }: { w: Wallet }) {
   const actions = useMemo(() => creditActions(w.cfg, w.oc), [w.cfg, w.oc]);
@@ -39,9 +42,11 @@ export function CreditTab({ w }: { w: Wallet }) {
         <p>{posErr ? posErr : !terms ? "Reading your terms…" : terms.tier === 0 ? "No tier yet. Your first credit line applies the underwriter's signed attestation." : `Tier ${terms.tier} · ${(terms.ratioBps / 100).toFixed(0)}% collateral · ${usdc(terms.availableUsdg)} USDG available`}</p>
       </div>
 
+      <StockCreditFlow w={w} nonce={verified} go={jump} />
+
       <RaiseLimit w={w} u={u} nonce={verified} onVerified={() => setVerified((n) => n + 1)} />
 
-      <CreditLineCard w={w} />
+      <div id="nk-line"><CreditLineCard w={w} /></div>
 
       <Card title="Reputation" sub="Scored from this wallet's real Robinhood Chain history, signed with EIP-712 and checked on-chain by NorenCredit" pill={u ? <span className="nk-pill">{u.tier}</span> : undefined}>
         <div className="nk-pad">

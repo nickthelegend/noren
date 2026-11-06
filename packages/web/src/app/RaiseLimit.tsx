@@ -25,7 +25,7 @@ const extraAbi = parseAbi([
   "function nullifierOf(address account) view returns (bytes32)",
   "function securedCapacityUsdg(address who, uint16 ltvBps) view returns (uint256)",
 ]);
-const POINTS_HUMAN = 50n, POINTS_ON_TIME = 10n;
+const POINTS_HUMAN = 50n, POINTS_ON_TIME = 10n, POINTS_LOAN = 25n;
 const M_HUMAN = 1n, M_ON_TIME_3 = 1n << 3n, M_LOAN_1 = 1n << 4n;
 
 type TierRow = { ltvBps: number; minPoints: number; needsHuman: boolean; needsRepayment: boolean };
@@ -77,12 +77,17 @@ export function RaiseLimit({ w, u, nonce, onVerified }: { w: Wallet; u: Underwri
   if (!repAddr || !borrow) return <section className="nk-card" aria-label="Raise your limit"><div className="nk-card-h"><div><b>Raise your limit</b><p>Tasks that each raise your credit limit</p></div></div><div className="nk-pad"><SetupCard title="NorenReputation isn't deployed on this stack" text="The tasks read NorenReputation and NorenBorrow on the Robinhood fork. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></section>;
 
   const human = r ? (() => { const pts = r.points + (r.human ? 0n : POINTS_HUMAN); const t = tierFor(r, pts, true, r.milestones | M_HUMAN); return { done: r.human, after: limitAt(r, t, true), tier: t }; })() : null;
-  const ontime = r ? (() => { const add = r.onTime >= 3 ? 0n : BigInt(3 - r.onTime) * POINTS_ON_TIME; const t = tierFor(r, r.points + add, r.human, r.milestones | M_ON_TIME_3); return { done: r.onTime >= 3, add, after: limitAt(r, t, r.human), tier: t }; })() : null;
+  // Repay on time: three on-time Pay-in-3 installments (+10 each) and one NorenBorrow loan repaid in full (+25).
+  const ontime = r ? (() => {
+    const add = (r.onTime >= 3 ? 0n : BigInt(3 - r.onTime) * POINTS_ON_TIME) + (r.repaidLoans >= 1 ? 0n : POINTS_LOAN);
+    const t = tierFor(r, r.points + add, r.human, r.milestones | M_ON_TIME_3 | M_LOAN_1);
+    return { done: r.onTime >= 3 && r.repaidLoans >= 1, add, after: limitAt(r, t, r.human), tier: t };
+  })() : null;
   const lockAdd = r ? (100_000_000n * BigInt(r.ltvBps)) / 10_000n : 0n; // $100 of collateral at this tier's LTV (USD6)
   const done = r ? [human?.done, ontime?.done, u?.reclaim?.verified, r.secured > 0n].filter(Boolean).length : 0;
 
   return (
-    <section className="nk-card nk-raise" aria-label="Raise your limit">
+    <section className="nk-card nk-raise" id="nk-raise" aria-label="Raise your limit">
       <div className="nk-card-h">
         <div><b>Raise your limit</b><p>Each task raises your credit limit. Limits are read live from NorenReputation and NorenBorrow; “after” is the contract's own math at the tier the task unlocks.</p></div>
         {r && <span className="nk-pill">{done} of 4 done</span>}
@@ -98,20 +103,20 @@ export function RaiseLimit({ w, u, nonce, onVerified }: { w: Wallet; u: Underwri
           <ol className="nk-tasks">
             <Task id="world" open={open} setOpen={setOpen} mark="WORLD" done={!!human?.done}
               title="Verify you're human with World ID" sub={human?.done ? `Verified · nullifier ${r.nullifier.slice(0, 10)}…${r.nullifier.slice(-4)} in NorenReputation` : `+50 points, unlocks tier ${human?.tier} (${ltv(r.tiers[human?.tier ?? 0].ltvBps)} LTV) and a ${usd(r.starter)} starter line on Arc`}
-              before={usd(r.total)} after={human?.done ? null : usd(human!.after)} cta={human?.done ? undefined : "Verify"}>
+              before={usd(r.total)} after={human?.done ? null : usd(human!.after)} afterNote={human?.done ? undefined : `LTV ${ltv(r.ltvBps)} → ${ltv(r.tiers[human!.tier].ltvBps)}`} cta={human?.done ? undefined : "Verify"}>
               <p className="nk-fine" style={{ margin: "0 0 10px" }}>Production World ID: tap <b>Verify with World ID</b>; on a computer a QR code appears. Scan it with <b>World App</b> and finish the check on your phone. Noren keeps only the nullifier.</p>
               <VerifyHuman serverUrl={SERVER} wallet={w.oc.address} onResult={() => { onVerified(); w.refresh(); }} />
             </Task>
             <Task id="ontime" open={open} setOpen={setOpen} mark="ROBINHOOD" done={!!ontime?.done}
-              title="Repay on time" sub={ontime?.done ? `${r.onTime} on-time installments · ${r.repaidLoans} loans repaid (NorenReputation milestones)` : `${r.onTime} of 3 on-time Pay-in-3 installments. +10 points each; three unlock the repayment milestone${r.repaidLoans ? ` · ${r.repaidLoans} loans repaid` : ""}`}
-              before={usd(r.total)} after={ontime?.done || ontime!.after === r.total ? null : usd(ontime!.after)} cta={ontime?.done ? undefined : "How"}>
+              title="Repay on time" sub={ontime?.done ? `${r.onTime} on-time installments · ${r.repaidLoans} loans repaid (NorenReputation milestones)` : `${Math.min(r.onTime, 3)} of 3 on-time Pay-in-3 installments (+10 each) · ${Math.min(r.repaidLoans, 1)} of 1 loan repaid (+25). Unlocks tier ${ontime?.tier} (${ltv(r.tiers[ontime?.tier ?? 0].ltvBps)} LTV)${!r.human ? "; after World ID it reaches the top tier" : ""}`}
+              before={usd(r.total)} after={ontime?.done || ontime!.after === r.total ? null : usd(ontime!.after)} afterNote={ontime?.done || ontime!.after === r.total ? undefined : `LTV ${ltv(r.ltvBps)} → ${ltv(r.tiers[ontime!.tier].ltvBps)}`} cta={ontime?.done ? undefined : "How"}>
               <p className="nk-fine" style={{ margin: 0 }}>Choose <b>Pay in 3</b> at a Noren checkout and pay each installment by its due date (NorenCredit records it). A NorenBorrow loan repaid in full adds 25 points. Late payments cost 15 points, liquidations 60.{ontime && ontime.after === r.total && !ontime.done ? " At your current points this milestone alone doesn't move your tier yet; it is required for the top tier (80% LTV)." : ""}</p>
               <button type="button" className="nk-cta soft" onClick={() => { location.hash = "#/app/pay"; }}>Go to Pay</button>
             </Task>
             <ReclaimTask w={w} u={u} open={open} setOpen={setOpen} />
             <Task id="lock" open={open} setOpen={setOpen} mark="NVDA" done={r.secured > 0n}
               title="Lock collateral" sub={r.secured > 0n ? `Your deposits back ${usd(r.secured)} at ${ltv(r.ltvBps)} LTV` : `Deposit Stock Tokens or ETH in Earn: each $100 adds ${usd(lockAdd)} at your ${ltv(r.ltvBps)} LTV`}
-              before={usd(r.total)} after={`${usd(r.total + lockAdd)}`} afterNote="per $100 locked" cta="Deposit">
+              before={usd(r.total)} after={`${usd(r.total + lockAdd)}`} afterNote={`per $100 locked at ${ltv(r.ltvBps)}`} cta="Deposit">
               <p className="nk-fine" style={{ margin: 0 }}>Collateral stays yours and earns in a 1inch Aqua maker vault; NorenBorrow lends against it at your tier's LTV, priced by Chainlink.</p>
               <button type="button" className="nk-cta soft" onClick={() => { location.hash = "#/app/earn"; }}>Go to Earn</button>
             </Task>
@@ -169,7 +174,7 @@ function ReclaimTask({ w, u, open, setOpen }: { w: Wallet; u: Underwriting | nul
   const sub = done ? `Proved with ${s?.verified?.provider ?? b?.provider ?? "Reclaim"} · +${b?.points ?? 10} points on the history score` : s && !s.configured ? `Setup required: ${s.missing.join(", ")}` : `Prove ${name} from its own website with a zkTLS proof. +${b?.points ?? 10} points on the history score${b ? ` (${u?.score} → ${b.ifVerified.score})` : ""}`;
   return (
     <Task id="reclaim" open={open} setOpen={setOpen} mark="RECLAIM" done={done} title="Prove an off-chain fact with Reclaim" sub={sub}
-      before={before} after={done ? null : after} afterNote="Pay-in-3 line" cta="Prove">
+      before={before} after={done ? null : after} afterNote="Pay-in-3 line · LTV unchanged" cta="Prove">
       {e ? <div className="nk-err">{e}</div> : !s ? <Skel rows={2} /> : !s.configured ? (
         <SetupCard title={`Setup required: ${s.missing.join(", ")}`} text="Reclaim needs an app and a provider from the Reclaim developer console. Add the three values to the Noren .env and restart pnpm dev:all; docs/RECLAIM.md has the steps. No proof is faked in the meantime." code={s.missing.map((m) => `${m}=…`).join("\n")} />
       ) : s.verified ? (
