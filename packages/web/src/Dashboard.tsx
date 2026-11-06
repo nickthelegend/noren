@@ -155,7 +155,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
   const links = series(r, range, 0, () => 1, (x) => secs(x.createdAt)), linksP = series(r, range, 1, () => 1, (x) => secs(x.createdAt));
   const net = { vals: gross.vals.map((v, i) => v - refunds.vals[i]), total: gross.total - refunds.total }, netP = grossP.total - refundsP.total;
   const cards: [string, { vals: number[]; total: number }, number, (v: number) => string, string][] = [
-    ["Gross volume", gross, grossP.total, (v) => `${fmt(v)} USDC`, "Settled payments, before refunds"],
+    ["Gross volume", gross, grossP.total, (v) => `${fmt(v)} USDC`, "Settled payments, before refunds. Pay-with-stocks payments settle in USDG on Robinhood Chain (1:1 USD stablecoin) and are counted here at face value."],
     ["Net volume", net, netP, (v) => `${fmt(v)} USDC`, "Gross volume minus refunds"],
     ["Successful payments", count, countP.total, (v) => String(Math.round(v)), "Private and credit payments"],
     ["Refunds", refunds, refundsP.total, (v) => `${fmt(v)} USDC`, "Sent to customers' private inboxes"],
@@ -238,7 +238,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       <div>
         <div className="sd-section-h tight"><h2>Payment methods</h2><span className="sd-muted">{paid.length} settled</span></div>
         <div className="sd-mix" aria-hidden>{total > 0 && mix.map((x) => x.v > 0 && <i key={x.m} className={x.m} style={{ width: `${(x.v / total) * 100}%` }} />)}</div>
-        <ul className="sd-mix-l">{mix.map((x) => { const [t, d, I] = METHOD[x.m]; return <li key={x.m} title={d}><span className={`sd-pm ${x.m}`}><span className="sd-pm-ic"><I /></span>{t}</span><b className="num">{fmt(x.v)} <em>USDC</em></b><small>{x.n} payment{x.n === 1 ? "" : "s"}{total > 0 && ` · ${Math.round((x.v / total) * 100)}%`}</small></li>; })}</ul>
+        <ul className="sd-mix-l">{mix.map((x) => { const [t, d, I] = METHOD[x.m]; return <li key={x.m} title={d}><span className={`sd-pm ${x.m}`}><span className="sd-pm-ic"><I /></span>{t}</span><b className="num">{fmt(x.v)} <em>{x.m === "stocks" ? "USDG" : "USDC"}</em></b><small>{x.n} payment{x.n === 1 ? "" : "s"}{total > 0 && ` · ${Math.round((x.v / total) * 100)}%`}</small></li>; })}</ul>
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>

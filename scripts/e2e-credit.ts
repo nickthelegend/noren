@@ -88,7 +88,7 @@ ok('CRE bridge → Arc', `NorenCreditLine limit 150 USDC after ${((Date.now() - 
 // 5. pay later on Arc
 const merchant = cfg.merchant as Address;
 const expiryInv = String(Math.floor(Date.now() / 1000) + 3600);
-const inv = await json(`/merchants/${merchant}/invoices`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ amount: '7500000', expiry: expiryInv, description: 'e2e pay later' }) });
+const inv = await json(`/merchants/${merchant}/invoices`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ amount: '7500000', expiry: expiryInv, description: 'Pour-over, beans to go' }) });
 const invoiceId: Hex = inv.invoice.invoiceId;
 await arc.request({ method: 'anvil_setBalance', params: [borrower.address, toHex(10n ** 18n)] });
 const drawTx = await send(arcW, arc, { address: c.creditLine, abi: lineAbi, functionName: 'payInvoice', args: [lineId, merchant, 7_500_000n, invoiceId] });
@@ -96,7 +96,7 @@ const settled = await until('the merchant server to settle the credit payment', 
 ok('Pay later: invoice settled', `7.50 USDC drawn on Arc (tx ${drawTx.hash}, ${drawTx.gas} gas); server marked ${invoiceId.slice(0, 10)}… paid, method ${settled.method}`);
 
 // 8. pay with stocks
-const inv2 = await json(`/merchants/${merchant}/invoices`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ amount: '7500000', expiry: expiryInv, description: 'e2e pay with stocks' }) });
+const inv2 = await json(`/merchants/${merchant}/invoices`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ amount: '7500000', expiry: expiryInv, description: 'Ceramic mug' }) });
 const id2: Hex = inv2.invoice.invoiceId;
 const m = await json(`/invoices/${id2}/robinhood`, { method: 'POST' });
 const [assetIn, priceUsd8] = await rh.readContract({ address: m.gateway, abi: gatewayAbi, functionName: 'quote', args: [m.merchant, id2, ROBINHOOD.stocks.NVDA] });

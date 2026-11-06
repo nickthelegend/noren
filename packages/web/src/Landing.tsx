@@ -262,7 +262,7 @@ export function Landing() {
         <div className="lp-head" data-reveal>
           <span className="lx-tag mono">■ In the Noren app</span>
           <h2>Pay with stocks. <em>Pay later.</em></h2>
-          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. The merchant is paid in full, upfront. A Chainlink CRE workflow keeps the two chains in step.</p>
+          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. Or pay with the shares themselves: Noren's vault buys them at the Chainlink price and the merchant gets USDG. Either way the merchant is paid in full, upfront, and a Chainlink CRE workflow keeps the two chains in step.</p>
         </div>
         <ol className="lp-flow" data-reveal>
           {[
@@ -286,7 +286,8 @@ export function Landing() {
             <ul>
               <li><Icon.x /> Both chains run as local Anvil forks: no real stock or money moves. Robinhood's testnet has no Chainlink feeds, so we fork mainnet.</li>
               <li><Icon.x /> The workflow runs in the CRE simulator, not on a Chainlink DON.</li>
-              <li><Icon.x /> Paying on credit is <b>not private</b>: the line is tied to your Robinhood wallet.</li>
+              <li><Icon.x /><span>Paying with stocks or later is <b>not private</b>: it comes from your Robinhood wallet. Only “Pay privately” hides you.</span></li>
+              <li><Icon.x /><span>The World ID starter line and the 0G Private Computer credit check need their API keys; until they exist the app says “Setup required”.</span></li>
             </ul>
           </div>
         </div>
