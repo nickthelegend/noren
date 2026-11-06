@@ -11,7 +11,7 @@ case "$RPC" in http://127.0.0.1:*) ;; *) echo "Refusing: deploy-fork only target
 
 # Anvil dev accounts (public test mnemonic): #0 owner/LP, #1 demo customer, #2 demo merchant,
 # #3 Aqua maker (a merchant with idle USDG), #4 liquidation keeper,
-# #7 stand-in World ID attester (NorenReputation.worldIdSigner) on the fork,
+# #7 stand-in World ID attester when NOREN_WORLD_ATTESTER_KEY is not configured,
 # #8 stand-in CRE forwarder on the fork, #9 underwriter signer on the fork.
 OWNER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 OWNER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -22,7 +22,18 @@ MAKER_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
 KEEPER=0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65
 FORWARDER="${NOREN_RH_FORWARDER:-0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f}"
 UNDERWRITER="${NOREN_RH_UNDERWRITER:-0xa0Ee7A142d267C1f36714E4a8F75612F20a79720}"
-WORLD_ID_SIGNER="${NOREN_RH_WORLD_ID_SIGNER:-0x14dC79964da2C08b23698B3D3cc7Ca32193d9955}"
+# World ID attester (NorenReputation.worldIdSigner): the address of NOREN_WORLD_ATTESTER_KEY, from the
+# environment or the main checkout's gitignored .env (the key itself is never printed). Without one,
+# Anvil's published #7 stands in on the fork.
+WORLD_ID_SIGNER="${NOREN_RH_WORLD_ID_SIGNER:-}"
+if [ -z "$WORLD_ID_SIGNER" ]; then
+  ENV_FILE="${NOREN_ENV_FILE:-$(cd "$ROOT" && cd "$(git rev-parse --git-common-dir)/.." 2>/dev/null && pwd)/.env}"
+  ATTESTER_KEY="${NOREN_WORLD_ATTESTER_KEY:-}"
+  if [ -z "$ATTESTER_KEY" ] && [ -f "$ENV_FILE" ]; then ATTESTER_KEY=$(sed -nE 's/^NOREN_WORLD_ATTESTER_KEY=(0x[0-9a-fA-F]{64})[[:space:]]*$/\1/p' "$ENV_FILE" | tail -1); fi
+  [ -n "$ATTESTER_KEY" ] && WORLD_ID_SIGNER=$(cast wallet address "$ATTESTER_KEY" 2>/dev/null || true)
+  unset ATTESTER_KEY
+  WORLD_ID_SIGNER="${WORLD_ID_SIGNER:-0x14dC79964da2C08b23698B3D3cc7Ca32193d9955}"
+fi
 INTERVAL="${NOREN_RH_INSTALLMENT_INTERVAL:-1209600}"
 GRACE="${NOREN_RH_GRACE:-259200}"
 POOL_MANAGER=0x8366a39CC670B4001A1121B8F6A443A643e40951

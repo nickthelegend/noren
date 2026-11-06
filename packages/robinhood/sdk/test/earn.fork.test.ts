@@ -3,7 +3,7 @@ import { createPublicClient, createWalletClient, http, keccak256, toHex, type He
 import { privateKeyToAccount } from 'viem/accounts'
 import { createNorenEarn, recordVerifiedHuman, signVerifiedHuman, NATIVE_ETH, STOCKS, USDG, WETH } from '../src/index.js'
 import { erc20PermitAbi } from '../src/abi.js'
-import { loadForkDeployment } from '../src/node.js'
+import { loadForkDeployment, loadWorldAttesterKey } from '../src/node.js'
 
 // Anvil published dev keys, local fork only: #1 customer, #2 merchant, #3 trader (the demo Aqua maker's wallet).
 const setup = 'Setup required: sh scripts/fork-snapshot.sh && sh scripts/serve-snapshot.sh (deployment with NorenBorrow)'
@@ -73,14 +73,15 @@ describe('Noren SDK: deposit and earn, borrow, reputation, World ID', () => {
     await expect(c.withdraw({ asset: NATIVE_ETH })).rejects.toThrow(/^Liquidity in use: /)
 
     // World ID: the handler records the verified human; LTV, milestone and limit change at once
-    const human = await recordVerifiedHuman({ publicClient, addresses: deployment, account: customer.address, nullifier: BigInt(keccak256(toHex('customer-human'))) % 2n ** 254n })
+    const key = loadWorldAttesterKey() // NOREN_WORLD_ATTESTER_KEY (gitignored .env); Anvil #7 on a fork without one
+    const human = await recordVerifiedHuman({ publicClient, addresses: deployment, key, account: customer.address, nullifier: BigInt(keccak256(toHex('customer-human'))) % 2n ** 254n })
     expect(human.after.ltvBps).toBe(7000)
     expect(human.after.starterUsdc6).toBe(25_000_000n)
     expect(human.after.totalUsd6).toBeGreaterThan(human.before.totalUsd6)
     expect(human.milestones.find((x) => x.key === 'verifiedHuman')!.achieved).toBe(true)
     console.log('fork tx verifyHuman', human.tx.hash, 'limit', fmt(human.before.totalUsd6), '->', fmt(human.after.totalUsd6))
     // replay / second wallet: refused before any transaction
-    await expect(signVerifiedHuman({ publicClient, reputation: deployment.reputation!, account: merchant.address, nullifier: human.signed.nullifierHash })).rejects.toThrow(/^Already used/)
+    await expect(signVerifiedHuman({ publicClient, reputation: deployment.reputation!, key, account: merchant.address, nullifier: human.signed.nullifierHash })).rejects.toThrow(/^Already used/)
 
     // borrow against the locked nETH shares (they keep earning)
     await c.lock({ asset: NATIVE_ETH })
