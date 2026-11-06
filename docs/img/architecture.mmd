@@ -5,16 +5,18 @@ flowchart TB
 
   subgraph OFF["Noren services · off-chain"]
     direction LR
-    WEB["<b>@noren/web</b><br/>landing · merchant dashboard<br/>hosted checkout"]
+    WEB["<b>@noren/web</b><br/>Noren Merchant · Noren app<br/>hosted checkout · landing"]
     SDK["<b>@noren/core SDK</b><br/>shield · proveInvoicePayment<br/>refundInbox · verifyWebhook"]
-    SRV["<b>Merchant server</b><br/>invoices · relays payment + gas<br/>signed webhooks · SSE"]
+    SRV["<b>Merchant server</b><br/>invoices · relays payment + gas<br/>settles credit + stock payments · webhooks"]
     ASP["<b>ASP postman</b><br/>scans deposits · checks USDC<br/>isBlacklisted · posts roots"]
-    UW["<b>Tsuke underwriter</b><br/>reads wallet history<br/>signs EIP-712 attestation"]
+    UW["<b>History underwriter</b><br/>reads wallet history<br/>signs EIP-712 attestation"]
+    ZG["<b>0G Private Computer</b><br/>sealed credit check<br/>request ID · TEE verified"]
+    WID["<b>World ID</b><br/>IDKit · nullifier<br/>one starter line per human"]
   end
 
   subgraph ARC["Arc testnet · chain 5042002 · gas paid in USDC"]
     direction LR
-    CL["<b>NorenCreditLine</b><br/>payInvoice · repay<br/>emits Drawn / Repaid"]
+    CL["<b>NorenCreditLine</b><br/>payInvoice · repay · starter lines<br/>emits Drawn / Repaid"]
     CO["<b>NorenCheckout</b><br/>invoice-bound withdrawal<br/>pays merchant payout · private refunds"]
     EP["<b>Entrypoint</b> (ERC-1967 proxy)<br/>0xbow Privacy Pools · ASP root"]
     POOL["<b>PrivacyPoolComplex</b><br/>USDC pool · Groth16 verifiers"]
@@ -26,15 +28,20 @@ flowchart TB
 
   subgraph CLK["Chainlink"]
     direction LR
-    CREB["<b>CRE workflow · credit bridge</b><br/>EVM log triggers, both ways"]
+    CREB["<b>CRE workflow · credit bridge</b><br/>log triggers both ways · HTTP trigger"]
+    CRES["<b>CRE workflow · settlement desk</b><br/>Relay / Across quotes vs Chainlink"]
     CREP["<b>CRE workflow · pricing</b><br/>cron → read feeds → write"]
     DF["<b>Data Feeds</b><br/>Arc mainnet: EUR/USD, USDC/USD …<br/>Robinhood: stocks, ETH, USDG"]
   end
 
-  subgraph RH["Robinhood Chain · local Anvil fork of mainnet 4663"]
+  subgraph RH["Robinhood Chain · mainnet state on a local node (4663)"]
     direction LR
-    TS["<b>TsukeCredit</b><br/>pay with anything · Pay in 4<br/>credit lines from history"]
-    ST[("<b>Stock Tokens · USDG · WETH</b><br/>real mainnet contracts")]
+    TS["<b>NorenCredit</b><br/>credit lines · Pay in 3<br/>EIP-712 attestations"]
+    GW["<b>NorenGateway</b><br/>pay with stocks / ETH / USDG"]
+    LQ["<b>NorenLiquidity + SwapVM</b><br/>1inch Aqua makers · NorenOraclePeg<br/>payments + liquidations"]
+    VA["<b>NorenVault</b><br/>USDG lender pool · fallback"]
+    SD["<b>NorenSettlementDesk</b><br/>USDG → USDC on Arc"]
+    ST[("<b>Stock Tokens · USDG · WETH · Aqua</b><br/>real mainnet contracts")]
   end
 
   CUS --> WEB
@@ -57,7 +64,17 @@ flowchart TB
   CREP -->|"onReport"| RO
   DF -.->|"prices"| TS
   UW -->|"attestation"| TS
-  TS --- ST
+  UW -.->|"features"| ZG
+  WEB -.-> WID
+  WID -->|"starter line"| CREB
+  SDK -->|"pay with stocks"| GW
+  GW --> LQ
+  GW -.->|"fallback"| VA
+  TS -->|"liquidations"| LQ
+  TS --- VA
+  SRV -->|"settle USDG"| SD
+  SD <-->|"request ⇄ approve"| CRES
+  LQ --- ST
 
   classDef navy fill:#1c2a5e,stroke:#111a3d,color:#f4efe4,stroke-width:1.5px
   classDef paper fill:#fffdf8,stroke:#1c2a5e,color:#17203f,stroke-width:1.2px
@@ -66,9 +83,9 @@ flowchart TB
   classDef person fill:#ebe4d4,stroke:#1c2a5e,color:#17203f,stroke-width:1.2px
   classDef studio fill:#111a3d,stroke:#d9772f,color:#f4efe4,stroke-width:2px
   class EP,POOL,CO,CL,RO navy
-  class USDC,WEB,SDK,SRV,ASP,UW paper
-  class DF,CREP,CREB kaki
-  class TS,ST moss
+  class USDC,WEB,SDK,SRV,ASP,UW,ZG,WID paper
+  class DF,CREP,CREB,CRES kaki
+  class TS,GW,LQ,VA,SD,ST moss
   class CUS,MER person
   class STUDIO studio
   style OFF fill:#f4efe4,stroke:#868a99,color:#17203f

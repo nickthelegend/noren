@@ -20,7 +20,7 @@
 #   6. Arc: borrower repays the rest -> Repaid; handler 2 -> NorenCredit settles, NVDA returned
 #   7. Replays are skipped; direct onReport calls from a non-forwarder revert on both chains
 #
-# Robinhood receiver: the real NorenCredit from its branch (git archive into a temp dir,
+# Robinhood receiver: the real NorenCredit from packages/robinhood (git archive of CREDIT_REF into a temp dir,
 # deployed with its own script/Deploy.s.sol). NOREN_BRIDGE_RECEIVER=harness uses the labelled
 # NorenCreditHarness instead. Arc USDC: the repo's fork-only ForkUSDC shim replaces Arc's native
 # USDC, which stock Anvil cannot execute (same as scripts/dev-stack.ts).
@@ -33,7 +33,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CREDIT_PKG="$ROOT/../arc-credit"
 USDC_SHIM_SRC="$ROOT/../contracts/src/ForkUSDC.sol"
 RECEIVER_MODE=${NOREN_BRIDGE_RECEIVER:-credit}
-CREDIT_REF=${NOREN_CREDIT_REF:-origin/tsuke-credit}   # the Robinhood credit agent's branch name
+CREDIT_REF=${NOREN_CREDIT_REF:-HEAD}   # the commit whose packages/robinhood holds NorenCredit (default: this checkout)
 ARC_PORT=8730
 RH_PORT=8731
 RH_CHAIN_ID=${NOREN_RH_CHAIN_ID:-4663}
@@ -73,12 +73,12 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ---------------------------------------------------------------- NorenCredit source (real contract)
-# The Robinhood credit contract lives on its own branch. Its package and contract names are detected
-# from the branch (packages/robinhood + NorenCredit after the naming change; older commits differ).
+# The Robinhood credit contract is taken from CREDIT_REF (default HEAD: this checkout's packages/robinhood).
+# Its package and contract names are detected from that commit.
 if [ "$RECEIVER_MODE" = credit ]; then
-  git -C "$ROOT" fetch -q origin "${CREDIT_REF#origin/}" 2>/dev/null || true
+  case "$CREDIT_REF" in origin/*) git -C "$ROOT" fetch -q origin "${CREDIT_REF#origin/}" 2>/dev/null || true ;; esac
   CREDIT_COMMIT=$(git -C "$ROOT" rev-parse --verify -q "$CREDIT_REF^{commit}") || {
-    echo "Setup required: $CREDIT_REF (the Robinhood NorenCredit branch) is not available; run with NOREN_BRIDGE_RECEIVER=harness" >&2; exit 1; }
+    echo "Setup required: $CREDIT_REF (the commit holding NorenCredit) is not available; run with NOREN_BRIDGE_RECEIVER=harness" >&2; exit 1; }
   REPO_TOP=$(git -C "$ROOT" rev-parse --show-toplevel)
   DEPLOY_PATH=$(git -C "$REPO_TOP" ls-tree -r --name-only "$CREDIT_COMMIT" packages | grep -E '^packages/[^/]+/contracts/script/Deploy\.s\.sol$' \
     | awk '/^packages\/robinhood\// {print; found=1; exit} {first = first ? first : $0} END {if (!found && first) print first}')

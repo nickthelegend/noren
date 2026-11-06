@@ -24,16 +24,14 @@ Status: ✅ done · 🟡 partly done · ⛔ blocked (named step for Nick) · ❌
 | Shareable Arc Studio project URL judges can open | `import.sh` writes the URL to `arc-studio/studio.json`. Nick then checks that the workspace is shared or public in the Studio web UI. | ⛔ |
 | Studio shown in the demo | Demo beat 1 below. | ⛔ (needs the URL) |
 | Working MVP: frontend | `packages/web`: landing page, merchant dashboard and hosted checkout, with proofs made in the browser. Measured on the local Arc fork: browser proof in 1.06–4.77 s (README). The Studio console page (prompt task D) adds a second frontend that reads the testnet contracts. | 🟡 (runs on a local fork until the testnet deploy) |
-| Working MVP: backend | `packages/server` (invoices, relay, signed webhooks, SSE) and `packages/postman` (ASP: USDC blacklist check, roots). `pnpm e2e` passes on an Arc testnet fork: 9/9 Foundry checkout tests, 5 attack reverts, payment and refund (re-run Nov 6 on branch `arc-studio`). | ✅ (fork) |
+| Working MVP: backend | `packages/server` (invoices, relay, signed webhooks, SSE) and `packages/postman` (ASP: USDC blacklist check, roots). `pnpm e2e` passes on an Arc testnet fork: 9/9 Foundry checkout tests, 5 attack reverts, payment and refund (re-run Nov 6). | ✅ (fork) |
 | Architecture diagram | [ARCHITECTURE.md](ARCHITECTURE.md), [img/architecture.png](img/architecture.png) | ✅ |
 | Video demo covering the core functions, Arc Studio and Circle's developer tools | Beat list below. Circle tools used: **USDC on Arc** (settlement and gas) and **USDC's `isBlacklisted`** (the ASP's compliance check). Not used: Circle Wallets, Gateway, CCTP, Nanopayments. | ❌ (not recorded) |
 | Detailed documentation | README, [API.md](API.md), [CHAINLINK.md](CHAINLINK.md), [ARCHITECTURE.md](ARCHITECTURE.md), this file, TESTING.md | ✅ |
 | GitHub or Replit repo link | `nickthelegend/noren` is **private**. Nick must make it public, or grant judges access, before submitting. | ❌ (Nick) |
-| DeFi / onchain finance app on Arc | Private checkout on a Privacy Pools USDC pool, plus the NorenCreditLine credit line (branch `cre-bridge`). | 🟡 (credit line not merged yet) |
+| DeFi / onchain finance app on Arc | Private checkout on a Privacy Pools USDC pool, plus the NorenCreditLine credit line on Arc (stock-backed, carried from Robinhood Chain by Chainlink CRE). | ✅ (fork) |
 | Settles in USDC or EURC | NorenCheckout pays merchants in USDC `0x3600…0000`. Refunds are USDC deposits into the customer's shielded inbox. NorenCreditLine pays merchants USDC. | ✅ |
 | Public deployment on Arc testnet (needed for "working", and for judges to check) | `scripts/deploy-arc.ts` was verified by a fork dry run (below). The live deploy needs 0.45 testnet USDC on the deployer. | ⛔ (faucet) |
-
-**Risk to raise with Nick: one chain per project.** Tsuke runs on Robinhood Chain (a local fork) and reaches Arc through a CRE workflow. For the Arc judges, the demo should stay on Arc, with Tsuke shown as the source of the credit limit. Nick's own rule after ETHOnline is "never mix two chains in a hackathon entry", so he should decide whether Tsuke appears in the Arc submission at all.
 
 ## Arc Studio
 
@@ -42,7 +40,7 @@ Status: ✅ done · 🟡 partly done · ⛔ blocked (named step for Nick) · ❌
 **Nick's steps** (about 5 minutes, then a 5–20 minute Studio turn):
 1. In a normal Terminal (not inside an agent sandbox), run `arc-studio login --paste`. Approve in the browser and paste the token at the prompt. It is stored in `~/.arc-studio/credentials.json` (mode 0600), which agents can use without seeing the token.
 2. Run `arc-studio whoami`. It must exit 0.
-3. From the Noren checkout on branch `arc-studio` (or main once it's merged), run `sh arc-studio/import.sh`.
+3. From the Noren checkout, run `sh arc-studio/import.sh`.
 4. Open the URL it prints. In the Studio web UI, make the workspace shareable. Then paste the URL into the submission form and into the table below.
 5. If Studio deployed the contracts, run `pnpm exec tsx arc-studio/adopt.ts`. It checks the Studio-reported addresses on-chain (code plus Entrypoint → pool → USDC and checkout wiring) and writes `deployments/5042002.json`.
 
@@ -55,7 +53,7 @@ What `import.sh` does:
   - Entrypoint, ERC1967Proxy
   - PrivacyPoolComplex
   - NorenCheckout, NorenQuoter
-  - NorenRateOracle and NorenCreditLine, once those branches are merged
+  - NorenRateOracle, NorenCreditLine
 
   These are sent with `--file` to `contracts/noren/` in the Studio sandbox. ARCHITECTURE.md, this file, the real-proof fork test and the deploy script go along as read-only context.
 - **Fixes one ordering problem in the flattened files.** `forge flatten` puts Privacy Pools' `interface IState` after `IPrivacyPool is IState`, and solc rejects that (error 2449). `arc-studio/reorder.mjs` moves that one block. Nothing else changes.
@@ -113,5 +111,5 @@ What the deploy script guarantees:
    - The dashboard shows "customer: unknown".
    - The explorer shows NorenCheckout paying the merchant, with no link to the customer.
 4. **Refund (30 s).** It lands in the customer's private inbox.
-5. **Credit on Arc (40 s, if merged and Nick keeps it).** The CRE workflow writes a credit limit to NorenCreditLine, and the customer pays an invoice from the line.
+5. **Credit on Arc (40 s).** The CRE workflow writes a credit limit to NorenCreditLine, and the customer pays an invoice from the line.
 6. **Architecture slide (20 s).** `docs/img/architecture.png`.
