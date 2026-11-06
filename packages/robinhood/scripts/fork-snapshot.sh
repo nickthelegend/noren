@@ -34,8 +34,8 @@ NOREN_RH_FORK_PORT=$TMP_PORT sh "$ROOT/scripts/deploy-fork.sh" >/dev/null
 D="$ROOT/.fork/deployment.json"
 j() { python3 -c "import json,sys;print(json.load(open('$D'))['$1'])"; }
 cd "$ROOT/contracts"
-NOREN_RH_ORACLE=$(j oracle) NOREN_RH_VAULT=$(j vault) NOREN_RH_GATEWAY=$(j gateway) NOREN_RH_CREDIT=$(j credit) NOREN_RH_MERCHANT=$(j demoMerchant) \
-  forge script script/Warm.s.sol:Warm --rpc-url http://127.0.0.1:$TMP_PORT --sender "$(j demoCustomer)" >"$ROOT/.fork/warm-output.txt" 2>&1 \
+NOREN_RH_ORACLE=$(j oracle) NOREN_RH_VAULT=$(j vault) NOREN_RH_GATEWAY=$(j gateway) NOREN_RH_CREDIT=$(j credit) NOREN_RH_MERCHANT=$(j demoMerchant) NOREN_RH_BORROW=$(j borrow) \
+  forge script script/Warm.s.sol:Warm --rpc-url http://127.0.0.1:$TMP_PORT --sender "$(j demoCustomer)" --gas-limit 4000000000 --memory-limit 1073741824 >"$ROOT/.fork/warm-output.txt" 2>&1 \
   || { tail -20 "$ROOT/.fork/warm-output.txt" >&2; exit 1; }
 cd "$ROOT"
 pnpm exec tsx scripts/apply-warm.ts "$ROOT/.fork/warm-output.txt" http://127.0.0.1:$TMP_PORT
