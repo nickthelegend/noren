@@ -44,7 +44,13 @@ export function resultFromIdkitError(code: string): VerifyHumanResult {
   }
 }
 
-export const formatUsdc6 = (v: string | bigint) => {
+/** True only for a real GET /world-id/config body; a server without the World ID routes answers 404 {"error":"Not found"}. */
+export const isWorldConfig = (c: unknown): c is WorldConfigInfo =>
+  !!c && typeof c === 'object' && typeof (c as WorldConfigInfo).configured === 'boolean' && Array.isArray((c as WorldConfigInfo).missing);
+
+/** USDC (6 decimals) for display; "—" for a missing or non-numeric value instead of throwing. */
+export const formatUsdc6 = (v: string | bigint | null | undefined) => {
+  if (v === null || v === undefined || (typeof v === 'string' && !/^\d+$/.test(v))) return '—';
   const n = BigInt(v), whole = n / 1_000_000n, frac = (n % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '');
   return frac ? `${whole}.${frac.slice(0, 2).padEnd(2, '0')}` : whole.toString();
 };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { IDKitRequestWidget, passport, proofOfHuman, selfieCheck, type IDKitResult, type Preset } from '@worldcoin/idkit';
-import { fetchHumanStatus, fetchWorldConfig, formatUsdc6, requestHuman, resultFromIdkitError, retryStarter, submitProof } from './client.ts';
+import { fetchHumanStatus, fetchWorldConfig, formatUsdc6, isWorldConfig, requestHuman, resultFromIdkitError, retryStarter, submitProof } from './client.ts';
 import type { HumanRequest, HumanStatus, StarterLine, VerifyHumanResult, WorldConfigInfo, WorldCredential } from './types.ts';
 
 const CREDENTIAL_LABEL: Record<WorldCredential, string> = { selfie: 'Selfie Check', proof_of_human: 'Proof of Human', passport: 'Passport' };
@@ -45,7 +45,12 @@ export function VerifyHuman({ serverUrl, wallet, onResult, txHref }: VerifyHuman
     let live = true;
     setPhase('loading'); setResult(null); setHuman(null);
     Promise.all([fetchWorldConfig(serverUrl), wallet ? fetchHumanStatus(serverUrl, wallet) : Promise.resolve({ verified: false } as HumanStatus)])
-      .then(([c, h]) => { if (live) { setCfg(c); setHuman(h); setPhase('ready'); } })
+      .then(([c, h]) => {
+        if (!live) return;
+        // A Noren server without the World ID routes (the hosted demo) answers 404: say so instead of opening IDKit.
+        if (!isWorldConfig(c)) { setResult({ status: 'setup_required', detail: "World ID verification runs on the local stack (the Noren server signs IDKit requests), and this server has no World ID routes. See the demo video." }); setPhase('ready'); return; }
+        setCfg(c); setHuman(h); setPhase('ready');
+      })
       .catch(e => { if (live) { setResult({ status: 'error', code: 'server_unreachable', detail: `Noren server unreachable: ${e?.message ?? e}` }); setPhase('ready'); } });
     return () => { live = false; };
   }, [serverUrl, wallet]);
