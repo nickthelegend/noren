@@ -9,6 +9,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "start": "tsx server/index.ts",
+    "connect:local": "tsx scripts/connect-local.ts",
     "test": "tsx --test server/*.test.ts"
   },
   "dependencies": {

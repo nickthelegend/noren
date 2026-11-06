@@ -53,7 +53,8 @@ The shop needs a running Noren server (`pnpm dev:all` from the repo root, owned 
 ```sh
 cd examples/shop
 pnpm install --ignore-workspace     # its own lockfile; @noren/core is linked from packages/core
-cp .env.example .env                # fill NOREN_SERVER, NOREN_MERCHANT, NOREN_SECRET_KEY
+cp .env.example .env                # fill NOREN_SERVER, NOREN_MERCHANT, NOREN_SECRET_KEY, or on a local stack:
+pnpm connect:local                  # SIWE sign-in + POST /stores "Aubelle" on the LOCAL Noren server, keys into .env
 pnpm build                          # builds the storefront into dist/
 pnpm start                          # backend + storefront on http://127.0.0.1:8780
 pnpm test                           # 5 tests: catalogue pricing, webhook signature accept/reject
@@ -69,6 +70,8 @@ For storefront work, `pnpm dev` runs Vite on 8781 and proxies `/api` to the back
 | `NOREN_CHECKOUT_URL` | Hosted checkout origin, used when the API does not return a checkout URL (default `http://localhost:5190`) |
 | `NOREN_WEBHOOK_SECRET` | Optional: signing secret of an existing endpoint; otherwise the shop registers its own |
 | `SHOP_PORT`, `SHOP_URL` | Where the shop listens and the public base for redirects and the webhook (default 8780) |
+
+`pnpm connect:local` does locally what a merchant does in Noren Merchant: it signs in with Ethereum (SIWE) as Anvil's published dev account #9, creates the store "Aubelle" with `POST /stores` (Noren registers the store's merchant account on the forked NorenCheckout), and writes the returned secret key into `.env` without printing it. It refuses any Noren server that is not on 127.0.0.1 or localhost.
 
 Without `NOREN_SERVER`, `NOREN_MERCHANT` and `NOREN_SECRET_KEY`, the bag shows **Setup required** with the missing variable names and `POST /api/checkout` answers HTTP 503. Nothing is simulated.
 
