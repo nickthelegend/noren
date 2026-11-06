@@ -110,7 +110,7 @@ Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG 
 
 ## Tests
 
-`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork): **93 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (28) and NorenCreditLine (16). They cover:
+`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork): **94 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (28) and NorenCreditLine (17). They cover:
 
 - **Payments:** stale price, weekend window, holiday, depeg, unsupported or disabled asset, slippage, invoice replay, expiry and cancellation, blocked payer, paused token.
 - **Underwriting:** wrong-key, tampered, replayed, expired, malformed and below-floor attestations; tier upgrades and downgrades.
