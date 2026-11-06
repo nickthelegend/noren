@@ -33,6 +33,7 @@ import { NATIVE_ETH, type NorenAddresses } from './addresses.js'
 export * from './addresses.js'
 export * from './abi.js'
 export * from './aqua.js'
+export * from './earn.js'
 
 export type Attestation = {
   borrower: Address
