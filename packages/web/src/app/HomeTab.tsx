@@ -47,9 +47,9 @@ export function HomeTab({ w, go }: { w: Wallet; go: (t: Tab) => void }) {
   const total = parts.every((p) => p !== null) ? parts.reduce((a, b) => a! + b!, 0n)! : null;
   const toPay = () => { payRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => document.getElementById("nk-paylink")?.focus(), 350); };
 
-  const ACTIONS: { k: string; label: string; sub: string; icon: string; on: () => void; primary?: boolean }[] = [
+  const ACTIONS: { k: string; label: string; short?: string; sub: string; icon: string; on: () => void; primary?: boolean }[] = [
     { k: "pay", label: "Pay", sub: "Scan or paste a link", icon: "M4 7h16M4 12h10M4 17h7", on: toPay, primary: true },
-    { k: "send", label: "Send privately", sub: "From your private balance", icon: "M4 12h13M13 6l6 6-6 6", on: () => go("pay") },
+    { k: "send", label: "Send privately", short: "Send", sub: "From your private balance", icon: "M4 12h13M13 6l6 6-6 6", on: () => go("pay") },
     { k: "bridge", label: "Bridge", sub: "Robinhood ⇄ Arc", icon: "M7 7h11l-3-3M17 17H6l3 3", on: () => go("bridge") },
     { k: "earn", label: "Earn", sub: "Deposits become Aqua liquidity", icon: "M5 18l5-6 4 3 5-8", on: () => go("earn") },
     { k: "credit", label: "Credit", sub: "Borrow against stock", icon: "M4 8h16v10H4zM4 12h16", on: () => go("credit") },
@@ -77,7 +77,7 @@ export function HomeTab({ w, go }: { w: Wallet; go: (t: Tab) => void }) {
           {ACTIONS.map((a, i) => (
             <motion.button key={a.k} className={a.primary ? "primary" : ""} onClick={a.on} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 * i, duration: 0.25 }}>
               <i aria-hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={a.icon} /></svg></i>
-              <b>{a.label}</b><small>{a.sub}</small>
+              <b><span className="lg">{a.label}</span><span className="sm">{a.short ?? a.label}</span></b><small>{a.sub}</small>
             </motion.button>
           ))}
         </nav>
