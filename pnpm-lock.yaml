@@ -27,6 +27,16 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.10.1)(tsx@4.20.6)
 
+  packages/arc-credit:
+    dependencies:
+      '@openzeppelin/contracts':
+        specifier: 5.1.0
+        version: 5.1.0
+    devDependencies:
+      forge-std:
+        specifier: github:foundry-rs/forge-std#v1.9.7
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/77041d2ce690e692d6e03cc812b57d1ddaa4d505
+
   packages/contracts:
     dependencies:
       '@openzeppelin/contracts':
@@ -104,6 +114,28 @@ importers:
       viem:
         specifier: 2.51.3
         version: 2.51.3(typescript@5.9.3)
+
+  packages/tsuke:
+    dependencies:
+      '@openzeppelin/contracts':
+        specifier: 5.1.0
+        version: 5.1.0
+      viem:
+        specifier: 2.51.3
+        version: 2.51.3(typescript@5.9.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.10.1)(tsx@4.20.6)
 
   packages/web:
     dependencies:
@@ -1340,6 +1372,10 @@ packages:
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
+
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/77041d2ce690e692d6e03cc812b57d1ddaa4d505:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/77041d2ce690e692d6e03cc812b57d1ddaa4d505}
+    version: 1.9.7
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -2919,6 +2955,8 @@ snapshots:
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
+
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/77041d2ce690e692d6e03cc812b57d1ddaa4d505: {}
 
   fsevents@2.3.3:
     optional: true
