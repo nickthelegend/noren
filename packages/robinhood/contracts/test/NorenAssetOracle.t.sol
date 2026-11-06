@@ -58,9 +58,12 @@ contract NorenAssetOracleTest is RobinhoodBase {
   }
 
   function test_weekendAllowsStaleStockButNotEth() public {
-    // Sunday 12:00 UTC after the fork: stock feeds are frozen since the fork, inside the closed window. (Saturday noon is
-    // less than a day after a Friday-afternoon round, so it isn't past the open-market limit when the fork is a Friday.)
-    vm.warp(_nextAt(0, 12));
+    // A Sunday 12:00 UTC (inside the closed window) chosen from the TSLA round itself, not from the fork's wall clock:
+    // the first Sunday noon that is past the open-market limit, so the case holds whatever the feed's age at fork time.
+    (,,, uint256 tslaUpdated,) = IAggregatorV3(RH.FEED_TSLA).latestRoundData();
+    uint256 ts = _nextAt(0, 12);
+    while (ts - tslaUpdated <= RH.MAX_AGE_OPEN) ts += 7 days;
+    vm.warp(ts);
     assertTrue(oracle.marketClosed(block.timestamp));
     NorenAssetOracle.Price memory p = oracle.price(RH.TSLA);
     assertTrue(p.marketClosed);
