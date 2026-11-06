@@ -1,101 +1,140 @@
 # Noren (暖簾)
 
-**Private payments for EVM.** Payment links, hosted checkout, refunds, signed webhooks and a TypeScript SDK, like the card-payments stack merchants already know, except the customer pays from a [Kohaku](https://github.com/ethereum/kohaku) privacy pool. The merchant gets the USDC and a receipt. Nobody, the merchant included, gets the customer's wallet.
+**Private payments for EVM, with stocks and credit when you want them.** Merchants get payment links, a hosted checkout, refunds, signed webhooks and USDC on Arc. Customers pay from a [Kohaku](https://github.com/ethereum/kohaku) privacy pool, so the merchant gets the money and a receipt but never the customer's wallet. Customers who'd rather pay with Robinhood Chain Stock Tokens, or pay later on a credit line backed by them, can do that too. A Chainlink CRE workflow carries the credit line from Robinhood Chain to Arc.
 
-![Noren landing](docs/img/landing.png)
+ETHGlobal Mumbai entry. Everything below runs on local forks; every number was measured on Nov 6, 2026.
 
-| | A plain USDC transfer | A Noren payment |
+![Noren checkout: pay privately, pay with stocks, or pay later](docs/img/checkout-methods.png)
+
+## One product, three surfaces
+
+| Surface | Route | What it does |
 |---|---|---|
-| Merchant learns the payer's address | yes, forever | **no** |
-| Merchant (and everyone) sees the payer's balance and history | yes | **no** |
-| Paid in full, on time, for this invoice | trust the sender | **enforced by a ZK proof** |
-| Funds screened for compliance | no | **yes** (ASP checks USDC's blacklist) |
-| Refunds | back to the public wallet | **into a private inbox only the customer can see** |
-| Who pays gas | the customer | **the merchant (~$0.01 on Arc)** |
-
-## What a merchant gets
-- **Dashboard** (`#/dashboard`), built like a card-payments dashboard:
-  - **Home:** today vs yesterday, the on-chain USDC balance, and period-over-period cards (gross, net, payments, refunds, links, average). Customers identified: 0.
-  - **Balances:** the balance read live from the payout address, plus a payment/refund ledger with CSV export.
-  - **Payments:** status tabs, search, date filter, CSV export and row menus. Each payment has its own page with a timeline, gas, webhooks, a refund dialog, and the Chainlink rounds behind its quote.
-  - **Payment links:** a builder with live checkout preview and fiat pricing, plus copy link and QR.
-  - **Developers:** API keys, webhook endpoints with delivery stats, and a split-view event log.
-  - **Everywhere:** ⌘K search, the "+ New" menu and toasts.
-- **Hosted checkout** (`#/pay/:invoiceId`): merchant name, line item, countdown, private balance, the proof made on the customer's device, and a receipt.
-- **REST API + webhooks**: see [docs/API.md](docs/API.md). Events `invoice.created`, `invoice.bound`, `payment.succeeded` and `refund.succeeded` are HMAC-SHA256 signed (`noren-signature: t=…,v1=…`), retried 3 times, and every delivery is logged.
-- **SDK**: `@noren/core/merchant` (`createNoren`, `invoices.create/list/retrieve/refund`, `profile.set`, `webhooks.create/list/del`, `verifyWebhook`) and `@noren/core/customer` (`shield`, `refundInbox`, `proveInvoicePayment`).
+| **Noren Merchant** | `#/dashboard` | Payments with the method used (private pool, pay with stocks, pay later), payment links priced in 9 currencies by Chainlink, refunds, balances, webhooks, API keys, credit-line exposure. "Customers identified: 0" for private payments. |
+| **Noren app** | `#/app` | The customer's side: private balance, Stock Tokens at live Chainlink prices, a credit score from on-chain history (and a sealed AI second opinion on 0G), lock stock for a credit line, watch Chainlink CRE bridge it to Arc, repay. No stock? Verify with World ID for a small starter line. |
+| **Noren SDK** | `@noren/core` | `createNoren` (invoices, refunds, webhooks, `verifyWebhook`) for merchants; `shield`, `refundInbox`, `proveInvoicePayment` for customers. The hosted checkout `#/pay/:id` is the drop-in. |
 
 ```ts
 import { createNoren, verifyWebhook } from "@noren/core/merchant";
 const noren = createNoren({ server, token: process.env.NOREN_SECRET_KEY, merchant });
 const { invoice } = await noren.invoices.create({ amount: 7_500_000n, description: "Flat white", expiresIn: 1800 });
-// later, in your webhook handler:
+// send the customer to /pay/{invoice.invoiceId}; later, in your webhook handler:
 const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secret); // payment.succeeded → fulfil
 ```
 
-**Priced in any currency, with Chainlink.** Price a link in EUR, GBP, JPY, CAD, AUD, MXN, BRL or KRW. Noren reads Chainlink Data Feeds (fiat/USD and USDC/USD), checks decimals, positivity and staleness, rounds up, and locks the USDC quote until the link expires. Both round IDs are stored on the invoice, so anyone can re-check the quote with `getRoundData`. Chainlink feeds are live on **Arc mainnet** but not on Arc testnet, so prices are read from Arc mainnet (read-only `eth_call`, no transactions), while settlement stays on Arc testnet. `NorenQuoter.sol` is the on-chain consumer, tested in a fork of Arc mainnet against the real feeds. Measured Nov 6: €6.90 → 7.740672 USDC (EUR/USD round 18446744073709551777); ¥1,200 → 7.600519 USDC. Details are in [docs/CHAINLINK.md](docs/CHAINLINK.md).
+## Three ways to pay one invoice
 
-**Why "for EVM":** the contracts are plain Solidity on 0xbow's Privacy Pools, and the SDK is viem. Nothing is Arc-specific except the chain config and the USDC address, so it ports to any EVM chain with Circle USDC. The first (and only tested) network is Arc testnet, run as a local fork; the public deployment waits on testnet USDC.
+| | Pay privately | Pay with stocks | Pay later |
+|---|---|---|---|
+| Customer pays with | USDC in a Kohaku privacy pool (Arc) | NVDA, TSLA, AAPL… Stock Tokens (Robinhood Chain) | A USDC credit line on Arc, backed by locked Stock Tokens |
+| Merchant receives | USDC on Arc, in the payment tx | USDG on Robinhood Chain, from Noren's stock vault | USDC on Arc, upfront, from the credit pool |
+| Merchant learns the payer | **no**: the proof binds the invoice, not a wallet | yes (public wallet) | yes (the line is public) |
+| Contract | `NorenCheckout` + 0xbow Privacy Pools | `NorenGateway` + `NorenVault` | `NorenCredit` (Robinhood) ↔ CRE ↔ `NorenCreditLine` (Arc) |
+| Price | Chainlink fiat feeds (Arc mainnet, read-only) | Chainlink stock feeds (Robinhood) + 0.50% spread | Chainlink stock feeds value the collateral |
 
-## How it works
-- **Invoice-bound proofs.** The customer's Privacy Pools withdrawal proof binds the invoice, the merchant, the amount and the refund address. Change any field and the pool rejects it (`ContextMismatch`).
-- **The merchant relays.** The merchant's server submits the payment and pays the gas, so the customer needs no gas, no public wallet and no relayer company. Only the merchant can relay its own invoices, which closes invoice squatting.
-- **Private refunds.** The merchant refunds into the customer's shielded refund inbox, fixed when they paid. The customer's Kohaku wallet discovers it; the merchant never learns who they refunded.
-- **Selective receipts.** A receipt commitment the customer can later open for warranty or tax.
+The checkout says it plainly: only "Pay privately" hides you.
 
-Built on the Ethereum Foundation's [Kohaku](https://github.com/ethereum/kohaku) SDK and 0xbow's [Privacy Pools](https://github.com/0xbow-io/privacy-pools-core) (Apache-2.0, see NOTICE). Proofs are made on the customer's device.
+## Measured (local forks, Nov 6 2026)
 
-## Status
-Feasibility spike **passed** on a local fork of Arc testnet (chain 5042002): see [SPIKE.md](SPIKE.md). Phase 2 adds a merchant HTTP server, ASP postman, customer TypeScript library, deployment script, and a full local-fork e2e runner. The latest measured results are in [TESTING.md](TESTING.md). No Arc testnet deployment has been made.
+| What | Result |
+|---|---|
+| `pnpm test` (offline suites across the monorepo) | **96 passed**, 13 files |
+| `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), proof 1.28 s, re-proof 1.14 s, 39.0 s total |
+| Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
+| `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040588 NVDA at $185.56 pays a 7.50 invoice (merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |
+| One CRE simulator run (bridge workflow, `--broadcast` through the MockKeystoneForwarder) | 4.6–5.2 s per event |
+| CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
+| Browser, Noren app | fresh wallet, fork faucet, tier-1 terms (score 13/100, collateral-only floor), 1 NVDA locked → 123.80 USDC line, live on Arc after one CRE run (4.8 s), a ¥1,200 checkout (7.60 USDC via Chainlink) paid later, 1.90 USDC repaid |
+| Package suites | `NorenCredit`/`NorenGateway`/`NorenVault` **94** Foundry tests on a fresh Robinhood mainnet fork; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
 
-```sh
-pnpm install --store-dir './.pnpm-store'
-pnpm spike     # anvil fork of Arc testnet → deploy Privacy Pools + NorenCheckout → shield → invoice-bound proof → pay → refund → forge tests
-pnpm e2e       # fresh fork → merchant HTTP server + ASP postman + customer library → all attacks + refund approval
-pnpm dev:stack # one local fork + deploy + demo merchant server + fast ASP; Ctrl-C stops it
-pnpm test      # Vitest core and server validation
-pnpm exec tsc --noEmit
-```
+Fork transaction hashes vanish when the fork stops, so the numbers above are reproducible with the commands below rather than linked.
 
-## Phase 2 packages
+## Architecture
 
-- `@noren/core`: Arc/fork chain config, deployment reader (`@noren/core/node`), ABI-accurate invoice encoding, and customer helpers (`@noren/core/customer`). Amounts are USDC base units: `7_500_000n` is 7.50 USDC. Invoice JSON uses decimal strings for big integers.
-- `@noren/server`: small Node HTTP server, JSON state in ignored `data/`, merchant-key relay, bearer-gated refund, and SSE on `GET /events` (`invoice_created`, `paid`, `refunded`).
-- `@noren/postman`: scans real pool `Deposited` logs, checks the Arc USDC `isBlacklisted(depositor)` view before approving labels, and batches `Entrypoint.updateRoot`. It serves versioned LeanIMT tree snapshots at `/asp/tree?v=N`; the root event's CID field contains the exact snapshot URL. The URL must be 32–64 bytes long per Entrypoint.
+![Noren architecture](docs/img/architecture.png)
 
-The merchant first registers a payout with `NorenCheckout.registerMerchant(payout)`. The merchant console creates a **draft** with `POST /merchants/:address/invoices` and `{ "amount": "7500000", "expiry": "<Unix seconds>" }`. The response has the invoice ID and checkout address for the payment link. The customer obtains a refund precommitment from `refundInbox()` and a receipt opening from `createReceipt()`, then calls `POST /invoices/:id/bind` with `{ "refundPrecommitment": "<decimal field element>", "receiptCommitment": "0x<32 bytes>" }`. Binding succeeds once and makes the invoice immutable. The bind response has the complete invoice and encoded payment data. The customer calls `rememberReceipt(invoice, opening)`, then sends the output of `proveInvoicePayment(invoice)` as JSON to `POST /invoices/:id/pay`. Payment requires an exact match to the bound invoice. `GET /invoices/:id` and `GET /merchants/:address/invoices` are public; the latter lists newest first with status and transaction hashes. `POST /invoices/:id/refund` takes `{ "amount": "2500000" }` and `Authorization: Bearer <NOREN_REFUND_TOKEN>`.
+Details and flows: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Credit line: [docs/CREDIT.md](docs/CREDIT.md), [docs/BRIDGE.md](docs/BRIDGE.md). Pricing: [docs/CHAINLINK.md](docs/CHAINLINK.md), [docs/CRE-PRICING.md](docs/CRE-PRICING.md). AI credit check: [docs/0G.md](docs/0G.md). World ID: [docs/WORLD.md](docs/WORLD.md). Arc: [docs/ARC.md](docs/ARC.md). API: [docs/API.md](docs/API.md).
 
-`pnpm dev:stack` starts an Anvil fork at `http://127.0.0.1:8645` (chain 5042002), installs the fork-only USDC shim, deploys the real verifiers, Entrypoint proxy, pool, and checkout, and registers Anvil account 1 as merchant with its own payout. It writes ignored `deployments/31337-fork.json`; this filename marks the local fork, while the JSON `chainId` remains 5042002. The live server at `http://127.0.0.1:8790` exposes `GET /config` and `POST /dev/faucet` (50 shim USDC plus native gas once per address), accepts CORS from `http://localhost:5190` and `http://127.0.0.1:5190`, and requires the printed merchant bearer token for invoice creation and refund. Reads and customer binding/payment are public. The ASP at `http://127.0.0.1:8788` batches roots about every 5 seconds. Dev endpoints refuse a non-loopback RPC or a node that is not an Anvil fork of chain 5042002. Only the fork is written to; stop the command with Ctrl-C. Browser bundling notes are in [packages/core/BROWSER.md](packages/core/BROWSER.md).
-
-For local services, set `NOREN_RPC_URL`, `NOREN_MERCHANT_KEY`, `NOREN_POSTMAN_KEY`, and `NOREN_REFUND_TOKEN` in the environment, then run `pnpm --filter @noren/server start` and `pnpm --filter @noren/postman start`. Neither key is logged. The e2e runner uses Anvil's unlocked merchant account on loopback and never imports a private key. Production services need their own durable secret storage and publicly reachable ASP tree URL.
-
-`scripts/deploy-arc.ts` deploys the verifiers, Entrypoint proxy, USDC complex pool and checkout, registers the pool, and writes ignored `deployments/5042002.json`. It checks the deployer's native and ERC-20 USDC balance before any transaction on a remote RPC and prints only the address when funding is needed. It was **not run against Arc testnet**. Set `NOREN_POSTMAN_ADDRESS` to give a separate postman key the Entrypoint role; it defaults to the deployer. To invoke later: `NOREN_DEPLOYER_KEY=... NOREN_RPC_URL=https://rpc.testnet.arc.io pnpm exec tsx scripts/deploy-arc.ts`.
-
-The pinned prover artifacts come from the 0xbow `privacy-pools-core` commit `7bc392dad5fa483f53cf74e25d7ad19f0fc6d85f/packages/circuits`, the same URL used by `@fatsolutions/privacy-pools-core-circuits@1.0.5`. `withdraw.zkey` is about 17.8 MB and is **not in Git**. `artifactProverFactory` fetches it once per process and caches it in ignored `cache/zk/` on Node or Cache Storage (`noren-zk-v1`) in a browser. Pass `artifactBaseUrl` to `createCustomer` for a mirror URL or a local filesystem directory in Node; pass durable `storage` to retain receipt openings across app restarts. Browser proving remains to be measured on a phone.
-
-MIT © 2026 Nivesh Gajengi (Noren code). Vendored Privacy Pools contracts keep their Apache-2.0 headers.
-
-## The app (dashboard + hosted checkout)
-
-![Dashboard home](docs/img/dashboard.png)
-
-![Payments list](docs/img/payments.png)
-
-![Payment page: timeline, webhooks, Chainlink quote](docs/img/drawer.png)
-
-![Balances: on-chain USDC and ledger](docs/img/balances.png)
-
-![Hosted checkout after a private payment and refund](docs/img/checkout.png)
-
-Run it locally against an Arc testnet fork:
+## Run it
 
 ```sh
-pnpm install --store-dir './.pnpm-store'
-pnpm dev:stack                      # fork + contracts + merchant server (8790) + ASP (8788); prints a merchant token
-pnpm --filter @noren/web dev        # http://localhost:5190
+pnpm install
+pnpm dev:all                    # Arc fork + Robinhood snapshot + contracts + server + ASP + both CRE workflows + underwriters
+pnpm --filter @noren/web dev    # http://localhost:5190  (#/dashboard, #/app, #/pay/:id)
 ```
 
-Measured in a real browser on the local fork, Nov 6 2026 (three runs): 20 USDC shielded and approved by the ASP in ~6 s; a 7.50 USDC invoice paid privately with the **proof generated in the browser in 1.06–4.77 s** (warm vs first proof after page load; 1.6–5.9 s click-to-paid); the merchant console showed it as paid with **customer: unknown**; a 2.50 refund landed in the customer's private refund inbox. The customer's wallet is a test-network key and seed kept in the browser; proofs never leave the device.
+`pnpm dev:all` prints the merchant secret key for Noren Merchant and a "Setup required" line for anything it can't start. In one process it runs:
+
+- **Arc testnet fork** on :8645 with the real Privacy Pools verifiers, Entrypoint, pool, `NorenCheckout`, `NorenRateOracle` and `NorenCreditLine`. A fork-only USDC shim stands in for Arc's native USDC, which stock Anvil can't execute.
+- **Robinhood Chain** on :8646, from the Robinhood package's warmed snapshot of mainnet state: the real Stock Tokens, USDG and Chainlink feeds, with `NorenCredit`, `NorenGateway` and `NorenVault` deployed. The public RPC keeps only about 10 minutes of state, so a live fork breaks; build the snapshot once with `sh packages/robinhood/scripts/fork-snapshot.sh`. The node is served as chain 46630 (Robinhood testnet's id) because that is the only Robinhood chain the CRE simulator knows, and Robinhood testnet's real `MockKeystoneForwarder` is installed on it.
+- **CRE**: the pricing workflow runs once at start (live Arc mainnet Chainlink reads, then a write to `NorenRateOracle`). The credit bridge workflow runs in the CRE simulator for every `CreditLineOpened`/`CreditLineClosed` on Robinhood and every `Drawn`/`Repaid` on Arc, with `--broadcast` through the forwarders. The run log is at `GET /credit/bridge`.
+- **Merchant server** (:8790), **ASP postman** (:8788), **history underwriter** (:8791), **0G credit check** (:8792), **World ID** routes on the merchant server.
+
+Other commands:
+
+```sh
+pnpm dev:stack       # the private-payments stack only (Arc fork)
+pnpm test            # offline tests
+pnpm e2e             # private payment + attacks + refund on a fresh Arc fork
+pnpm e2e:credit      # pay with stocks + pay later against a running dev:all (NOREN_MERCHANT_TOKEN=<printed key>)
+pnpm deploy:arc:dry  # measures the Arc testnet deploy on a fork from the real deployer; writes deployments/5042002-dryrun.json
+pnpm deploy:arc      # the real Arc testnet deploy (needs NOREN_DEPLOYER_KEY and testnet USDC)
+pnpm studio:import   # sends the Arc contracts to Arc Studio (needs arc-studio login)
+```
+
+Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fork.json` (dev stack), never `5042002.json`.
+
+## How a private payment works
+
+- **Invoice-bound proofs.** The customer's Privacy Pools withdrawal proof binds the invoice, merchant, amount and refund address. Change any field and the pool rejects it (`ContextMismatch`).
+- **The merchant relays.** The merchant's server submits the proof and pays about a cent of gas, so the customer needs no gas and no public wallet. Only the merchant can relay its own invoices.
+- **Compliance.** The ASP postman approves a deposit only if Arc USDC's own `isBlacklisted(depositor)` is false.
+- **Private refunds** go into a shielded refund inbox fixed when the customer paid. **Selective receipts** let the customer prove the purchase later, if they choose.
+- **Any currency.** Links priced in EUR, GBP, JPY, CAD, AUD, MXN, BRL or KRW are quoted from Chainlink Data Feeds on Arc mainnet (read-only) and locked until expiry. Both round IDs are stored, and `NorenRateOracle` on Arc re-checks the quote at those rounds ("Rate verified on-chain").
+
+## How pay later works
+
+1. **Score.** The history underwriter reads the wallet's real Robinhood Chain history (account age, transaction count, Stock Token holdings at Chainlink prices, past Noren repayments) and scores it. A sealed model on **0G Private Computer** gives a second decision with a 0G request ID and TEE verification. Any wallet that locks Stock Tokens gets at least the collateral-only tier (150%); history only improves terms.
+2. **Attest.** The underwriter signs an EIP-712 `CreditAttestation`; `NorenCredit.applyAttestation` verifies it on-chain.
+3. **Lock.** `NorenCredit.openCreditLine` values the shares with Chainlink (with a weekend haircut when markets are closed) and emits `CreditLineOpened`.
+4. **Bridge.** The Chainlink CRE workflow writes the limit to `NorenCreditLine` on Arc through the forwarder.
+5. **Spend.** On any Noren checkout, "Pay later" calls `NorenCreditLine.payInvoice`; the merchant is paid USDC upfront and the server settles the invoice from the `Drawn` log.
+6. **Repay.** USDC on Arc, in parts or at once. CRE carries each `Drawn`/`Repaid` back to `NorenCredit`. Debt left after expiry plus grace, or collateral below 110% of the debt, makes the line liquidatable.
+7. **No stock?** Verify with World ID (IDKit, server-verified) for one small unsecured starter line per human. Noren stores only the nullifier.
+
+## CROPS
+
+- **Censorship resistant.** The customer's funds sit in a Privacy Pools contract, not with Noren: they can withdraw or pay any merchant without Noren's permission. Settlement is a contract call any merchant server can relay; the merchant runs its own.
+- **Open source.** MIT (Noren) and Apache-2.0 (vendored Privacy Pools). One command builds and runs everything locally: `pnpm install && pnpm dev:all`.
+- **Private.** What each party learns: the **merchant** learns that an invoice was paid in full, never the payer's address, balance or history. The **Noren server** never sees note secrets, keys or proof inputs; it relays a finished proof. The **ASP** sees only deposit addresses, which it checks against USDC's blacklist. **World ID** gives Noren a nullifier, not a person. The **0G** credit check gets numeric features without an address, inside a TEE. The web app makes **no third-party requests**: fonts and prover artifacts are served by the app itself. Pay with stocks and pay later are *not* private, and the UI says so.
+- **Secure.** Keys, note secrets and Groth16 proofs stay in the customer's browser. Invoice-bound proofs make tampering, replay, squatting, expiry and stale roots fail on-chain (the 5 attack checks above). CRE reports are accepted only from the configured forwarder; credit attestations only with the underwriter's EIP-712 signature.
+
+## Honest limits
+
+- **Local forks only.** Arc testnet and Robinhood Chain run as local Anvil nodes; no real money or stock moves. The public Arc testnet deploy is **BLOCKED** on testnet USDC for `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Circle faucet CAPTCHA, Nick). The Arc Studio app is **BLOCKED** on an Arc Studio login (Nick); steps in [docs/ARC.md](docs/ARC.md).
+- **Robinhood testnet has no Chainlink feeds**, so the Robinhood side is a snapshot of mainnet state. CRE only knows Robinhood *testnet*, so that node is served as chain 46630 with testnet's simulation forwarder. CRE workflows run in the CRE CLI simulator, not on a DON.
+- **Keys not yet created:** the 0G credit check needs `ZG_PC_API_KEY` and World ID needs `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY`. Until then both say "Setup required" and nothing is faked; the history underwriter's deterministic score (labelled as such) decides terms.
+- Stock Tokens can't leave Robinhood Chain and their issuer can pause or block them; only stablecoin value crosses, as a credit limit carried by CRE. See [docs/BRIDGE-ROUTES.md](docs/BRIDGE-ROUTES.md).
+- The privacy pool on a fresh fork has few depositors, so timing can link a payment to a deposit; the checkout shows the anonymity set.
+- Browser proving was measured on a laptop, not yet on a phone. The contracts are unaudited.
+
+## Repository
+
+| Package | What |
+|---|---|
+| `packages/contracts` | `NorenCheckout`, `NorenQuoter`, `NorenRateOracle`, fork USDC shim; vendored Privacy Pools |
+| `packages/core` | the SDK: chain config, invoice encoding, `@noren/core/merchant`, `@noren/core/customer`, Chainlink pricing |
+| `packages/server` | merchant API, relay, webhooks, credit and stock settlement watchers, Robinhood fork faucet |
+| `packages/postman` | ASP: USDC blacklist check, Merkle roots |
+| `packages/web` | landing, Noren Merchant, Noren app, hosted checkout |
+| `packages/robinhood` | `NorenCredit`, `NorenGateway`, `NorenVault`, `NorenAssetOracle`, history underwriter, SDK |
+| `packages/arc-credit` | `NorenCreditLine` |
+| `packages/cre-bridge`, `packages/cre-pricing` | Chainlink CRE workflows (TypeScript) |
+| `packages/ai-underwriter` | credit check on 0G Private Computer |
+| `packages/world-id` | IDKit request signing, server verification, nullifier registry, `VerifyHuman` |
+| `scripts` | `dev:all`, `dev:stack`, e2e runners, CRE runner, Arc deploy |
+
+MIT © 2026 Nivesh Gajengi. Vendored Privacy Pools contracts keep their Apache-2.0 headers (see NOTICE).
 
 ### Assets
-The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Product screenshots on the landing page are real captures of this app on the local Arc fork. Fonts: Geist, Geist Mono, Instrument Serif (Google Fonts, OFL).
+The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Screenshots are real captures of this app on the local forks. Fonts: Geist, Geist Mono, Instrument Serif (OFL), bundled from Fontsource.
