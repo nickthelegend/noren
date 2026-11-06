@@ -58,8 +58,9 @@ contract NorenAssetOracleTest is RobinhoodBase {
   }
 
   function test_weekendAllowsStaleStockButNotEth() public {
-    // Saturday 12:00 UTC after the fork: stock feeds are frozen since the fork, inside the closed window.
-    vm.warp(_nextAt(6, 12));
+    // Sunday 12:00 UTC after the fork: stock feeds are frozen since the fork, inside the closed window. (Saturday noon is
+    // less than a day after a Friday-afternoon round, so it isn't past the open-market limit when the fork is a Friday.)
+    vm.warp(_nextAt(0, 12));
     assertTrue(oracle.marketClosed(block.timestamp));
     NorenAssetOracle.Price memory p = oracle.price(RH.TSLA);
     assertTrue(p.marketClosed);
