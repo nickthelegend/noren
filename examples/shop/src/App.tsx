@@ -334,7 +334,24 @@ function BagPage() {
 // ---------------- Order confirmation ----------------
 const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, paid in USDG on Robinhood Chain', credit: 'Noren · Pay in 3 on credit' };
 const short = (s: string, n = 6) => s.length > 2 * n + 2 ? `${s.slice(0, n + 2)}…${s.slice(-n)}` : s;
+/**
+ * The payment transaction, opened in a new tab: the Arc testnet explorer when Noren runs on the public network, and
+ * Noren's local fork transaction page (#/tx/<chain>/<hash>) when it runs on local forks, which have no public explorer.
+ * Stock payments settle on Robinhood Chain, everything else on Arc.
+ */
+function TxLink({ hash, method, config }: { hash: string; method?: string | null; config: Config | null }) {
+  const chain = method === 'stocks' ? 'robinhood' : 'arc';
+  const local = !config?.server || /127\.0\.0\.1|localhost/.test(config.server);
+  const href = !local && chain === 'arc' ? `https://explorer.testnet.arc.io/tx/${hash}` : `${config?.checkoutBase ?? 'http://localhost:5190'}/#/tx/${chain}/${hash}`;
+  return (
+    <a className="mono tx-link" href={href} target="_blank" rel="noreferrer" title={`${hash}: opens ${local ? `the local ${chain === 'arc' ? 'Arc' : 'Robinhood'} fork transaction page` : 'the Arc testnet explorer'} in a new tab`}>
+      {short(hash)}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>
+    </a>
+  );
+}
 function OrderPage({ id }: { id: string }) {
+  const { config } = useConfig();
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -361,7 +378,7 @@ function OrderPage({ id }: { id: string }) {
           <dl className="facts">
             <dt>Paid with</dt><dd>{paid || order.method ? METHOD[order.method ?? ''] ?? 'Noren' : 'Noren checkout'}</dd>
             <dt>Noren payment</dt><dd className="mono" title={order.invoiceId}>{short(order.invoiceId)}</dd>
-            {order.paymentTx && <><dt>Transaction</dt><dd className="mono" title={order.paymentTx}>{short(order.paymentTx)}</dd></>}
+            {order.paymentTx && <><dt>Transaction</dt><dd><TxLink hash={order.paymentTx} method={order.method} config={config} /></dd></>}
             {order.paidVia === 'webhook' && <><dt>Confirmed by</dt><dd>Signed Noren webhook <span className="ok">✓ signature verified</span></dd></>}
             {paid && order.paidVia !== 'webhook' && <><dt>Confirmed by</dt><dd>Noren API (webhook not received yet)</dd></>}
           </dl>
