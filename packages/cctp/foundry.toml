@@ -1,0 +1,17 @@
+[profile.default]
+src = 'src'
+out = 'out'
+test = 'test'
+script = 'script'
+libs = ['node_modules']
+solc_version = '0.8.28'
+evm_version = 'cancun'
+optimizer = true
+optimizer_runs = 10000
+via_ir = true
+bytecode_hash = 'none'
+cbor_metadata = false
+fs_permissions = [{ access = "read", path = "./fixtures" }]
+
+[profile.default.lint]
+exclude_lints = ['block-timestamp', 'unsafe-typecast']

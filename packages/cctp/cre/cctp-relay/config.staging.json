@@ -1,0 +1,62 @@
+{
+  "arc": {
+    "chainSelectorName": "arc-testnet",
+    "hook": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+    "gasLimit": "700000"
+  },
+  "messageTransmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+  "sources": [
+    {
+      "key": "base-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+      "domain": 6
+    },
+    {
+      "key": "arbitrum-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-arbitrum-1",
+      "domain": 3
+    },
+    {
+      "key": "ethereum-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia",
+      "domain": 0
+    },
+    {
+      "key": "robinhood-testnet",
+      "chainSelectorName": "robinhood-testnet",
+      "domain": 35
+    },
+    {
+      "key": "op-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-optimism-1",
+      "domain": 2
+    },
+    {
+      "key": "avalanche-fuji",
+      "chainSelectorName": "avalanche-testnet-fuji",
+      "domain": 1
+    },
+    {
+      "key": "polygon-amoy",
+      "chainSelectorName": "polygon-testnet-amoy",
+      "domain": 7
+    },
+    {
+      "key": "unichain-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-unichain-1",
+      "domain": 10
+    },
+    {
+      "key": "linea-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-linea-1",
+      "domain": 11
+    },
+    {
+      "key": "worldchain-sepolia",
+      "chainSelectorName": "ethereum-testnet-sepolia-worldchain-1",
+      "domain": 14
+    }
+  ],
+  "irisBaseUrl": "https://iris-api-sandbox.circle.com",
+  "confidence": "LATEST"
+}
