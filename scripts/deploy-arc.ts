@@ -19,7 +19,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_CHAIN_ID, ARC_USDC, entrypointAbi, jsonBigints, localFork, usdcAbi, type Deployment } from '@noren/core';
 
 export const ARC_TESTNET_RPC = 'https://rpc.testnet.arc.io';
-export const ARC_TESTNET_EXPLORER = 'https://testnet.arcscan.app';
+export const ARC_TESTNET_EXPLORER = 'https://explorer.testnet.arc.io';
 /** Dry runs use the arc agent's port block (8700-8709); 8700/8702 belong to `pnpm e2e`. */
 export const DRY_RUN_PORT = 8705;
 /** Funding margin over the measured cost (gas price can move between dry run and deploy). */
@@ -39,6 +39,18 @@ function bytecode(a: any, links: Record<string, Address> = {}): Hex {
     for (const { start, length } of positions) { if (length !== 20) throw new Error('Bad library link'); result = result.slice(0, 2 + start * 2) + address.slice(2) + result.slice(2 + start * 2 + 40); }
   }
   return result as Hex;
+}
+
+/** Reads back what a deploy should have set: Entrypoint -> pool -> USDC, checkout -> Entrypoint + pool. Throws on any mismatch or missing code. */
+export async function checkWiring(client: any, d: { entrypoint: Address; pool: Address; checkout: Address }) {
+  for (const [name, address] of Object.entries(d)) if ((await client.getCode({ address }) ?? '0x') === '0x') throw new Error(`Wiring check failed: no code at ${name} ${address}`);
+  const read = (address: Address, file: string, functionName: string, args: any[] = []) => client.readContract({ address, abi: artifact(file).abi, functionName, args });
+  const [config, checkoutPool, checkoutEntrypoint, poolEntrypoint, poolAsset] = await Promise.all([
+    read(d.entrypoint, 'Entrypoint', 'assetConfig', [ARC_USDC]), read(d.checkout, 'NorenCheckout', 'pool'), read(d.checkout, 'NorenCheckout', 'entrypoint'),
+    read(d.pool, 'PrivacyPoolComplex', 'ENTRYPOINT'), read(d.pool, 'PrivacyPoolComplex', 'ASSET'),
+  ]);
+  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  if (!eq((config as any)[0], d.pool) || !eq(checkoutPool, d.pool) || !eq(checkoutEntrypoint, d.entrypoint) || !eq(poolEntrypoint, d.entrypoint) || !eq(poolAsset, ARC_USDC)) throw new Error('Wiring check failed: Entrypoint, pool and checkout do not point at each other');
 }
 
 export type DeployStep = { name: string; address?: Address; tx: Hex; gasUsed: bigint; costWei: bigint };
@@ -90,14 +102,7 @@ export async function deployStack(rpcUrl: string, deployer: Address, opts: Deplo
   const pool = await deploy('PrivacyPoolComplex', 'PrivacyPoolComplex', [entrypoint, withdrawalVerifier, commitmentVerifier, ARC_USDC], { PoseidonT3: poseidonT3, PoseidonT4: poseidonT4 });
   await send('Entrypoint.registerPool', entrypoint, encodeFunctionData({ abi: entrypointAbi, functionName: 'registerPool', args: [ARC_USDC, pool, 1_000_000n, 0n, 500n] }));
   const checkout = await deploy('NorenCheckout', 'NorenCheckout', [entrypoint, pool, ARC_USDC]);
-  // Wiring checks: read back what the transactions should have set.
-  const read = (address: Address, file: string, functionName: string, args: any[] = []) => client.readContract({ address, abi: artifact(file).abi, functionName, args });
-  const [config, checkoutPool, checkoutEntrypoint, poolEntrypoint, poolAsset] = await Promise.all([
-    read(entrypoint, 'Entrypoint', 'assetConfig', [ARC_USDC]), read(checkout, 'NorenCheckout', 'pool'), read(checkout, 'NorenCheckout', 'entrypoint'),
-    read(pool, 'PrivacyPoolComplex', 'ENTRYPOINT'), read(pool, 'PrivacyPoolComplex', 'ASSET'),
-  ]);
-  const eq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-  if (!eq((config as any)[0], pool) || !eq(checkoutPool, pool) || !eq(checkoutEntrypoint, entrypoint) || !eq(poolEntrypoint, entrypoint) || !eq(poolAsset, ARC_USDC)) throw new Error('Wiring check failed: Entrypoint, pool and checkout do not point at each other');
+  await checkWiring(client, { entrypoint, pool, checkout });
   log('wiring check         Entrypoint -> pool -> USDC, checkout -> Entrypoint + pool: ok');
   const deployment: Deployment = { chainId, deploymentBlock: deploymentBlock.toString(), usdc: ARC_USDC, entrypoint, pool, checkout, withdrawalVerifier, commitmentVerifier };
   return { deployment, steps, gasUsed: steps.reduce((s, x) => s + x.gasUsed, 0n), costWei: steps.reduce((s, x) => s + x.costWei, 0n) };
