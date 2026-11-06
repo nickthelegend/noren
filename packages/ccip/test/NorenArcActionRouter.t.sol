@@ -140,6 +140,7 @@ contract NorenArcActionRouterTest is Test {
     bytes memory over = NorenArcAction.encode(NorenArcAction.PAY_ON_CREDIT, alice, inv2, abi.encode(line, merchant, inv2, uint256(3e6)));
     assertFalse(_deliver(address(this), NorenArcAction.RAIL_CCIP, bytes32(uint256(22)), 0, over), "over limit");
 
+    usdc.mint(address(this), 5e6);
     usdc.approve(address(router), 5e6);
     router.repay(line, 5e6);
     assertEq(router.available(line), 7e6);
