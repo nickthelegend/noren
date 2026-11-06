@@ -81,3 +81,16 @@ Without `NOREN_SERVER`, `NOREN_MERCHANT` and `NOREN_SECRET_KEY`, the bag shows *
 ## Photos
 
 The fifteen product photos and two editorial images were generated with ChatGPT image generation (studio photos on a dress form or a flat lay, no faces, no brands, no text) and converted to WebP. The dresses are imagined; the footer says so.
+
+## End-to-end evidence (local forks, Nov 6 2026)
+
+Both runs used the real Noren stack from `pnpm dev:all` (Arc testnet fork on 8645, Noren server on 8790, hosted checkout on 5190), a store created with `pnpm connect:local`, and the shop on 8780. Transaction hashes are on the **local Arc fork**, not on Arc testnet.
+
+| Viewport | Order | Bag | Noren invoice | Payment tx (fork) | How it was confirmed |
+| --- | --- | --- | --- | --- | --- |
+| 1440 px | `AUB-5A309F` | Margot Wrap, M, $198 | `0xcf7230…a189fa` | `0x044db79f…32ea0c7f` (status 1, 198 USDC to the store's payout) | `payment.succeeded` webhook `evt_aaafca4a862b4a4d`, signature verified |
+| 375 px | `AUB-2643C8` | Amélie Gingham, S, $148 | `0xb695d1…042616` | `0x3412b00f…6dae7b6b` (status 1) | `payment.succeeded` webhook `evt_349a77c747fc6d1e`, signature verified, method `usdc` |
+
+Flow in both: product page → size → bag drawer → **Checkout with Noren** → the shop backend creates the invoice (description, `metadata.orderId`, `successUrl`, `cancelUrl`) → Noren's hosted checkout shows "Pay Aubelle" → **Pay with USDC** → Noren redirects to `successUrl` → the order page shows Paid, the Noren payment ID, the transaction and "Signed Noren webhook ✓ signature verified". "Back to Aubelle" on the checkout returns to the bag with the items intact (`cancelUrl`).
+
+The checkout's test faucet gives 50 USDC once per wallet and every Aubelle dress costs more, so for these runs the test wallet was topped up on the fork with `ForkUSDC.mint` (the fork-only USDC shim the faucet itself uses).
