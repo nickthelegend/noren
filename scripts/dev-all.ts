@@ -16,6 +16,7 @@ import { onStop, PORTS, run, startFork, startStack, type ArcContext } from './st
 import { startPricing } from './dev-pricing.ts';
 import { adoptSnapshotDeployment, deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
 import { creSimulate } from './cre.ts';
+import { deploySettlementDesk, requestSettlement, startSettlementRelay } from './dev-settlement.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
 const has = (p: string) => existsSync(resolve(p));
@@ -49,6 +50,11 @@ run(async () => {
   }
   const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
 
+  let settle: { desk: Address; deployBlock: bigint; keeper: any; relay?: ReturnType<typeof startSettlementRelay> } | undefined;
+  if (has('packages/bridge-settlement/src/NorenSettlementDesk.sol')) {
+    try { settle = await deploySettlementDesk(robinhoodRpc); console.log(`NorenSettlementDesk on Robinhood: ${settle.desk}`); }
+    catch (e: any) { missing.push(`Settle to Arc: desk deploy failed: ${e.message}`); }
+  }
   const bridgeReady = has('packages/cre-bridge/credit-bridge/workflow.yaml');
   if (bridgeReady) {
     try { await prepareRobinhoodForCre(robinhoodRpc); console.log('Robinhood fork now served as chain 46630 (CRE robinhood-testnet) with the real robinhood-testnet MockKeystoneForwarder'); }
@@ -79,7 +85,8 @@ run(async () => {
         },
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
-      return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }))];
+      const worldId = w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }));
+      return [worldId, ...(settle ? [settlementHandler(settle, robinhoodRpc, arc)] : [])];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
@@ -119,7 +126,36 @@ run(async () => {
     bridgeLog = relay.log; onStop(relay.stop);
     console.log('CRE credit bridge: relaying CreditLineOpened/Closed (Robinhood) and Drawn/Repaid (Arc) through the CRE simulator with --broadcast');
   } else if (!bridgeReady) missing.push('packages/cre-bridge (CRE credit bridge workflow): merge the cre-bridge branch');
+  if (settle && bridgeReady) {
+    try { settle.relay = startSettlementRelay({ robinhoodRpc, desk: settle.desk, fromBlock: settle.deployBlock, keeper: settle.keeper }); onStop(settle.relay.stop); console.log('Settle to Arc: CRE settlement-desk workflow + Relay keeper armed (the Arc fill needs a real relayer)'); }
+    catch (e: any) { missing.push(`Settle to Arc relay failed: ${e.message}`); }
+  }
   for (const m of missing) console.log(`Setup required: ${m}`);
   console.log(`Web: pnpm --filter @noren/web dev  →  http://localhost:${PORTS.web}/#/credit`);
   return stack;
 });
+
+/** Merchant routes for Settle to Arc (bearer token as for the rest of the merchant API). */
+function settlementHandler(settle: { desk: Address; relay?: ReturnType<typeof startSettlementRelay> }, robinhoodRpc: string, arc: ArcContext & { token: string }) {
+  return async (req: any, res: any) => {
+    const m = /^\/merchants\/(0x[0-9a-fA-F]{40})\/settlements$/.exec(new URL(req.url ?? '/', 'http://x').pathname);
+    if (!m) return false;
+    const send = (status: number, v: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(v, (_, x) => typeof x === 'bigint' ? x.toString() : x)); return true; };
+    if (req.headers.authorization !== `Bearer ${arc.token}`) return send(401, { error: 'Merchant bearer token required' });
+    if (m[1].toLowerCase() !== arc.merchant.toLowerCase()) return send(403, { error: 'NotMerchant: this server does not own that merchant' });
+    const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
+    try {
+      if (req.method === 'GET') {
+        const usdg = await rh.readContract({ address: ROBINHOOD.usdg, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [arc.merchant] });
+        return send(200, { desk: settle.desk, usdg: String(usdg), relay: !!settle.relay, settlements: settle.relay?.list() ?? [] });
+      }
+      if (req.method === 'POST') {
+        let raw = ''; for await (const c of req) raw += c;
+        const amount = BigInt(JSON.parse(raw || '{}').amountUsdg6 ?? '0');
+        const tx = await requestSettlement(robinhoodRpc, settle.desk, arc.merchant, amount, arc.merchant);
+        return send(200, { requestTx: tx });
+      }
+      return send(405, { error: 'Method not allowed' });
+    } catch (e: any) { return send(400, { error: String(e.message).slice(0, 240) }); }
+  };
+}

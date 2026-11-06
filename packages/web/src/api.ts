@@ -18,6 +18,14 @@ export type InvoiceView = {
   stock?: { asset: `0x${string}`; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number };
   [k: string]: unknown;
 };
+export type Settlement = {
+  id: string; amountUsdg6: string; arcRecipient: string; requestTx: string; requestedAt: number;
+  quotes?: { relay?: string; across?: string }; cre?: { written?: string; ms: number; decision?: string; error?: string };
+  status: "requested" | "approved" | "rejected" | "executed" | "failed";
+  approved?: { minOutUsdc6: string; quotedOutUsdc6: string; usdgUsd8: string; usdcUsd8: string };
+  deposit?: { route: "relay"; tx: string; target: string; quotedOutUsdc6: string; relayRequestId?: string; feeUsd?: string; gasUsed: string };
+  fill: string; error?: string;
+};
 export type Webhook = { id: string; url: string; createdAt?: number | string; secret?: string };
 export type Delivery = { endpointId: string; url: string; attempt: number; status: number | null; ok: boolean; ms?: number; error?: string; at?: number | string };
 export type NorenEvent = { id: string; type: string; created: number | string; data: Record<string, unknown>; deliveries?: Delivery[] };
@@ -38,6 +46,8 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
 
 export const api = {
   config: () => call<Config>("/config"),
+  settlements: (merchant: string, token: string) => call<{ desk: string; usdg: string; relay: boolean; settlements: Settlement[] }>(`/merchants/${merchant}/settlements`, { token }),
+  settle: (merchant: string, amountUsdg6: bigint, token: string) => call<{ requestTx: string }>(`/merchants/${merchant}/settlements`, { method: "POST", token, body: JSON.stringify({ amountUsdg6: amountUsdg6.toString() }) }),
   bridgeLog: () => call<{ source: string; written?: string; event: string; ms: number; handler: number; skipped?: string; error?: string }[]>("/credit/bridge"),
   mirrorOnRobinhood: (id: string) => call<{ gateway: `0x${string}`; merchant: `0x${string}`; invoiceId: `0x${string}`; amountUsdg: string; expiry: string }>(`/invoices/${id}/robinhood`, { method: "POST" }),
   robinhoodFaucet: (address: string) => call<Record<string, string>>("/dev/robinhood-faucet", { method: "POST", body: JSON.stringify({ address }) }),

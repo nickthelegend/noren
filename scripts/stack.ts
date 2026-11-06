@@ -83,7 +83,7 @@ export type ArcContext = { deployment: Deployment; deployer: Address; merchant: 
  * Arc fork + Noren contracts + ASP postman + merchant server.
  * `credit` runs after the Arc contracts exist and before the server starts, so the server can watch NorenCreditLine.
  */
-export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<CreditOptions | undefined>; mounts?: (arc: ArcContext) => Promise<((req: any, res: any) => Promise<boolean>)[]> } = {}) {
+export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<CreditOptions | undefined>; mounts?: (arc: ArcContext & { token: string }) => Promise<((req: any, res: any) => Promise<boolean>)[]> } = {}) {
   execFileSync('forge', ['build', '--skip', 'test/**'], { cwd: resolve('packages/contracts'), stdio: 'inherit' });
   await ensureZkArtifacts();
   const rpcUrl = await startFork('Arc testnet', PORTS.arc, 'https://rpc.testnet.arc.io', 5042002, assertLocalFork);
@@ -104,10 +104,10 @@ export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<C
   onStop(() => new Promise<void>(r => { clearInterval(timer); aspServer.closeAllConnections(); aspServer.close(() => r()); }));
   const credit = opts.credit ? await opts.credit({ deployment, deployer, merchant, rpcUrl, client }) : undefined;
   const token = randomBytes(24).toString('hex');
+  const mounts = opts.mounts ? await opts.mounts({ deployment, deployer, merchant, rpcUrl, client, token }) : [];
   // A fresh fork has fresh invoices, so clear their events too. The business name and webhook endpoints are merchant settings and stay.
   await rm('data/dev-stack-invoices.json', { force: true });
   await rm('data/dev-stack-invoices.json.events.json', { force: true });
-  const mounts = opts.mounts ? await opts.mounts({ deployment, deployer, merchant, rpcUrl, client }) : [];
   const merchantServer = createMerchantServer({ deployment, rpcUrl, localUnlockedMerchant: merchant, dataFile: 'data/dev-stack-invoices.json', dev: { aspUrl, merchantToken: token }, mounts, ...(credit ? { credit } : {}) });
   await new Promise<void>((res, rej) => { merchantServer.once('error', rej); merchantServer.listen(PORTS.server, '127.0.0.1', res); });
   onStop(() => new Promise<void>(r => { merchantServer.closeAllConnections(); merchantServer.close(() => r()); }));

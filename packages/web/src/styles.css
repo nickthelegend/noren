@@ -1036,3 +1036,17 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-ratecheck { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #f2f4f7; font-size: 12.5px; color: var(--sd-muted); }
 .sd-ratecheck.ok { background: var(--sd-ok-wash); color: var(--sd-ok); }
 .sd-ratecheck svg { flex: none; margin-top: 2px; } .sd-ratecheck b { color: inherit; }
+
+.sd-settle { margin: 0 0 32px; }
+.sd-settle-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-top: 1px solid var(--sd-line); }
+.sd-settle-row > div span, .sd-settle-amt span { display: block; font-size: 12.5px; color: var(--sd-muted); }
+.sd-settle-row > div b { display: block; margin-top: 4px; font: 500 22px var(--sans); letter-spacing: -.03em; color: var(--sd-ink); }
+.sd-settle-row > div b em { font-style: normal; font-size: 12px; color: var(--sd-faint); }
+.sd-settle-row > div small { font-size: 12px; color: var(--sd-faint); }
+.sd-settle-row > div { margin-right: auto; }
+.sd-settle-amt .sd-input { width: 140px; margin-top: 4px; }
+.sd-settle-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.sd-settle-list > li { padding: 14px 16px; border: 1px solid var(--sd-line); border-radius: 10px; background: #fff; }
+.sd-settle-list header { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.sd-tl.small b { font-size: 13px; } .sd-tl.small span { display: block; font-size: 12px; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .sd-settle-amt, .sd-settle-amt .sd-input, .sd-settle-row .sd-btn { width: 100%; } }

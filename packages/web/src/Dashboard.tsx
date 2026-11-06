@@ -104,7 +104,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
             <>
               {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}
-              {tab === "balances" && <Balances rows={rows} cfg={cfg} />}
+              {tab === "balances" && <Balances rows={rows} cfg={cfg} token={token} />}
               {tab === "payments" && (sub ? <PaymentPage id={sub} rows={rows} cfg={cfg} token={token} onDone={refresh} tick={tick} /> : <Payments rows={rows} />)}
               {tab === "links" && <Links rows={rows} onCreate={() => setCreating(true)} token={token} />}
               {tab === "developers" && <Developers cfg={cfg} token={token} setToken={setToken} sub={sub} tick={tick} />}
@@ -277,7 +277,7 @@ function useBalance(cfg: Config) {
 }
 
 /* ================================================================== balances */
-function Balances({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
+function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token: string }) {
   const bal = useBalance(cfg);
   const r = rows ?? [];
   const incoming = r.filter((x) => x.status === "open" || x.status === "draft").reduce((a, x) => a + n6(x.invoice.amount), 0);
@@ -313,6 +313,7 @@ function Balances({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
           <dt>Read from</dt><dd className="mono">{cfg.rpcUrl}</dd>
         </dl>
       </section>
+      <SettleToArc cfg={cfg} token={token} />
       <div className="sd-section-h"><h2>Balance transactions</h2><span className="sd-muted">{ledger.length}</span></div>
       <div className="sd-table-wrap">
         {!rows ? <div className="sd-skel-rows"><i /><i /><i /></div> : ledger.length === 0 ? <Empty title="No balance transactions yet" text="Payments and refunds appear here as they settle on-chain." /> : (
@@ -331,6 +332,51 @@ function Balances({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
         )}
       </div>
     </>
+  );
+}
+
+/** Pay-with-stocks proceeds arrive as USDG on Robinhood Chain. Settle them to USDC on Arc through the value bridge. */
+function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
+  const [d, setD] = useState<Awaited<ReturnType<typeof api.settlements>> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [amt, setAmt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => { if (!token) return; api.settlements(cfg.merchant, token).then((x) => { setD(x); setErr(null); }).catch((e) => setErr(msgOf(e))); }, [cfg.merchant, token]);
+  useEffect(() => { load(); const t = setInterval(load, 4000); return () => clearInterval(t); }, [load]);
+  const usdg = d ? Number(d.usdg) / 1e6 : 0;
+  const settle = async () => {
+    const v = amt ? Number(amt) : usdg; if (!(v > 0)) return;
+    setBusy(true);
+    try { await api.settle(cfg.merchant, BigInt(Math.round(v * 1e6)), token); toast("Settlement requested on Robinhood Chain"); setAmt(""); load(); }
+    catch (e) { toast(msgOf(e), "err"); } finally { setBusy(false); }
+  };
+  return (
+    <section className="sd-settle">
+      <div className="sd-section-h"><h2>USDG on Robinhood Chain</h2>{d && <span className="sd-muted">from Pay with stocks</span>}</div>
+      {!token ? <p className="sd-muted">Add your secret key to see and settle USDG.</p> : err ? <p className="sd-muted">{/Not found|404/.test(err) ? "Setup required: Settle to Arc runs with pnpm dev:all (packages/bridge-settlement)." : err}</p> : !d ? <div className="sd-skel-rows"><i /></div> : (
+        <>
+          <div className="sd-settle-row">
+            <div><span>Available</span><b className="num">{fmt(usdg)} <em>USDG</em></b><small>NorenSettlementDesk <span className="mono">{short(d.desk, 4)}</span></small></div>
+            <label className="sd-settle-amt"><span>Amount</span><input className="sd-input" inputMode="decimal" placeholder={fmt(usdg)} value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USDG to settle" /></label>
+            <button className="sd-btn primary" disabled={busy || usdg <= 0 || !d.relay} onClick={settle}>{busy ? "Requesting…" : "Settle to Arc"}</button>
+          </div>
+          <p className="sd-muted sm">A Chainlink CRE workflow compares live Relay and Across quotes with Chainlink USDG/USD and USDC/USD before approving; a keeper then deposits into Relay. On a local fork no real relayer fills the Arc side, so the fill stays pending.</p>
+          {d.settlements.length > 0 && (
+            <ul className="sd-settle-list">{d.settlements.map((x) => (
+              <li key={x.id}>
+                <header><b className="num">{fmt(Number(x.amountUsdg6) / 1e6)} USDG → USDC on Arc</b><span className={`sd-badge ${x.status === "executed" ? "ok" : x.status === "failed" || x.status === "rejected" ? "bad" : "info"}`}>{x.status === "executed" ? "Deposited" : x.status[0].toUpperCase() + x.status.slice(1)}</span></header>
+                <ol className="sd-tl small">
+                  <li data-on="true"><i /><div><b>Requested on Robinhood</b><span className="mono">{short(x.requestTx, 6)}</span></div></li>
+                  <li data-on={!!x.cre?.written}><i /><div><b>Chainlink CRE approval</b><span>{x.cre?.error ? x.cre.error : x.cre ? `${x.cre.decision ?? ""}${x.cre.written ? ` · forwarder tx ${short(x.cre.written, 6)} · ${(x.cre.ms / 1000).toFixed(1)} s` : ""}` : "running the settlement workflow…"}</span>{x.quotes && <span>Relay: {x.quotes.relay ?? "–"} · Across: {x.quotes.across ?? "–"}</span>}</div></li>
+                  <li data-on={!!x.deposit}><i /><div><b>Deposited into Relay</b><span>{x.deposit ? <>tx <span className="mono">{short(x.deposit.tx, 6)}</span> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
+                  <li data-on="false"><i /><div><b>USDC filled on Arc</b><span>{x.deposit ? "Pending: needs a real Relay solver, which never sees a local fork" : "–"}</span></div></li>
+                </ol>
+              </li>
+            ))}</ul>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
