@@ -25,7 +25,7 @@ A noren is the split fabric curtain hung in the doorway of a traditional Japanes
 - **Bridge** (CCTP between public testnets) and **Swap** (USDC → EURC on Arc testnet, live Uniswap v4 and Aqua quotes) in the Noren app.
 - **Pay with stocks or crypto** on the Robinhood Chain · mainnet snapshot. Verified after the Nov 7 re-snapshot: a 5 USDC link from the hosted Noren Merchant paid with 0.02681 NVDA through the 1inch Aqua maker, tx `0x21583ee6d251f6eab5fb4979cc5d3c1c1f228dde64284bdf1c986bfaa17a3e1e` on the snapshot node (not a public explorer chain); the server marked the invoice paid.
 
-**What doesn't, hosted:** **Pay later** and **Pay in 3** need the credit bridge, a Chainlink CRE workflow that runs in the CRE CLI simulator, so they run on the local stack only (`pnpm dev:all`). The hosted checkout says so.
+**What doesn't, hosted:** **Pay later** and **Pay in 3** need the credit bridge, a Chainlink CRE workflow that runs in the CRE CLI simulator, so they run on the local stack only (`pnpm dev:all`). The hosted checkout says so. Also local-stack only: the **World ID** starter line (the hosted server has no World ID routes), the Robinhood **history underwriter** behind Credit → Reputation, **USDG → Arc** settlement and **Stocks → USDC on Arc** (cross-chain Aqua); the hosted app shows "Setup required" for the last three.
 
 **To try it** you need Arc testnet USDC from the [Circle faucet](https://faucet.circle.com) (Arc Testnet) for the app's test key; the privacy pool's minimum deposit is 1 USDC. There is no hosted Arc faucet.
 
