@@ -1,0 +1,30 @@
+{
+  "desk": {
+    "chainSelectorName": "robinhood-testnet",
+    "address": "0x0000000000000000000000000000000000000000",
+    "gasLimit": "400000"
+  },
+  "originChainId": 4663,
+  "destinationChainId": 5042,
+  "usdg": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+  "arcUsdc": "0x3600000000000000000000000000000000000000",
+  "relay": {
+    "quoteUrl": "https://api.relay.link/quote",
+    "depository": "0x4cD00E387622C35bDDB9b4c962C136462338BC31"
+  },
+  "across": {
+    "feesUrl": "https://app.across.to/api/suggested-fees",
+    "spokePool": "0xD29C85F15DF544bA632C9E25829fd29d767d7978"
+  },
+  "feeds": {
+    "robinhoodRpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+    "usdgUsd": "0x61B7e5650328764B076A108EFF5fa7282a1B9aD2",
+    "arcRpcUrl": "https://arc-rpc.publicnode.com",
+    "usdcUsd": "0x84EA90AC252Dc437031461836DB5164219147905",
+    "blockLag": 2,
+    "maxAgeSeconds": 90000,
+    "pegBandBps": 100
+  },
+  "approvalTtlSeconds": 600,
+  "confidence": "SAFE"
+}

@@ -1,0 +1,16 @@
+# CRE workflow settings for the Noren settlement desk.
+local-fork:
+  user-workflow:
+    workflow-name: "noren-settlement-desk-fork"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.local-fork.json"
+    secrets-path: ""
+
+staging-settings:
+  user-workflow:
+    workflow-name: "noren-settlement-desk"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.staging.json"
+    secrets-path: ""

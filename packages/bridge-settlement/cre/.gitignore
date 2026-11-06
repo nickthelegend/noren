@@ -1,0 +1,6 @@
+*.env
+.env*
+settlement-desk/node_modules/
+settlement-desk/config.local-fork.json
+settlement-desk/.cre_build_tmp.js
+*.wasm
