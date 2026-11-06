@@ -464,7 +464,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
       <div className="sd-pay-head">
         <div>
           <span className="sd-eyebrow">Payment</span>
-          <h1><span className="num">{usdc(r.invoice.amount)}</span> <em>USDC</em> <Badge s={r.status} /></h1>
+          <h1><span className="num">{usdc(r.invoice.amount)}</span> <em>{stock ? "USDG" : "USDC"}</em> <Badge s={r.status} /></h1>
           {r.quote && <p className="sd-quote-line">Priced at <b>{fiatStr(r.quote)}</b> · Chainlink rate locked at creation</p>}
         </div>
         <div className="sd-head-act">
@@ -497,7 +497,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             <h2>Payment details</h2>
             <dl className="sd-dl">
               <dt>Payment ID</dt><dd className="mono">{short(r.invoice.invoiceId, 10)} <Copy text={r.invoice.invoiceId} /></dd>
-              <dt>Amount</dt><dd>{usdc(r.invoice.amount)} USDC</dd>
+              <dt>Amount</dt><dd>{usdc(r.invoice.amount)} {stock ? "USDG (invoice priced in USDC, 1:1)" : "USDC"}</dd>
               {r.refundAmount && <><dt>Refunded</dt><dd>{usdc(r.refundAmount)} USDC</dd></>}
               <dt>Description</dt><dd>{r.description || "–"}</dd>
               <dt>Expires</dt><dd>{dt(r.invoice.expiry, true)}</dd>
@@ -509,7 +509,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             {stock && r.stock ? (
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
-                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono">{short(r.stock.maker, 4)} · fee {usdc(r.stock.makerFeeUsdg)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd></>}
+                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono">{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd></>}
                 <dt>Shares</dt><dd className="num">{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd>{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
