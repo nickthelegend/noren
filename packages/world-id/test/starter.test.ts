@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { decodeAbiParameters, encodeAbiParameters, keccak256, size, toHex } from 'viem';
-import { creSimulateSink, HUMAN_STARTER_KIND, humanLineId, humanStarterRequest, httpTriggerPayload } from '../src/starter.ts';
+import { creSimulateSink, HUMAN_STARTER_KIND, starterLineId, humanStarterRequest, httpTriggerPayload } from '../src/starter.ts';
+import { starterLineId as bridgeStarterLineId } from '../../cre-bridge/credit-bridge/bridge.ts';
 
 const ALICE = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
 
@@ -18,12 +19,13 @@ describe('human starter report', () => {
     expect(nh).toBe(toHex(0x1234n, { size: 32 }));
     expect(limit).toBe(25_000_000n);
     expect(expiry).toBe(1_800_000_000n);
-    expect(r.lineId).toBe(keccak256(encodeAbiParameters([{ type: 'bytes32' }, { type: 'bytes32' }], [HUMAN_STARTER_KIND, nh])));
+    expect(r.lineId).toBe(keccak256(encodeAbiParameters([{ type: 'string' }, { type: 'address' }], ['noren.human-starter.v1', ALICE])));
   });
 
-  it('derives one line id per human, whatever the hex spelling of the nullifier', () => {
-    expect(humanLineId('0x00ABCD')).toBe(humanLineId('0xabcd'));
-    expect(humanLineId('0xabcd')).not.toBe(humanLineId('0xabce'));
+  it('derives the line id exactly as NorenCreditLine.starterLineId and the CRE bridge do', () => {
+    expect(starterLineId(ALICE)).toBe(bridgeStarterLineId(ALICE));
+    expect(starterLineId(ALICE.toLowerCase())).toBe(starterLineId(ALICE));
+    expect(starterLineId(ALICE)).not.toBe(starterLineId('0x000000000000000000000000000000000000dEaD'));
   });
 
   it('rejects a zero limit and a bad borrower', () => {

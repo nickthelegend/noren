@@ -72,14 +72,14 @@ run(async () => {
         kind: 'cre-simulate' as const,
         async open(r: any) {
           const base = JSON.parse((await import('node:fs')).readFileSync(resolve(workflow, 'config.staging.json'), 'utf8'));
-          const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: { ...w.httpTriggerPayload(r), lineId: undefined } }); // the bridge derives lineId = NorenCreditLine.starterLineId(borrower)
+          const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: w.httpTriggerPayload(r) });
           const tx = /updated on [a-z-]+: tx (0x[0-9a-f]{64})/.exec(out)?.[1];
           if (!tx) throw new Error('CRE human-starter run wrote nothing');
           return { txHash: tx as `0x${string}` };
         },
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
-      return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink }))];
+      return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }))];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };

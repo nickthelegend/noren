@@ -4,7 +4,7 @@ import { Nullifier } from '@worldcoin/idkit-core/nullifier';
 import { missingSettings, setupRequired, type WorldIdConfig } from './config.ts';
 import { NullifierRegistry, type HumanRecord } from './registry.ts';
 import { signNorenRequest } from './signing.ts';
-import { humanStarterRequest, STARTER_SINK_SETUP, type StarterLineSink } from './starter.ts';
+import { humanStarterRequest, STARTER_SINK_SETUP, type StarterLineSink, readStarterLineId } from './starter.ts';
 import { verifyWithWorld } from './verify.ts';
 import type { HumanRequest, HumanStatus, StarterLine, VerifyHumanResult, WorldConfigInfo } from './types.ts';
 
@@ -23,6 +23,8 @@ export type WorldIdServiceOptions = {
   now?: () => number;
   /** Only for offline tests that point at a local stand-in of the verify endpoint. */
   fetchImpl?: Parameters<typeof verifyWithWorld>[0]['fetchImpl'];
+  /** Arc RPC + NorenCreditLine: the line ID shown to the customer is read from the contract (starterLineId). */
+  arc?: { rpcUrl: string; creditLine: string };
 };
 
 const same = (a: string, b: string) => { try { return BigInt(a) === BigInt(b); } catch { return false; } };
@@ -91,7 +93,9 @@ export class WorldIdService {
 
     const expiry = this.now() + c.starterDays * 86_400;
     const req = humanStarterRequest({ borrower: pending.wallet, nullifier, limitUsdc6: c.starterLimitUsdc6, expiry });
-    const base = { lineId: req.lineId, limitUsdc6: req.limitUsdc6.toString(), expiry };
+    // The contract's own answer when Arc is configured; its pure derivation (identical) if the read fails.
+    const lineId = this.opts.arc ? await readStarterLineId(this.opts.arc.rpcUrl, this.opts.arc.creditLine, pending.wallet).catch(() => req.lineId) : req.lineId;
+    const base = { lineId, limitUsdc6: req.limitUsdc6.toString(), expiry };
     const claimed = await this.registry.claim({ action: c.action, nullifier, credential: c.credential, verifiedAt: this.now(), wallet: pending.wallet, starter: { status: 'setup_required', ...base, detail: STARTER_SINK_SETUP } });
     if (!claimed.ok) return { status: 'already_used', detail: claimed.taken === 'human' ? 'This human already opened a Noren starter credit line.' : 'This wallet already has a starter credit line from a verified human.' };
     this.pending.delete(idkitResponse.nonce.toLowerCase());

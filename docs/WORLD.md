@@ -98,7 +98,7 @@ A `verified` result carries `starter`, which says where the Arc write stands:
 
 **What Noren never stores or sees:** the person's name, face, date of birth, document, phone number or World ID account. The proof itself, the `sybil_score` and the device integrity bundle are forwarded to World and then dropped. The RP signing key never leaves the server, and the tests check that it never appears in a response.
 
-**What is public on Arc:** the borrower wallet, `lineId = keccak256(abi.encode(kind, nullifierHash))` and the report calldata, which includes the nullifier. That tells an observer "this wallet belongs to a human who verified for Noren", but not who that human is. Spending on credit isn't private either, which the Noren app already says on its credit line. Private payments still go through the shielded balance.
+**What is public on Arc:** the borrower wallet, `lineId = NorenCreditLine.starterLineId(borrower) = keccak256(abi.encode("noren.human-starter.v1", borrower))` and the report calldata, which includes the nullifier. That tells an observer "this wallet belongs to a human who verified for Noren", but not who that human is. Spending on credit isn't private either, which the Noren app already says on its credit line. Private payments still go through the shielded balance.
 
 ## Both paths (demo)
 
@@ -129,7 +129,7 @@ Agents may not create accounts, so these steps are Nick's:
 ```
 report = abi.encode(bytes32 kind, address borrower, bytes32 nullifierHash, uint256 limitUsdc6, uint64 expiry)
 kind   = keccak256("noren.human-starter.v1")   // 160 bytes; the stock report stays 128 bytes
-lineId = keccak256(abi.encode(kind, nullifierHash))
+lineId = NorenCreditLine.starterLineId(borrower) = keccak256(abi.encode("noren.human-starter.v1", borrower))
 ```
 
 `onReport` must handle it as follows:

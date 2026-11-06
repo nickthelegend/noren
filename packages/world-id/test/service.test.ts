@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { decodeAbiParameters, keccak256, toHex, type Hex } from 'viem';
 import { loadWorldIdConfig } from '../src/config.ts';
 import { WorldIdService } from '../src/service.ts';
-import { HUMAN_STARTER_KIND, humanLineId, type StarterLineRequest, type StarterLineSink } from '../src/starter.ts';
+import { HUMAN_STARTER_KIND, starterLineId, type StarterLineRequest, type StarterLineSink } from '../src/starter.ts';
 import { idkitResult, startStandin } from './standin.ts';
 
 const KEY = keccak256(toHex('noren world-id service test key'));
@@ -57,7 +57,7 @@ describe('success path', () => {
     expect(JSON.stringify(req)).not.toContain(KEY.slice(2));
 
     const out = await svc.verify(result);
-    expect(out).toMatchObject({ status: 'verified', credential: 'selfie', starter: { status: 'submitted', txHash: `0x${'ab'.repeat(32)}`, limitUsdc6: '25000000', lineId: humanLineId(HUMAN) } });
+    expect(out).toMatchObject({ status: 'verified', credential: 'selfie', starter: { status: 'submitted', txHash: `0x${'ab'.repeat(32)}`, limitUsdc6: '25000000', lineId: starterLineId(ALICE) } });
 
     // The IDKit result reached the verifier unchanged (plus the asserted environment).
     expect(standin.calls).toHaveLength(1);
