@@ -1,0 +1,60 @@
+{
+  "schedule": "0 */10 * * * *",
+  "priceRpcUrl": "https://arc-rpc.publicnode.com",
+  "sourceChainId": 5042,
+  "blockLag": 2,
+  "maxAgeSeconds": 90000,
+  "usdcUsdFeed": "0x84EA90AC252Dc437031461836DB5164219147905",
+  "currencies": [
+    {
+      "code": "USD",
+      "minorDecimals": 2,
+      "feed": null
+    },
+    {
+      "code": "EUR",
+      "minorDecimals": 2,
+      "feed": "0xDd5B15443cd733D3966a50a3E48cB7DF9Fb5DE0D"
+    },
+    {
+      "code": "GBP",
+      "minorDecimals": 2,
+      "feed": "0x3E0a1296e6CBF0a8fa54F2b4909643214EfCeE4D"
+    },
+    {
+      "code": "JPY",
+      "minorDecimals": 0,
+      "feed": "0xF9Fc1C20C82d774A3787845E73E41BCbF7F38F25"
+    },
+    {
+      "code": "CAD",
+      "minorDecimals": 2,
+      "feed": "0x5024DF70A748e5f1E720AAe8EEfc590430d71573"
+    },
+    {
+      "code": "AUD",
+      "minorDecimals": 2,
+      "feed": "0xaF452c2EA72b6E08AB64a67133a13C4ED35343eb"
+    },
+    {
+      "code": "MXN",
+      "minorDecimals": 2,
+      "feed": "0x302eaa6cd6f7AdDdc973fAC2Bb8fa32e9Ce19f21"
+    },
+    {
+      "code": "BRL",
+      "minorDecimals": 2,
+      "feed": "0x3406DB72AC5136b89eba6808CFcaD83aF523B3C2"
+    },
+    {
+      "code": "KRW",
+      "minorDecimals": 0,
+      "feed": "0x07040A33A0204596e927595D0994C5D841d7d61D"
+    }
+  ],
+  "oracle": {
+    "chainSelectorName": "arc-testnet",
+    "address": "0x0000000000000000000000000000000000000000",
+    "gasLimit": "3000000"
+  }
+}
