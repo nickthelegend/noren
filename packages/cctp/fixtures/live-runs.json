@@ -152,6 +152,57 @@
       "events": [
         "Bridged"
       ]
+    },
+    {
+      "file": "Noren app, Bridge tab \"Bring USDC to Arc from any chain\" (packages/web), signed by the browser's test key 0x6D6C8c418564B5aA9d4f49547f7D081f9C6B42cc, Nov 6 2026",
+      "network": "PUBLIC TESTNETS: Ethereum Sepolia (11155111, CCTP domain 0) -> Arc Testnet (5042002, domain 26)",
+      "kind": "plain",
+      "amountUsdc6": "500000",
+      "approveTx": "0x6adaa8698f31cb9fd3a4f83641ac3433223853f5f029c889e9526fd44a4c2b78",
+      "burnTx": "https://sepolia.etherscan.io/tx/0x307a9bccbf0096967a2efff639afab0fde487933f2783bdd20f557ef0c40f597",
+      "iris": "https://iris-api-sandbox.circle.com/v2/messages/0?transactionHash=0x307a9bccbf0096967a2efff639afab0fde487933f2783bdd20f557ef0c40f597",
+      "mintedUsdc6": "499950",
+      "feeExecutedUsdc6": "50",
+      "finalityThresholdExecuted": 1000,
+      "mintTx": "https://explorer.testnet.arc.io/tx/0x8a60583d674d6164344446abdbc74a79114058985507e9136ab1d8c4a423474d",
+      "relayedBy": "this browser (NorenArcHook.relay on Arc testnet)",
+      "events": [
+        "Bridged"
+      ]
+    },
+    {
+      "file": "Noren app, Bridge tab \"Bring USDC to Arc from any chain\" (packages/web), signed by the browser's test key 0x6D6C8c418564B5aA9d4f49547f7D081f9C6B42cc, Nov 6 2026",
+      "network": "PUBLIC TESTNETS: Base Sepolia (84532, CCTP domain 6) -> Arc Testnet (5042002, domain 26)",
+      "kind": "plain",
+      "amountUsdc6": "500000",
+      "approveTx": "0xb216f15afe346982ef242da3fd70127b87b7b876311d43e6a151a5e33050f946",
+      "burnTx": "https://sepolia.basescan.org/tx/0x0c032843dba8cb14c6a8680fa8f143a6ced649b9473ea3e3f92f809b06dad544",
+      "iris": "https://iris-api-sandbox.circle.com/v2/messages/6?transactionHash=0x0c032843dba8cb14c6a8680fa8f143a6ced649b9473ea3e3f92f809b06dad544",
+      "mintedUsdc6": "499935",
+      "feeExecutedUsdc6": "65",
+      "finalityThresholdExecuted": 1000,
+      "mintTx": "https://explorer.testnet.arc.io/tx/0xa45d97f634e2954879239bd632c8774054f0a8bdb943753735a4bb757f87a733",
+      "relayedBy": "this browser (NorenArcHook.relay on Arc testnet)",
+      "events": [
+        "Bridged"
+      ]
+    },
+    {
+      "file": "Noren app, Bridge tab \"Bring USDC to Arc from any chain\" (packages/web), signed by the browser's test key 0x6D6C8c418564B5aA9d4f49547f7D081f9C6B42cc, Nov 6 2026",
+      "network": "PUBLIC TESTNETS: Arbitrum Sepolia (421614, CCTP domain 3) -> Arc Testnet (5042002, domain 26)",
+      "kind": "plain",
+      "amountUsdc6": "500000",
+      "approveTx": "0x76ce0664803142c09e90dbae15147219491c3d92c522e4a2b0b1cecd71c47abc",
+      "burnTx": "https://sepolia.arbiscan.io/tx/0xc4b1c12ece1830bfa5dc04938525d141b0d0815ffa3a2e8c5c9a68409b8cfef5",
+      "iris": "https://iris-api-sandbox.circle.com/v2/messages/3?transactionHash=0xc4b1c12ece1830bfa5dc04938525d141b0d0815ffa3a2e8c5c9a68409b8cfef5",
+      "mintedUsdc6": "499935",
+      "feeExecutedUsdc6": "65",
+      "finalityThresholdExecuted": 1000,
+      "mintTx": "https://explorer.testnet.arc.io/tx/0x34b7f55edb7597420b30645e1c8ef402d3b88b821fdc8386be59691ef234d3d5",
+      "relayedBy": "this browser (NorenArcHook.relay on Arc testnet)",
+      "events": [
+        "Bridged"
+      ]
     }
   ]
 }
