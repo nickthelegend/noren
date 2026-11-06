@@ -5,9 +5,9 @@
   --kaki: #d9772f; --kaki-2: #c4661f; --kaki-wash: rgba(217, 119, 47, .12);
   --moss: #2f7a55; --moss-wash: rgba(47, 122, 85, .11); --rust: #b3412c; --rust-wash: rgba(179, 65, 44, .09);
   --muted: #5a5f75; --faint: #868a99; --hair: rgba(23, 32, 63, .1); --hair-2: rgba(23, 32, 63, .18);
-  --serif: "Geist", system-ui, -apple-system, sans-serif;
-  --sans: "Geist", system-ui, -apple-system, sans-serif;
-  --mono: "Geist Mono", ui-monospace, monospace;
+  --serif: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
+  --sans: "Geist Variable", "Geist", system-ui, -apple-system, sans-serif;
+  --mono: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
   --ital: "Instrument Serif", Georgia, serif;
   --ease: cubic-bezier(.2, .8, .2, 1);
   --shadow: 0 1px 2px rgba(23, 32, 63, .05), 0 8px 24px -12px rgba(23, 32, 63, .18);

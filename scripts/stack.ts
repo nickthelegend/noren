@@ -53,6 +53,29 @@ export async function startFork(name: string, port: number, forkUrl: string, cha
   return url;
 }
 
+const ZK_BASE = 'https://raw.githubusercontent.com/0xbow-io/privacy-pools-core/7bc392dad5fa483f53cf74e25d7ad19f0fc6d85f/packages/circuits';
+const ZK_FILES = ['trusted-setup/final-keys/withdraw.zkey', 'build/withdraw/withdraw_js/withdraw.wasm'];
+/**
+ * The browser proves with the pinned 0xbow artifacts. Serve them from the app's own origin (packages/web/public/zk,
+ * gitignored) so the checkout makes no third-party request: copied from cache/zk, or fetched once here, server side.
+ */
+export async function ensureZkArtifacts() {
+  const { existsSync } = await import('node:fs');
+  const { copyFile } = await import('node:fs/promises');
+  const { dirname } = await import('node:path');
+  for (const f of ZK_FILES) {
+    const out = resolve('packages/web/public/zk', f);
+    if (existsSync(out)) continue;
+    await mkdir(dirname(out), { recursive: true });
+    const cached = resolve('cache/zk', encodeURIComponent(ZK_BASE), f);
+    if (existsSync(cached)) { await copyFile(cached, out); continue; }
+    const r = await fetch(`${ZK_BASE}/${f}`); if (!r.ok) throw new Error(`Prover artifact download failed (${r.status}): ${f}`);
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    await mkdir(dirname(cached), { recursive: true }); await writeFile(cached, bytes); await writeFile(out, bytes);
+  }
+  console.log('Prover artifacts: served by the web app from /zk (no third-party fetch in the browser)');
+}
+
 export type ArcContext = { deployment: Deployment; deployer: Address; merchant: Address; rpcUrl: string; client: any };
 
 /**
@@ -61,6 +84,7 @@ export type ArcContext = { deployment: Deployment; deployer: Address; merchant: 
  */
 export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<CreditOptions | undefined> } = {}) {
   execFileSync('forge', ['build', '--skip', 'test/**'], { cwd: resolve('packages/contracts'), stdio: 'inherit' });
+  await ensureZkArtifacts();
   const rpcUrl = await startFork('Arc testnet', PORTS.arc, 'https://rpc.testnet.arc.io', 5042002, assertLocalFork);
   const client: any = createPublicClient({ chain: localFork(rpcUrl), transport: http(rpcUrl), cacheTime: 0 });
   const [deployer, merchant] = await client.request({ method: 'eth_accounts' }) as Address[];

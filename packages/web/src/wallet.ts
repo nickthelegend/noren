@@ -37,6 +37,8 @@ export function makeWallet(cfg: Config) {
   const wallet = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
   const customer = createCustomer({
     deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage: storageFor(cfg),
+    // Same-origin prover artifacts (served from /zk by this app): the browser makes no third-party request.
+    artifactBaseUrl: `${location.origin}/zk`,
     deriveAt: async (path) => keccak256(concatHex([s.seed, keccak256(toBytes(path))])),
   });
   return {
