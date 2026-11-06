@@ -1,1 +1,1 @@
-Built with Kohaku, Chainlink, 1inch Aqua, Uniswap v4, World ID, 0G, Relay, Across and Arc. Noren. Open source, on GitHub.
+Live on public testnets: Arc, CCTP, CCIP, 1inch Aqua, Kohaku, World ID, 0G and Chainlink CRE. Noren. Open source, on GitHub.

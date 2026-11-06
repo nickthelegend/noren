@@ -294,6 +294,83 @@ try {
     await cut(); await save();
   }
 
+  if (take === "privdefault") {
+    // A fresh merchant and a fresh customer (one browser profile). Off camera: sign in, create the store and a 12.50 link.
+    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.getByRole("button", { name: /Use a test wallet/ }).click();
+    await until(() => p.getByText("What's your business called?").isVisible(), "signed in");
+    await p.locator(".ob-field input").first().fill("Juhu Chai House");
+    await p.getByRole("button", { name: /Continue/ }).click(); await sleep(1000);
+    await p.getByRole("radio", { name: /USDC on Arc to my wallet/ }).click();
+    await p.getByRole("button", { name: /Create store/ }).click();
+    await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 60000);
+    await p.locator(".ob-field input").nth(1).fill("Masala chai for the team");
+    await p.getByRole("button", { name: /Create link/ }).click();
+    await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
+    const link = await p.locator(".ob-url").innerText(); log("link", link);
+    writeFileSync(`${HERE}state/link-priv.txt`, link); await save();
+    // On camera: the hosted checkout opens on "Pay privately" (the default), funds, shields and pays.
+    await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(5000);
+    await moveTo(900, 260, 1);
+    await rollCamera(); await sleep(1800);
+    result("default method", await p.locator(".co-methods [aria-selected=true]").innerText());
+    await point(p.locator(".co-methods [aria-selected=true]")); await sleep(1800);
+    await click(p.getByRole("button", { name: /Get test USDC/ }), "get test USDC");
+    await until(async () => /Shield 20 USDC/.test(await p.locator(".co-fund").innerText()) && !(await p.getByRole("button", { name: /Sending/ }).count()), "faucet", 60000); await sleep(1200);
+    await click(p.getByRole("button", { name: /Shield 20 USDC/ }), "shield 20 USDC");
+    await until(async () => { const bt = p.locator(".btn.ink.full"); return /Pay 12.50 USDC/.test(await bt.innerText()) && !(await bt.isDisabled()); }, "ASP approval", 180000);
+    await sleep(1500); result("private balance", await p.locator(".co-bal").innerText());
+    await click(p.locator(".btn.ink.full"), "pay privately 12.50");
+    await until(async () => /Paid\s*privately/.test(await p.locator("body").innerText()), "private payment", 180000); await sleep(1500);
+    result("private paid", (await p.locator("body").innerText()).match(/Paid\s*privately[\s\S]{0,400}/)?.[0]); await sleep(4000);
+    // The store's view in Noren Merchant: the payment, and who paid it ("Private")
+    await p.goto(`${APP}/#/dashboard/payments`); await sleep(4500);
+    const row = p.locator("tr", { hasText: "Masala chai" }).first();
+    result("payments row", (await row.innerText()).replace(/\s+/g, " "));
+    await point(row); await sleep(1800);
+    await click(row, "open payment");
+    await until(async () => /Customer/.test(await p.locator("main").innerText()), "payment detail", 30000); await sleep(1200);
+    const who = p.locator(".sd-private").first();
+    result("customer", await p.locator("main").innerText().then((t) => t.match(/Customer\s*\n?\s*[^\n]+/)?.[0]));
+    if (await who.count()) { await point(who); } await sleep(4500);
+    await cut(); await save();
+  }
+
+  if (take === "xchain") {
+    // The Noren app's Bridge tab (CCTP from 10 chains, the runs already done on testnets), then Noren Merchant's live
+    // view: "From other chains into Arc", read from the public Arc testnet and the source chains' records.
+    await p.addInitScript(() => { try { localStorage.setItem("noren.net", "fork"); } catch {} });
+    await p.goto(`${APP}/#/app/bridge`); await sleep(7000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(2500);
+    result("bridge", (await p.locator("main").innerText()).slice(0, 300).replace(/\n+/g, " | "));
+    await point(p.getByText("Already done on testnets")); await sleep(1500);
+    await scrollBy(260, 900); await sleep(3000);
+    await p.goto(`${APP}/#/dashboard/payments`); await sleep(4500);
+    await click(p.getByRole("radio", { name: "Arc testnet (live)" }), "Arc testnet (live)");
+    await until(async () => /From other chains into Arc/.test(await p.locator("main").innerText()), "live panel", 60000); await sleep(3000);
+    await point(p.getByText("From other chains into Arc")); await sleep(1500);
+    result("live list", (await p.locator("main").innerText()).match(/From other chains into Arc[\s\S]{0,1500}/)?.[0]?.replace(/\n+/g, " | "));
+    await scrollBy(420, 1500); await sleep(3000);
+    await scrollBy(380, 1500); await sleep(3000);
+    await click(p.getByRole("radio", { name: "Local fork" }), "back to the local fork"); await sleep(1500);
+    await cut();
+  }
+
+  if (take === "xexplorer") {
+    // The live cross-chain runs on public explorers (docs/PRIVACY.md, docs/AQUA-LIVE.md, docs/CCIP.md)
+    const pages = (process.env.PAGES ?? "").split(",").filter(Boolean);
+    await p.goto(pages[0]); await sleep(8000);
+    await moveTo(640, 300, 1);
+    await rollCamera();
+    for (let i = 0; i < pages.length; i++) {
+      if (i) { await p.goto(pages[i]).catch((e) => log("goto", e.message)); await sleep(8000); }
+      ev("result", `page ${i}`, { value: pages[i] }); log("page", i, pages[i]);
+      await sleep(3500); await scrollBy(260, 1200); await sleep(3500);
+    }
+    await cut();
+  }
+
   if (take === "explorer") {
     await p.goto(`${ARC_EXPLORER}/tx/${LIVE_PAY}`); await sleep(6000);
     await moveTo(640, 300, 1);

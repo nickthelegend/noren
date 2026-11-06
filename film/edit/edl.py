@@ -11,17 +11,21 @@ FORK = "Local forks · Arc testnet + Robinhood Chain"
 RH = "Local fork · Robinhood Chain snapshot"
 ARC_FORK = "Local fork · Arc testnet"
 LIVE = "Arc testnet · live · public explorer"
+ARB_LIVE = "Arbitrum Sepolia · live · public explorer"
+XLIVE = "Noren app · records from public testnets"
+MLIVE = "Arc testnet · live · Noren Merchant"
+CCIP_LIVE = "CCIP · live · Robinhood testnet → Base → Arc"
 
 # scene id -> (start, duration, chapter label, network label)
 SCENES = [
     ("intro", 0.0, 15.0, "01 · Noren", None),
     ("merchant", 15.0, 20.0, "02 · Noren Merchant", ARC_FORK),
-    ("shop", 35.0, 30.0, "03 · Aubelle × Noren SDK", FORK),
-    ("app", 65.0, 45.0, "04 · Noren app", FORK),
-    ("private", 110.0, 21.0, "05a · Pay privately", ARC_FORK),
-    ("stocks", 131.0, 16.0, "05b · Pay with stocks", RH),
-    ("later", 147.0, 18.0, "05c · Pay in 3", FORK),
-    ("tech", 165.0, 15.0, "06 · Built with", None),
+    ("shop", 35.0, 28.0, "03 · Aubelle × Noren SDK", FORK),
+    ("app", 63.0, 35.0, "04 · Noren app", FORK),
+    ("private", 98.0, 31.0, "05a · USDC on Arc · private by default", ARC_FORK),
+    ("stocks", 129.0, 15.0, "05b · Pay with stocks", RH),
+    ("later", 144.0, 23.0, "05c · Pay in 3 · credit + repay", FORK),
+    ("tech", 167.0, 13.0, "06 · Live on public testnets", None),
 ]
 
 # Segments: (scene, take, in, out, rate, zoom), laid end to end from the scene start (+ OFFSET[scene])
@@ -29,36 +33,41 @@ SCENES = [
 APP_CARD = (1.42, 50, 30)
 OFFSET = {"intro": 4.0}
 SEGMENTS = [
-    # 01 the website (real landing page, scrolled live)
-    ("intro", "landing", 2.0, 19.6, 1.6, None),
+    # 01 the website (real landing page, re-recorded with the "private by default" hero, scrolled live)
+    ("intro", "landing", 0.3, 17.9, 1.6, None),
     # 02 Noren Merchant onboarding: SIWE sign-in, store, first link, API keys
     ("merchant", "onboard", 1.6, 35.6, 1.7, None),
     # 03 Aubelle: browse, Amélie Gingham, bag, the integration file, checkout
     ("shop", "shop", 0.5, 12.5, 2.4, None),
     ("shop", "shop", 12.5, 23.0, 1.5, None),
-    ("shop", "shop", 25.5, 36.3, 1.2, ((1.0, 50, 50), (1.3, 74, 52))),
-    ("shop", "shop", 41.0, 50.0, 1.0, None),
+    ("shop", "shop", 25.5, 36.3, 1.35, ((1.0, 50, 50), (1.3, 74, 52))),
+    ("shop", "shop", 41.0, 49.0, 1.0, None),
     # 04 Noren app
-    ("app", "app", 1.5, 13.5, 1.412, ((1.0, 50, 50), (1.25, 78, 8))),     # wallet menu: test key, fork faucets
     ("app", "app", 18.0, 28.0, 2.222, APP_CARD),                         # Earn: deposit 0.5 ETH into nETH
     ("app", "app", 37.5, 42.4, 2.0, APP_CARD),                           # Swap: 100 USDG -> ETH
     ("app", "app", 42.4, 51.4, 1.8, (1.42, 50, 42)),                     # routes: Aqua maker vs Uniswap v4, swap
     ("app", "app", 56.0, 62.0, 2.0, (1.6, 50, 72)),                      # Earn: realised fees from that fill
     ("app", "app", 76.5, 80.5, 2.0, (1.42, 50, 62)),                     # Borrow: lock 0.5 nETH
     ("app", "app", 88.5, 97.5, 3.6, APP_CARD),                           # borrow 25 USDG
-    ("app", "app", 98.5, 119.5, 3.0, APP_CARD),                          # Bridge: Relay/Across quotes, CRE approval
-    ("app", "credit", 15.0, 37.0, 2.2, None),                            # Credit: lock 1 NVDA, signed terms, line opened
-    # 05a private payment on the Arc fork, then the live payment and refund on Arc testnet
-    ("private", "private", 1.0, 22.6, 1.6, None),
-    ("private", "explorer", 0.3, 4.8, 1.0, (1.12, 30, 30)),
-    ("private", "explorer", 18.5, 21.5, 1.0, (1.12, 30, 30)),
+    ("app", "app", 98.5, 119.565, 3.3, APP_CARD),                          # Bridge: Relay/Across quotes, CRE approval
+    ("app", "credit", 15.0, 37.0, 2.4, None),                            # Credit: lock 1 NVDA, signed terms, line opened
+    # 05a USDC on Arc: the checkout opens on "Pay privately" (local Arc fork), Noren Merchant shows "Customer: Private";
+    # then the live cross-chain runs on public testnets (docs/PRIVACY.md, docs/AQUA-LIVE.md) and Noren Merchant's live view
+    ("private", "privdefault", 0.3, 20.3, 1.6, None),
+    ("private", "privdefault", 27.4, 36.4, 1.8, None),
+    ("private", "xchain", 0.5, 5.5, 2.0, None, XLIVE),
+    ("private", "xexplorer", 17.6, 19.6, 1.0, (1.12, 30, 30), ARB_LIVE),   # Arbitrum Sepolia: burn with SHIELD hook
+    ("private", "xexplorer", 36.0, 38.0, 1.0, (1.12, 30, 30), LIVE),       # Arc: CRE relay -> pool deposit
+    ("private", "xexplorer", 53.0, 55.0, 1.0, (1.12, 30, 30), LIVE),       # Arc: 0.75 USDC invoice paid privately
+    ("private", "xexplorer", 70.0, 72.0, 1.0, (1.12, 30, 30), LIVE),       # Arc: Aqua fill of the cross-chain order
+    ("private", "xchain", 17.0, 29.0, 4.0, None, MLIVE),                   # Noren Merchant live: from other chains
     # 05b pay with stocks (the Aubelle order), then the shop's order page
-    ("stocks", "shop", 49.5, 70.5, 1.6, None),
-    ("stocks", "order", 1.0, 3.875, 1.0, (1.15, 50, 40)),
-    # 05c the credit ladder, pay in 3 from the line, the first repayment
+    ("stocks", "shop", 49.5, 70.5, 1.75, None),
+    ("stocks", "order", 1.0, 4.0, 1.0, (1.15, 50, 40)),
+    # 05c the credit ladder, pay in 3 from the line, the first repayment, then the live CCIP pay-on-credit
 ]
 
-# Captions: (absolute start, duration, text). <em> = serif italic accent. Facts come from the takes' logs.
+# Captions: (absolute start, duration, text). <em> = serif italic accent. Facts come from the takes' logs and docs/*.md.
 CAPTIONS = [
     (15.3, 5.0, "Sign in with Ethereum (EIP-4361): a signature, no transaction"),
     (20.6, 4.6, "Store registered on Arc: <em>NorenCheckout.registerMerchant</em>"),
@@ -66,23 +75,27 @@ CAPTIONS = [
     (30.6, 4.2, "API keys; the secret is shown once <em>(redacted here)</em>"),
     (35.3, 4.6, "Aubelle: a demo shop in <em>examples/shop</em>"),
     (40.1, 6.6, "Amélie Gingham, size S, $148"),
-    (47.1, 8.8, "<em>server/noren.ts</em>: the whole integration"),
-    (56.1, 8.6, "Checkout with Noren → Noren's hosted checkout"),
-    (65.3, 8.0, "A test key in this browser · fork faucets: 6 NVDA, 120 USDG, 50 USDC"),
-    (73.5, 4.3, "Deposit 0.5 ETH into nETH, which backs its own 1inch Aqua maker"),
-    (78.0, 7.4, "Buy ETH: the Aqua maker (0.40%) beats Uniswap v4"),
-    (85.6, 3.4, "Realised: <em>0.398407 USDG</em> from 1 fill · no APY shown"),
-    (89.1, 3.9, "Borrow 25 USDG against 0.5 nETH at the Chainlink price"),
-    (93.1, 6.7, "Bridge: live Relay 9.97 / Across 9.99 · approved by Chainlink CRE"),
-    (100.1, 5.3, "Lock 1 NVDA: 0G sealed model + EIP-712 terms → 123.15 USDC"),
-    (105.5, 4.4, "Chainlink CRE writes the line to Arc: live in 6.7 s"),
-    (110.3, 5.4, "Shield 20 USDC · the ASP screens the deposit"),
-    (115.8, 7.0, "Proof made in the browser in 1.25 s · your address in the tx: <em>none</em>"),
-    (123.6, 4.4, "Live: 2.50 USDC paid privately · tx 0x1ce6…776a"),
-    (128.1, 2.8, "Live: 1.00 USDC refund to the shielded inbox"),
-    (131.2, 4.6, "Pay $148 with 0.805179 NVDA at $184.59"),
-    (135.9, 6.0, "Filled by a 1inch Aqua maker · Aubelle gets 148 USDG"),
-    (142.0, 4.8, "Order paid · signed Noren webhook verified"),
+    (47.1, 7.7, "<em>server/noren.ts</em>: the whole integration"),
+    (55.2, 7.6, "Checkout with Noren → Noren's hosted checkout"),
+    (63.3, 4.1, "Deposit 0.5 ETH into nETH, which backs its own 1inch Aqua maker"),
+    (67.6, 7.2, "Buy ETH: the Aqua maker (0.40%) beats Uniswap v4"),
+    (75.0, 2.9, "Realised: <em>0.398407 USDG</em> from 1 fill · no APY shown"),
+    (78.0, 4.4, "Borrow 25 USDG against 0.5 nETH at the Chainlink price"),
+    (82.5, 6.2, "Bridge: live Relay 9.97 / Across 9.99 · approved by Chainlink CRE"),
+    (88.9, 6.1, "Lock 1 NVDA: 0G sealed model + EIP-712 terms → 123.15 USDC"),
+    (95.1, 2.85, "CRE carries the line to Arc in 6.7 s"),
+    (98.2, 2.4, "Checkout opens on <em>Pay privately</em>, the default"),
+    (100.7, 3.6, "Fork faucet: test USDC · shield 20 USDC into the Kohaku pool"),
+    (104.4, 3.1, "The ASP screens the deposit, then: pay 12.50 USDC"),
+    (107.6, 2.95, "Proof in the browser: 1.27 s · payer in the tx: <em>none</em>"),
+    (110.6, 4.8, "Noren Merchant: 12.50 USDC paid · Customer: <em>Private</em>"),
+    (115.6, 2.35, "Bridge tab: CCTP from 10 testnets"),
+    (118.05, 3.9, "Live: 2 USDC burned on Arbitrum lands in Arc's private pool"),
+    (122.05, 3.9, "Live on Arc: a 0.75 USDC invoice paid privately · an Aqua fill"),
+    (126.05, 2.9, "Noren Merchant · live: payments from other chains"),
+    (129.2, 4.2, "Pay $148 with 0.805179 NVDA at $184.59"),
+    (133.5, 5.9, "Filled by a 1inch Aqua maker · Aubelle gets 148 USDG"),
+    (139.5, 4.4, "Order paid · signed Noren webhook verified"),
 ]
 
 # Redaction boxes over the Noren Merchant secret key (onboard take), in take seconds and take pixels (1920x1080).
@@ -103,16 +116,21 @@ _first_qr = next((e["t"] for e in _wev if e["type"] == "click" and e["label"].st
 
 if WORLD_VERIFIED is not None:
     LATER = [
-        ("later", "later", 1.5, 9.5, 2.667, APP_CARD),                         # 3.0 s: the live ladder
+        ("later", "later", 1.5, 9.5, 3.2, APP_CARD),                           # 2.5 s: the live ladder
         ("later", "world", WORLD_VERIFIED - 1.5, WORLD_VERIFIED + 3.5, 1.0, None),  # 5.0 s: the real verification lands
-        ("later", "later", 26.0, 48.0, 2.75, None),                              # 8.0 s: pay in 3 from the line
+        ("later", "later", 26.0, 48.0, 3.0, None),                               # 7.33 s: pay in 3 from the line
         ("later", "later", 50.0, 58.0, 4.0, APP_CARD),                           # 2.0 s: repay the first part
+        ("later", "xexplorer", 88.0, 90.0, 1.0, (1.2, 50, 10), CCIP_LIVE),       # CCIP msg Robinhood testnet -> Base hub
+        ("later", "xexplorer", 106.9, 108.9, 1.0, (1.2, 50, 10), CCIP_LIVE),     # CCIP msg Base hub -> Arc
+        ("later", "xexplorer", 124.1, 126.267, 1.0, (1.12, 30, 30), LIVE),       # Arc: merchant paid 0.25 USDC on credit
     ]
     LATER_CAPS = [
-        (147.2, 2.9, "Credit limit by reputation: $732.62 → $888.02"),
-        (150.2, 4.9, "World ID verified in World App · +50 points, starter line"),
-        (155.2, 7.8, "Pay in 3: 24.00 USDC from the credit line on Arc"),
-        (163.1, 1.9, "Repay 8.00 USDC"),
+        (144.05, 2.4, "Credit limit by reputation: $732.62 → $888.02"),
+        (146.6, 4.8, "World ID verified in World App (Orb) · +50 points"),
+        (151.6, 7.1, "Pay in 3: 24.00 USDC from the credit line on Arc"),
+        (158.9, 1.85, "Repay 8.00 USDC"),
+        (160.9, 3.9, "Live over CCIP: Robinhood testnet → Base hub → Arc"),
+        (164.85, 2.1, "Arc: merchant paid 0.25 USDC"),
     ]
     V5C = "v5c-verified"
 else:
@@ -147,7 +165,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). Text lives in vo/*.txt; assets/vo/*.wav are Kokoro af_heart.
-VO = [("v1", 0.5), ("v2", 15.4), ("v3", 38.4), ("v4", 65.4), ("v5a", 110.2), ("v5b", 131.4), (V5C, 147.4), ("v6", 165.6)]
+VO = [("v1", 0.5), ("v2", 15.4), ("v3", 38.4), ("v4", 63.4), ("v5a", 98.2), ("v5b", 129.3), (V5C, 144.3), ("v6", 167.4)]
 
 # Extra sound on visible results (absolute seconds): a soft pop when a real result lands on screen.
 POPS = []

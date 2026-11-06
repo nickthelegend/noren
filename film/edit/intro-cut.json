@@ -1,10 +1,11 @@
 {
  "intro_landing": {
   "take": "landing",
-  "tin": 2.0,
-  "tout": 19.6,
+  "tin": 0.3,
+  "tout": 17.9,
   "rate": 1.6,
   "zoom": null,
+  "net": null,
   "at": 4.0,
   "dur": 11.0,
   "file": "intro-0.mp4",

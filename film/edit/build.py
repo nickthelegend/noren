@@ -31,10 +31,11 @@ def dur_of(seg):
 # ---- lay segments end to end inside their scenes
 cursor = {k: edl.OFFSET.get(k, 0.0) for k in scenes}
 for i, seg in enumerate(edl.SEGMENTS):
-    sc, take, tin, tout, rate, zoom = seg
+    sc, take, tin, tout, rate, zoom = seg[:6]
+    net = seg[6] if len(seg) > 6 else scenes[sc]["net"]   # a segment can carry its own network label (live vs fork)
     d = dur_of(seg)
     n = len(scenes[sc]["segs"])
-    scenes[sc]["segs"].append(dict(take=take, tin=tin, tout=tout, rate=rate, zoom=zoom, at=round(cursor[sc], 3), dur=d, file=f"{sc}-{n}.mp4", n=n))
+    scenes[sc]["segs"].append(dict(take=take, tin=tin, tout=tout, rate=rate, zoom=zoom, net=net, at=round(cursor[sc], 3), dur=d, file=f"{sc}-{n}.mp4", n=n))
     cursor[sc] += d
 for k, s in scenes.items():
     if s["segs"]:
@@ -153,16 +154,20 @@ def scene_html(s):
         caps.append(cap_div(sid, i, local, d, text))
         tl.append(f'tl.fromTo("#{sid}-c{i} .in", {{ y: 18, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }}, {local + 0.02:.3f});')
         tl.append(f'tl.to("#{sid}-c{i} .in", {{ opacity: 0, duration: 0.25, ease: "power2.in" }}, {local + d - 0.3:.3f});')
+    # the network badge follows the footage: consecutive segments with the same label share one badge clip
+    def badge(label):
+        live = "· live" in label
+        return f'<div class="net{" live" if live else ""}">{"<b></b>" if live else ""}{html.escape(label)}</div>'
+    runs = []
+    for sg in segs:
+        if runs and runs[-1][0] == sg["net"]: runs[-1][2] = sg["at"] + sg["dur"]
+        else: runs.append([sg["net"], sg["at"], sg["at"] + sg["dur"]])
+    if runs: runs[0][1] = 0.0; runs[-1][2] = s["dur"]
     net = ""
-    if s["net"]:
-        live = s["net"].startswith("Arc testnet · live")
-        net = f'<div class="net{" live" if live else ""}" id="{sid}-net">{"<b></b>" if live else ""}{html.escape(s["net"])}</div>'
-    # the 05a live explorer shots switch the network label while they play
-    if sid == "private":
-        ex = [sg for sg in segs if sg["take"] == "explorer"]
-        a, b = ex[0]["at"], ex[-1]["at"] + ex[-1]["dur"]
-        net = (f'<div id="{sid}-netf" class="clip" data-start="0" data-duration="{a:.3f}" data-track-index="6"><div class="net">{html.escape(edl.ARC_FORK)}</div></div>'
-               f'<div id="{sid}-netl" class="clip" data-start="{a:.3f}" data-duration="{b - a:.3f}" data-track-index="6"><div class="net live"><b></b>{html.escape(edl.LIVE)}</div></div>')
+    if len(runs) == 1 and runs[0][0]:
+        net = badge(runs[0][0]).replace('<div class="net', f'<div id="{sid}-net" class="net', 1)
+    elif len(runs) > 1:
+        net = "".join(f'<div id="{sid}-net{j}" class="clip" data-start="{a:.3f}" data-duration="{b - a:.3f}" data-track-index="6">{badge(lab)}</div>' for j, (lab, a, b) in enumerate(runs) if lab)
     tl.insert(0, f'tl.fromTo("#{sid}-win", {{ y: 24, opacity: 0.0 }}, {{ y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }}, {segs[0]["at"] if segs else 0:.3f});')
     tl.insert(0, f'tl.fromTo("#{sid}-tag", {{ x: -16, opacity: 0 }}, {{ x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }}, 0.05);')
     body = f"""<template>
