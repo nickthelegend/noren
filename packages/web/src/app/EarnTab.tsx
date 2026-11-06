@@ -81,12 +81,12 @@ export function EarnTab({ w }: { w: Wallet }) {
                 <input id="nk-earn" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} />
                 {mode === "deposit" && tok ? <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span> : <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym, color: "#1c2a5e" }} />{v.shareSym}</span>}
               </div>
-              <div className="nk-sub"><span>{mode === "deposit" ? "Into the vault's Aqua maker" : "Shares are your receipt"}</span><span>{mode === "deposit" ? "Wallet" : "Shares"} <button type="button" onClick={() => setAmount(String(Number(max) / 1e18))}>{fmtUnits(max, 18, 4)}</button></span></div>
+              <div className="nk-sub"><span>{mode === "deposit" ? "Into the vault's Aqua maker" : "Shares are your receipt"}</span><span>{mode === "deposit" ? "Wallet" : "Shares"} <button type="button" onClick={() => setAmount(String(Number(max) / 10 ** (mode === "deposit" ? 18 : v.decimals)))}>{fmtUnits(max, mode === "deposit" ? 18 : v.decimals, 4)}</button></span></div>
             </div>
             <div className="nk-flip" aria-hidden style={{ cursor: "default" }}>↓</div>
             <div className="nk-box">
               <span className="nk-l"><span>{mode === "deposit" ? "You receive" : "You get back"}</span><span>{mode === "deposit" ? "receipt shares" : v.stats.priced ? `${v.sym}` : "in kind"}</span></span>
-              <div className="nk-row"><output className={preview ? "" : "dim"}>{preview !== null ? fmtUnits(preview, 18, 6) : "0"}</output>{mode === "deposit" ? <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym, color: "#1c2a5e" }} />{v.shareSym}</span> : tok && <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span>}</div>
+              <div className="nk-row"><output className={preview ? "" : "dim"}>{preview !== null ? fmtUnits(preview, mode === "deposit" ? v.decimals : 18, 6) : "0"}</output>{mode === "deposit" ? <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym, color: "#1c2a5e" }} />{v.shareSym}</span> : tok && <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span>}</div>
               <div className="nk-sub"><span>{s?.priced ? `1 ${v.shareSym} = ${fmtUnits(s.assetsPerShare, 18, 6)} ${v.sym}` : "A feed is stale: withdrawals pay out in kind"}</span><span /></div>
             </div>
             <div className="nk-routes" role="radiogroup" aria-label="Vault">
@@ -113,7 +113,7 @@ export function EarnTab({ w }: { w: Wallet }) {
           <div className="nk-pad">
             {v.shares + v.locked === 0n && v.realised === 0n ? <Empty title="Nothing deposited yet" text={`Deposit ${v.sym} to back the vault's 1inch Aqua maker and earn its spread on real fills.`} /> : (
               <div className="nk-stats">
-                <div className="nk-stat"><small>Shares{v.locked > 0n ? ` (${fmtUnits(v.locked, 18, 4)} locked in Borrow)` : ""}</small><b>{fmtUnits(v.shares + v.locked, 18, 4)}</b></div>
+                <div className="nk-stat"><small>Shares{v.locked > 0n ? ` (${fmtUnits(v.locked, v.decimals, 4)} locked in Borrow)` : ""}</small><b>{fmtUnits(v.shares + v.locked, v.decimals, 4)}</b></div>
                 <div className="nk-stat"><small>Worth now</small><b>{fmtUnits(v.assetsNow, 18, 6)} {v.sym}</b></div>
                 <div className="nk-stat"><small>Open gain</small><b className={open > 0n ? "ok" : open < 0n ? "bad" : ""}>{open >= 0n ? "+" : "−"}{fmtUnits(open < 0n ? -open : open, 18, 6)} {v.sym}</b></div>
                 <div className="nk-stat"><small>Realised yield</small><b className={v.realised > 0n ? "ok" : ""}>{fmtUnits(v.realised, 18, 6)} {v.sym}</b></div>

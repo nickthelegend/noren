@@ -109,21 +109,21 @@ export function BorrowTab({ w }: { w: Wallet }) {
             <ul className="nk-items">
               {rows.filter((v) => v.shares > 0n || v.locked > 0n).map((v) => {
                 const t = TOKENS.find((x) => x.sym === v.sym);
-                const a = parseAmount(lockAmt[v.vault] ?? "", 18);
+                const a = parseAmount(lockAmt[v.vault] ?? "", v.decimals);
                 return (
                   <li key={v.vault} style={{ flexWrap: "wrap" }}>
                     {t && <Coin t={t} />}
-                    <div><b>{v.shareSym}</b><small>{fmtUnits(v.locked, 18, 4)} locked · {fmtUnits(v.shares, 18, 4)} in wallet</small></div>
+                    <div><b>{v.shareSym}</b><small>{fmtUnits(v.locked, v.decimals, 4)} locked · {fmtUnits(v.shares, v.decimals, 4)} in wallet</small></div>
                     <input className="nk-search" style={{ width: 110, minHeight: 44 }} inputMode="decimal" placeholder="0" aria-label={`${v.shareSym} amount`} value={lockAmt[v.vault] ?? ""} onChange={(e) => setLockAmt((m) => ({ ...m, [v.vault]: e.target.value.replace(/[^0-9.]/g, "") }))} />
                     <button className="nk-btn ink" disabled={!!busy || !a || a > v.shares} onClick={() => run(`lock${v.vault}`, async (x) => {
                       const allowance = await x.pub.readContract({ address: v.vault, abi: erc20Abi, functionName: "allowance", args: [x.account.address, borrow] });
                       if (allowance < a!) await tx(x, `Approving ${v.shareSym}…`, { address: v.vault, abi: erc20Abi, functionName: "approve", args: [borrow, maxUint256] });
                       const h = await tx(x, `Locking ${v.shareSym}…`, { address: borrow, abi: borrowAbi, functionName: "lock", args: [v.vault, a!] });
-                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Locked ${fmtUnits(a!, 18, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
+                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Locked ${fmtUnits(a!, v.decimals, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
                     })}>{busy === `lock${v.vault}` ? "Locking…" : "Lock"}</button>
                     <button className="nk-btn" disabled={!!busy || !a || a > v.locked} onClick={() => run(`unlock${v.vault}`, async (x) => {
                       const h = await tx(x, `Unlocking ${v.shareSym}…`, { address: borrow, abi: borrowAbi, functionName: "unlock", args: [v.vault, a!, x.account.address] });
-                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Unlocked ${fmtUnits(a!, 18, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
+                      setLockAmt((m) => ({ ...m, [v.vault]: "" })); return `Unlocked ${fmtUnits(a!, v.decimals, 4)} ${v.shareSym} (tx ${shortHex(h, 6)}).`;
                     })}>Unlock</button>
                   </li>
                 );
