@@ -111,7 +111,7 @@ export async function startStack(opts: { credit?: (arc: ArcContext) => Promise<C
   // A fresh fork has fresh invoices, so clear their events too. The business name and webhook endpoints are merchant settings and stay.
   await rm('data/dev-stack-invoices.json', { force: true });
   await rm('data/dev-stack-invoices.json.events.json', { force: true });
-  const merchantServer = createMerchantServer({ deployment, rpcUrl, localUnlockedMerchant: merchant, dataFile: 'data/dev-stack-invoices.json', dev: { aspUrl, merchantToken: token }, mounts, ...(credit ? { credit } : {}) });
+  const merchantServer = createMerchantServer({ deployment, rpcUrl, localUnlockedMerchant: merchant, dataFile: 'data/dev-stack-invoices.json', dev: { aspUrl, merchantToken: token, faucetUsdc: 500_000_000n }, mounts, ...(credit ? { credit } : {}) });
   await new Promise<void>((res, rej) => { merchantServer.once('error', rej); merchantServer.listen(PORTS.server, '127.0.0.1', res); });
   onStop(() => new Promise<void>(r => { merchantServer.closeAllConnections(); merchantServer.close(() => r()); }));
   console.log(`Arc fork RPC: ${rpcUrl}`);

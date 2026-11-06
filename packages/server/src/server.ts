@@ -115,6 +115,23 @@ export function createMerchantServer(options: ServerOptions): Server {
   } }) : undefined;
   // Pay with stock: the invoice is mirrored on NorenGateway (Robinhood) and settles when its InvoicePaid log appears.
   const rh = options.credit?.robinhoodRpc ? createPublicClient({ transport: http(options.credit.robinhoodRpc), cacheTime: 0 }) as any : undefined;
+  // A restarted dev stack starts from a fresh Arc fork: stores persisted in data/ lose their on-chain registration.
+  // Re-register each one from its own merchant account (local fork only; on a real network registration persists).
+  if (options.dev) void ready.then(async () => {
+    await devReady;
+    for (const store of stores) {
+      try {
+        const payout = await publicClient.readContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'merchantPayout', args: [store.merchant] }) as string;
+        if (payout.toLowerCase() === store.payout.toLowerCase()) continue;
+        await publicClient.request({ method: 'anvil_setBalance', params: [store.merchant, toHex(10n ** 18n)] });
+        const relayer: any = createWalletClient({ chain, account: privateKeyToAccount(store.relayerKey), transport: http(options.rpcUrl) });
+        const hash = await relayer.writeContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'registerMerchant', args: [store.payout] });
+        if ((await publicClient.waitForTransactionReceipt({ hash })).status !== 'success') throw new Error(`registerMerchant reverted: ${hash}`);
+        store.registerTx = hash; await saveStores();
+        console.log(`Store "${store.name}" re-registered on the fresh Arc fork (${hash})`);
+      } catch (e: any) { console.error(`Setup required: store "${store.name}" could not be re-registered on this fork: ${String(e?.message ?? e).slice(0, 160)}`); }
+    }
+  });
   if (options.dev && options.credit?.robinhoodRpc) void ensureUniswapOnFork(options.credit.robinhoodRpc).then(() => console.log('Uniswap v4 Universal Router + Permit2 code copied from Robinhood mainnet onto the fork')).catch(e => console.error(`Setup required: Uniswap fork code: ${e.message}`));
   const stockWatch = rh && options.credit?.gateway ? watchStockPayments({ rpcUrl: options.credit.robinhoodRpc!, gateway: options.credit.gateway, fromBlock: options.credit.robinhoodFromBlock, onError: e => console.error('Stock watcher:', e.message), onPaid: async p => {
     await ready;
