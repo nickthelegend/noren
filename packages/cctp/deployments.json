@@ -16,6 +16,14 @@
     ],
     "router": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
     "setRouterTx": "0x3d145608994b366f0238c08b324c3078e0a80607a017a7437ce3f75e556770a8",
-    "setRailTx": "0x548f444bbbbc9f749f1a2617a41c35e6232c271b2fb23ed75b3b059f45228af7"
+    "setRailTx": "0x548f444bbbbc9f749f1a2617a41c35e6232c271b2fb23ed75b3b059f45228af7",
+    "privacy": {
+      "NorenArcHook": "0x30C84a5aAD4f4bDd25a27e33F563EfBC2CFaa3F4",
+      "deployTx": "0x5d6d268046424781df6b7691740b7939903ca58d5150b5b3dc1721c882dda542",
+      "router": "0x7799bCDaE59500556B96B176c69E50FD5053Ca2D",
+      "setRouterTx": "0xc90e581476b4536118cfe8cec81046ff6e80e3556a440be4c833789a92e658e2",
+      "creTarget": "privacy-settings",
+      "note": "SHIELD-aware hook (validates kind 7); its router is NorenShieldSink, which forwards other kinds to NorenArcActionRouter. NorenArcHook above (v2) is unchanged. See docs/PRIVACY.md."
+    }
   }
 }

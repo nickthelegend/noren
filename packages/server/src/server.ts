@@ -9,6 +9,7 @@ import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork,
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
 import { assertRobinhoodFork, creditDrawProblem, ensureUniswapOnFork, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 import { AuthState } from './auth.ts';
+import { createPrivateRelay, type PrivateRelayOptions } from './private.ts';
 import { findStoreBySecret, mayAct, newSecretKey, publicStore, validName, validPayout, validateRedirect, validateMetadata, type Principal, type Store } from './stores.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
@@ -39,7 +40,9 @@ export function readableError(error: any): string {
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
   /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
-  mounts?: ((req: any, res: any) => Promise<boolean>)[] };
+  mounts?: ((req: any, res: any) => Promise<boolean>)[];
+  /** "Send privately": relay Kohaku withdrawals to any address (GET /private/relayer, POST /private/send). */
+  privateRelay?: Omit<PrivateRelayOptions, 'deployment' | 'rpcUrl'> };
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
 /** NorenRateOracle on Arc re-checks a fiat quote at the same Chainlink rounds (rates written by the CRE pricing workflow). */
 export type RateCheck = { oracle: Address; verified: boolean; detail: string };
@@ -53,6 +56,8 @@ export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   try { const info = await rpc('anvil_nodeInfo'); if (!info?.forkConfig?.forkUrl) throw new Error('Anvil is not forked'); }
   catch { throw new Error('Setup required: dev endpoints require an Anvil fork; anvil_nodeInfo has no fork configuration'); }
 }
+/** Anvil's published dev key #9: holds funds only on a local fork. Never used against a public RPC. */
+const ANVIL_DEV_KEY_9 = '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6' as const;
 export function createMerchantServer(options: ServerOptions): Server {
   const rows = new Map<string, RecordRow>();
   const listeners = new Set<any>();
@@ -181,6 +186,9 @@ export function createMerchantServer(options: ServerOptions): Server {
     }
     return { gateway, merchant, invoiceId: id, amountUsdg: row.invoice.amount.toString(), expiry: row.invoice.expiry.toString() };
   }
+  // On the dev stack (a loopback Arc fork, checked by assertLocalFork) the relayer is Anvil's published dev account #9.
+  const relayConfig = options.privateRelay ?? (options.dev ? { relayerKey: ANVIL_DEV_KEY_9 } : undefined);
+  const privateRelay = relayConfig ? createPrivateRelay({ deployment: options.deployment, rpcUrl: options.rpcUrl, ...relayConfig }) : undefined;
   const server = createHttpServer(async (req, res) => {
     try {
       await ready; await devReady;
@@ -191,6 +199,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       (req as any).norenMerchantAllowed = (address: string) => mayAct(principal(req), address, stores);
       (req as any).norenAuthenticated = () => !!principal(req);
       for (const mount of options.mounts ?? []) if (await mount(req, res)) return;
+      if (privateRelay && await privateRelay.mount(req, res)) return;
       if (req.method === 'GET' && path === '/auth/nonce') return send(res, 200, { nonce: auth.nonce() });
       if (req.method === 'POST' && path === '/auth/siwe') { const b = await body(req); const result = await auth.siwe(b.message, b.signature); await saveSessions(); return send(res, 200, result); }
       if (req.method === 'POST' && path === '/auth/logout') { const t = bearer(req); if (!t || !auth.address(t)) return send(res, 401, { error: 'Session required' }); auth.logout(t); await saveSessions(); return send(res, 200, { revoked: true }); }

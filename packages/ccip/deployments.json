@@ -11,8 +11,11 @@
     "NorenArcActionRouter": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
     "deployTxs": {
       "NorenCcipGateway": "0xb0823113722ec53d01fec9c8549132989445ce197c1a88e27acea3597d63637a",
-      "NorenArcActionRouter": "0x3fec86d1213e1cf2b237e0189503564bf1f9f6f3136d482b79637e40ce9afea3"
-    }
+      "NorenArcActionRouter": "0x3fec86d1213e1cf2b237e0189503564bf1f9f6f3136d482b79637e40ce9afea3",
+      "NorenShieldSink": "0x635d800f761517da02dac098e0098b01e2eff3984819b91ece77515245a57c47"
+    },
+    "NorenShieldSink": "0x7799bCDaE59500556B96B176c69E50FD5053Ca2D",
+    "shieldSinkNote": "Arrive private (action SHIELD = 7): sits in front of NorenArcActionRouter for the CCTP rail (router.setRail(sink, CCTP) 0x841fae507a3eef0bb235dd8349067917cf695f641c6119481f4d44937c51fb6a); deposits SHIELD arrivals into the Kohaku pool and forwards every other kind. See docs/PRIVACY.md."
   },
   "46630": {
     "name": "Robinhood Chain Testnet",

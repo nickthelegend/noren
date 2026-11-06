@@ -6,14 +6,19 @@ import { decodeAbiParameters, encodeAbiParameters, isAddress, pad, stringToHex, 
  * On the CCTP rail it travels as the burn's hookData; NorenArcHook hands it, with the minted USDC, to the
  * shared NorenArcActionRouter (packages/ccip, Arc Testnet 0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4). A failed action or unknown kind becomes a claimable balance for the beneficiary.
  */
-export const ACTION_KIND = { PAY_INVOICE: 1, EARN_DEPOSIT: 2, AQUA_ORDER: 3, CREDIT_LINE: 4, PAY_ON_CREDIT: 5 } as const;
+export const ACTION_KIND = { PAY_INVOICE: 1, EARN_DEPOSIT: 2, AQUA_ORDER: 3, CREDIT_LINE: 4, PAY_ON_CREDIT: 5, SHIELD: 7 } as const;
+
+/** BN254 scalar field (Privacy Pools' SNARK_SCALAR_FIELD); a precommitment is a Poseidon hash in this field. */
+export const SNARK_SCALAR_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
 export type ArcAction =
   | { kind: "pay-invoice"; merchant: Address; invoiceId: Hex | string; beneficiary?: Address; ref?: Hex | string }
   | { kind: "earn-deposit"; vault: Address; beneficiary?: Address; ref?: Hex | string }
   | { kind: "aqua-order"; order: Hex; beneficiary?: Address; ref?: Hex | string }
   | { kind: "credit-line"; lineId: Hex; limitUsdc6: bigint; expiry: bigint | number; asOf: bigint | number; beneficiary?: Address; ref?: Hex | string }
-  | { kind: "pay-on-credit"; lineId: Hex; merchant: Address; invoiceId: Hex | string; amountUsdc6: bigint; beneficiary?: Address; ref?: Hex | string };
+  | { kind: "pay-on-credit"; lineId: Hex; merchant: Address; invoiceId: Hex | string; amountUsdc6: bigint; beneficiary?: Address; ref?: Hex | string }
+  /** "Arrive private": deposit the minted USDC into the Kohaku privacy pool under the user's precommitment. */
+  | { kind: "shield"; precommitment: bigint; beneficiary?: Address; ref?: Hex | string };
 
 const actionTuple = [{ type: "uint8" }, { type: "address" }, { type: "bytes32" }, { type: "bytes" }] as const;
 
@@ -55,6 +60,11 @@ export const encodeAction = (a: ArcAction, defaultBeneficiary: Address): Hex => 
       if (!isAddress(a.merchant)) throw new Error("merchant must be an address");
       kind = ACTION_KIND.PAY_ON_CREDIT;
       params = encodeAbiParameters([{ type: "bytes32" }, { type: "address" }, { type: "bytes32" }, { type: "uint256" }], [toBytes32(a.lineId), a.merchant, toBytes32(a.invoiceId), a.amountUsdc6]);
+      break;
+    case "shield":
+      if (a.precommitment <= 0n || a.precommitment >= SNARK_SCALAR_FIELD) throw new Error("precommitment must be a non-zero BN254 field element");
+      kind = ACTION_KIND.SHIELD;
+      params = encodeAbiParameters([{ type: "uint256" }], [a.precommitment]);
       break;
   }
   return encodeAbiParameters(actionTuple, [kind, beneficiary, ref, params]);

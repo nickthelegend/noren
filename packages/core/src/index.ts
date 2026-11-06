@@ -37,5 +37,23 @@ export const checkoutAbi = parseAbi([
   'error AlreadyPaid()', 'error Expired()', 'error NotMerchant()', 'error AmountMismatch()', 'error UnknownMerchant()', 'error AlreadyRefunded()', 'error RefundTooLarge()'
 ]);
 export const entrypointAbi = parseAbi(['function updateRoot(uint256 root,string cid) returns (uint256)', 'function latestRoot() view returns (uint256)', 'function registerPool(address asset,address pool,uint256 minimumDeposit,uint256 vettingFeeBPS,uint256 maxRelayFeeBPS)', 'event RootUpdated(uint256 root,string ipfsCID,uint256 timestamp)']);
+/** Kohaku/0xbow relayed withdrawal: Entrypoint.relay pays `recipient` (minus the relay fee) from the pool. */
+export const relayAbi = parseAbi([
+  'struct Withdrawal { address processooor; bytes data; }',
+  'struct WithdrawProof { uint256[2] pA; uint256[2][2] pB; uint256[2] pC; uint256[8] pubSignals; }',
+  'function relay(Withdrawal withdrawal, WithdrawProof proof, uint256 scope)',
+  'function assetConfig(address asset) view returns (address pool, uint256 minimumDepositAmount, uint256 vettingFeeBPS, uint256 maxRelayFeeBPS)',
+  'function usedPrecommitments(uint256 precommitment) view returns (bool)',
+  'event WithdrawalRelayed(address indexed relayer, address indexed recipient, address indexed asset, uint256 amount, uint256 feeAmount)',
+  'error RelayFeeGreaterThanMax()', 'error InvalidProcessooor()', 'error PoolNotFound()', 'error InvalidWithdrawalAmount()',
+]);
+export const poolScopeAbi = parseAbi(['function SCOPE() view returns (uint256)', 'error InvalidProof()', 'error NullifierAlreadySpent()', 'error UnknownStateRoot()', 'error InvalidTreeDepth()']);
+export const relayDataParameters = [{ type: 'address' }, { type: 'address' }, { type: 'uint256' }] as const;
+export type RelayData = { recipient: Address; feeRecipient: Address; relayFeeBps: bigint };
+/** abi.encode(IEntrypoint.RelayData): the `data` of a withdrawal whose processooor is the Entrypoint. */
+export function encodeRelayData(r: RelayData): Hex { return encodeAbiParameters(relayDataParameters, [r.recipient, r.feeRecipient, r.relayFeeBps]); }
+export function decodeRelayData(data: Hex): RelayData { const [recipient, feeRecipient, relayFeeBps] = decodeAbiParameters(relayDataParameters, data); return { recipient, feeRecipient, relayFeeBps }; }
+/** Amount the recipient of a relayed withdrawal receives (Entrypoint._deductFee: value - value * bps / 10000). */
+export function afterRelayFee(amount: bigint, bps: bigint): bigint { return amount - (amount * bps) / 10_000n; }
 export const poolAbi = parseAbi(['event Deposited(address indexed depositor,uint256 commitment,uint256 label,uint256 value,uint256 precommitment)', 'error ContextMismatch()', 'error IncorrectASPRoot()']);
 export const usdcAbi = parseAbi(['function approve(address spender,uint256 value) returns (bool)', 'function isBlacklisted(address account) view returns (bool)', 'function balanceOf(address owner) view returns (uint256)']);

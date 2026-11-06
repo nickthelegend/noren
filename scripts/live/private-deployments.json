@@ -1,0 +1,45 @@
+{
+  "network": "Arc Testnet (PUBLIC)",
+  "chainId": 5042002,
+  "operator": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "router": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+  "txs": [
+    {
+      "step": "deploy NorenShieldSink",
+      "tx": "0x635d800f761517da02dac098e0098b01e2eff3984819b91ece77515245a57c47",
+      "gasUsed": "1578671",
+      "block": "71027866",
+      "url": "https://explorer.testnet.arc.io/tx/0x635d800f761517da02dac098e0098b01e2eff3984819b91ece77515245a57c47"
+    },
+    {
+      "step": "deploy NorenArcHook (SHIELD-aware)",
+      "tx": "0x5d6d268046424781df6b7691740b7939903ca58d5150b5b3dc1721c882dda542",
+      "gasUsed": "1797064",
+      "block": "71027870",
+      "url": "https://explorer.testnet.arc.io/tx/0x5d6d268046424781df6b7691740b7939903ca58d5150b5b3dc1721c882dda542"
+    },
+    {
+      "step": "hook.setRouter(sink)",
+      "tx": "0xc90e581476b4536118cfe8cec81046ff6e80e3556a440be4c833789a92e658e2",
+      "gasUsed": "47295",
+      "block": "71027879",
+      "url": "https://explorer.testnet.arc.io/tx/0xc90e581476b4536118cfe8cec81046ff6e80e3556a440be4c833789a92e658e2"
+    },
+    {
+      "step": "sink.setRail(hook, true)",
+      "tx": "0xc5df2da572f58c24f3c46add55741bd5f15b26b307345d8fb847bb2d3d501b82",
+      "gasUsed": "48052",
+      "block": "71027880",
+      "url": "https://explorer.testnet.arc.io/tx/0xc5df2da572f58c24f3c46add55741bd5f15b26b307345d8fb847bb2d3d501b82"
+    },
+    {
+      "step": "router.setRail(sink, CCTP)",
+      "tx": "0x841fae507a3eef0bb235dd8349067917cf695f641c6119481f4d44937c51fb6a",
+      "gasUsed": "48290",
+      "block": "71027883",
+      "url": "https://explorer.testnet.arc.io/tx/0x841fae507a3eef0bb235dd8349067917cf695f641c6119481f4d44937c51fb6a"
+    }
+  ],
+  "NorenShieldSink": "0x7799bcdae59500556b96b176c69e50fd5053ca2d",
+  "NorenArcHook": "0x30c84a5aad4f4bdd25a27e33f563efbc2cfaa3f4"
+}

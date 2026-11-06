@@ -41,6 +41,7 @@ export function Checkout({ id }: { id: string }) {
   const started = useRef(0);
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
+  // Private by default: every other method is a public payment and says so.
   const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit" | "xchain">("private");
   const [net] = useNet();
 
@@ -171,12 +172,18 @@ export function Checkout({ id }: { id: string }) {
               <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
               <div className="co-methods four five" role="tablist" aria-label="Payment method">
-                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
-                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
-                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Sold to the best price, settles to Arc</small></span></button>
-                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>From your credit limit, repay later</small></span></button>
-                <button role="tab" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}><Mark id="CIRCLE" size={20} /><span><b>Pay from another chain</b><small>USDC from Base, Arbitrum, Ethereum and 7 more · Circle CCTP</small></span></button>
+                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · {shop} never learns who paid</small></span></button>
+                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Public · your wallet on Arc</small></span></button>
+                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Public · sold to the best price</small></span></button>
+                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>Public · from your credit line</small></span></button>
+                <button role="tab" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}><Mark id="CIRCLE" size={20} /><span><b>Pay from another chain</b><small>Public · USDC from Base, Arbitrum, Ethereum and 7 more over Circle CCTP</small></span></button>
               </div>
+              {method !== "private" && method !== "xchain" && (
+                <div className="co-fund" role="note" aria-label="Public payment">
+                  <p><b>This is a public payment.</b> {method === "usdc" ? "It comes straight from your Arc wallet (or from your wallet on another chain, if you bridge)" : method === "stocks" ? "It comes from your Robinhood Chain wallet" : "It draws on a credit line tied to your Robinhood Chain wallet"}, so {shop} and anyone reading the chain can link it to you.</p>
+                  <div className="row2"><button className="btn line" disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /> Make it private: shield first</button></div>
+                </div>
+              )}
               {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
               <div className="co-bal">
                 <div><span>Private balance</span><b>{bal ? usdc(bal.approved) : <span className="skel-t sm" />}<em>USDC</em></b>{bal && bal.pending > 0n && <small className="pend"><span className="spin xs" /> +{usdc(bal.pending)} being screened</small>}</div>

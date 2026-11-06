@@ -23,6 +23,10 @@ library NorenArcAction {
   /// params = abi.encode(bytes32 lineId, uint256 drawnUsdc6, uint256 repaidUsdc6, uint64 asOf).
   /// Arc -> other chains: the line's utilisation, sent by the router itself.
   uint8 internal constant LINE_REPORT = 6;
+  /// params = abi.encode(uint256 precommitment). "Arrive private": the delivered USDC is deposited into the Kohaku
+  /// privacy pool under the user's precommitment (computed client-side). Handled by NorenShieldSink, which sits in
+  /// front of the router and forwards every other kind to it unchanged.
+  uint8 internal constant SHIELD = 7;
 
   struct Action {
     uint8 kind;

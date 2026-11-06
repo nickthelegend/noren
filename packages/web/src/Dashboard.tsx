@@ -46,6 +46,8 @@ const Cur = ({ r }: { r: Row }) => <span className="lg-row"><Mark id={r.method =
 const payChain = (r: Row) => (r.method === "stocks" ? "robinhood" : "arc") as "robinhood" | "arc";
 /** The chain the money came from. Fork payments: Arc (USDC, private pool, pay later) or Robinhood Chain (stocks). */
 const From = ({ r }: { r: Row }) => settled(r) ? <span className="lg-row sd-from"><Mark id={r.method === "stocks" ? "ROBINHOOD" : "ARC"} size={16} />{r.method === "stocks" ? "Robinhood" : "Arc"}</span> : <span className="sd-muted">–</span>;
+/** What the merchant can know about the payer: "private" only for pool payments; every other method is a public wallet. */
+const customerCsv = (x: Row) => !settled(x) ? "" : x.method === "credit" ? `credit line ${x.creditLineId}` : x.method === "usdc" ? "public Arc wallet" : x.method === "stocks" ? "public Robinhood wallet" : "private";
 const Who = ({ r }: { r: Row }) => r.method === "usdc" ? <span className="sd-linked" title="Paid from a public Arc wallet"><Icon.card />Arc wallet</span> : r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
 /* ================================================================== shell */
@@ -319,14 +321,14 @@ function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token
   const r = rows ?? [];
   const incoming = r.filter((x) => x.status === "open" || x.status === "draft").reduce((a, x) => a + n6(x.invoice.amount), 0);
   const ledger = useMemo(() => {
-    const e: { at: number; type: string; amount: number; id: string; tx?: string; desc?: string }[] = [];
+    const e: { at: number; type: string; amount: number; id: string; tx?: string; desc?: string; who: string }[] = [];
     for (const x of r) {
-      if (settled(x) && x.paidAt) e.push({ at: secs(x.paidAt)!, type: x.method === "stocks" ? "Payment (USDG, Robinhood)" : "Payment", amount: n6(x.invoice.amount), id: x.invoice.invoiceId, tx: x.paymentTx, desc: x.description });
-      if (x.refundAmount && x.refundedAt) e.push({ at: secs(x.refundedAt)!, type: "Refund", amount: -n6(x.refundAmount), id: x.invoice.invoiceId, tx: x.refundTx, desc: x.description });
+      if (settled(x) && x.paidAt) e.push({ at: secs(x.paidAt)!, type: x.method === "stocks" ? "Payment (USDG, Robinhood)" : "Payment", amount: n6(x.invoice.amount), id: x.invoice.invoiceId, tx: x.paymentTx, desc: x.description, who: customerCsv(x) });
+      if (x.refundAmount && x.refundedAt) e.push({ at: secs(x.refundedAt)!, type: "Refund", amount: -n6(x.refundAmount), id: x.invoice.invoiceId, tx: x.refundTx, desc: x.description, who: "private" });
     }
     return e.sort((a, b) => b.at - a.at);
   }, [r]);
-  const exportCsv = () => downloadCsv(`noren-balance-${new Date().toISOString().slice(0, 10)}.csv`, [["date", "type", "amount_usdc", "invoice_id", "description", "tx", "customer"], ...ledger.map((l) => [new Date(l.at * 1000).toISOString(), l.type, l.amount.toFixed(6), l.id, l.desc ?? "", l.tx ?? "", "private"])]);
+  const exportCsv = () => downloadCsv(`noren-balance-${new Date().toISOString().slice(0, 10)}.csv`, [["date", "type", "amount_usdc", "invoice_id", "description", "tx", "customer"], ...ledger.map((l) => [new Date(l.at * 1000).toISOString(), l.type, l.amount.toFixed(6), l.id, l.desc ?? "", l.tx ?? "", l.who])]);
   return (
     <>
       <PageHead title="Balances" sub="USDC settles straight to your payout address on-chain. There is no Noren-held balance to withdraw.">
@@ -430,7 +432,7 @@ function Payments({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
   const byStatus = (x: Row, k: Filter) => k === "all" || x.status === k || (k === "open" && x.status === "draft");
   const shown = r.filter((x) => byStatus(x, f) && match(x) && inRange(x));
   const counts = Object.fromEntries((["all", "paid", "refunded", "open", "expired"] as Filter[]).map((k) => [k, r.filter((x) => byStatus(x, k) && match(x) && inRange(x)).length])) as Record<Filter, number>;
-  const exportCsv = () => downloadCsv(`noren-payments-${new Date().toISOString().slice(0, 10)}.csv`, [["invoice_id", "status", "amount_usdc", "presentment", "description", "created", "paid", "refunded_usdc", "payment_tx", "refund_tx", "gas_used", "method", "customer"], ...shown.map((x) => [x.invoice.invoiceId, x.status, n6(x.invoice.amount).toFixed(6), fiatStr(x.quote) ?? "", x.description ?? "", secs(x.createdAt) ? new Date(secs(x.createdAt)! * 1000).toISOString() : "", secs(x.paidAt) ? new Date(secs(x.paidAt)! * 1000).toISOString() : "", x.refundAmount ? n6(x.refundAmount).toFixed(6) : "", x.paymentTx ?? "", x.refundTx ?? "", x.paymentGasUsed ?? "", methodOf(x) ?? "", x.method === "credit" ? `credit line ${x.creditLineId}` : "private"])]);
+  const exportCsv = () => downloadCsv(`noren-payments-${new Date().toISOString().slice(0, 10)}.csv`, [["invoice_id", "status", "amount_usdc", "presentment", "description", "created", "paid", "refunded_usdc", "payment_tx", "refund_tx", "gas_used", "method", "customer"], ...shown.map((x) => [x.invoice.invoiceId, x.status, n6(x.invoice.amount).toFixed(6), fiatStr(x.quote) ?? "", x.description ?? "", secs(x.createdAt) ? new Date(secs(x.createdAt)! * 1000).toISOString() : "", secs(x.paidAt) ? new Date(secs(x.paidAt)! * 1000).toISOString() : "", x.refundAmount ? n6(x.refundAmount).toFixed(6) : "", x.paymentTx ?? "", x.refundTx ?? "", x.paymentGasUsed ?? "", methodOf(x) ?? "", customerCsv(x)])]);
   return (
     <>
       <PageHead title="Payments"><button className="sd-btn" onClick={exportCsv} disabled={!shown.length}>Export</button></PageHead>
