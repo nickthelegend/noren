@@ -1,0 +1,242 @@
+[
+  {
+    "text": "A",
+    "start": 0.03,
+    "end": 0.09,
+    "id": "w0"
+  },
+  {
+    "text": "merchant",
+    "start": 0.09,
+    "end": 0.81,
+    "id": "w1"
+  },
+  {
+    "text": "signs",
+    "start": 0.81,
+    "end": 1.26,
+    "id": "w2"
+  },
+  {
+    "text": "in",
+    "start": 1.26,
+    "end": 1.38,
+    "id": "w3"
+  },
+  {
+    "text": "with",
+    "start": 1.44,
+    "end": 1.8,
+    "id": "w4"
+  },
+  {
+    "text": "a",
+    "start": 1.8,
+    "end": 1.87,
+    "id": "w5"
+  },
+  {
+    "text": "wallet.",
+    "start": 1.88,
+    "end": 2.48,
+    "id": "w6"
+  },
+  {
+    "text": "No",
+    "start": 2.51,
+    "end": 2.64,
+    "id": "w7"
+  },
+  {
+    "text": "password,",
+    "start": 2.64,
+    "end": 3.46,
+    "id": "w8"
+  },
+  {
+    "text": "no",
+    "start": 3.46,
+    "end": 3.62,
+    "id": "w9"
+  },
+  {
+    "text": "transaction.",
+    "start": 3.62,
+    "end": 4.8,
+    "id": "w10"
+  },
+  {
+    "text": "Name",
+    "start": 4.83,
+    "end": 5.06,
+    "id": "w11"
+  },
+  {
+    "text": "the",
+    "start": 5.06,
+    "end": 5.25,
+    "id": "w12"
+  },
+  {
+    "text": "store,",
+    "start": 5.25,
+    "end": 5.72,
+    "id": "w13"
+  },
+  {
+    "text": "choose",
+    "start": 5.72,
+    "end": 6.04,
+    "id": "w14"
+  },
+  {
+    "text": "where",
+    "start": 6.04,
+    "end": 6.32,
+    "id": "w15"
+  },
+  {
+    "text": "USDC",
+    "start": 6.32,
+    "end": 7.28,
+    "id": "w16"
+  },
+  {
+    "text": "payouts",
+    "start": 7.31,
+    "end": 7.75,
+    "id": "w17"
+  },
+  {
+    "text": "land",
+    "start": 7.81,
+    "end": 8.07,
+    "id": "w18"
+  },
+  {
+    "text": "on",
+    "start": 8.11,
+    "end": 8.3,
+    "id": "w19"
+  },
+  {
+    "text": "ARC,",
+    "start": 8.3,
+    "end": 8.64,
+    "id": "w20"
+  },
+  {
+    "text": "and",
+    "start": 8.67,
+    "end": 8.89,
+    "id": "w21"
+  },
+  {
+    "text": "NoRen",
+    "start": 8.89,
+    "end": 9.19,
+    "id": "w22"
+  },
+  {
+    "text": "registers",
+    "start": 9.36,
+    "end": 10.02,
+    "id": "w23"
+  },
+  {
+    "text": "it",
+    "start": 10.08,
+    "end": 10.21,
+    "id": "w24"
+  },
+  {
+    "text": "on",
+    "start": 10.21,
+    "end": 10.37,
+    "id": "w25"
+  },
+  {
+    "text": "chain.",
+    "start": 10.37,
+    "end": 11.08,
+    "id": "w26"
+  },
+  {
+    "text": "Then",
+    "start": 11.11,
+    "end": 11.46,
+    "id": "w27"
+  },
+  {
+    "text": "a",
+    "start": 11.46,
+    "end": 11.55,
+    "id": "w28"
+  },
+  {
+    "text": "first",
+    "start": 11.55,
+    "end": 12.03,
+    "id": "w29"
+  },
+  {
+    "text": "payment",
+    "start": 12.03,
+    "end": 12.7,
+    "id": "w30"
+  },
+  {
+    "text": "link",
+    "start": 12.7,
+    "end": 13.05,
+    "id": "w31"
+  },
+  {
+    "text": "and",
+    "start": 13.05,
+    "end": 13.09,
+    "id": "w32"
+  },
+  {
+    "text": "API",
+    "start": 13.59,
+    "end": 13.64,
+    "id": "w33"
+  },
+  {
+    "text": "keys.",
+    "start": 13.64,
+    "end": 14.35,
+    "id": "w34"
+  },
+  {
+    "text": "The",
+    "start": 14.39,
+    "end": 14.56,
+    "id": "w35"
+  },
+  {
+    "text": "secret",
+    "start": 14.56,
+    "end": 14.91,
+    "id": "w36"
+  },
+  {
+    "text": "is",
+    "start": 15.07,
+    "end": 15.1,
+    "id": "w37"
+  },
+  {
+    "text": "shown",
+    "start": 15.1,
+    "end": 15.38,
+    "id": "w38"
+  },
+  {
+    "text": "once.",
+    "start": 15.44,
+    "end": 15.96,
+    "id": "w39"
+  }
+]

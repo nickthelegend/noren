@@ -1,0 +1,69 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif.woff2") format("woff2"); }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; }
+    #root { position: absolute; inset: 0; background: #efe8db; overflow: hidden; font-family: "Geist", sans-serif; color: #101a3c; }
+    .win { position: absolute; left: 160px; top: 24px; width: 1600px; height: 900px; border-radius: 22px; overflow: hidden;
+            background: #fff; box-shadow: 0 34px 90px rgba(16,26,60,.28), 0 0 0 1px rgba(16,26,60,.14); }
+    .cam { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+    .cam video { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; object-fit: cover; }
+    .bar { position: absolute; left: 160px; width: 1600px; top: 938px; height: 130px; }
+    .tag { position: absolute; left: 0; top: 6px; font: 600 28px/1 "Geist Mono", monospace; letter-spacing: .03em; color: #101a3c; white-space: nowrap; }
+    .tag i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #e8643c; margin-right: 12px; vertical-align: 3px; font-style: normal; }
+    .cap { position: absolute; left: 0; right: 0; top: 54px; height: 62px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .cap .in { display: block; font: 500 38px/1.1 "Geist", sans-serif; color: #101a3c; letter-spacing: -.01em; white-space: nowrap; }
+    .cap em { font: italic 400 44px/1 "Instrument Serif", serif; color: #b8411b; letter-spacing: 0; }
+    .net { position: absolute; right: 0; top: 0; font: 500 28px/1 "Geist Mono", monospace; color: #5d6480; padding: 6px 14px; border-radius: 999px; border: 1.5px solid rgba(16,26,60,.22); white-space: nowrap; }
+    .net.live { color: #0f6b40; border-color: rgba(18,122,74,.55); background: rgba(31,164,99,.08); }
+    .net.live b { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #1fa463; margin-right: 10px; vertical-align: 2px; }
+    .spd { position: absolute; right: 18px; bottom: 18px; font: 700 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .spd .in { display: inline-block; }
+    .wid { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .card { position: absolute; inset: 0; background: #101a3c; padding: 70px 110px; color: #efe8db; }
+    .card h3 { font: italic 400 64px/1 "Instrument Serif", serif; color: #efe8db; margin-bottom: 40px; }
+    .crow { display: grid; grid-template-columns: 520px 120px 230px 1fr; align-items: baseline; padding: 22px 0; border-bottom: 1px solid rgba(239,232,219,.16); }
+    .crow b { font: 600 38px/1 "Geist", sans-serif; }
+    .crow span { font: 500 32px/1 "Geist Mono", monospace; color: #aab0c8; }
+    .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
+    .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
+    .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
+
+  </style>
+  <div id="root" data-composition-id="private" data-width="1920" data-height="1080">
+    <div class="win" id="private-win">
+      <div class="cam" id="private-cam0"><video id="private-v0" class="clip" data-start="0.000" data-duration="13.500" data-track-index="1" src="assets/footage/private-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam1"><video id="private-v1" class="clip" data-start="13.500" data-duration="4.500" data-track-index="1" src="assets/footage/private-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam2"><video id="private-v2" class="clip" data-start="18.000" data-duration="3.000" data-track-index="1" src="assets/footage/private-2.mp4" muted playsinline></video></div>
+      
+      <div id="private-s0" class="spd clip" data-start="0.000" data-duration="13.500" data-track-index="4"><span class="in">▸▸ 1.6×</span></div>
+    </div>
+    <div class="bar">
+      <div class="tag" id="private-tag"><i></i>05a · Pay privately</div>
+      <div id="private-c0" class="cap clip" data-start="0.300" data-duration="5.400" data-track-index="3"><span class="in">Shield 20 USDC · the ASP screens the deposit</span></div>
+      <div id="private-c1" class="cap clip" data-start="5.800" data-duration="7.000" data-track-index="3"><span class="in">Proof made in the browser in 1.25 s · your address in the tx: <em>none</em></span></div>
+      <div id="private-c2" class="cap clip" data-start="13.600" data-duration="4.400" data-track-index="3"><span class="in">Live: 2.50 USDC paid privately · tx 0x1ce6…776a</span></div>
+      <div id="private-c3" class="cap clip" data-start="18.100" data-duration="2.800" data-track-index="3"><span class="in">Live: 1.00 USDC refund to the shielded inbox</span></div>
+      <div id="private-netf" class="clip" data-start="0" data-duration="13.500" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="private-netl" class="clip" data-start="13.500" data-duration="7.500" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#private-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+    tl.fromTo("#private-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
+    tl.set("#private-cam1", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#private-cam2", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.fromTo("#private-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.320);
+    tl.to("#private-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.400);
+    tl.fromTo("#private-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 5.820);
+    tl.to("#private-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 12.500);
+    tl.fromTo("#private-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 13.620);
+    tl.to("#private-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.700);
+    tl.fromTo("#private-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 18.120);
+    tl.to("#private-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 20.600);
+    window.__timelines["private"] = tl;
+  </script>
+</template>

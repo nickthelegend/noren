@@ -1,0 +1,67 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif.woff2") format("woff2"); }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; }
+    #root { position: absolute; inset: 0; background: #101a3c; overflow: hidden; font-family: "Geist", sans-serif; color: #efe8db; }
+    .glow { position: absolute; left: 50%; top: 50%; width: 1700px; height: 1000px; margin: -500px 0 0 -850px; border-radius: 50%; background: radial-gradient(closest-side, rgba(232,100,60,.16), rgba(16,26,60,0)); }
+    .head { position: absolute; left: 190px; top: 112px; font: italic 400 96px/1 "Instrument Serif", serif; color: #efe8db; }
+    .head small { display: block; margin-top: 18px; font: 500 28px/1 "Geist Mono", monospace; font-style: normal; letter-spacing: .06em; color: #aab0c8; }
+    .grid { position: absolute; left: 190px; right: 190px; top: 330px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 90px; row-gap: 22px; }
+    .row { display: flex; align-items: baseline; gap: 22px; padding-bottom: 18px; border-bottom: 1px solid rgba(239,232,219,.14); }
+    .row b { font: 600 36px/1.05 "Geist", sans-serif; color: #efe8db; white-space: nowrap; }
+    .row span { font: 400 28px/1.15 "Geist", sans-serif; color: #aab0c8; }
+    .row i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e8643c; transform: translateY(-6px); flex: none; }
+    .attrib { position: absolute; left: 190px; top: 960px; font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; }
+    .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .end img { width: 300px; height: 300px; border-radius: 64px; }
+    .end h2 { margin-top: 30px; font: 400 150px/1 "Instrument Serif", serif; color: #efe8db; letter-spacing: -.01em; }
+    .end p { margin-top: 18px; font: 400 36px/1.2 "Geist", sans-serif; color: #c9c5bd; }
+    .end p em { font: italic 400 42px/1 "Instrument Serif", serif; color: #e8643c; }
+    .url { margin-top: 44px; font: 600 38px/1 "Geist Mono", monospace; color: #101a3c; background: #efe8db; padding: 22px 34px; border-radius: 16px; }
+    .fine { margin-top: 30px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; letter-spacing: .04em; }
+  </style>
+  <div id="root" data-composition-id="tech" data-width="1920" data-height="1080">
+    <div class="glow" id="tc-glow"></div>
+    <div id="tc-list" class="clip" data-start="0" data-duration="9.4" data-track-index="1" style="position:absolute;inset:0">
+      <div class="head" id="tc-head">Built with<small>06 · WHAT RUNS UNDER NOREN</small></div>
+      <div class="grid">
+        <div class="row" id="tc-r0"><i></i><b>Kohaku</b><span>EF privacy pools: private payments</span></div>
+        <div class="row" id="tc-r1"><i></i><b>Chainlink Data Feeds</b><span>fiat and stock prices</span></div>
+        <div class="row" id="tc-r2"><i></i><b>Chainlink CRE</b><span>credit bridge, pricing, settle</span></div>
+        <div class="row" id="tc-r3"><i></i><b>1inch Aqua + SwapVM</b><span>makers that pay merchants</span></div>
+        <div class="row" id="tc-r4"><i></i><b>Uniswap v4</b><span>best execution, side by side</span></div>
+        <div class="row" id="tc-r5"><i></i><b>World ID</b><span>one starter line per human</span></div>
+        <div class="row" id="tc-r6"><i></i><b>0G Private Computer</b><span>sealed AI credit check</span></div>
+        <div class="row" id="tc-r7"><i></i><b>Relay · Across</b><span>live quotes to Arc</span></div>
+        <div class="row" id="tc-r8"><i></i><b>Arc</b><span>USDC settlement, live testnet</span></div>
+        <div class="row" id="tc-r9"><i></i><b>Robinhood Chain</b><span>Stock Tokens (mainnet snapshot)</span></div>
+      </div>
+      <div class="attrib" id="tc-attrib">Powered by SwapVM — © Degensoft Ltd 2025</div>
+    </div>
+    <div id="tc-end" class="clip" data-start="9.4" data-duration="5.6" data-track-index="2" style="position:absolute;inset:0">
+      <div class="end">
+        <img id="tc-icon" src="assets/icon.jpg" alt="Noren" />
+        <h2 id="tc-name">Noren</h2>
+        <p id="tc-line">Private payments for EVM, with <em>stocks</em> and <em>credit</em></p>
+        <div class="url" id="tc-url">github.com/nickthelegend/noren</div>
+        <div class="fine" id="tc-fine">MIT · ETHGlobal Mumbai 2026</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#tc-glow", { scale: 0.85, opacity: 0.5 }, { scale: 1.1, opacity: 1, duration: 15, ease: "sine.inOut" }, 0);
+    tl.fromTo("#tc-head", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+    for (let i = 0; i < 10; i++) tl.fromTo(`#tc-r${i}`, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.45 + i * 0.42);
+    tl.fromTo("#tc-attrib", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.9);
+    tl.to("#tc-list .grid, #tc-head, #tc-attrib", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 9.0);
+    tl.fromTo("#tc-icon", { scale: 0.6, opacity: 0, rotation: -6 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.7, ease: "back.out(1.6)" }, 9.45);
+    tl.fromTo("#tc-name", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 9.85);
+    tl.fromTo("#tc-line", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 10.2);
+    tl.fromTo("#tc-url", { y: 20, opacity: 0, scale: 0.96 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 10.6);
+    tl.fromTo("#tc-fine", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 11.0);
+    window.__timelines["tech"] = tl;
+  </script>
+</template>

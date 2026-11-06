@@ -1,0 +1,182 @@
+[
+  {
+    "text": "Pay",
+    "start": 0.08,
+    "end": 0.24,
+    "id": "w0"
+  },
+  {
+    "text": "a",
+    "start": 0.24,
+    "end": 0.32,
+    "id": "w1"
+  },
+  {
+    "text": "shop",
+    "start": 0.32,
+    "end": 0.63,
+    "id": "w2"
+  },
+  {
+    "text": "in",
+    "start": 0.63,
+    "end": 0.75,
+    "id": "w3"
+  },
+  {
+    "text": "crypto",
+    "start": 0.79,
+    "end": 1.26,
+    "id": "w4"
+  },
+  {
+    "text": "today",
+    "start": 1.26,
+    "end": 1.53,
+    "id": "w5"
+  },
+  {
+    "text": "and",
+    "start": 1.75,
+    "end": 1.85,
+    "id": "w6"
+  },
+  {
+    "text": "the",
+    "start": 1.85,
+    "end": 2.01,
+    "id": "w7"
+  },
+  {
+    "text": "shop",
+    "start": 2.02,
+    "end": 2.26,
+    "id": "w8"
+  },
+  {
+    "text": "sees",
+    "start": 2.26,
+    "end": 2.62,
+    "id": "w9"
+  },
+  {
+    "text": "your",
+    "start": 2.62,
+    "end": 2.98,
+    "id": "w10"
+  },
+  {
+    "text": "whole",
+    "start": 2.98,
+    "end": 3.42,
+    "id": "w11"
+  },
+  {
+    "text": "wallet.",
+    "start": 4,
+    "end": 4.04,
+    "id": "w12"
+  },
+  {
+    "text": "NoRen",
+    "start": 4.12,
+    "end": 4.51,
+    "id": "w13"
+  },
+  {
+    "text": "fixes",
+    "start": 4.51,
+    "end": 4.91,
+    "id": "w14"
+  },
+  {
+    "text": "that.",
+    "start": 5.01,
+    "end": 5.57,
+    "id": "w15"
+  },
+  {
+    "text": "Private",
+    "start": 5.76,
+    "end": 6.12,
+    "id": "w16"
+  },
+  {
+    "text": "stablecoin",
+    "start": 6.12,
+    "end": 6.75,
+    "id": "w17"
+  },
+  {
+    "text": "payments",
+    "start": 6.75,
+    "end": 7.21,
+    "id": "w18"
+  },
+  {
+    "text": "that",
+    "start": 7.43,
+    "end": 7.56,
+    "id": "w19"
+  },
+  {
+    "text": "also",
+    "start": 7.56,
+    "end": 7.84,
+    "id": "w20"
+  },
+  {
+    "text": "take",
+    "start": 7.84,
+    "end": 8.12,
+    "id": "w21"
+  },
+  {
+    "text": "stocks",
+    "start": 8.12,
+    "end": 8.56,
+    "id": "w22"
+  },
+  {
+    "text": "and",
+    "start": 8.56,
+    "end": 8.84,
+    "id": "w23"
+  },
+  {
+    "text": "credit",
+    "start": 8.84,
+    "end": 9.1,
+    "id": "w24"
+  },
+  {
+    "text": "for",
+    "start": 9.1,
+    "end": 9.52,
+    "id": "w25"
+  },
+  {
+    "text": "merchants,",
+    "start": 9.73,
+    "end": 10.36,
+    "id": "w26"
+  },
+  {
+    "text": "consumers",
+    "start": 10.36,
+    "end": 10.86,
+    "id": "w27"
+  },
+  {
+    "text": "and",
+    "start": 11.04,
+    "end": 11.12,
+    "id": "w28"
+  },
+  {
+    "text": "developers.",
+    "start": 11.12,
+    "end": 11.83,
+    "id": "w29"
+  }
+]
