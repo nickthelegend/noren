@@ -295,3 +295,22 @@ li[data-done="true"] .nk-check { background: var(--nk-ok); border-color: var(--n
 .nk-net { gap: 6px; }
 .nk-hero small.lg-row { display: flex; gap: 8px; }
 .nk-route > .lg-mark { box-shadow: inset 0 0 0 1px rgba(23, 32, 63, .08); }
+
+/* ---------------------------------------------------------------- cross-chain (CCTP into Arc, cross-chain Aqua) */
+.nk-chainbtn { appearance: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 4px; margin: -8px 0; border: 0; border-radius: var(--nk-pill); background: var(--nk-card); box-shadow: 0 0 0 1px var(--nk-hair); color: var(--nk-ink); font: 600 13.5px/1 var(--nk-sans); cursor: pointer; white-space: nowrap; max-width: 100%; }
+.nk-chainbtn:hover { box-shadow: 0 0 0 1px var(--nk-hair-2); }
+.nk-chainbtn:disabled { opacity: .6; cursor: default; }
+.nk-bad-t { color: var(--nk-bad); }
+.nk-linkbtn { appearance: none; border: 0; padding: 0; background: none; color: var(--nk-ai); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.nk-addr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nk-x.sm { width: 30px; height: 30px; font-size: 16px; }
+.nk-runs { list-style: none; margin: 0; padding: 0 4px 4px; display: grid; gap: 6px; }
+.nk-runs li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--nk-hair); min-width: 0; }
+.nk-runs b { display: block; font: 600 14.5px/1.25 var(--nk-sans); overflow-wrap: anywhere; }
+.nk-runs small { display: block; margin-top: 3px; font: 500 12.5px/1.35 var(--nk-sans); color: var(--nk-faint); }
+.nk-runs .r { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 12.5px; }
+.nk-xc-note { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: var(--nk-box); font: 500 13px/1.45 var(--nk-sans); color: var(--nk-dim); }
+.nk-xc-note b { color: var(--nk-ink); }
+.nk-pill.fork { color: var(--nk-kaki-ink); border-color: rgba(217, 119, 47, .35); background: var(--nk-kaki-wash); }
+@media (max-width: 420px) { .nk-runs li { grid-template-columns: auto minmax(0, 1fr); } .nk-runs .r { grid-column: 2; flex-direction: row; align-items: center; gap: 12px; } }
+.nk-card-h + .nk-toggle { margin: 0 0 10px; }

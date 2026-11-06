@@ -63,6 +63,9 @@ function customerKey(): Hex {
   return s.gasKey;
 }
 
+/** The same test key as a viem account, for public testnets (CCTP source chains, Arc testnet). */
+export const customerAccount = () => privateKeyToAccount(customerKey());
+
 export type Holding = { sym: string; name: string; token: Address; balance: bigint; price8: bigint; updatedAt: number; value8: bigint };
 export type Line = { lineId: Hex; limit: bigint; expiry: number; collateral8: bigint; openedTx: Hex; openedBlock: bigint; closed: boolean; drawn: bigint; repaid: bigint; draws: { amount: bigint; invoiceId: Hex; merchant: Address; tx: Hex }[] };
 

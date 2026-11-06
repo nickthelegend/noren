@@ -1,8 +1,10 @@
 /**
- * Bridge: USDG on Robinhood Chain → USDC on Arc. The customer escrows USDG in NorenSettlementDesk; the Chainlink CRE
- * settlement workflow fetches live Relay and Across quotes, checks them against Chainlink USDG/USD and USDC/USD and
- * approves or rejects on-chain; a keeper then deposits into the approved bridge. On a local fork no real relayer
- * fills on Arc, and the UI says so. There is no CCIP lane between Robinhood Chain and Arc, so CCIP isn't offered.
+ * Bridge: money into Arc.
+ * 1. "Bring USDC to Arc": Circle CCTP V2 from any of 10 public testnets, finished on Arc by NorenArcHook (CctpCard).
+ * 2. The mainnet route for USDG earned on Robinhood Chain: the customer escrows USDG in NorenSettlementDesk; the
+ *    Chainlink CRE settlement workflow fetches live Relay and Across quotes, checks them against Chainlink USDG/USD and
+ *    USDC/USD and approves or rejects on-chain; a keeper then deposits into the approved bridge. That runs on the
+ *    Robinhood fork, where no real relayer fills on Arc, and the UI says so.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
@@ -15,6 +17,7 @@ import { Coin, Card, Result, SetupCard, Skel, Spin, Track, shortHex } from "./ki
 import { fmtUnits, parseAmount, USDG_TOKEN } from "./tokens";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
+import { CctpCard, RecentCctp } from "./CctpCard";
 
 const deskAbi = parseAbi(["function requestSettlement(uint256 amountUsdg6, address arcRecipient, uint16 maxSlippageBps) returns (bytes32 id)"]);
 type Quote = { relay: { outUsdc6: string; seconds: number; feeUsd?: string } | { error: string }; across: { outUsdc6: string; seconds: number } | { error: string } };
@@ -73,12 +76,13 @@ export function BridgeTab({ w }: { w: Wallet }) {
     } catch (e) { setErr(msgOf(e)); } finally { setBusy(null); }
   };
 
-  if (!desk) return <div className="nk-col"><Card title="Bridge"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="The bridge needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card></div>;
+  if (!desk) return <div className="nk-col"><CctpCard w={w} /><Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp /></div>;
 
   return (
     <div className="nk-col">
-      <section className="nk-card" aria-label="Bridge">
-        <div className="nk-card-h"><b>Bridge</b><span className="nk-pill"><Mark id="ROBINHOOD" size={16} />Robinhood → <Mark id="ARC" size={16} />Arc</span></div>
+      <CctpCard w={w} />
+      <section className="nk-card" aria-label="USDG to Arc, mainnet route">
+        <div className="nk-card-h"><div><b>USDG to Arc · mainnet route</b><p>Robinhood Chain has no CCTP on mainnet, so USDG goes through Relay or Across, approved by Chainlink CRE.</p></div><span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />fork</span></div>
         <div className="nk-box">
           <label htmlFor="nk-br"><span>You send · Robinhood Chain</span></label>
           <div className="nk-row"><input id="nk-br" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /><span className="nk-token" data-static="true"><Coin t={USDG_TOKEN} />USDG</span></div>
@@ -106,7 +110,7 @@ export function BridgeTab({ w }: { w: Wallet }) {
         <button className="nk-cta" disabled={!!busy || !amt || (have !== undefined && !!amt && amt > have)} onClick={send}>
           {busy ? <><Spin /> {busy}</> : !amt ? "Enter an amount" : have !== undefined && amt > have ? "Not enough USDG" : "Bridge with Chainlink CRE approval"}
         </button>
-        <p className="nk-fine">Quotes are live from Relay and Across (fetched by the Noren server, so your browser talks to no third party). On this local fork no real relayer fills on Arc, so the last step stays pending. CCIP has no lane between Robinhood Chain and Arc, so it isn't offered.</p>
+        <p className="nk-fine">Quotes are live mainnet quotes from Relay and Across (fetched by the Noren server, so your browser talks to no third party). On this local fork no real relayer fills on Arc, so the last step stays pending. Instructions (not tokens) from Robinhood reach Arc over Chainlink CCIP through a Base hub, because there is no direct lane.</p>
       </section>
 
       {list === null ? <Skel rows={1} /> : (
@@ -114,6 +118,7 @@ export function BridgeTab({ w }: { w: Wallet }) {
           {list.map((s) => <Transfer key={s.id} s={s} />)}
         </AnimatePresence>
       )}
+      <RecentCctp />
     </div>
   );
 }

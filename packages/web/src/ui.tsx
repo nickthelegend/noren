@@ -88,4 +88,5 @@ export const Icon = {
   chart: () => <S><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 14 4-4 3 3 5-6" /></S>,
   gauge: () => <S><path d="M4.5 17a8.5 8.5 0 1 1 15 0" /><path d="m12 13 4-4" /></S>,
   clock: () => <S size={14}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></S>,
+  chevron: () => <S size={14}><path d="m6 9 6 6 6-6" /></S>,
 };

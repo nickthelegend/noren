@@ -6,6 +6,7 @@ import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
 import { StockPay } from "./StockPay";
 import { UsdcPay } from "./UsdcPay";
+import { CctpPay } from "./CctpPay";
 import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
 import { TxLink } from "./tx";
@@ -40,7 +41,7 @@ export function Checkout({ id }: { id: string }) {
   const started = useRef(0);
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
-  const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit">("usdc");
+  const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit" | "xchain">("private");
   const [net] = useNet();
 
   useEffect(() => { if (cfg) import("./wallet").then((m) => setWallet(m.makeWallet(cfg))).catch((e) => setNote(`Couldn't load the private wallet: ${msgOf(e)}`)); }, [cfg]);
@@ -126,7 +127,7 @@ export function Checkout({ id }: { id: string }) {
             <div className="co-privacy">
               <Icon.eyeOff />
               {method === "private" ? <p><b>{shop} sees the amount, never you.</b> You pay from a private balance, so your wallet address, balance and history stay yours.</p>
-                : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks comes from your Robinhood wallet" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
+                : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks comes from your Robinhood wallet" : method === "xchain" ? "Paying from another chain comes from your wallet there" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
           <footer className="co-foot"><span>Powered by</span><a href="#/"><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
@@ -167,15 +168,16 @@ export function Checkout({ id }: { id: string }) {
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
           ) : (
             <>
-              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
+              <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
-              <div className="co-methods four" role="tablist" aria-label="Payment method">
-                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
+              <div className="co-methods four five" role="tablist" aria-label="Payment method">
                 <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
+                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
                 <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Sold to the best price, settles to Arc</small></span></button>
                 <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>From your credit limit, repay later</small></span></button>
+                <button role="tab" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}><Mark id="CIRCLE" size={20} /><span><b>Pay from another chain</b><small>USDC from Base, Arbitrum, Ethereum and 7 more · Circle CCTP</small></span></button>
               </div>
-              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
+              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
               <div className="co-bal">
                 <div><span>Private balance</span><b>{bal ? usdc(bal.approved) : <span className="skel-t sm" />}<em>USDC</em></b>{bal && bal.pending > 0n && <small className="pend"><span className="spin xs" /> +{usdc(bal.pending)} being screened</small>}</div>
                 <div><span>Refund inbox</span><b>{inbox ? usdc(inbox.approved + inbox.pending) : <span className="skel-t sm" />}<em>USDC</em></b></div>

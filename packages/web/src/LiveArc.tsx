@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { LIVE, addrUrl, liveFacts, useNet, type Net } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
+import { CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, KIND_LABEL, ccipMsgUrl, shortChain } from "./crosschain";
 import "./live.css";
 
 const short = (h: string, n = 6) => `${h.slice(0, n + 2)}…${h.slice(-4)}`;
@@ -38,6 +39,15 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
         {refund && <li><span>Refund 1.00 USDC to the shielded inbox</span><TxLink chain="arc-live" hash={refund.tx} n={8} /></li>}
         <li><span>CRE pricing report → NorenRateOracle</span><TxLink chain="arc-live" hash={LIVE.pricing.simulateTx} n={8} /></li>
         <li><span>CRE credit-line report → NorenCreditLine</span><TxLink chain="arc-live" hash={LIVE.credit.starterTx} n={8} /></li>
+      </ul>
+      <h3 className="la-sub">From other chains into Arc</h3>
+      <ul className="la-tx">
+        {CCTP_RUNS.filter((r) => r.to === "arc-testnet").map((r) => (
+          <li key={r.burnTx}><span className="lg-row"><Mark id={CHAIN_MARK[r.from]} size={16} /><b>{shortChain(r.from)} → Arc</b>&nbsp;· CCTP V2 · {KIND_LABEL[r.kind] ?? r.kind} · {usdc(r.minted)} USDC</span><span className="la-pair"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></span></li>
+        ))}
+        {CCIP_MESSAGES.map((m) => (
+          <li key={m.id}><span className="lg-row"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b>&nbsp;· CCIP · {m.action}</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
+        ))}
       </ul>
       <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain, fiat-priced invoices and this browser checkout are fork-only. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>
     </section>

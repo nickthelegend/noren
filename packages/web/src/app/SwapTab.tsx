@@ -1,11 +1,15 @@
-/** Swap: Stock Tokens, ETH and USDG on Robinhood Chain, best execution between 1inch Aqua makers and Uniswap v4. */
+/**
+ * Swap: Stock Tokens, ETH and USDG on Robinhood Chain, best execution between 1inch Aqua makers and Uniswap v4.
+ * "Cross-chain" sells a Stock Token on Robinhood for USDC on Arc from an Arc Aqua maker (XChainSwap, fork demo).
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { msgOf } from "../ui";
 import type { Wallet } from "./NorenApp";
 import { swapper, type RouteMiss, type RouteQuote, type SwapQuote } from "./swap";
 import { TOKENS, USDG_TOKEN, fmtUnits, parseAmount, tokenBy, type Token } from "./tokens";
-import { Band, Card, Result, Spin, TokenButton, shortHex } from "./kit";
+import { Band, Card, Result, Spin, Toggle, TokenButton, shortHex } from "./kit";
+import { XChainSwap } from "./XChainSwap";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
 
@@ -23,6 +27,7 @@ export function SwapTab({ w }: { w: Wallet }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
+  const [xc, setXc] = useState(false);
   const seq = useRef(0);
   const amountIn = useMemo(() => parseAmount(amount, tin.decimals), [amount, tin.decimals]);
 
@@ -72,7 +77,9 @@ export function SwapTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Swap">
-        <div className="nk-card-h"><b>Swap</b><span className={`nk-pill ${q?.marketClosed ? "warn" : "live"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood Chain</>}</span></div>
+        <div className="nk-card-h"><b>Swap</b>{xc ? <span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />→<Mark id="ARC" size={16} />fork demo</span> : <span className={`nk-pill ${q?.marketClosed ? "warn" : "live"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood Chain</>}</span>}</div>
+        <Toggle on={xc} onChange={setXc} title="Cross-chain" hint="Sell stock on Robinhood, get USDC on Arc from a 1inch Aqua maker" label="Cross-chain swap" />
+        {xc ? <XChainSwap w={w} /> : <>
         <div className="nk-box">
           <label htmlFor="nk-in"><span>You pay</span></label>
           <div className="nk-row">
@@ -108,9 +115,10 @@ export function SwapTab({ w }: { w: Wallet }) {
           {busy ? <><Spin /> {done?.step ?? "Swapping…"}</> : !amountIn ? "Enter an amount" : insufficient ? `Not enough ${tin.sym}` : loading && !q ? "Finding the best price…" : !best ? "No route can fill this" : stale ? "Refreshing the quote…" : `Swap on ${best.id === "aqua" ? "1inch Aqua" : "Uniswap v4"}`}
         </button>
         {insufficient && <p className="nk-fine">Short on {tin.sym}? Your wallet menu (top right) has a fork faucet for NVDA and USDG; ETH comes with it for gas.</p>}
+        </>}
       </section>
 
-      <AnimatePresence mode="popLayout">{done && <SwapDone key={done.id} d={done} />}</AnimatePresence>
+      <AnimatePresence mode="popLayout">{!xc && done && <SwapDone key={done.id} d={done} />}</AnimatePresence>
     </div>
   );
 }

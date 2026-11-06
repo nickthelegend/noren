@@ -922,3 +922,24 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-done .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 14px; padding: 12px 14px; border-radius: 14px; background: var(--paper); border: 1px solid var(--hair); font-size: 13.5px; }
 .co-done .kv dt { padding: 5px 0; color: var(--muted); }
 .co-done .kv dd { margin: 0; padding: 5px 0; text-align: right; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+
+/* Checkout: pay from another chain (CCTP V2 with a PAY_INVOICE hook) */
+.co-methods.five button:last-child { grid-column: 1 / -1; }
+.co-methods.five button[aria-selected="true"]:nth-child(4) svg { color: var(--kaki-2); }
+.co-methods.five button[aria-selected="true"]:last-child svg { color: var(--ai); }
+.co-from { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: 14px; color: var(--dim); }
+.co-select { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 10px; border: 1px solid var(--hair-2); border-radius: 12px; background: var(--white); color: var(--ink); max-width: 100%; }
+.co-select select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; font: 600 14px/1 inherit; color: var(--ink); padding-right: 4px; cursor: pointer; max-width: 200px; }
+.co-select select:focus-visible { outline: none; }
+.co-select:focus-within { border-color: var(--ai); box-shadow: 0 0 0 3px var(--ai-wash); }
+.co-addr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.co-check-row { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; font-size: 13px; line-height: 1.45; color: var(--dim); cursor: pointer; }
+.co-check-row input { margin-top: 3px; accent-color: var(--ai); }
+
+/* Noren Merchant: source chain of each payment, and payments that came from other chains (Arc testnet router) */
+.sd-from { white-space: nowrap; }
+.sd-xc { margin-top: 32px; }
+.sd-sec-h { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.sd-sec-h h2 { margin: 0; font: 600 18px/1.25 var(--sans); letter-spacing: -.02em; color: var(--sd-ink); }
+.sd-sec-h p { margin: 4px 0 0; max-width: 640px; font-size: 13.5px; line-height: 1.5; color: var(--sd-muted); }
+.sd-callout.bad { border-color: var(--sd-bad); background: var(--sd-bad-wash); color: var(--sd-bad); }

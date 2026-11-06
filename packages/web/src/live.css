@@ -23,3 +23,5 @@
 @media (max-width: 520px) { .la-grid { grid-template-columns: 1fr; } .la-tx li { flex-direction: column; align-items: flex-start; } }
 .la-short { display: none; }
 @media (max-width: 720px) { .la-long { display: none; } .la-short { display: inline; } .la-switch button { padding: 0 10px; min-height: 36px; } }
+.la-sub { margin: 18px 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.la-pair { display: inline-flex; gap: 12px; flex: none; }

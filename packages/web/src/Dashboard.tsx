@@ -8,6 +8,7 @@ import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
+import { CCTP_CHAINS, CHAIN_MARK, crossChainPayments, type CrossChainPayment } from "./crosschain";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard";
@@ -43,6 +44,8 @@ const PM = ({ r }: { r: Row }) => { const m = methodOf(r); if (!m) return <span 
 const Cur = ({ r }: { r: Row }) => <span className="lg-row"><Mark id={r.method === "stocks" ? "USDG" : "USDC"} size={16} />{r.method === "stocks" ? "USDG" : "USDC"}</span>;
 /** Which chain a payment's transaction is on: stock payments settle on Robinhood Chain, the rest on Arc. */
 const payChain = (r: Row) => (r.method === "stocks" ? "robinhood" : "arc") as "robinhood" | "arc";
+/** The chain the money came from. Fork payments: Arc (USDC, private pool, pay later) or Robinhood Chain (stocks). */
+const From = ({ r }: { r: Row }) => settled(r) ? <span className="lg-row sd-from"><Mark id={r.method === "stocks" ? "ROBINHOOD" : "ARC"} size={16} />{r.method === "stocks" ? "Robinhood" : "Arc"}</span> : <span className="sd-muted">–</span>;
 const Who = ({ r }: { r: Row }) => r.method === "usdc" ? <span className="sd-linked" title="Paid from a public Arc wallet"><Icon.card />Arc wallet</span> : r.method === "stocks" ? <span className="sd-linked" title="Paid from a public Robinhood Chain wallet"><Icon.chart />Robinhood wallet</span> : r.method === "credit" ? <span className="sd-linked" title="Paid from a credit line: the line, and the borrower behind it, are public on-chain"><Icon.layers />Credit line {short(r.creditLineId, 4)}</span> : <span className="sd-private"><Icon.eyeOff />Private</span>;
 
 /* ================================================================== shell */
@@ -441,7 +444,43 @@ function Payments({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <PayTable rows={shown} loading={!rows} cfg={cfg} />
       {rows && <p className="sd-foot-n">{shown.length} result{shown.length === 1 ? "" : "s"}</p>}
+      <CrossChainPayments merchant={cfg.merchant} />
     </>
+  );
+}
+
+/**
+ * Payments that reached this merchant from another chain: InvoicePaid on the live NorenArcActionRouter (Arc testnet),
+ * delivered by Circle CCTP (a PAY_INVOICE hook) or Chainlink CCIP. Read from the public Arc testnet RPC.
+ */
+function CrossChainPayments({ merchant }: { merchant: string }) {
+  const [list, setList] = useState<CrossChainPayment[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [n, setN] = useState(0);
+  useEffect(() => { let on = true; setErr(null); crossChainPayments(merchant as `0x${string}`).then((x) => on && setList(x)).catch((e) => on && setErr(msgOf(e))); return () => { on = false; }; }, [merchant, n]);
+  return (
+    <section className="sd-xc" aria-label="Cross-chain payments">
+      <div className="sd-sec-h"><div><h2>From other chains</h2><p>Paid on <b>Arc testnet</b> (live) by NorenArcActionRouter: USDC that arrived over Circle CCTP with a PAY_INVOICE hook, or an instruction over Chainlink CCIP.</p></div><button className="sd-btn sm" onClick={() => setN((x) => x + 1)}>Refresh</button></div>
+      {err ? <div className="sd-callout bad"><span>Arc testnet RPC: {err}</span></div> : !list ? <div className="sd-table-wrap"><div className="sd-skel-rows"><i /><i /></div></div> : !list.length ? (
+        <div className="sd-table-wrap"><Empty title="No cross-chain payments to this store yet" text="On the checkout, choose “Pay from another chain”: USDC is burned on Base, Arbitrum, Ethereum or 7 more testnets and the router pays this store on Arc testnet." /></div>
+      ) : (
+        <div className="sd-table-wrap">
+          <table className="sd-table">
+            <thead><tr><th className="r">Amount</th><th>From</th><th className="hide-s">Rail</th><th className="hide-m">Invoice</th><th>Transaction</th></tr></thead>
+            <tbody>{list.map((p) => (
+              <tr key={p.tx + p.invoiceId}>
+                <td className="r num"><b>{usdc(p.amount)}</b> <span className="sd-muted">USDC</span></td>
+                <td><span className="lg-row sd-from"><Mark id={p.from ? CHAIN_MARK[p.from] : "?"} size={16} />{p.fromLabel}</span></td>
+                <td className="hide-s">{p.rail === "CCTP" ? <span className="lg-row"><Mark id="CIRCLE" size={14} />CCTP</span> : p.rail === "CCIP" ? <span className="lg-row"><Mark id="CHAINLINK" size={14} />CCIP</span> : p.rail}{p.onCredit && <span className="sd-muted"> · on credit</span>}</td>
+                <td className="hide-m mono sd-muted">{short(p.invoiceId, 6)}</td>
+                <td><TxLink chain="arc-live" hash={p.tx} /></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+      <p className="sd-foot-n">Source chains: {Object.values(CCTP_CHAINS).filter((c) => c.key !== "arc-testnet").length} CCTP testnets and the CCIP gateways in docs/CCIP.md.</p>
+    </section>
   );
 }
 
@@ -451,13 +490,14 @@ function PayTable({ rows, loading, cfg }: { rows: Row[]; loading?: boolean; cfg:
   return (
     <div className="sd-table-wrap">
       <table className="sd-table">
-        <thead><tr><th className="r">Amount</th><th />  <th>Status</th><th className="hide-s">Payment method</th><th className="hide-m">Description</th><th>Customer</th><th className="hide-m">Transaction</th><th className="hide-s">Date</th><th /></tr></thead>
+        <thead><tr><th className="r">Amount</th><th />  <th>Status</th><th className="hide-s">Payment method</th><th className="hide-s">From</th><th className="hide-m">Description</th><th>Customer</th><th className="hide-m">Transaction</th><th className="hide-s">Date</th><th /></tr></thead>
         <tbody>{rows.map((x) => (
           <tr key={x.invoice.invoiceId} tabIndex={0} onClick={() => go(`#/dashboard/payments/${x.invoice.invoiceId}`)} onKeyDown={(e) => e.key === "Enter" && go(`#/dashboard/payments/${x.invoice.invoiceId}`)}>
             <td className="r num"><b>{usdc(x.invoice.amount)}</b></td>
             <td className="sd-cur"><Cur r={x} />{x.quote && <small>{fiatStr(x.quote)}</small>}</td>
             <td><Badge s={x.status} /></td>
             <td className="hide-s"><PM r={x} /></td>
+            <td className="hide-s"><From r={x} /></td>
             <td className="hide-m sd-desc">{x.description || <span className="sd-muted mono">{short(x.invoice.invoiceId, 8)}</span>}</td>
             <td><Who r={x} /></td>
             <td className="hide-m">{x.paymentTx ? <TxLink chain={payChain(x)} cfg={cfg} hash={x.paymentTx} /> : <span className="sd-muted">–</span>}</td>

@@ -27,10 +27,13 @@ export function txHref(chain: TxChain, hash: string, cfg?: Config | null) {
   return { href: `${location.origin}${location.pathname}#/tx/${chain}/${hash}`, local: true, where: `local ${chain === "arc" ? "Arc" : "Robinhood"} fork transaction page` };
 }
 
-/** The transaction link used everywhere: short hash, opens in a new tab. */
-export function TxLink({ chain, hash, cfg, n = 6, children }: { chain: TxChain; hash?: string | null; cfg?: Config | null; n?: number; children?: ReactNode }) {
+/**
+ * The transaction link used everywhere: short hash, opens in a new tab. `explorer` (a public testnet's explorer base
+ * URL, e.g. a CCTP or CCIP source chain) takes precedence over `chain`.
+ */
+export function TxLink({ chain = "arc", explorer, where, hash, cfg, n = 6, children }: { chain?: TxChain; explorer?: string; where?: string; hash?: string | null; cfg?: Config | null; n?: number; children?: ReactNode }) {
   if (!hash || !/^0x[0-9a-fA-F]{64}$/.test(hash)) return hash ? <span className="mono faint">{short(hash, n)}</span> : <span className="faint">–</span>;
-  const t = txHref(chain, hash, cfg);
+  const t = explorer ? { href: `${explorer}/tx/${hash}`, where: where ?? "explorer" } : txHref(chain, hash, cfg);
   return (
     <a className="tx-link" href={t.href} target="_blank" rel="noreferrer" title={`${hash}: opens the ${t.where} in a new tab`} onClick={(e) => e.stopPropagation()}>
       {children ?? short(hash, n)}<Icon.ext />
