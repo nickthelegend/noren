@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
+import { useSigner } from "./signer";
 import type { Line, Onchain } from "./onchain";
 import type { Wallet } from "./wallet";
 import { TxLink } from "./tx";
@@ -28,7 +29,9 @@ export function CreditPrivatePay({ cfg, view, shop, wallet, bal, payStep, proofS
   const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   const [drawTx, setDrawTx] = useState<string | null>(null);
 
-  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
+  // Re-created when the active wallet changes (an injected browser wallet restores after the first render).
+  const signer = useSigner();
+  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg, signer.signerKey]);
   const load = useCallback(async () => {
     if (!tk) return;
     try { const [l, p] = await Promise.all([tk.lines(), tk.poolDraw()]); setLines(l); setPool(p); setErr(null); } catch (e) { setErr(msgOf(e)); }

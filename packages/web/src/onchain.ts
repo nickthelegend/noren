@@ -23,6 +23,11 @@ export const creditOf = (cfg: Config | null): CreditCfg | null => ((cfg as unkno
 /** NorenGateway takes native ETH as asset 0x0 (priced as WETH by Chainlink ETH/USD). */
 export const NATIVE_ETH = "0x0000000000000000000000000000000000000000" as Address;
 
+/** WETH on Robinhood Chain: NorenGateway records an ETH payment (asset 0x0) as WETH. */
+export const WETH_ADDR = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73" as Address;
+/** Symbol of an asset NorenGateway recorded: a Stock Token, ETH (recorded as WETH) or USDG. */
+export const assetSym = (a?: string): string | undefined => (!a ? undefined : a.toLowerCase() === WETH_ADDR.toLowerCase() ? "ETH" : a.toLowerCase() === USDG.toLowerCase() ? "USDG" : STOCKS.find((x) => x.token.toLowerCase() === a.toLowerCase())?.sym);
+
 export const STOCKS: { sym: string; name: string; token: Address; feed: Address }[] = [
   { sym: "NVDA", name: "NVIDIA", token: "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC", feed: "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15" },
   { sym: "TSLA", name: "Tesla", token: "0x322F0929c4625eD5bAd873c95208D54E1c003b2d", feed: "0x4A1166a659A55625345e9515b32adECea5547C38" },
@@ -60,7 +65,7 @@ export const gatewayAbi = parseAbi([
   "function spreadBps(address asset) view returns (uint16)",
   "function quoteRoute(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed, bytes32 strategyHash)",
 ]);
-export const robinhoodFork = (url: string, id = 4663) => defineChain({ id, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
+export const robinhoodFork = (url: string, id = 4663) => defineChain({ id, name: "Robinhood Chain · mainnet snapshot", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
 
 /** The active wallet as a viem account, for public testnets (CCTP source chains, Arc testnet) and the forks. */
 export const customerAccount = () => activeAccount();

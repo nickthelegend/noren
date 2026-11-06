@@ -3,7 +3,7 @@ import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type Nor
 import { Copy, Icon, Logo, Setup, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
-import { STOCKS, creditLineAbi, creditOf } from "./onchain";
+import { STOCKS, assetSym, creditLineAbi, creditOf } from "./onchain";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
@@ -32,7 +32,7 @@ const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = 
 
 type Method = "usdc" | "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
-const stockSym = (asset?: string) => STOCKS.find((s) => s.token.toLowerCase() === asset?.toLowerCase())?.sym;
+const stockSym = (asset?: string) => assetSym(asset);
 /** Payment methods with their real logos: USDC, the Kohaku pool, the Stock Token paid (Robinhood Chain when unknown). Pay later is a concept, so it keeps an icon. */
 const METHOD: Record<Method, [string, string, (r?: Row) => JSX.Element]> = {
   usdc: ["USDC", "A direct USDC transfer from the customer's Arc wallet, verified on-chain", () => <Mark id="USDC" size={16} />],
@@ -588,7 +588,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
                 {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono lg-row"><Mark id="1INCH" size={16} />{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
-                <dt>Shares</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
+                <dt>Paid with</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
                 <dt>Network</dt><dd>Robinhood Chain {r.stock.chainId} (local fork)</dd>

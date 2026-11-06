@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
+import { useSigner } from "./signer";
 import { NATIVE_ETH, USDG, usd8, units, type Holding, type Onchain } from "./onchain";
 import { swapper, type RouteQuote } from "./app/swap";
 import { TOKENS, USDG_TOKEN } from "./app/tokens";
@@ -32,7 +33,9 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [v4, setV4] = useState<{ need: bigint; route: RouteQuote } | { error: string } | null>(null);
   const [via, setVia] = useState<"aqua" | "v4">("aqua");
 
-  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
+  // Re-created when the active wallet changes (an injected browser wallet restores after the first render).
+  const signer = useSigner();
+  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg, signer.signerKey]);
   useEffect(() => {
     let on = true;
     // The server mirrors once per invoice (it serialises concurrent calls), so a double effect in dev mode is harmless.

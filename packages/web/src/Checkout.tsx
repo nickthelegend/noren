@@ -12,9 +12,10 @@ import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
-import { STOCKS } from "./onchain";
+import { assetSym } from "./onchain";
+import { restoreBrowserWallet } from "./signer";
 
-const stockSym = (a?: string) => STOCKS.find((x) => x.token.toLowerCase() === a?.toLowerCase())?.sym;
+const stockSym = (a?: string) => assetSym(a);
 
 type Step = "idle" | "binding" | "proving" | "relaying" | "paid" | "error";
 
@@ -28,6 +29,8 @@ function useCountdown(expiry?: string) {
 }
 
 export function Checkout({ id }: { id: string }) {
+  // The checkout signs with the same active wallet as the app: restore an injected browser wallet chosen there.
+  useEffect(() => { restoreBrowserWallet().catch(() => {}); }, []);
   const { cfg, err } = useConfig();
   // The prover (snarkjs + Kohaku) loads only here, on the checkout page.
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -159,7 +162,7 @@ export function Checkout({ id }: { id: string }) {
                 {total && <><dt>Click to paid</dt><dd>{total.toFixed(1)} s</dd></>}
                 <dt>Transaction</dt><dd><TxLink chain={view?.method === "stocks" ? "robinhood" : "arc"} cfg={cfg} hash={view?.paymentTx} n={8} /></dd>
                 {view?.method === "stocks" && view.stock ? <>
-                  <dt>You paid</dt><dd className="lg-row">{stockSym(view.stock.asset) && <Mark id={stockSym(view.stock.asset)!} size={16} />}{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(view.stock.asset) ?? "shares"} at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
+                  <dt>You paid</dt><dd className="lg-row">{stockSym(view.stock.asset) && <Mark id={stockSym(view.stock.asset)!} size={16} />}{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(view.stock.asset) ?? "units"} at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
                   <dt>Private</dt><dd>no: paid from your Robinhood wallet</dd>
                 </> : view?.method === "usdc" ? <>
                   <dt>Paid from</dt><dd>your wallet on Arc</dd>
