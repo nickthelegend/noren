@@ -2,9 +2,9 @@
 
 ## Final integrated build (branch `final`, Nov 6 2026)
 
-`final` is `app-dex` plus `ui-polish`, `cctp-bridge`, `xchain-aqua`, `ccip`, `aqua-live`, `privacy` and `film`. Every suite below ran on its final HEAD, one at a time. Forks are local Anvil nodes; "live" suites read public testnets.
+`final` is `app-dex` plus `ui-polish`, `cctp-bridge`, `xchain-aqua`, `ccip`, `aqua-live`, `privacy`, `film` and `dutch-liquidation`. Every suite below ran on its final HEAD, one at a time. Forks are local Anvil nodes; "live" suites read public testnets.
 
-**543 tests pass, 0 fail, 1 skipped** (a weekend-window SwapVM test that skips itself while US markets are open), plus the two end-to-end runs and the browser check.
+**574 tests pass, 0 fail, 1 skipped** (a weekend-window SwapVM test that skips itself while US markets are open), plus the two end-to-end runs and the browser check. After the `dutch-liquidation` merge, the suites it touches were rerun (SwapVM, Robinhood fork incl. `NorenDutch`, Robinhood SDK fork tests on a rebuilt snapshot); the rest are from the run before it, on code that merge doesn't change. `pnpm e2e`, `pnpm e2e:credit` and the browser check were not rerun after it (a film recording owned the dev stack).
 
 | Suite | Command | Result |
 |---|---|---|
@@ -19,8 +19,9 @@
 | CCIP forks (real CCIP 2.0 Router/OnRamp/OffRamp on 4 testnet forks) + `NorenShieldSink` against the live Arc pool | `cd packages/ccip && FOUNDRY_PROFILE=fork forge test` | **23 passed** (12 + 11) |
 | `@noren/ccip` SDK / live CCIP API | `pnpm test:sdk` / `pnpm test:live` in packages/ccip | **7** / **2 passed** |
 | CRE workflows (bun) | `bun test` in each workflow | credit bridge **31**, pricing **8**, CCTP relay **8**, settlement desk **15**, cross-chain Aqua **14** |
-| `NorenOraclePeg` + Aqua router (SwapVM) | `sh packages/aqua/scripts/test-swapvm.sh` | **17 passed, 1 skipped** (weekend-only case) |
-| Robinhood contracts on a fresh mainnet fork | `sh packages/robinhood/scripts/test-fork.sh` | **134 passed** |
+| `NorenOraclePeg` + `NorenDutchDecay` (opcode 35) + Aqua router (SwapVM) | `sh packages/aqua/scripts/test-swapvm.sh` | **27 passed, 1 skipped** (18 + 10; weekend-only case) |
+| Robinhood contracts on a fresh mainnet fork, incl. `NorenDutch` (partial Dutch-auction liquidations, 16) | `sh packages/robinhood/scripts/test-fork.sh` | **150 passed** |
+| Robinhood SDK on the rebuilt warmed snapshot: Aqua makers and `createNorenDutch` (overdue plan cured by one partial fill) | `NOREN_RH_RPC=<served snapshot> pnpm exec vitest run sdk/test/aqua.fork.test.ts` / `dutch.fork.test.ts` | **4** / **1 passed** |
 | Cross-chain Aqua, Arc fork + Robinhood snapshot, then Arc fork + Base Sepolia fork | `sh packages/xchain-aqua/scripts/test-forks.sh` | **31 passed** (19 + 12) |
 | 1inch Aqua stack on an Arc testnet fork (official Aqua v1.0.0) | `sh packages/xchain-aqua/scripts/test-aqua-live.sh` | **8 passed** |
 | Private payment end to end on an Arc testnet fork | `pnpm e2e` | **9/9** Foundry checkout tests, **5/5** attacks reverted, proof 1.26 s, re-proof 1.08 s, refund approved, 47.6 s |

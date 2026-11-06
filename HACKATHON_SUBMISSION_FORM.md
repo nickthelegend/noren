@@ -57,14 +57,14 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 
   | Suite | Result |
   |---|---|
-  | All suites on the final build (TESTING.md) | **543 passed**, 0 failed, 1 weekend-only skip |
+  | All suites on the final build (TESTING.md) | **574 passed**, 0 failed, 1 weekend-only skip |
   | `pnpm test` | 136 offline tests |
   | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 47.6 s |
   | `pnpm e2e:credit` | 8/8 steps in 30.3 s; CRE Robinhood→Arc in 6.0 s |
-  | Robinhood contracts incl. Aqua routing and Pay in 3 | 134 Foundry tests on a fresh mainnet fork |
+  | Robinhood contracts incl. Aqua routing and Pay in 3 | 150 Foundry tests on a fresh mainnet fork, incl. 16 for partial Dutch-auction liquidations |
   | CCTP (`NorenArcHook`) / CCIP (gateways, hub, router, `NorenShieldSink`) | 24 / 32 Foundry tests, incl. forks of the real Circle and CCIP 2.0 contracts |
   | Cross-chain Aqua / Aqua on Arc | 31 / 8 fork tests |
-  | `NorenOraclePeg` / Aqua router (SwapVM) | 17 + 1 weekend-only |
+  | `NorenOraclePeg` + `NorenDutchDecay` / Aqua router (SwapVM) | 27 + 1 weekend-only |
   | `NorenCreditLine` / `NorenRateOracle` | 47 / 22 |
   | CRE workflows (bun) | 31 + 8 + 8 + 15 + 14 |
 
