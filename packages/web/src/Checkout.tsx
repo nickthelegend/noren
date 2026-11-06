@@ -135,7 +135,7 @@ export function Checkout({ id }: { id: string }) {
                   <dt>Refund inbox</dt><dd>{inbox ? `${usdc(inbox.approved + inbox.pending)} USDC` : "…"}</dd>
                 </>}
               </dl>
-              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain from Noren's stock vault, which now holds your shares.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool. Repay it in the <a href="#/app">Noren app</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
+              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool. Repay it in the <a href="#/app">Noren app</a>.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
             </div>
           ) : expired ? (
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>

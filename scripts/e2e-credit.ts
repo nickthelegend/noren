@@ -99,12 +99,12 @@ ok('Pay later: invoice settled', `7.50 USDC drawn on Arc (tx ${drawTx.hash}, ${d
 const inv2 = await json(`/merchants/${merchant}/invoices`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ amount: '7500000', expiry: expiryInv, description: 'Ceramic mug' }) });
 const id2: Hex = inv2.invoice.invoiceId;
 const m = await json(`/invoices/${id2}/robinhood`, { method: 'POST' });
-const [assetIn, priceUsd8] = await rh.readContract({ address: m.gateway, abi: gatewayAbi, functionName: 'quote', args: [m.merchant, id2, ROBINHOOD.stocks.NVDA] });
+const [assetIn, priceUsd8] = await rh.readContract({ address: m.gateway, abi: gatewayAbi, functionName: 'quote', args: [m.merchant, id2, ROBINHOOD.stocks.NVDA] }); // quote() follows the same route as pay()
 const max = assetIn + assetIn / 100n;
 await send(rhW, rh, { address: ROBINHOOD.stocks.NVDA, abi: erc20Abi, functionName: 'approve', args: [m.gateway, max] });
 const payTx = await send(rhW, rh, { address: m.gateway, abi: gatewayAbi, functionName: 'pay', args: [id2, m.merchant, ROBINHOOD.stocks.NVDA, max] });
 const s2 = await until('the merchant server to settle the stock payment', async () => { const r = await json(`/invoices/${id2}`); return r.status === 'paid' && r.method === 'stocks' && r; });
-ok('Pay with stocks: invoice settled', `${(Number(assetIn) / 1e18).toFixed(6)} NVDA at $${(Number(priceUsd8) / 1e8).toFixed(2)} (tx ${payTx.hash}); merchant received ${(Number(s2.stock.usdgOut) / 1e6).toFixed(2)} USDG; server method ${s2.method}`);
+ok('Pay with stocks: invoice settled', `${(Number(assetIn) / 1e18).toFixed(6)} NVDA at $${(Number(priceUsd8) / 1e8).toFixed(2)} (tx ${payTx.hash}); merchant received ${(Number(s2.stock.usdgOut) / 1e6).toFixed(2)} USDG via ${s2.stock.route === 'aqua-maker' ? `a 1inch Aqua maker (fee ${(Number(s2.stock.makerFeeUsdg) / 1e6).toFixed(4)} USDG)` : 'the vault'}; server method ${s2.method}`);
 
 // 6. CRE: Arc Drawn → Robinhood
 await until('Drawn to reach NorenCredit', async () => (await rh.readContract({ address: c.creditContract, abi: creditAbi, functionName: 'line', args: [lineId] })).drawn === 7_500_000n);

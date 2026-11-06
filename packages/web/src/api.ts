@@ -15,7 +15,7 @@ export type InvoiceView = {
   method?: "private" | "credit" | "stocks"; creditLineId?: `0x${string}`;
   /** NorenRateOracle.verifyQuote at the quote's rounds (rates written on Arc by the CRE pricing workflow). */
   rateCheck?: { oracle: `0x${string}`; verified: boolean; detail: string };
-  stock?: { asset: `0x${string}`; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number };
+  stock?: { asset: `0x${string}`; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number; route?: "aqua-maker" | "vault"; maker?: `0x${string}`; strategyHash?: `0x${string}`; makerFeeUsdg?: string };
   [k: string]: unknown;
 };
 export type Settlement = {

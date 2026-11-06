@@ -16,7 +16,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [hold, setHold] = useState<Holding[] | null>(null);
   const [eth, setEth] = useState<bigint | null>(null);
   const [sym, setSym] = useState<string | null>(null);
-  const [q, setQ] = useState<{ assetIn: bigint; priceUsd8: bigint; marketClosed: boolean; spreadBps: number } | null>(null);
+  const [q, setQ] = useState<Awaited<ReturnType<Onchain["stockQuote"]>> | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
@@ -68,12 +68,12 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
       <dl className="co-quote">
         <dt>You pay</dt><dd><b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
         <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}${q.marketClosed ? " · market closed" : ""}` : "…"}</dd>
-        <dt>Vault spread</dt><dd>{q ? `${(q.spreadBps / 100).toFixed(2)}%` : "…"}</dd>
+        <dt>Filled by</dt><dd>{q ? (q.route === "aqua-maker" ? "1inch Aqua maker · SwapVM, Chainlink-pegged" : `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread`) : "…"}</dd>
         <dt>{shop} receives</dt><dd>{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
       </dl>
       <div className="co-privacy light">
         <Icon.chart />
-        <p><b>Not private.</b> The payment comes from your Robinhood wallet. Noren's stock vault buys your shares at the Chainlink price and pays {shop} in USDG.</p>
+        <p><b>Not private.</b> The payment comes from your Robinhood wallet. A 1inch Aqua maker (or Noren's vault) buys your shares at the Chainlink price and {shop} gets USDG.</p>
       </div>
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn kaki full xl" disabled={!!busy || !!tx || !enough || eth === 0n} onClick={pay}>

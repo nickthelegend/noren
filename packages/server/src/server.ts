@@ -2,14 +2,15 @@ import { createServer as createHttpServer, type Server } from 'node:http';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHmac, randomBytes } from 'node:crypto';
-import { createPublicClient, createWalletClient, http, decodeErrorResult, encodeFunctionData, parseAbi, toHex, type Address, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, http, decodeErrorResult, encodeFunctionData, parseAbi, parseEventLogs, toHex, type Address, type Hex } from 'viem';
+const makerFillAbi = parseAbi(['event MakerFill(bytes32 indexed strategyHash, address indexed maker, address indexed asset, address taker, uint256 assetIn, uint256 usdgOut, uint256 oracleValueUsdg, uint256 feeUsdg)']);
 import { privateKeyToAccount } from 'viem/accounts';
 import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork, parseInvoice, poolAbi, usdcAbi, type Deployment, type Invoice } from '@noren/core';
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
 import { creditDrawProblem, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
-export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex; rateCheck?: RateCheck; stock?: { asset: Address; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number } };
+export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex; rateCheck?: RateCheck; stock?: { asset: Address; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number; route?: 'aqua-maker' | 'vault'; maker?: Address; strategyHash?: Hex; makerFeeUsdg?: string } };
 type Endpoint = { id: string; merchant: string; url: string; createdAt: number; secret: string };
 type Delivery = { endpointId: string; url: string; attempt: number; status: number | null; ok: boolean; ms: number; error?: string; at: number };
 type MerchantEvent = { id: string; merchant: string; type: string; created: number; data: { invoiceId: Hex; amount: string; status: string; method: string | null; description: string | null; paymentTx: Hex | null; refundTx: Hex | null; refundAmount: string | null; quote: UsdcQuote | null }; deliveries: Delivery[] };
@@ -40,7 +41,7 @@ export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUr
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
 /** NorenRateOracle on Arc re-checks a fiat quote at the same Chainlink rounds (rates written by the CRE pricing workflow). */
 export type RateCheck = { oracle: Address; verified: boolean; detail: string };
-export type CreditOptions = { rateOracle?: Address; bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
+export type CreditOptions = { liquidity?: Address; rateOracle?: Address; bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -111,6 +112,9 @@ export function createMerchantServer(options: ServerOptions): Server {
     row.status = 'paid'; row.method = 'stocks'; row.paymentTx = p.txHash; row.paidAt = p.timestamp; row.paymentBlock = p.blockNumber.toString();
     row.stock = { asset: p.asset, assetIn: p.assetIn.toString(), usdgOut: p.usdgOut.toString(), priceUsd8: p.priceUsd8.toString(), chainId: Number(await rh.getChainId()) };
     const receipt = await rh.getTransactionReceipt({ hash: p.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
+    // NorenLiquidity emits MakerFill when a 1inch Aqua maker (SwapVM, Chainlink-pegged) took the stock instead of the vault.
+    const fills = options.credit?.liquidity ? parseEventLogs({ abi: makerFillAbi, logs: receipt.logs.filter((l: any) => l.address.toLowerCase() === options.credit!.liquidity!.toLowerCase()) }) as any[] : [];
+    if (row.stock) Object.assign(row.stock, fills.length ? { route: 'aqua-maker', maker: fills[0].args.maker, strategyHash: fills[0].args.strategyHash, makerFeeUsdg: fills[0].args.feeUsdg.toString() } : { route: 'vault' });
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
   /** Mirrors a Noren invoice onto NorenGateway as the merchant (USDC and USDG both have 6 decimals). Idempotent. */

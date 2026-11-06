@@ -51,6 +51,7 @@ export const gatewayAbi = parseAbi([
   "function quote(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)",
   "function pay(bytes32 invoiceId, address merchant, address asset, uint256 maxAssetIn) payable returns (uint256 assetIn)",
   "function spreadBps(address asset) view returns (uint16)",
+  "function quoteRoute(address merchant, bytes32 invoiceId, address asset) view returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed, bytes32 strategyHash)",
 ]);
 export const robinhoodFork = (url: string, id = 4663) => defineChain({ id, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
 
@@ -149,9 +150,16 @@ export function makeOnchain(cfg: Config) {
     /** Robinhood: what `asset` it takes to pay a NorenGateway invoice now (Chainlink price plus the vault's spread). */
     async stockQuote(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address) {
       const c = need();
-      const [assetIn, priceUsd8, marketClosed] = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "quote", args: [merchant, invoiceId, asset] });
-      const spread = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "spreadBps", args: [asset] });
-      return { assetIn, priceUsd8, marketClosed, spreadBps: Number(spread) };
+      const spread = Number(await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "spreadBps", args: [asset] }));
+      // quoteRoute (1inch Aqua makers first, the vault as fallback) when the gateway has it; plain quote otherwise.
+      try {
+        const [assetIn, priceUsd8, marketClosed, strategyHash] = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "quoteRoute", args: [merchant, invoiceId, asset] });
+        const viaMaker = BigInt(strategyHash) !== 0n;
+        return { assetIn, priceUsd8, marketClosed, spreadBps: spread, route: (viaMaker ? "aqua-maker" : "vault") as "aqua-maker" | "vault", strategyHash: viaMaker ? strategyHash : null };
+      } catch {
+        const [assetIn, priceUsd8, marketClosed] = await c.readContract({ address: gateway, abi: gatewayAbi, functionName: "quote", args: [merchant, invoiceId, asset] });
+        return { assetIn, priceUsd8, marketClosed, spreadBps: spread, route: "vault" as const, strategyHash: null };
+      }
     },
     /** Robinhood: approve the Stock Token to the gateway, then pay. maxAssetIn allows 1% price movement. */
     async payWithStock(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address, quoted: bigint) {

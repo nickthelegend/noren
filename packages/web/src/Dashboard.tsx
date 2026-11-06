@@ -508,7 +508,8 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
             <h2>Payment method</h2>
             {stock && r.stock ? (
               <dl className="sd-dl">
-                <dt>Type</dt><dd>Stock Tokens, sold to Noren's stock vault</dd>
+                <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
+                {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono">{short(r.stock.maker, 4)} · fee {usdc(r.stock.makerFeeUsdg)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd></>}
                 <dt>Shares</dt><dd className="num">{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd>{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
