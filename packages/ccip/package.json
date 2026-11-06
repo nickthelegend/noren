@@ -8,11 +8,12 @@
   },
   "scripts": {
     "build": "forge build",
-    "test": "forge test && vitest run",
+    "test": "forge test && vitest run --exclude '**/*.live.test.ts'",
     "test:sol": "forge test",
     "test:fork": "FOUNDRY_PROFILE=fork forge test",
-    "test:sdk": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:sdk": "vitest run --exclude '**/*.live.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "test:live": "vitest run -c vitest.live.config.ts"
   },
   "dependencies": {
     "viem": "2.51.3"

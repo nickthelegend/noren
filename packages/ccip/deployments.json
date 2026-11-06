@@ -20,7 +20,13 @@
     "router": "0x30D197C6F5bE050D5525dD94d01760FaCdB67e7C",
     "onRamp": "0xFdf08F0e789682b00046837C424187d893d15083",
     "offRamp": "0x6ad7dF87388A8f07f980D87974Aa62417a0F6471",
-    "explorer": "https://explorer.testnet.chain.robinhood.com"
+    "explorer": "https://explorer.testnet.chain.robinhood.com",
+    "NorenCcipGateway": "0x194155904568E29627A8E451BE61d3B7be918197",
+    "NorenCcipInbox": "0x101951a6b269247591673F4EeFccCA63D72450bf",
+    "deployTxs": {
+      "NorenCcipGateway": "0x9c159854762781a0f9ecca3c266ecc69952664dc54e6637edf18ad01c9a74444",
+      "NorenCcipInbox": "0x837c911583122e15dc4875cf45535da75ef2c7892e6f64ec5a6af3a472824608"
+    }
   },
   "84532": {
     "name": "Base Sepolia",
@@ -28,14 +34,24 @@
     "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
     "onRamp": "0xA33b221A8427739c76f631a995ca60544bEdD632",
     "offRamp": "0xa137536A3BFd81aD6f090981268b8C2818451d41",
-    "explorer": "https://sepolia.basescan.org"
+    "explorer": "https://sepolia.basescan.org",
+    "NorenCcipHub": "0xe57A438a8dEd2aD7D1A12Ddf497a0Da0bD2d2Ba3",
+    "NorenCcipGateway": "0x8116700710aD49B5C19425f458E9CB5120A495F1",
+    "deployTxs": {
+      "NorenCcipHub": "0x48dd0bfaa2c1144e43fdaced552205712bdb6b7da6869b27ea77b220ca8a7240",
+      "NorenCcipGateway": "0xffbdbb98717b4b035f24f2c8bfa6a494cbbb7efac52bca20ec48c8c832f08c0e"
+    }
   },
   "11155111": {
     "name": "Ethereum Sepolia",
     "ccipSelector": "16015286601757825753",
     "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
     "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777",
-    "explorer": "https://sepolia.etherscan.io"
+    "explorer": "https://sepolia.etherscan.io",
+    "NorenCcipGateway": "0x015306AC6f866bf9b2DD157a79D65159697fb4cf",
+    "deployTxs": {
+      "NorenCcipGateway": "0xa8b7ccdaf1132f2e47023cc266ecdaeafc4059419b87e076190540b517ee597e"
+    }
   },
   "messages": [
     {
