@@ -83,7 +83,8 @@ contract NorenSettlementDeskForkTest is Test {
   }
 
   function _report(uint8 kind, bytes32 id, uint8 route, uint256 minOut, uint256 quoted, uint64 validUntil) internal pure returns (bytes memory) {
-    return abi.encode(kind, id, route, minOut, quoted, uint256(99_998_000), uint256(99_990_000), validUntil);
+    // USDG and USDC both at $0.9999: fair out = the request amount, so the merchant's 50 bps floor is 99.5 USDC.
+    return abi.encode(kind, id, route, minOut, quoted, uint256(99_990_000), uint256(99_990_000), validUntil);
   }
 
   function _approve(bytes32 id, uint8 route, uint256 minOut) internal {
@@ -349,6 +350,55 @@ contract NorenSettlementDeskForkTest is Test {
     vm.expectRevert(abi.encodeWithSelector(NorenSettlementDesk.BadCalldata.selector, 'across amount'));
     desk.executeSettlement(id, NorenSettlementDesk.Route.Across, _acrossCalldata(address(desk), arcTreasury, ARC_USDC, AMOUNT + 1, 99.9e6, 5042));
     vm.stopPrank();
+  }
+
+  // ------------------------------------------------------------ audit regressions
+
+  /// ARC-5: the report's minimum must honour the merchant's own max slippage (50 bps here), not only the 5% hard cap.
+  function test_Audit_ARC5_approvalBelowMerchantSlippageRejected() public {
+    bytes32 id = _request();
+    vm.startPrank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenSettlementDesk.MinOutBelowFloor.selector, 99e6, 99.5e6));
+    desk.onReport('', _report(1, id, 1, 99e6, 99.9e6, uint64(block.timestamp + 600)));
+    // A report with a zero price cannot dodge the check.
+    vm.expectRevert(NorenSettlementDesk.InvalidReport.selector);
+    desk.onReport('', abi.encode(uint8(1), id, uint8(1), uint256(99e6), uint256(99.9e6), uint256(0), uint256(99_990_000), uint64(block.timestamp + 600)));
+    desk.onReport('', _report(1, id, 1, 99.5e6, 99.9e6, uint64(block.timestamp + 600)));
+    vm.stopPrank();
+    assertEq(uint8(desk.settlement(id).status), uint8(NorenSettlementDesk.Status.Approved));
+  }
+
+  /// ARC-4: Across and Relay refund an unfilled deposit to the depositor, which is the desk. That USDG must be
+  /// recoverable, while USDG escrowed for open requests never is.
+  function test_Audit_ARC4_refundRecoverableButEscrowProtected() public {
+    bytes32 id = _request();
+    assertEq(desk.escrowedUsdg6(), AMOUNT);
+    vm.prank(USDG_HOLDER);
+    require(IERC20(USDG).transfer(address(desk), 7e6), 'usdg'); // e.g. an expired Across deposit refunded to the desk
+    vm.prank(merchant);
+    vm.expectRevert(NorenSettlementDesk.NotOwner.selector);
+    desk.recover(IERC20(USDG), merchant, 7e6);
+    vm.prank(owner);
+    vm.expectRevert(abi.encodeWithSelector(NorenSettlementDesk.ExceedsRecoverable.selector, 7e6, 7e6 + 1));
+    desk.recover(IERC20(USDG), merchant, 7e6 + 1);
+    uint256 before = IERC20(USDG).balanceOf(merchant);
+    vm.prank(owner);
+    desk.recover(IERC20(USDG), merchant, 7e6);
+    assertEq(IERC20(USDG).balanceOf(merchant), before + 7e6);
+    assertEq(IERC20(USDG).balanceOf(address(desk)), AMOUNT);
+    // Executing releases the escrow.
+    _approve(id, 2, 99.5e6);
+    vm.prank(keeper);
+    desk.executeSettlement(id, NorenSettlementDesk.Route.Across, _acrossCalldata(address(desk), arcTreasury, ARC_USDC, AMOUNT, 99.9e6, 5042));
+    assertEq(desk.escrowedUsdg6(), 0);
+  }
+
+  function test_Audit_ARC4_cancelReleasesEscrow() public {
+    bytes32 id = _request();
+    vm.warp(block.timestamp + 1 hours + 1);
+    vm.prank(merchant);
+    desk.cancel(id);
+    assertEq(desk.escrowedUsdg6(), 0);
   }
 
   // ------------------------------------------------------------ admin

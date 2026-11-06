@@ -13,6 +13,10 @@ via_ir = true
 bytecode_hash = 'none'
 cbor_metadata = false
 fs_permissions = [{ access = 'read-write', path = './deployments' }, { access = 'read', path = '../../aqua/swapvm-ext/out' }]
+# NorenCredit is compiled for size (optimizer runs 1) so it stays under the EIP-170 limit with the
+# share-backed credit lines; everything else keeps runs 200.
+additional_compiler_profiles = [{ name = 'size', optimizer_runs = 1 }]
+compilation_restrictions = [{ paths = 'src/NorenCredit.sol', optimizer_runs = 1 }]
 
 [profile.default.lint]
 exclude_lints = ['block-timestamp', 'unsafe-typecast', 'mixed-case-function', 'mixed-case-variable', 'screaming-snake-case-immutable']

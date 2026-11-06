@@ -43,6 +43,7 @@ contract NorenArcHook is IReceiver {
   uint256 private constant SOURCE_DOMAIN = 4;
   uint256 private constant DESTINATION_DOMAIN = 8;
   uint256 private constant NONCE = 12;
+  uint256 private constant RECIPIENT = 76;
   uint256 private constant DESTINATION_CALLER = 108;
   uint256 private constant FINALITY_EXECUTED = 144;
   uint256 private constant BODY = 148;
@@ -55,6 +56,11 @@ contract NorenArcHook is IReceiver {
 
   IMessageTransmitterV2 public immutable transmitter;
   IERC20Min public immutable usdc;
+  /// @notice Circle's local TokenMessengerV2. Only messages addressed to it are accepted: TokenMessengerV2 itself
+  ///         checks that the sender is the registered remote TokenMessenger, so the body is a real burn and its
+  ///         `messageSender` (the depositor the router trusts as `sourceSender`) cannot be forged with a generic
+  ///         `MessageTransmitterV2.sendMessage` message.
+  address public immutable tokenMessenger;
   uint32 public immutable localDomain;
   address public forwarder;
   address public owner;
@@ -86,6 +92,7 @@ contract NorenArcHook is IReceiver {
   error MessageTooShort(uint256 length);
   error WrongDestinationDomain(uint32 domain);
   error WrongDestinationCaller(bytes32 caller);
+  error NotBurnMessage(bytes32 recipient);
   error AlreadyProcessed(bytes32 nonce);
   error ReceiveFailed();
   error TransferFailed();
@@ -95,12 +102,16 @@ contract NorenArcHook is IReceiver {
     _;
   }
 
-  constructor(IMessageTransmitterV2 transmitter_, IERC20Min usdc_, address forwarder_, address owner_) {
-    if (address(transmitter_) == address(0) || address(usdc_) == address(0) || forwarder_ == address(0) || owner_ == address(0)) {
+  constructor(IMessageTransmitterV2 transmitter_, IERC20Min usdc_, address tokenMessenger_, address forwarder_, address owner_) {
+    if (
+      address(transmitter_) == address(0) || address(usdc_) == address(0) || tokenMessenger_ == address(0) || forwarder_ == address(0)
+        || owner_ == address(0)
+    ) {
       revert ZeroAddress();
     }
     transmitter = transmitter_;
     usdc = usdc_;
+    tokenMessenger = tokenMessenger_;
     localDomain = transmitter_.localDomain();
     forwarder = forwarder_;
     owner = owner_;
@@ -137,6 +148,8 @@ contract NorenArcHook is IReceiver {
     if (destinationDomain != localDomain) revert WrongDestinationDomain(destinationDomain);
     bytes32 caller = _word(message, DESTINATION_CALLER);
     if (caller != bytes32(uint256(uint160(address(this))))) revert WrongDestinationCaller(caller);
+    bytes32 recipientWord = _word(message, RECIPIENT);
+    if (recipientWord != bytes32(uint256(uint160(tokenMessenger)))) revert NotBurnMessage(recipientWord);
     Transfer memory t;
     t.nonce = _word(message, NONCE);
     if (processed[t.nonce]) revert AlreadyProcessed(t.nonce);
