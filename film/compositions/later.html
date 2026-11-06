@@ -1,0 +1,81 @@
+<template>
+  <style>
+    @font-face { font-family: "Geist"; src: url("assets/fonts/Geist.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Geist Mono"; src: url("assets/fonts/GeistMono.woff2") format("woff2"); font-weight: 100 900; }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif.woff2") format("woff2"); }
+    @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; }
+    #root { position: absolute; inset: 0; background: #efe8db; overflow: hidden; font-family: "Geist", sans-serif; color: #101a3c; }
+    .win { position: absolute; left: 160px; top: 24px; width: 1600px; height: 900px; border-radius: 22px; overflow: hidden;
+            background: #fff; box-shadow: 0 34px 90px rgba(16,26,60,.28), 0 0 0 1px rgba(16,26,60,.14); }
+    .cam { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+    .cam video { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; object-fit: cover; }
+    .bar { position: absolute; left: 160px; width: 1600px; top: 938px; height: 130px; }
+    .tag { position: absolute; left: 0; top: 6px; font: 600 28px/1 "Geist Mono", monospace; letter-spacing: .03em; color: #101a3c; white-space: nowrap; }
+    .tag i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #e8643c; margin-right: 12px; vertical-align: 3px; font-style: normal; }
+    .cap { position: absolute; left: 0; right: 0; top: 54px; height: 62px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .cap .in { display: block; font: 500 38px/1.1 "Geist", sans-serif; color: #101a3c; letter-spacing: -.01em; white-space: nowrap; }
+    .cap em { font: italic 400 44px/1 "Instrument Serif", serif; color: #b8411b; letter-spacing: 0; }
+    .net { position: absolute; right: 0; top: 0; font: 500 28px/1 "Geist Mono", monospace; color: #5d6480; padding: 6px 14px; border-radius: 999px; border: 1.5px solid rgba(16,26,60,.22); white-space: nowrap; }
+    .net.live { color: #0f6b40; border-color: rgba(18,122,74,.55); background: rgba(31,164,99,.08); }
+    .net.live b { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #1fa463; margin-right: 10px; vertical-align: 2px; }
+    .spd { position: absolute; right: 18px; bottom: 18px; font: 700 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .spd .in { display: inline-block; }
+    .wid { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; background: #101a3c; padding: 10px 14px; border-radius: 10px; }
+    .card { position: absolute; inset: 0; background: #101a3c; padding: 70px 110px; color: #efe8db; }
+    .card h3 { font: italic 400 64px/1 "Instrument Serif", serif; color: #efe8db; margin-bottom: 40px; }
+    .crow { display: grid; grid-template-columns: 520px 120px 230px 1fr; align-items: baseline; padding: 22px 0; border-bottom: 1px solid rgba(239,232,219,.16); }
+    .crow b { font: 600 38px/1 "Geist", sans-serif; }
+    .crow span { font: 500 32px/1 "Geist Mono", monospace; color: #aab0c8; }
+    .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
+    .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
+    .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
+
+  </style>
+  <div id="root" data-composition-id="later" data-width="1920" data-height="1080">
+    <div class="win" id="later-win">
+      <div class="cam" id="later-cam0"><video id="later-v0" class="clip" data-start="0.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam1"><video id="later-v1" class="clip" data-start="3.000" data-duration="2.500" data-track-index="1" src="assets/footage/later-1.mp4" muted playsinline></video></div>
+      <div id="later-k2" class="clip" data-start="5.500" data-duration="3.000" data-track-index="1" style="position:absolute;inset:0"><div class="card"><h3>Credit limit, every step reached</h3><div class="crow" id="later-k2r0"><b>Deposits only</b><span>66%</span><strong>$1,708.82</strong><code>depositETH 0x9cad4717…</code></div><div class="crow" id="later-k2r1"><b>+ World ID</b><span>70%</span><strong>$1,839.95</strong><code>verifyHuman 0xf880f869…</code></div><div class="crow" id="later-k2r2"><b>+ 3 on-time installments</b><span>75%</span><strong>$1,969.59</strong><code>0x149fdea5…</code></div><div class="crow" id="later-k2r3"><b>+ a repaid loan</b><span>80%</span><strong>$2,099.23</strong><code>0x9a760b40…</code></div><p>packages/robinhood/demo/earn-demo-transcript.txt · fork of Robinhood Chain mainnet</p></div></div>
+      <div class="cam" id="later-cam3"><video id="later-v3" class="clip" data-start="8.500" data-duration="7.501" data-track-index="1" src="assets/footage/later-3.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam4"><video id="later-v4" class="clip" data-start="16.001" data-duration="2.000" data-track-index="1" src="assets/footage/later-4.mp4" muted playsinline></video></div>
+      
+      <div id="later-s0" class="spd clip" data-start="0.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.7×</span></div>
+      <div id="later-wl1" class="clip" data-start="3.000" data-duration="2.500" data-track-index="4" style="position:absolute;left:18px;top:18px"><div class="wid">World ID · production · World App</div></div>
+      <div id="later-s3" class="spd clip" data-start="8.500" data-duration="7.501" data-track-index="4"><span class="in">▸▸ 2.9×</span></div>
+      <div id="later-s4" class="spd clip" data-start="16.001" data-duration="2.000" data-track-index="4"><span class="in">▸▸ 4.0×</span></div>
+    </div>
+    <div class="bar">
+      <div class="tag" id="later-tag"><i></i>05c · Pay in 3</div>
+      <div id="later-c0" class="cap clip" data-start="0.200" data-duration="2.900" data-track-index="3"><span class="in">Credit limit by reputation: $732.62 → $888.02</span></div>
+      <div id="later-c1" class="cap clip" data-start="3.100" data-duration="2.400" data-track-index="3"><span class="in">World ID: a real request · <em>verification pending</em></span></div>
+      <div id="later-c2" class="cap clip" data-start="5.600" data-duration="2.900" data-track-index="3"><span class="in">Every step reached in the recorded earn demo (fork)</span></div>
+      <div id="later-c3" class="cap clip" data-start="8.600" data-duration="7.400" data-track-index="3"><span class="in">Pay in 3: 24.00 USDC from the credit line on Arc</span></div>
+      <div id="later-c4" class="cap clip" data-start="16.100" data-duration="1.900" data-track-index="3"><span class="in">Repay 8.00 USDC</span></div>
+      <div class="net" id="later-net">Local forks · Arc testnet + Robinhood Chain</div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#later-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
+    tl.fromTo("#later-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
+    tl.set("#later-cam0", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
+    tl.fromTo("#later-k2r0", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 5.650);
+    tl.fromTo("#later-k2r1", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 5.870);
+    tl.fromTo("#later-k2r2", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.090);
+    tl.fromTo("#later-k2r3", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, 6.310);
+    tl.set("#later-cam4", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
+    tl.fromTo("#later-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.220);
+    tl.to("#later-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 2.800);
+    tl.fromTo("#later-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 3.120);
+    tl.to("#later-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.200);
+    tl.fromTo("#later-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 5.620);
+    tl.to("#later-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 8.200);
+    tl.fromTo("#later-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 8.620);
+    tl.to("#later-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.700);
+    tl.fromTo("#later-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 16.120);
+    tl.to("#later-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.700);
+    window.__timelines["later"] = tl;
+  </script>
+</template>

@@ -1,0 +1,8 @@
+node_modules/
+renders/
+record/takes/
+record/state/
+record/shots/
+.thumbnails/
+snapshots/
+.hyperframes/

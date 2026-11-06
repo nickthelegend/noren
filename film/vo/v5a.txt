@@ -1,0 +1,1 @@
+Three ways to pay. First, privately. Shield USDC into a Kohaku privacy pool, and the browser proves the payment in about a second. The shop is paid, and your address isn't in the transaction. This ran live on Arc testnet too: a real two dollar fifty payment, and a refund straight back into the shielded inbox.

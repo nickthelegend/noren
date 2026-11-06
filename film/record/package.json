@@ -1,0 +1,15 @@
+{
+  "name": "@noren/film-record",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "record": "node record.mjs",
+    "retake-world": "sh retake-world.sh"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0"
+  }
+}

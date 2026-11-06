@@ -1,0 +1,1 @@
+Oh-bell is a demo boutique that added Noh-ren the way any shop would. Pick a dress, size small, into the bag. Here is the whole integration, one file: create an invoice, send the shopper to Noh-ren's checkout, and trust the order only after a signed webhook. Checkout with Noh-ren.

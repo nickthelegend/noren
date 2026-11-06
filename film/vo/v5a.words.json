@@ -1,0 +1,332 @@
+[
+  {
+    "text": "three",
+    "start": 0.11,
+    "end": 0.52,
+    "id": "w0"
+  },
+  {
+    "text": "ways",
+    "start": 0.52,
+    "end": 0.94,
+    "id": "w1"
+  },
+  {
+    "text": "to",
+    "start": 0.94,
+    "end": 1.05,
+    "id": "w2"
+  },
+  {
+    "text": "pay.",
+    "start": 1.05,
+    "end": 1.59,
+    "id": "w3"
+  },
+  {
+    "text": "First,",
+    "start": 1.59,
+    "end": 2.02,
+    "id": "w4"
+  },
+  {
+    "text": "privately.",
+    "start": 2.07,
+    "end": 3.12,
+    "id": "w5"
+  },
+  {
+    "text": "Shield",
+    "start": 3.23,
+    "end": 3.67,
+    "id": "w6"
+  },
+  {
+    "text": "USDC",
+    "start": 3.76,
+    "end": 4.08,
+    "id": "w7"
+  },
+  {
+    "text": "into",
+    "start": 4.08,
+    "end": 4.18,
+    "id": "w8"
+  },
+  {
+    "text": "a",
+    "start": 4.18,
+    "end": 4.71,
+    "id": "w9"
+  },
+  {
+    "text": "Kohaku",
+    "start": 4.71,
+    "end": 5.05,
+    "id": "w10"
+  },
+  {
+    "text": "privacy",
+    "start": 5.21,
+    "end": 5.75,
+    "id": "w11"
+  },
+  {
+    "text": "pool",
+    "start": 6.27,
+    "end": 6.32,
+    "id": "w12"
+  },
+  {
+    "text": "and",
+    "start": 6.43,
+    "end": 6.49,
+    "id": "w13"
+  },
+  {
+    "text": "the",
+    "start": 6.49,
+    "end": 6.66,
+    "id": "w14"
+  },
+  {
+    "text": "browser",
+    "start": 6.66,
+    "end": 7.02,
+    "id": "w15"
+  },
+  {
+    "text": "proves",
+    "start": 7.07,
+    "end": 7.36,
+    "id": "w16"
+  },
+  {
+    "text": "the",
+    "start": 7.36,
+    "end": 7.9,
+    "id": "w17"
+  },
+  {
+    "text": "payment",
+    "start": 7.9,
+    "end": 8,
+    "id": "w18"
+  },
+  {
+    "text": "in",
+    "start": 8,
+    "end": 8.15,
+    "id": "w19"
+  },
+  {
+    "text": "about",
+    "start": 8.16,
+    "end": 8.57,
+    "id": "w20"
+  },
+  {
+    "text": "a",
+    "start": 8.57,
+    "end": 8.65,
+    "id": "w21"
+  },
+  {
+    "text": "second.",
+    "start": 8.65,
+    "end": 9.4,
+    "id": "w22"
+  },
+  {
+    "text": "The",
+    "start": 9.51,
+    "end": 9.67,
+    "id": "w23"
+  },
+  {
+    "text": "shop",
+    "start": 9.67,
+    "end": 9.94,
+    "id": "w24"
+  },
+  {
+    "text": "is",
+    "start": 10.04,
+    "end": 10.21,
+    "id": "w25"
+  },
+  {
+    "text": "paid",
+    "start": 10.21,
+    "end": 10.45,
+    "id": "w26"
+  },
+  {
+    "text": "and",
+    "start": 10.62,
+    "end": 10.7,
+    "id": "w27"
+  },
+  {
+    "text": "your",
+    "start": 10.98,
+    "end": 10.99,
+    "id": "w28"
+  },
+  {
+    "text": "address",
+    "start": 10.99,
+    "end": 11.33,
+    "id": "w29"
+  },
+  {
+    "text": "isn't",
+    "start": 11.55,
+    "end": 11.76,
+    "id": "w30"
+  },
+  {
+    "text": "in",
+    "start": 11.76,
+    "end": 11.91,
+    "id": "w31"
+  },
+  {
+    "text": "the",
+    "start": 11.91,
+    "end": 12.04,
+    "id": "w32"
+  },
+  {
+    "text": "transaction.",
+    "start": 12.56,
+    "end": 13.24,
+    "id": "w33"
+  },
+  {
+    "text": "This",
+    "start": 13.39,
+    "end": 13.66,
+    "id": "w34"
+  },
+  {
+    "text": "ran",
+    "start": 13.66,
+    "end": 13.94,
+    "id": "w35"
+  },
+  {
+    "text": "live",
+    "start": 13.94,
+    "end": 14.32,
+    "id": "w36"
+  },
+  {
+    "text": "on",
+    "start": 14.32,
+    "end": 14.34,
+    "id": "w37"
+  },
+  {
+    "text": "Arc",
+    "start": 14.34,
+    "end": 14.86,
+    "id": "w38"
+  },
+  {
+    "text": "Testnet",
+    "start": 14.86,
+    "end": 15.45,
+    "id": "w39"
+  },
+  {
+    "text": "as",
+    "start": 15.45,
+    "end": 15.64,
+    "id": "w40"
+  },
+  {
+    "text": "well.",
+    "start": 15.64,
+    "end": 16.04,
+    "id": "w41"
+  },
+  {
+    "text": "A",
+    "start": 16.04,
+    "end": 16.15,
+    "id": "w42"
+  },
+  {
+    "text": "real",
+    "start": 16.15,
+    "end": 16.41,
+    "id": "w43"
+  },
+  {
+    "text": "$2.50",
+    "start": 16.41,
+    "end": 17.09,
+    "id": "w44"
+  },
+  {
+    "text": "payment",
+    "start": 17.62,
+    "end": 17.96,
+    "id": "w45"
+  },
+  {
+    "text": "and",
+    "start": 17.96,
+    "end": 18.2,
+    "id": "w46"
+  },
+  {
+    "text": "a",
+    "start": 18.2,
+    "end": 18.28,
+    "id": "w47"
+  },
+  {
+    "text": "refund",
+    "start": 18.28,
+    "end": 18.67,
+    "id": "w48"
+  },
+  {
+    "text": "straight",
+    "start": 18.87,
+    "end": 19.26,
+    "id": "w49"
+  },
+  {
+    "text": "back",
+    "start": 19.26,
+    "end": 19.46,
+    "id": "w50"
+  },
+  {
+    "text": "into",
+    "start": 19.51,
+    "end": 19.75,
+    "id": "w51"
+  },
+  {
+    "text": "the",
+    "start": 19.75,
+    "end": 19.81,
+    "id": "w52"
+  },
+  {
+    "text": "shielded",
+    "start": 20.34,
+    "end": 20.45,
+    "id": "w53"
+  },
+  {
+    "text": "inbox.",
+    "start": 20.45,
+    "end": 20.98,
+    "id": "w54"
+  }
+]

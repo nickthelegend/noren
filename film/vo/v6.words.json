@@ -1,0 +1,122 @@
+[
+  {
+    "text": "Built",
+    "start": 0.03,
+    "end": 0.32,
+    "id": "w0"
+  },
+  {
+    "text": "with",
+    "start": 0.36,
+    "end": 0.61,
+    "id": "w1"
+  },
+  {
+    "text": "Kohaku,",
+    "start": 0.61,
+    "end": 1.03,
+    "id": "w2"
+  },
+  {
+    "text": "Chainlink",
+    "start": 1.26,
+    "end": 1.69,
+    "id": "w3"
+  },
+  {
+    "text": "1-inch",
+    "start": 1.8,
+    "end": 2.27,
+    "id": "w4"
+  },
+  {
+    "text": "Aqua,",
+    "start": 2.27,
+    "end": 2.59,
+    "id": "w5"
+  },
+  {
+    "text": "Uniswap",
+    "start": 2.79,
+    "end": 3.41,
+    "id": "w6"
+  },
+  {
+    "text": "V4,",
+    "start": 3.41,
+    "end": 3.9,
+    "id": "w7"
+  },
+  {
+    "text": "World",
+    "start": 3.99,
+    "end": 4.41,
+    "id": "w8"
+  },
+  {
+    "text": "ID,",
+    "start": 4.41,
+    "end": 4.73,
+    "id": "w9"
+  },
+  {
+    "text": "0G,",
+    "start": 4.89,
+    "end": 5.33,
+    "id": "w10"
+  },
+  {
+    "text": "Relay,",
+    "start": 5.33,
+    "end": 6,
+    "id": "w11"
+  },
+  {
+    "text": "Across,",
+    "start": 6,
+    "end": 6.38,
+    "id": "w12"
+  },
+  {
+    "text": "and",
+    "start": 6.38,
+    "end": 6.66,
+    "id": "w13"
+  },
+  {
+    "text": "Arc.",
+    "start": 6.71,
+    "end": 7.68,
+    "id": "w14"
+  },
+  {
+    "text": "NoRen.",
+    "start": 7.71,
+    "end": 8.68,
+    "id": "w15"
+  },
+  {
+    "text": "Open",
+    "start": 8.71,
+    "end": 8.89,
+    "id": "w16"
+  },
+  {
+    "text": "source",
+    "start": 8.95,
+    "end": 9.3,
+    "id": "w17"
+  },
+  {
+    "text": "on",
+    "start": 9.31,
+    "end": 9.43,
+    "id": "w18"
+  },
+  {
+    "text": "GitHub.",
+    "start": 9.43,
+    "end": 10.04,
+    "id": "w19"
+  }
+]
