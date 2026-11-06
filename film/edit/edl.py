@@ -24,7 +24,7 @@ SCENES = [
     ("app", 63.0, 35.0, "04 · Noren app", FORK),
     ("private", 98.0, 31.0, "05a · USDC on Arc · private by default", ARC_FORK),
     ("stocks", 129.0, 15.0, "05b · Pay with stocks", RH),
-    ("later", 144.0, 23.0, "05c · Pay in 3 · credit + repay", FORK),
+    ("later", 144.0, 23.0, "05c · Pay later · credit + repay", FORK),
     ("tech", 167.0, 13.0, "06 · Live on public testnets", None),
 ]
 
@@ -116,21 +116,22 @@ _first_qr = next((e["t"] for e in _wev if e["type"] == "click" and e["label"].st
 
 if WORLD_VERIFIED is not None:
     LATER = [
-        ("later", "later", 1.5, 9.5, 3.2, APP_CARD),                           # 2.5 s: the live ladder
-        ("later", "world", WORLD_VERIFIED - 1.5, WORLD_VERIFIED + 3.5, 1.0, None),  # 5.0 s: the real verification lands
-        ("later", "later", 26.0, 48.0, 3.0, None),                               # 7.33 s: pay in 3 from the line
+        ("later", "later", 1.5, 9.5, 4.0, APP_CARD),                           # 2.0 s: the live ladder
+        ("later", "world", WORLD_VERIFIED - 1.0, WORLD_VERIFIED + 3.0, 1.0, None),  # 4.0 s: the real verification lands
+        ("later", "privcredit", 1.0, 11.0, 10 / 6, None),                        # 6.0 s: checkout, "Pay later, privately", paid
+        ("later", "privcredit-m", 1.5, 9.5, 8 / 3.5, None),                      # 3.5 s: Noren Merchant, Customer: Private
+        ("later", "xexplorer2", 0.3, 2.8, 1.0, (1.12, 30, 30), LIVE),            # 2.5 s: the live 0.40 USDC payment on Arc
         ("later", "later", 50.0, 58.0, 4.0, APP_CARD),                           # 2.0 s: repay the first part
-        ("later", "xexplorer", 88.0, 90.0, 1.0, (1.2, 50, 10), CCIP_LIVE),       # CCIP msg Robinhood testnet -> Base hub
-        ("later", "xexplorer", 106.9, 108.9, 1.0, (1.2, 50, 10), CCIP_LIVE),     # CCIP msg Base hub -> Arc
-        ("later", "xexplorer", 124.1, 126.267, 1.0, (1.12, 30, 30), LIVE),       # Arc: merchant paid 0.25 USDC on credit
+        ("later", "xexplorer", 88.0, 91.0, 1.0, (1.2, 50, 10), CCIP_LIVE),       # 3.0 s: CCIP msg Robinhood testnet -> Base hub
     ]
     LATER_CAPS = [
-        (144.05, 2.4, "Credit limit by reputation: $732.62 → $888.02"),
-        (146.6, 4.8, "World ID verified in World App (Orb) · +50 points"),
-        (151.6, 7.1, "Pay in 3: 24.00 USDC from the credit line on Arc"),
-        (158.9, 1.85, "Repay 8.00 USDC"),
-        (160.9, 3.9, "Live over CCIP: Robinhood testnet → Base hub → Arc"),
-        (164.85, 2.1, "Arc: merchant paid 0.25 USDC"),
+        (144.05, 1.9, "Credit limit by reputation: $732.62 → $888.02"),
+        (146.05, 3.9, "World ID verified in World App (Orb) · +50 points"),
+        (150.05, 5.9, "Pay later, privately: your lender knows you, Noren Merchant doesn't"),
+        (156.05, 3.4, "Noren Merchant: 12.50 USDC paid · Customer: <em>Private</em>"),
+        (159.55, 2.4, "Live on Arc: 0.40 USDC paid · no borrower, no line in the tx"),
+        (162.05, 1.9, "Repay 8.00 USDC · repayments are public"),
+        (164.05, 2.9, "Live over CCIP: Robinhood testnet → Base hub → Arc"),
     ]
     V5C = "v5c-verified"
 else:
@@ -165,7 +166,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). Text lives in vo/*.txt; assets/vo/*.wav are Kokoro af_heart.
-VO = [("v1", 0.5), ("v2", 15.4), ("v3", 38.4), ("v4", 63.4), ("v5a", 98.2), ("v5b", 129.3), (V5C, 144.3), ("v6", 167.4)]
+VO = [("v1", 0.5), ("v2", 15.4), ("v3", 38.4), ("v4", 63.4), ("v5a", 98.2), ("v5b", 129.3), (V5C, 144.1), ("v6", 167.4)]
 
 # Extra sound on visible results (absolute seconds): a soft pop when a real result lands on screen.
 POPS = []

@@ -2,343 +2,385 @@
   {
     "text": "Third,",
     "start": 0,
-    "end": 0.593,
+    "end": 0.576,
     "id": "w0"
   },
   {
     "text": "pay",
-    "start": 0.593,
-    "end": 0.889,
+    "start": 0.576,
+    "end": 0.864,
     "id": "w1"
   },
   {
-    "text": "in",
-    "start": 0.889,
-    "end": 1.087,
+    "text": "later.",
+    "start": 0.864,
+    "end": 1.44,
     "id": "w2"
   },
   {
-    "text": "three.",
-    "start": 1.087,
-    "end": 1.68,
+    "text": "The",
+    "start": 1.44,
+    "end": 1.629,
     "id": "w3"
   },
   {
-    "text": "The",
-    "start": 1.68,
-    "end": 1.881,
+    "text": "limit",
+    "start": 1.629,
+    "end": 1.943,
     "id": "w4"
   },
   {
-    "text": "limit",
-    "start": 1.881,
-    "end": 2.217,
+    "text": "grows",
+    "start": 1.943,
+    "end": 2.257,
     "id": "w5"
   },
   {
-    "text": "grows",
-    "start": 2.217,
-    "end": 2.553,
+    "text": "with",
+    "start": 2.257,
+    "end": 2.509,
     "id": "w6"
   },
   {
-    "text": "with",
-    "start": 2.553,
-    "end": 2.821,
+    "text": "reputation.",
+    "start": 2.509,
+    "end": 3.2,
     "id": "w7"
   },
   {
-    "text": "reputation.",
-    "start": 2.821,
-    "end": 3.56,
+    "text": "Deposits,",
+    "start": 3.2,
+    "end": 3.88,
     "id": "w8"
   },
   {
-    "text": "Deposits,",
-    "start": 3.56,
-    "end": 4.342,
+    "text": "world",
+    "start": 3.88,
+    "end": 4.258,
     "id": "w9"
   },
   {
-    "text": "then",
-    "start": 4.342,
-    "end": 4.69,
+    "text": "ID,",
+    "start": 4.258,
+    "end": 4.484,
     "id": "w10"
   },
   {
-    "text": "world",
-    "start": 4.69,
-    "end": 5.125,
+    "text": "on-time",
+    "start": 4.484,
+    "end": 5.013,
     "id": "w11"
   },
   {
-    "text": "ID,",
-    "start": 5.125,
-    "end": 5.386,
+    "text": "payments,",
+    "start": 5.013,
+    "end": 5.693,
     "id": "w12"
   },
   {
-    "text": "on-time",
-    "start": 5.386,
-    "end": 5.994,
+    "text": "a",
+    "start": 5.693,
+    "end": 5.769,
     "id": "w13"
   },
   {
-    "text": "payments,",
-    "start": 5.994,
-    "end": 6.777,
+    "text": "repaid",
+    "start": 5.769,
+    "end": 6.222,
     "id": "w14"
   },
   {
-    "text": "a",
-    "start": 6.777,
-    "end": 6.864,
+    "text": "loan,",
+    "start": 6.222,
+    "end": 6.6,
     "id": "w15"
   },
   {
-    "text": "repaid",
-    "start": 6.864,
-    "end": 7.385,
+    "text": "and",
+    "start": 6.6,
+    "end": 6.844,
     "id": "w16"
   },
   {
-    "text": "loan.",
-    "start": 7.385,
-    "end": 7.82,
+    "text": "a",
+    "start": 6.844,
+    "end": 6.925,
     "id": "w17"
   },
   {
-    "text": "A",
-    "start": 7.82,
-    "end": 7.915,
+    "text": "real",
+    "start": 6.925,
+    "end": 7.25,
     "id": "w18"
   },
   {
-    "text": "real",
-    "start": 7.915,
-    "end": 8.297,
+    "text": "world",
+    "start": 7.25,
+    "end": 7.656,
     "id": "w19"
   },
   {
-    "text": "world",
-    "start": 8.297,
-    "end": 8.773,
+    "text": "ID",
+    "start": 7.656,
+    "end": 7.818,
     "id": "w20"
   },
   {
-    "text": "ID",
-    "start": 8.773,
-    "end": 8.964,
+    "text": "check",
+    "start": 7.818,
+    "end": 8.224,
     "id": "w21"
   },
   {
-    "text": "check",
-    "start": 8.964,
-    "end": 9.441,
+    "text": "lifts",
+    "start": 8.224,
+    "end": 8.63,
     "id": "w22"
   },
   {
-    "text": "lifts",
-    "start": 9.441,
-    "end": 9.917,
+    "text": "the",
+    "start": 8.63,
+    "end": 8.874,
     "id": "w23"
   },
   {
-    "text": "the",
-    "start": 9.917,
-    "end": 10.203,
+    "text": "tier.",
+    "start": 8.874,
+    "end": 9.28,
     "id": "w24"
   },
   {
-    "text": "tier.",
-    "start": 10.203,
-    "end": 10.68,
+    "text": "Pay",
+    "start": 9.28,
+    "end": 9.507,
     "id": "w25"
   },
   {
-    "text": "Pay",
-    "start": 10.68,
-    "end": 10.986,
+    "text": "later,",
+    "start": 9.507,
+    "end": 9.962,
     "id": "w26"
   },
   {
-    "text": "24",
-    "start": 10.986,
-    "end": 11.19,
+    "text": "privately.",
+    "start": 9.962,
+    "end": 10.72,
     "id": "w27"
   },
   {
-    "text": "USDC",
-    "start": 11.19,
-    "end": 11.598,
+    "text": "The",
+    "start": 10.72,
+    "end": 10.9,
     "id": "w28"
   },
   {
-    "text": "from",
-    "start": 11.598,
-    "end": 12.007,
+    "text": "line",
+    "start": 10.9,
+    "end": 11.14,
     "id": "w29"
   },
   {
-    "text": "the",
-    "start": 12.007,
-    "end": 12.313,
+    "text": "tops",
+    "start": 11.14,
+    "end": 11.38,
     "id": "w30"
   },
   {
-    "text": "line",
-    "start": 12.313,
-    "end": 12.721,
+    "text": "up",
+    "start": 11.38,
+    "end": 11.5,
     "id": "w31"
   },
   {
-    "text": "on",
-    "start": 12.721,
-    "end": 12.925,
+    "text": "your",
+    "start": 11.5,
+    "end": 11.74,
     "id": "w32"
   },
   {
-    "text": "ARC,",
-    "start": 12.925,
-    "end": 13.333,
+    "text": "private",
+    "start": 11.74,
+    "end": 12.16,
     "id": "w33"
   },
   {
-    "text": "then",
-    "start": 13.333,
-    "end": 13.741,
+    "text": "balance,",
+    "start": 12.16,
+    "end": 12.64,
     "id": "w34"
   },
   {
-    "text": "repay",
-    "start": 13.741,
-    "end": 14.251,
+    "text": "and",
+    "start": 12.64,
+    "end": 12.859,
     "id": "w35"
   },
   {
     "text": "the",
-    "start": 14.251,
-    "end": 14.558,
+    "start": 12.859,
+    "end": 13.077,
     "id": "w36"
   },
   {
-    "text": "first",
-    "start": 14.558,
-    "end": 15.068,
+    "text": "shop",
+    "start": 13.077,
+    "end": 13.369,
     "id": "w37"
   },
   {
-    "text": "eight.",
-    "start": 15.068,
-    "end": 15.68,
+    "text": "is",
+    "start": 13.369,
+    "end": 13.514,
     "id": "w38"
   },
   {
-    "text": "Paying",
-    "start": 15.68,
-    "end": 16.243,
+    "text": "paid",
+    "start": 13.514,
+    "end": 13.806,
     "id": "w39"
   },
   {
-    "text": "on",
-    "start": 16.243,
-    "end": 16.43,
+    "text": "from",
+    "start": 13.806,
+    "end": 14.097,
     "id": "w40"
   },
   {
-    "text": "credit",
-    "start": 16.43,
-    "end": 16.993,
+    "text": "the",
+    "start": 14.097,
+    "end": 14.316,
     "id": "w41"
   },
   {
-    "text": "also",
-    "start": 16.993,
-    "end": 17.369,
+    "text": "pool.",
+    "start": 14.316,
+    "end": 14.68,
     "id": "w42"
   },
   {
-    "text": "ran",
-    "start": 17.369,
-    "end": 17.65,
+    "text": "Your",
+    "start": 14.68,
+    "end": 14.949,
     "id": "w43"
   },
   {
-    "text": "live",
-    "start": 17.65,
-    "end": 18.025,
+    "text": "lender",
+    "start": 14.949,
+    "end": 15.354,
     "id": "w44"
   },
   {
-    "text": "over",
-    "start": 18.025,
-    "end": 18.4,
+    "text": "knows",
+    "start": 15.354,
+    "end": 15.691,
     "id": "w45"
   },
   {
-    "text": "Chainlink",
-    "start": 18.4,
-    "end": 19.245,
+    "text": "you,",
+    "start": 15.691,
+    "end": 15.96,
     "id": "w46"
   },
   {
-    "text": "CCIP",
-    "start": 19.245,
-    "end": 19.62,
+    "text": "the",
+    "start": 15.96,
+    "end": 16.162,
     "id": "w47"
   },
   {
-    "text": "from",
-    "start": 19.62,
-    "end": 19.903,
+    "text": "merchant",
+    "start": 16.162,
+    "end": 16.701,
     "id": "w48"
   },
   {
-    "text": "Robinhood",
-    "start": 19.903,
-    "end": 20.54,
+    "text": "doesn't.",
+    "start": 16.701,
+    "end": 17.24,
     "id": "w49"
   },
   {
-    "text": "testnet",
-    "start": 20.54,
-    "end": 21.035,
+    "text": "It",
+    "start": 17.24,
+    "end": 17.384,
     "id": "w50"
   },
   {
-    "text": "through",
-    "start": 21.035,
-    "end": 21.53,
+    "text": "ran",
+    "start": 17.384,
+    "end": 17.599,
     "id": "w51"
   },
   {
-    "text": "a",
-    "start": 21.53,
-    "end": 21.6,
+    "text": "live",
+    "start": 17.599,
+    "end": 17.886,
     "id": "w52"
   },
   {
-    "text": "base",
-    "start": 21.6,
-    "end": 21.883,
+    "text": "on",
+    "start": 17.886,
+    "end": 18.03,
     "id": "w53"
   },
   {
-    "text": "hub",
-    "start": 21.883,
-    "end": 22.096,
+    "text": "ArcTestNet,",
+    "start": 18.03,
+    "end": 18.819,
     "id": "w54"
   },
   {
-    "text": "to",
-    "start": 22.096,
-    "end": 22.237,
+    "text": "and",
+    "start": 18.819,
+    "end": 19.035,
     "id": "w55"
   },
   {
-    "text": "ARC.",
-    "start": 22.237,
-    "end": 22.52,
+    "text": "paying",
+    "start": 19.035,
+    "end": 19.466,
     "id": "w56"
+  },
+  {
+    "text": "on",
+    "start": 19.466,
+    "end": 19.609,
+    "id": "w57"
+  },
+  {
+    "text": "credit",
+    "start": 19.609,
+    "end": 20.04,
+    "id": "w58"
+  },
+  {
+    "text": "ran",
+    "start": 20.04,
+    "end": 20.338,
+    "id": "w59"
+  },
+  {
+    "text": "live",
+    "start": 20.338,
+    "end": 20.734,
+    "id": "w60"
+  },
+  {
+    "text": "over",
+    "start": 20.734,
+    "end": 21.131,
+    "id": "w61"
+  },
+  {
+    "text": "Chainlink",
+    "start": 21.131,
+    "end": 22.024,
+    "id": "w62"
+  },
+  {
+    "text": "CCIP.",
+    "start": 22.024,
+    "end": 22.52,
+    "id": "w63"
   }
 ]

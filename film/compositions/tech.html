@@ -8,11 +8,11 @@
     .glow { position: absolute; left: 50%; top: 50%; width: 1700px; height: 1000px; margin: -500px 0 0 -850px; border-radius: 50%; background: radial-gradient(closest-side, rgba(232,100,60,.16), rgba(16,26,60,0)); }
     .head { position: absolute; left: 190px; top: 112px; font: italic 400 96px/1 "Instrument Serif", serif; color: #efe8db; }
     .head small { display: block; margin-top: 18px; font: 500 28px/1 "Geist Mono", monospace; font-style: normal; letter-spacing: .06em; color: #aab0c8; }
-    .grid { position: absolute; left: 190px; right: 190px; top: 320px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 90px; row-gap: 46px; }
+    .grid { position: absolute; left: 190px; right: 150px; top: 310px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 70px; row-gap: 40px; }
     .row { display: flex; align-items: baseline; gap: 22px; padding-bottom: 16px; border-bottom: 1px solid rgba(239,232,219,.14); }
     .row div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
     .row b { font: 600 40px/1.05 "Geist", sans-serif; color: #efe8db; white-space: nowrap; }
-    .row span { font: 400 30px/1.15 "Geist", sans-serif; color: #aab0c8; }
+    .row span { font: 400 28px/1.15 "Geist", sans-serif; color: #aab0c8; }
     .row i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e8643c; transform: translateY(-6px); flex: none; }
     .attrib { position: absolute; left: 190px; top: 925px; font: 500 26px/1.5 "Geist Mono", monospace; color: #aab0c8; }
     .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -32,7 +32,7 @@
         <div class="row" id="tc-r1"><i></i><div><b>CCTP from 10 chains</b><span>relay on 10 testnets · live runs from 4</span></div></div>
         <div class="row" id="tc-r2"><i></i><div><b>CCIP · 7 messages</b><span>Robinhood → Base hub → Arc, all delivered</span></div></div>
         <div class="row" id="tc-r3"><i></i><div><b>1inch Aqua official v1.0.0</b><span>unmodified code, redeployed on Arc testnet</span></div></div>
-        <div class="row" id="tc-r4"><i></i><div><b>Kohaku private payments</b><span>pay, refund and SHIELD from Arbitrum</span></div></div>
+        <div class="row" id="tc-r4"><i></i><div><b>Kohaku private payments</b><span>pay, refund, SHIELD from Arbitrum<br />Private pay-later: credit line → Kohaku pool → merchant</span></div></div>
         <div class="row" id="tc-r5"><i></i><div><b>World ID Orb</b><span>a real verification in World App (production)</span></div></div>
         <div class="row" id="tc-r6"><i></i><div><b>0G sealed credit</b><span>TeeML decision, independently verified</span></div></div>
         <div class="row" id="tc-r7"><i></i><div><b>Chainlink CRE</b><span>pricing, credit and relays · simulate --broadcast</span></div></div>
