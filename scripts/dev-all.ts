@@ -84,6 +84,9 @@ run(async () => {
           const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: w.httpTriggerPayload(r) });
           const tx = /updated on [a-z-]+: tx (0x[0-9a-f]{64})/.exec(out)?.[1];
           if (!tx) throw new Error('CRE human-starter run wrote nothing');
+          // The reputation milestone: NorenReputation.verifyHuman with an EIP-712 VerifiedHuman attestation. On the fork the
+          // attester is Anvil account #7 (deploy-fork.sh's worldIdSigner); a failure here never undoes the starter line.
+          if (robinhood?.reputation) await attestHuman(robinhoodRpc, robinhood.reputation, r.borrower, r.nullifierHash).then((h) => console.log(`World ID: NorenReputation.verifyHuman ${h}`)).catch((e) => console.error(`World ID: reputation attestation failed: ${e.message}`));
           return { txHash: tx as `0x${string}` };
         },
       };
@@ -138,6 +141,23 @@ run(async () => {
   console.log(`Web: pnpm --filter @noren/web dev  →  http://localhost:${PORTS.web}/#/credit`);
   return stack;
 });
+
+/** Signs VerifiedHuman(account, nullifierHash, expiry) as the fork's World ID attester and records it on NorenReputation. */
+async function attestHuman(rpc: string, reputation: Address, account: Address, nullifierHash: `0x${string}`) {
+  const { createWalletClient, parseAbi: abi } = await import('viem');
+  const { mnemonicToAccount } = await import('viem/accounts');
+  const c: any = createPublicClient({ transport: http(rpc), cacheTime: 0 });
+  const signer = mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 7 }), sender = mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 0 });
+  const rep = abi(['function hashVerifiedHuman(address account, bytes32 nullifierHash, uint64 expiry) view returns (bytes32)', 'function verifyHuman(address account, bytes32 nullifierHash, uint64 expiry, bytes signature)', 'function worldIdSigner() view returns (address)']);
+  if (((await c.readContract({ address: reputation, abi: rep, functionName: 'worldIdSigner' })) as string).toLowerCase() !== signer.address.toLowerCase()) throw new Error('NorenReputation.worldIdSigner is not the fork attester');
+  const expiry = BigInt(Number((await c.getBlock()).timestamp) + 3600);
+  const digest = await c.readContract({ address: reputation, abi: rep, functionName: 'hashVerifiedHuman', args: [account, nullifierHash, expiry] });
+  const signature = await signer.sign({ hash: digest });
+  const chain = { id: Number(await c.getChainId()), name: 'Robinhood (local)', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpc] } } } as const;
+  const hash = await createWalletClient({ account: sender, chain, transport: http(rpc) }).writeContract({ address: reputation, abi: rep, functionName: 'verifyHuman', args: [account, nullifierHash, expiry, signature] });
+  if ((await c.waitForTransactionReceipt({ hash })).status !== 'success') throw new Error(`verifyHuman reverted: ${hash}`);
+  return hash;
+}
 
 /** <main checkout>/.env when this is a git worktree (git rev-parse --git-common-dir), else null. */
 function mainCheckoutEnv(): string | null {
