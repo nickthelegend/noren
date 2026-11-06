@@ -119,7 +119,7 @@ run(async () => {
           if (!process.env.ZG_PC_API_KEY) missing.push('0G credit check: ZG_PC_API_KEY is not set (Nick creates it on 0G Private Computer); checks are refused until then');
         } catch (e: any) { missing.push(`0G credit check failed to start: ${e.message}`); }
       }
-      if (robinhood) Object.assign(pub, { aquaLiquidity: robinhood.liquidity ?? null, aqua: robinhood.aqua ?? null, creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
+      if (robinhood) Object.assign(pub, { reputation: robinhood.reputation ?? null, borrow: robinhood.borrow ?? null, depositVaults: robinhood.depositVaults ?? [], aquaLiquidity: robinhood.liquidity ?? null, aqua: robinhood.aqua ?? null, creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
       pub.robinhoodChainId = Number(await rh.getChainId());
       return { liquidity: robinhood?.liquidity, rateOracle: pub.rateOracle as Address | undefined, bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
     },
