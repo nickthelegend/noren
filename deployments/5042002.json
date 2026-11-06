@@ -1,0 +1,202 @@
+{
+  "chainId": 5042002,
+  "deploymentBlock": "70991810",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "entrypoint": "0xa22f3200ecb4319b48dca49677c2f73cd7260ad5",
+  "pool": "0x393d8d46e1dff8a719820e36d70ba509896ea57d",
+  "checkout": "0xe18a80506fdb7f5498aad7387a21134118a77547",
+  "withdrawalVerifier": "0x015306ac6f866bf9b2dd157a79d65159697fb4cf",
+  "commitmentVerifier": "0xe57a438a8ded2ad7d1a12ddf497a0da0bd2d2ba3",
+  "deployer": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "postman": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "rpcUrl": "https://rpc.testnet.arc.io",
+  "explorer": "https://explorer.testnet.arc.io",
+  "gasUsed": "14978568",
+  "costWei": "299745526200000000",
+  "steps": [
+    {
+      "name": "PoseidonT3",
+      "address": "0x194155904568e29627a8e451be61d3b7be918197",
+      "tx": "0x02ede40ef0c31d8a4ee3ab177098a638668d429c5dee115128209d7bced57436",
+      "gasUsed": "5140670",
+      "costWei": "102813400000000000"
+    },
+    {
+      "name": "PoseidonT4",
+      "address": "0x101951a6b269247591673f4eefccca63d72450bf",
+      "tx": "0xdf28e3db5a7a4b5ea00394515321fd91b1cac09b425ee736e36599bf2548d0ce",
+      "gasUsed": "2773683",
+      "costWei": "55473660000000000"
+    },
+    {
+      "name": "WithdrawalVerifier",
+      "address": "0x015306ac6f866bf9b2dd157a79d65159697fb4cf",
+      "tx": "0x880bd94d28929911842e826d1f776e93e10eb60eee337b7010ebef2e85624077",
+      "gasUsed": "474090",
+      "costWei": "9481800000000000"
+    },
+    {
+      "name": "CommitmentVerifier",
+      "address": "0xe57a438a8ded2ad7d1a12ddf497a0da0bd2d2ba3",
+      "tx": "0x5ebcf1bc5ac18802475c874653fc129e5654f250fc4c57f702f3d567594c2ec1",
+      "gasUsed": "395267",
+      "costWei": "7905340000000000"
+    },
+    {
+      "name": "Entrypoint",
+      "address": "0x8116700710ad49b5c19425f458e9cb5120a495f1",
+      "tx": "0x81e853dcdc023f296ade84acff5a125c25848d0cbcbb2676c1fa1b20a8f7afac",
+      "gasUsed": "2976375",
+      "costWei": "59527500000000000"
+    },
+    {
+      "name": "ERC1967Proxy",
+      "address": "0xa22f3200ecb4319b48dca49677c2f73cd7260ad5",
+      "tx": "0x6728b191cd820197a6d58543c8b7f1d8804d86380940a3e7f36effde1f4461b7",
+      "gasUsed": "290277",
+      "costWei": "5979706200000000"
+    },
+    {
+      "name": "PrivacyPoolComplex",
+      "address": "0x393d8d46e1dff8a719820e36d70ba509896ea57d",
+      "tx": "0x5c3de6a47a05b8d50cef162b99b9eee4d81110245ddf5cebb809be14021f89a7",
+      "gasUsed": "1721527",
+      "costWei": "34430540000000000"
+    },
+    {
+      "name": "Entrypoint.registerPool",
+      "tx": "0x5b7d01cec3a4822498b32de21e195130a9dc2eae5063f2e2634bee18a855287d",
+      "gasUsed": "167034",
+      "costWei": "3340680000000000"
+    },
+    {
+      "name": "NorenCheckout",
+      "address": "0xe18a80506fdb7f5498aad7387a21134118a77547",
+      "tx": "0x84838717576c3a55df4b02a19d41ee2cbb0b71efe2b5771ee19d195617565a3a",
+      "gasUsed": "1039645",
+      "costWei": "20792900000000000"
+    }
+  ],
+  "live": {
+    "e2e": {
+      "note": "scripts/live/e2e-live.ts on the public Arc testnet. Merchant = the Noren operator; payout and customer are fresh testnet keys. The ASP tree was served on 127.0.0.1:8801 for the run, so the on-chain CID is a loopback URL.",
+      "finishedAt": "2026-11-06T07:20:24.434Z",
+      "merchant": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+      "payout": "0x32EeabA92847DB5D6fD74248b82BB05d82a1F821",
+      "customer": "0x519042674306f780c277152a38365547af180b8a",
+      "invoice": {
+        "invoiceId": "0x1bc1a9de21195c0b408e7d2e450e9af13972e29b672138ed317f6fa241a061a0",
+        "amountUsdc6": "2500000",
+        "receiptCommitment": "0x71416a342529a495e436f35c509013475417e223c07aadd1ec2c49c3556416d4"
+      },
+      "proofSeconds": 2.54,
+      "balancesUsdc6": {
+        "start": {
+          "operator": "19700254",
+          "customer": "0",
+          "payout": "0"
+        },
+        "end": {
+          "operator": "12669976",
+          "customer": "991607",
+          "payout": "2500000"
+        },
+        "shieldedRemaining": "2500000"
+      },
+      "steps": [
+        {
+          "step": "registerMerchant(payout)",
+          "tx": "0xb20de4bcb0cc031e0644ae9dc1541c2140db8195fdd2c006da671ff1e04fcffd",
+          "note": "payout 0x32EeabA92847DB5D6fD74248b82BB05d82a1F821",
+          "block": "70992456",
+          "timestamp": "2026-11-06T07:19:51.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0xe18a80506fdb7f5498aad7387a21134118a77547",
+          "gasUsed": "45533",
+          "explorer": "https://explorer.testnet.arc.io/tx/0xb20de4bcb0cc031e0644ae9dc1541c2140db8195fdd2c006da671ff1e04fcffd"
+        },
+        {
+          "step": "fund customer 6 USDC",
+          "tx": "0xa790c400aa4739572691116a36d7692d8d612395899a70013f255eca96af1491",
+          "block": "70992458",
+          "timestamp": "2026-11-06T07:19:52.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0x3600000000000000000000000000000000000000",
+          "gasUsed": "73950",
+          "explorer": "https://explorer.testnet.arc.io/tx/0xa790c400aa4739572691116a36d7692d8d612395899a70013f255eca96af1491"
+        },
+        {
+          "step": "customer approve Entrypoint",
+          "tx": "0x507a67d2439db820c9b685a5a3c6d651ba155d88acd90769cf6890fd70388af4",
+          "block": "70992460",
+          "timestamp": "2026-11-06T07:19:53.000Z",
+          "from": "0x519042674306f780c277152a38365547af180b8a",
+          "to": "0x3600000000000000000000000000000000000000",
+          "gasUsed": "55426",
+          "explorer": "https://explorer.testnet.arc.io/tx/0x507a67d2439db820c9b685a5a3c6d651ba155d88acd90769cf6890fd70388af4"
+        },
+        {
+          "step": "shield 5 USDC (Entrypoint.deposit)",
+          "tx": "0xbc38cde15ff532dad348969aa08a08d958a3c447040876c1c842caa3b54089b9",
+          "block": "70992465",
+          "timestamp": "2026-11-06T07:19:56.000Z",
+          "from": "0x519042674306f780c277152a38365547af180b8a",
+          "to": "0xa22f3200ecb4319b48dca49677c2f73cd7260ad5",
+          "gasUsed": "355959",
+          "explorer": "https://explorer.testnet.arc.io/tx/0xbc38cde15ff532dad348969aa08a08d958a3c447040876c1c842caa3b54089b9"
+        },
+        {
+          "step": "ASP updateRoot",
+          "tx": "0x1bae7d18001d3e2e12f962ff90afbcc7d53b4536acf6bcdcbf7388c900f2a978",
+          "block": "70992467",
+          "timestamp": "2026-11-06T07:19:57.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0xa22f3200ecb4319b48dca49677c2f73cd7260ad5",
+          "gasUsed": "166761",
+          "explorer": "https://explorer.testnet.arc.io/tx/0x1bae7d18001d3e2e12f962ff90afbcc7d53b4536acf6bcdcbf7388c900f2a978"
+        },
+        {
+          "step": "pay 2.50 USDC (NorenCheckout.pay)",
+          "tx": "0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a",
+          "note": "relayed by the merchant server; proof 2.54 s",
+          "block": "70992490",
+          "timestamp": "2026-11-06T07:20:09.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0xe18a80506fdb7f5498aad7387a21134118a77547",
+          "gasUsed": "616437",
+          "explorer": "https://explorer.testnet.arc.io/tx/0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a"
+        },
+        {
+          "step": "refund approve (USDC.approve)",
+          "tx": "0xec2319562fc2dd56d9e71b0c219a504f544a38ae9286d83bb493873574caff8b",
+          "block": "70992493",
+          "timestamp": "2026-11-06T07:20:10.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0x3600000000000000000000000000000000000000",
+          "gasUsed": "55438",
+          "explorer": "https://explorer.testnet.arc.io/tx/0xec2319562fc2dd56d9e71b0c219a504f544a38ae9286d83bb493873574caff8b"
+        },
+        {
+          "step": "refund 1.00 USDC (NorenCheckout.refund)",
+          "tx": "0x890ab6a618a3caf187eb26a3071660ef2f2f2d8de9298b8c71658f66c2ee016a",
+          "block": "70992495",
+          "timestamp": "2026-11-06T07:20:11.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0xe18a80506fdb7f5498aad7387a21134118a77547",
+          "gasUsed": "396626",
+          "explorer": "https://explorer.testnet.arc.io/tx/0x890ab6a618a3caf187eb26a3071660ef2f2f2d8de9298b8c71658f66c2ee016a"
+        },
+        {
+          "step": "ASP updateRoot",
+          "tx": "0xb4c1119e165e6207242d926192274c01cb34d270485480d88838fbc80a9f5642",
+          "block": "70992507",
+          "timestamp": "2026-11-06T07:20:17.000Z",
+          "from": "0x4b2acf80bc6e07bbf5690f0710e25c528cb63f80",
+          "to": "0xa22f3200ecb4319b48dca49677c2f73cd7260ad5",
+          "gasUsed": "149661",
+          "explorer": "https://explorer.testnet.arc.io/tx/0xb4c1119e165e6207242d926192274c01cb34d270485480d88838fbc80a9f5642"
+        }
+      ]
+    }
+  }
+}
