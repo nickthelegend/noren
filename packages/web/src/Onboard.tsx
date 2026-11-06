@@ -6,14 +6,15 @@
 import { useEffect, useState } from "react";
 import { createSiweMessage } from "viem/siwe";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { isAddress, type Address, type Hex } from "viem";
+import { isAddress, toHex, type Address, type Hex } from "viem";
+import { PRIVY_APP_ID, privyActions, waitForPrivy } from "./signer";
 import { SERVER, usdc, type Config } from "./api";
 import { Copy, Icon, Logo, msgOf } from "./ui";
 import { QR } from "./kit";
 import "./onboard.css";
 import { TxLink } from "./tx";
 
-export type Session = { session: string; address: Address; expiresAt: number };
+export type Session = { session: string; address: Address; expiresAt: number; via?: "siwe" | "privy" };
 export type StoreView = { id: string; name: string; payout: Address; merchant: Address; publishableKey: string; keys: { id: string; prefix: string; createdAt: number; revokedAt?: number }[]; createdAt: number; registerTx: Hex };
 const SESSION_KEY = "noren.merchant.session", STORE_KEY = "noren.merchant.store", WALLET_KEY = "noren.merchant.wallet.v1";
 export const readSession = (): Session | null => { try { const s = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null"); return s && s.expiresAt > Date.now() / 1000 ? s : null; } catch { return null; } };
@@ -51,6 +52,29 @@ async function signIn(cfg: Config, via: "local" | "injected"): Promise<Session> 
   }
   const message = createSiweMessage({ domain: location.host, address, uri: location.origin, version: "1", chainId: cfg.chainId, nonce, issuedAt: new Date(), expirationTime: new Date(Date.now() + 10 * 60_000), statement: "Sign in to Noren Merchant. This costs nothing and sends no transaction." });
   const s = await call<Session>("/auth/siwe", { method: "POST", body: JSON.stringify({ message, signature: await sign(message) }) });
+  saveSession(s);
+  return s;
+}
+
+const isEmbedded = (t: string) => t === "privy" || t === "privy-v2";
+/**
+ * Sign in with Privy (email, external wallet or embedded wallet). The server checks the Privy access token against
+ * Privy's public keys, and a SIWE signature from the user's wallet, bound to that Privy user, picks the address the
+ * store belongs to: the wallet they logged in with, else their embedded wallet.
+ */
+async function signInPrivy(cfg: Config): Promise<Session> {
+  if (!PRIVY_APP_ID) throw new Error("Setup required: VITE_PRIVY_APP_ID");
+  const a = privyActions(); if (!a) throw new Error("Privy is still starting. Try again in a second.");
+  const userId = await a.login();
+  const st = await waitForPrivy((x) => (x.authenticated && x.userId === userId ? x : null));
+  const want = st.primaryWallet?.toLowerCase();
+  const wallet = await waitForPrivy((x) => x.wallets.find((w) => w.address.toLowerCase() === want) ?? x.wallets.find((w) => isEmbedded(w.walletClientType)));
+  const token = await st.getAccessToken(); if (!token) throw new Error("Privy returned no access token. Sign in again.");
+  const provider = await wallet.getEthereumProvider();
+  const { nonce } = await call<{ nonce: string }>("/auth/nonce");
+  const message = createSiweMessage({ domain: location.host, address: wallet.address, uri: location.origin, version: "1", chainId: cfg.chainId, nonce, issuedAt: new Date(), expirationTime: new Date(Date.now() + 10 * 60_000), statement: "Sign in to Noren Merchant. This costs nothing and sends no transaction.", resources: [userId] });
+  const signature = (await provider.request({ method: "personal_sign", params: [toHex(message), wallet.address] })) as Hex;
+  const s = await call<Session>("/auth/privy", { method: "POST", body: JSON.stringify({ accessToken: token, message, signature }) });
   saveSession(s);
   return s;
 }
@@ -104,9 +128,12 @@ const { invoice } = await noren.invoices.create({
         {step === 0 && (
           <div className="ob-card">
             <span className="ob-k">Sign in</span>
-            <h1>Sign in with your wallet</h1>
-            <p>Noren uses Sign-In with Ethereum (EIP-4361): you sign a message, the server checks it, and nothing is sent on-chain.</p>
+            <h1>Sign in to Noren Merchant</h1>
+            <p>Use your email or a wallet. Either way you sign a message (Sign-In with Ethereum, EIP-4361), the server checks it, and nothing is sent on-chain.</p>
             <div className="ob-choices">
+              <button className="ob-choice" disabled={!!busy || !PRIVY_APP_ID} onClick={() => run("privy", async () => { onSession(await signInPrivy(cfg)); setStep(1); })}>
+                <Icon.user /><span><b>{busy === "privy" ? "Waiting for Privy…" : "Sign in with Privy"}</b><small>{PRIVY_APP_ID ? "Email, a wallet, or a new embedded wallet" : "Setup required: VITE_PRIVY_APP_ID"}</small></span><Icon.arrow />
+              </button>
               <button className="ob-choice" disabled={!!busy} onClick={() => run("local", async () => { onSession(await signIn(cfg, "local")); setStep(1); })}>
                 <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>A key kept in this browser, for the local forks</small></span><Icon.arrow />
               </button>
@@ -114,6 +141,7 @@ const { invoice } = await noren.invoices.create({
                 <Icon.shield /><span><b>{busy === "injected" ? "Waiting for your wallet…" : "Browser wallet"}</b><small>{injected() ? "MetaMask, Rabby or any EIP-1193 wallet" : "No browser wallet detected"}</small></span><Icon.arrow />
               </button>
             </div>
+            {err && <p className="err" role="alert">{err}</p>}
           </div>
         )}
 
