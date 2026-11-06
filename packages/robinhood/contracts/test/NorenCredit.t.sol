@@ -442,6 +442,44 @@ contract NorenCreditTest is RobinhoodBase {
     assertTrue(overdue, 'final installment missed');
   }
 
+  /// @notice Audit RH-C-4: a disabled collateral asset takes no new plans, but plans already holding
+  /// it can still be checked and liquidated (price() no longer reverts for disabled assets).
+  function test_Audit_RHC4_disabledCollateralStillLiquidatable() public {
+    _attest(customer, 2, 1_000e6, 14_000);
+    uint256 col = _nvdaFor(PRICE, 14_000);
+    uint256 planId = _openPlan(col);
+    vm.prank(owner);
+    oracle.disableAsset(RH.NVDA);
+    bytes32 inv2 = keccak256('bnpl-disabled');
+    _invoice(inv2, PRICE);
+    _prepare(col);
+    vm.prank(customer);
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.CollateralNotAccepted.selector, RH.NVDA));
+    credit.openPlan(inv2, merchant, RH.NVDA, col);
+    _setMultiplier(RH.NVDA, IRobinhoodStockToken(RH.NVDA).uiMultiplier() * 70 / 100);
+    (, bool under) = credit.planLiquidatable(planId);
+    assertTrue(under, 'still valued after disable');
+    _fund(RH.USDG, liquidator, PRICE);
+    vm.startPrank(liquidator);
+    usdg.approve(address(credit), PRICE);
+    credit.liquidatePlan(planId);
+    vm.stopPrank();
+    assertEq(uint8(credit.plan(planId).status), uint8(NorenCredit.PlanStatus.Liquidated));
+  }
+
+  /// @notice Audit RH-C-6: the Dutch-auction address (which may seize plan collateral) is set once
+  /// and can never be repointed by the owner.
+  function test_Audit_RHC6_dutchAuctionSetOnce() public {
+    vm.startPrank(owner);
+    vm.expectRevert(NorenCredit.BadConfig.selector);
+    credit.setDutchAuction(address(0));
+    credit.setDutchAuction(address(0xA11CE));
+    vm.expectRevert(NorenCredit.BadConfig.selector);
+    credit.setDutchAuction(address(0xBAD));
+    vm.stopPrank();
+    assertEq(credit.dutchAuction(), address(0xA11CE));
+  }
+
   function test_paramsGuarded() public {
     NorenCredit.Params memory p = _params(INTERVAL, GRACE);
     p.liquidationThresholdBps = 9_000; // below 100% would allow under-collateralised credit

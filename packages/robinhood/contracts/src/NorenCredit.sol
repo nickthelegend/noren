@@ -225,6 +225,7 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
   error NothingToClaim();
   error NoLiquidity();
   error NotAuction();
+  error BadReport(uint256 drawnUsdc6, uint256 repaidUsdc6);
 
   constructor(
     address owner_,
@@ -265,7 +266,10 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     emit LiquiditySet(address(l));
   }
 
+  /// @dev Set once: the auction may seize plan collateral (auctionSeize), so the owner cannot
+  /// later point it at another address.
   function setDutchAuction(address a) external onlyOwner {
+    if (a == address(0) || dutchAuction != address(0)) revert BadConfig();
     dutchAuction = a;
     emit DutchAuctionSet(a);
   }
@@ -618,6 +622,12 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     if (l.status != LineStatus.Open && l.status != LineStatus.Closing) revert LineNotActive(l.status);
     if (asOf <= l.asOf) revert StaleReport(asOf, l.asOf);
     if (asOf > block.timestamp + params.reportSkew) revert FutureReport(asOf);
+    // Arc's drawn and repaid totals only grow, repaid never exceeds drawn, and NorenCreditLine keeps
+    // drawn - repaid within the limit this line opened with. A report outside that is refused, so
+    // a faulty or compromised report cannot invent debt beyond the line or roll back a repayment.
+    if (repaid > drawn || drawn < l.drawn || repaid < l.repaid || drawn - repaid > l.limitUsdc) {
+      revert BadReport(drawn, repaid);
+    }
     l.drawn = drawn;
     l.repaid = repaid;
     l.asOf = asOf;
@@ -814,7 +824,9 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
     creditUsed[l.borrower] -= l.limitUsdc;
     History storage h = history[l.borrower];
     h.completed += 1;
-    h.clean += 1;
+    // Only a line that was used and repaid in full counts as clean: closing an unused line must not
+    // lift the borrower's tier (creditTerms) for free.
+    if (l.drawn != 0) h.clean += 1;
     _sendOrCredit(l.collateral, l.borrower, l.collateralAmount);
     emit CreditLineSettled(lineId, l.borrower, l.collateralAmount);
   }

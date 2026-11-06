@@ -435,4 +435,68 @@ contract NorenDutchTest is RobinhoodBase {
     vm.expectRevert(NorenDutchAuction.BadConfig.selector);
     new NorenDutchAuction(owner, credit, swapRouter, START, CAP, DURATION, KEEPER_SHARE, 9_000);
   }
+
+  /// @notice Audit RH-C-1: the borrower cures the plan with a repayment while an auction sits open;
+  /// when the plan becomes liquidatable again the old auction is stale (no fill at its grown
+  /// discount) and a reopened one starts again at the start discount.
+  function test_Audit_RHC1_auctionStaleAfterBorrowerCure() public {
+    (uint256 planId,) = _openPlan(keccak256('stale'));
+    _dropToHealth(planId, 9_500);
+    auction.openAuction(planId);
+    vm.warp(vm.getBlockTimestamp() + 25 minutes); // before any installment is missed (15 min + grace)
+    uint256 grown = auction.discountWad(planId);
+    assertGt(grown, uint256(START) * 1e14 * 4, 'the discount has grown');
+    uint256 amt = credit.installmentAmount(planId, 1);
+    _fund(RH.USDG, customer, amt);
+    vm.startPrank(customer);
+    usdg.approve(address(credit), amt);
+    credit.repay(planId, 1); // healthy again; nobody calls closeAuction
+    vm.stopPrank();
+    (bool overdue, bool under) = credit.planLiquidatable(planId);
+    assertFalse(overdue || under, 'cured');
+    _dropToHealth(planId, 9_500); // a later price drop
+    vm.prank(keeper);
+    vm.expectRevert(abi.encodeWithSelector(NorenDutchAuction.AuctionStale.selector, planId));
+    auction.fill(planId, type(uint256).max);
+    auction.openAuction(planId); // anyone reopens it
+    assertEq(auction.discountWad(planId), uint256(START) * 1e14, 'fresh start');
+    assertEq(auction.auction(planId).round, 2);
+    vm.prank(keeper);
+    NorenDutchAuction.Fill memory f = auction.fill(planId, type(uint256).max);
+    assertEq(f.discountWad, uint256(START) * 1e14);
+  }
+
+  /// @notice Audit RH-C-2: Aqua balances are virtual, so a strategy shipped with USDG its maker does
+  /// not hold would win the quote and make every fill revert in Aqua's pull. Such strategies are now
+  /// skipped, and the owner can remove a squatting strategy.
+  function test_Audit_RHC2_unbackedStrategySkippedAndRemovable() public {
+    vm.prank(maker);
+    auction.remove(dutchHash); // so the attacker's strategy is first in the list
+    (ISwapVMRouter.Order memory o, bytes32 bad) = auction.buildOrder(attacker, RH.NVDA, 7);
+    address[] memory tokens = new address[](2);
+    tokens[0] = RH.USDG;
+    tokens[1] = RH.NVDA;
+    uint256[] memory amounts = new uint256[](2);
+    amounts[0] = 1_000_000e6; // virtual: the attacker holds no USDG and approved nothing
+    vm.startPrank(attacker);
+    aqua.ship(address(swapRouter), abi.encode(o), tokens, amounts);
+    auction.register(RH.NVDA, 7);
+    vm.stopPrank();
+    bytes32 good = _shipDutch(maker, 20_000e6, 1);
+    assertEq(auction.strategiesFor(RH.NVDA)[0], bad);
+
+    (uint256 planId,) = _openPlan(keccak256('unbacked'));
+    _dropToHealth(planId, 9_500);
+    auction.openAuction(planId);
+    vm.prank(keeper);
+    NorenDutchAuction.Fill memory f = auction.fill(planId, type(uint256).max);
+    assertEq(f.strategyHash, good, 'the funded maker fills');
+
+    vm.prank(keeper);
+    vm.expectRevert(abi.encodeWithSelector(NorenDutchAuction.NotRemovable.selector, bad));
+    auction.remove(bad);
+    vm.prank(owner);
+    auction.remove(bad);
+    assertEq(auction.strategiesFor(RH.NVDA).length, 1);
+  }
 }

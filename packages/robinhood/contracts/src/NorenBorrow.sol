@@ -420,10 +420,13 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
   }
 
   /// @notice Chainlink value (USD, 8 decimals) of locked collateral; `risk` = closed-market haircut.
+  /// The risk value (borrow limit) leaves out vaults whose asset the oracle no longer accepts for
+  /// new risk (NorenAssetOracle.disableAsset); the health factor still counts them.
   function collateralValueUsd8(address who, bool risk) public view returns (uint256 v) {
     for (uint256 i; i < _vaults.length; ++i) {
       uint256 s = lockedShares[who][address(_vaults[i])];
-      if (s != 0) v += _vaults[i].sharesValueUsd8(s, risk);
+      if (s == 0 || (risk && !oracle.isSupported(_vaults[i].asset()))) continue;
+      v += _vaults[i].sharesValueUsd8(s, risk);
     }
   }
 
@@ -467,7 +470,7 @@ contract NorenBorrow is Ownable2Step, ReentrancyGuard, INorenReceivables, INoren
     for (uint256 i; i < _vaults.length; ++i) {
       NorenDepositVault vault = _vaults[i];
       uint256 s = lockedShares[who][address(vault)] + vault.balanceOf(who);
-      if (s != 0) v += vault.sharesValueUsd8(s, true);
+      if (s != 0 && oracle.isSupported(vault.asset())) v += vault.sharesValueUsd8(s, true);
     }
     uint16 ltv = ltvBps > MAX_LTV_BPS ? MAX_LTV_BPS : ltvBps;
     return v == 0 ? 0 : oracle.usd8ToUsdg(v.mulDiv(ltv, BPS), Math.Rounding.Floor);

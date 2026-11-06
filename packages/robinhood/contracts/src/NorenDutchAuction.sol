@@ -127,6 +127,10 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
   mapping(uint256 planId => Auction) internal _auctions;
   mapping(bytes32 strategyHash => Strategy) internal _strategies;
   mapping(address asset => bytes32[]) internal _byAsset;
+  /// @dev The plan's `repaid` when its auction opened, moved by each fill. A repayment outside the
+  /// auction (the borrower curing the plan) makes the open auction stale: it must be reopened, so
+  /// the discount restarts at startDiscountBps instead of resuming at the old, larger discount.
+  mapping(uint256 planId => uint256) internal _repaidMark;
 
   event AuctionOpened(uint256 indexed planId, address indexed borrower, address indexed opener, uint32 round, uint256 healthWad, bool overdue);
   event AuctionFilled(
@@ -146,6 +150,7 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
 
   error AuctionAlreadyOpen(uint256 planId);
   error AuctionNotOpen(uint256 planId);
+  error AuctionStale(uint256 planId);
   error NotLiquidatable(uint256 planId);
   error StillLiquidatable(uint256 planId);
   error PlanNotActive(uint256 planId);
@@ -243,11 +248,12 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
     emit StrategyRegistered(h, msg.sender, asset, salt);
   }
 
-  /// @notice The maker may remove its strategy at any time; anyone may remove a docked one.
+  /// @notice The maker may remove its strategy at any time; anyone may remove a docked one; the
+  /// owner may remove any (an empty or unfunded strategy squatting one of the per-asset slots).
   function remove(bytes32 h) external {
     Strategy storage s = _strategies[h];
     if (!s.active) revert UnknownStrategy(h);
-    if (msg.sender != s.maker && _shipped(s.maker, h, s.asset)) revert NotRemovable(h);
+    if (msg.sender != s.maker && msg.sender != owner() && _shipped(s.maker, h, s.asset)) revert NotRemovable(h);
     s.active = false;
     bytes32[] storage list = _byAsset[s.asset];
     for (uint256 i; i < list.length; ++i) {
@@ -268,14 +274,16 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
     return _auctions[uint256(auctionId)].startedAt;
   }
 
-  /// @notice Open a Dutch auction for a liquidatable plan (anyone).
+  /// @notice Open a Dutch auction for a liquidatable plan (anyone). A stale auction (the borrower
+  /// repaid outside it) is reopened with a fresh start.
   function openAuction(uint256 planId) external nonReentrant {
     Auction storage a = _auctions[planId];
-    if (a.startedAt != 0) revert AuctionAlreadyOpen(planId);
     NorenCredit.Plan memory p = credit.plan(planId);
+    if (a.startedAt != 0 && p.repaid == _repaidMark[planId]) revert AuctionAlreadyOpen(planId);
     if (p.status != NorenCredit.PlanStatus.Active) revert PlanNotActive(planId);
     (bool overdue, bool under) = credit.planLiquidatable(planId);
     if (!overdue && !under) revert NotLiquidatable(planId);
+    _repaidMark[planId] = p.repaid;
     a.startedAt = uint64(block.timestamp);
     a.round += 1;
     a.fills = 0;
@@ -301,6 +309,7 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
     if (_auctions[planId].startedAt == 0) revert AuctionNotOpen(planId);
     NorenCredit.Plan memory p = credit.plan(planId);
     if (p.status != NorenCredit.PlanStatus.Active) revert PlanNotActive(planId);
+    if (p.repaid != _repaidMark[planId]) revert AuctionStale(planId);
     (bool overdue, bool under) = credit.planLiquidatable(planId);
     if (!overdue && !under) revert NotLiquidatable(planId);
 
@@ -368,6 +377,7 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
 
     // Collateral comes out of the plan and the repayment is booked in the same transaction as the sale.
     credit.auctionSeize(planId, f.collateralSold + f.keeperBonus, f.repayUsdg, first);
+    _repaidMark[planId] = p.repaid + f.repayUsdg;
     _sell(f, p.collateral, f.sellAll ? address(this) : vault, bytes32(planId));
     if (f.sellAll) {
       usdg.safeTransfer(vault, f.repayUsdg);
@@ -508,6 +518,7 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
     bytes32[] storage list = _byAsset[asset];
     bytes memory td = _takerData(false, type(uint256).max, address(0), bytes32(planId));
     for (uint256 i; i < list.length; ++i) {
+      if (!_makerCanPay(_strategies[list[i]].maker, usdgOut)) continue;
       try router.quote(order(list[i]), asset, address(usdg), usdgOut, td) returns (uint256 ain, uint256 aout, bytes32) {
         if (aout == usdgOut && ain != 0 && (best == bytes32(0) || ain < assetIn)) {
           best = list[i];
@@ -523,12 +534,19 @@ contract NorenDutchAuction is Ownable2Step, ReentrancyGuard {
     bytes memory td = _takerData(true, 0, address(0), bytes32(planId));
     for (uint256 i; i < list.length; ++i) {
       try router.quote(order(list[i]), asset, address(usdg), assetIn, td) returns (uint256 ain, uint256 aout, bytes32) {
-        if (ain == assetIn && aout > usdgOut) {
+        if (ain == assetIn && aout > usdgOut && _makerCanPay(_strategies[list[i]].maker, aout)) {
           best = list[i];
           usdgOut = aout;
         }
       } catch {}
     }
+  }
+
+  /// @dev Aqua balances are virtual: a strategy can be shipped with USDG the maker does not hold or
+  /// has not approved to Aqua. Its quote would win and the fill would revert in Aqua's pull, so a
+  /// strategy is only quoted when the maker's real USDG balance and allowance cover the payment.
+  function _makerCanPay(address maker, uint256 usdgAmount) internal view returns (bool) {
+    return usdg.balanceOf(maker) >= usdgAmount && usdg.allowance(maker, address(aqua)) >= usdgAmount;
   }
 
   function _shipped(address maker, bytes32 h, address asset) internal view returns (bool) {
