@@ -50,7 +50,7 @@ Pay with stocks or crypto (any Stock Token you hold, or ETH): Powered by SwapVM 
 | Settle to Arc: CRE settlement-desk workflow on a 7.50 USDG request | live quotes Relay 7.475568 / Across 7.491332 USDC against a Chainlink fair value of 7.501225; approved Across with a 7.426212 minimum in 6.4–7.1 s |
 | CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
 | Browser, Noren app | fresh wallet, fork faucet, tier-1 terms (score 13/100, collateral-only floor), 1 NVDA locked → 123.80 USDC line, live on Arc after one CRE run (4.8 s), a ¥1,200 checkout (7.60 USDC via Chainlink) paid later, 1.90 USDC repaid |
-| Package suites | Robinhood contracts (`NorenCredit`, `NorenGateway`, `NorenLiquidity`, `NorenVault`, `NorenBorrow`, `NorenDutch`…) **158** Foundry tests on a fresh Robinhood mainnet fork (Aqua routing, Pay in 3, Dutch-auction liquidations, self-repay); `NorenOraclePeg` + `NorenDutchDecay` + Aqua router **27** (+1 weekend-only); `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
+| Package suites | Robinhood contracts (`NorenCredit`, `NorenGateway`, `NorenLiquidity`, `NorenVault`, `NorenBorrow`, `NorenDutch`…) **188** Foundry tests on a fresh local fork of Robinhood Chain mainnet (Aqua routing, paying with each of the 10 assets, Pay in 3, Dutch-auction liquidations, self-repay); `NorenOraclePeg` + `NorenDutchDecay` + Aqua router **27** (+1 weekend-only); `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
 
 Fork transaction hashes vanish when the fork stops, so the numbers above are reproducible with the commands below rather than linked.
 
@@ -143,6 +143,6 @@ Local dev needs none of these. A hosted build sets them at `vite build` time:
 |---|---|---|
 | `VITE_NOREN_HOSTED` | unset | `1`: Arc is the public Arc testnet only. The "Arc testnet fork / Arc testnet (live)" switch and fork badges disappear, and the app always runs against the Noren server below. |
 | `VITE_NOREN_API` | `http://127.0.0.1:8790` | The Noren server API base (the older `VITE_NOREN_SERVER` still works). |
-| `VITE_NOREN_RH_RPC` | unset (the server's `/config`) | The Robinhood RPC the browser uses, e.g. a VPS-hosted mainnet snapshot. Wins over the server's value. |
+| `VITE_NOREN_RH_RPC` | unset (the server's `/config`) | The Robinhood RPC the browser uses, e.g. the VPS-hosted Robinhood Chain · mainnet snapshot. Wins over the server's value. |
 
 Everywhere, the UI names the Robinhood side "Robinhood Chain · mainnet snapshot" (real mainnet state at a past block, no real money) and the dev Arc chain "Arc testnet fork". Names only are in `packages/web/.env.example`.

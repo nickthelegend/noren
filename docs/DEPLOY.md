@@ -198,7 +198,7 @@ vercel deploy --prebuilt --prod                     # production, only after Nic
 | Robinhood Chain · mainnet snapshot RPC | https://noren-rh-rpc.201-18-198-162.sslip.io | Anvil with no upstream, read + `eth_sendRawTransaction` only |
 | Aubelle backend | https://noren-shop-api.201-18-198-162.sslip.io | |
 
-Arc is the **public Arc testnet** (5042002), never a fork. The Robinhood side is the warmed mainnet snapshot
+Arc is the **public Arc testnet** (5042002), never a fork. The Robinhood side is the warmed Robinhood Chain · mainnet snapshot
 (`packages/robinhood/scripts/fork-snapshot.sh`, then `deploy/vps/noren-rh/prepare-snapshot.ts`).
 
 - Frontends: built on the Mac with `VITE_NOREN_HOSTED=1 VITE_NOREN_API=https://noren-api.201-18-198-162.sslip.io VITE_NOREN_RH_RPC=https://noren-rh-rpc.201-18-198-162.sslip.io pnpm --filter @noren/web build` (plus `packages/web/public/zk` prover artifacts), and only `dist/` is uploaded (`vercel deploy --prod --project <name>`).
