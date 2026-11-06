@@ -14,3 +14,6 @@ data/
 deployments/
 .DS_Store
 .claude/
+
+# Templates with variable names only (no values) are tracked.
+!.env.example

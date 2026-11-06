@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+/// DEV_ONLY: fork-only; scripts/deploy-public.sh refuses any step that deploys it.
 /// @notice Anvil-only replacement for Arc's unsupported native USDC bridge.
 /// @dev Never deploy this contract to Arc or use it to infer Arc USDC transfer gas.
 contract ForkUSDC {
