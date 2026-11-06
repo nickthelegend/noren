@@ -125,7 +125,7 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
   { v: "5.0–7.0", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "543", l: "tests passing across 20 suites on the final build, forks and live testnets included" },
+  { v: "574", l: "tests passing across 20 suites on the final build, forks and live testnets included" },
 ];
 
 function useReveal() {
