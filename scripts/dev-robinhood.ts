@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createPublicClient, encodeDeployData, encodeFunctionData, erc20Abi, http, parseAbi, toHex, type Address, type Hex } from 'viem';
+import { createPublicClient, encodeAbiParameters, encodeDeployData, encodeFunctionData, erc20Abi, http, maxUint256, parseAbi, toHex, type Address, type Hex } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
 import { ROBINHOOD } from '../packages/server/src/credit.ts';
 import type { ArcContext } from './stack.ts';
@@ -18,7 +18,7 @@ const dev = (i: number) => mnemonicToAccount(MNEMONIC, { addressIndex: i });
 export const FORWARDER = { arc: '0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1' as Address, robinhood: '0x0b93082D9b3C7C97fAcd250082899BAcf3af3885' as Address };
 const POOL_MANAGER: Address = '0x8366a39CC670B4001A1121B8F6A443A643e40951'; // Uniswap v4 PoolManager: a real USDG holder
 
-export type RobinhoodDeployment = { reputation?: Address; borrow?: Address; depositVaults?: { asset: Address; vault: Address }[]; worldIdSigner?: Address; liquidity?: Address; aqua?: Address; swapRouter?: Address; oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex; forkedFromBlock?: number };
+export type RobinhoodDeployment = { reputation?: Address; borrow?: Address; depositVaults?: { asset: Address; vault: Address }[]; worldIdSigner?: Address; liquidity?: Address; dutchAuction?: Address; aqua?: Address; swapRouter?: Address; oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex; forkedFromBlock?: number };
 
 async function rpc(url: string, method: string, params: unknown[] = []) {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -82,5 +82,48 @@ export async function adoptSnapshotDeployment(robinhoodRpc: string, file: string
     const h = await rpc(robinhoodRpc, 'eth_sendTransaction', [{ from: d.owner, to: d.credit, data: encodeFunctionData({ abi, functionName: 'setForwarder', args: [forwarder] }) }]) as Hex;
     if ((await c.waitForTransactionReceipt({ hash: h })).status !== 'success') throw new Error(`NorenCredit.setForwarder reverted: ${h}`);
   }
-  return { reputation: d.reputation, borrow: d.borrow, depositVaults: d.depositVaults, worldIdSigner: d.worldIdSigner, liquidity: d.liquidity, aqua: d.aqua, swapRouter: d.swapRouter, oracle: d.oracle, vault: d.vault, gateway: d.gateway, credit: d.credit, deployBlock: BigInt(d.deployBlock), owner: d.owner, underwriter: d.underwriter, forwarder, vaultSeedTx: d.seedTxs?.lpDeposit, forkedFromBlock: d.forkedFromBlock };
+  return { reputation: d.reputation, borrow: d.borrow, depositVaults: d.depositVaults, worldIdSigner: d.worldIdSigner, liquidity: d.liquidity, dutchAuction: d.dutchAuction, aqua: d.aqua, swapRouter: d.swapRouter, oracle: d.oracle, vault: d.vault, gateway: d.gateway, credit: d.credit, deployBlock: BigInt(d.deployBlock), owner: d.owner, underwriter: d.underwriter, forwarder, vaultSeedTx: d.seedTxs?.lpDeposit, forkedFromBlock: d.forkedFromBlock };
+}
+
+/**
+ * One balance, several jobs (fork only). Makes the lender pool an Aqua maker and gives liquidations a Dutch maker:
+ * - NorenVault (the lender pool) ships a vault-backed NVDA strategy: idle USDG stays in the vault and only a fill moves it.
+ * - The demo maker, whose one USDG balance already backs the stock peg strategies, also ships the NVDA Dutch-auction
+ *   strategy that partial Pay-in-3 liquidations sell into (NorenDutchAuction).
+ * Both are owner/maker transactions on the local Robinhood fork from Anvil's unlocked dev accounts. Idempotent.
+ */
+export async function seedLiquidityMakers(robinhoodRpc: string, file: string): Promise<string[]> {
+  const d = JSON.parse(readFileSync(file, 'utf8'));
+  const c: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
+  const NVDA = '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC' as Address;
+  const send = async (from: Address, to: Address, data: Hex, what: string) => {
+    const h = await rpc(robinhoodRpc, 'eth_sendTransaction', [{ from, to, data }]) as Hex;
+    if ((await c.waitForTransactionReceipt({ hash: h })).status !== 'success') throw new Error(`${what} reverted: ${h}`);
+    return h;
+  };
+  const done: string[] = [];
+  const liqAbi = parseAbi(['function strategiesOf(address maker) view returns (bytes32[])']);
+  if (d.liquidity && d.vault && (await c.readContract({ address: d.liquidity, abi: liqAbi, functionName: 'strategiesOf', args: [d.vault] })).length === 0) {
+    const vaultAbi = parseAbi(['function shipAquaStrategy(address liquidity, address token, (uint16 bidSpreadBps, uint16 askSpreadBps, uint16 closedExtraBps, uint64 minPriceUsd8, uint64 maxPriceUsd8, uint64 salt) t, uint256 usdgVirtual) returns (bytes32)']);
+    await send(d.owner, d.vault, encodeFunctionData({ abi: vaultAbi, functionName: 'shipAquaStrategy', args: [d.liquidity, NVDA, { bidSpreadBps: 40, askSpreadBps: 80, closedExtraBps: 300, minPriceUsd8: 0n, maxPriceUsd8: 0n, salt: 0n }, 20_000_000_000n] }), 'NorenVault.shipAquaStrategy');
+    done.push('lender pool NorenVault ships an NVDA Aqua strategy (20,000 USDG virtual)');
+  }
+  const dutchAbi = parseAbi([
+    'function strategiesFor(address asset) view returns (bytes32[])',
+    'function buildOrder(address maker, address asset, uint64 salt) view returns ((address maker, uint256 traits, bytes data) o, bytes32 h)',
+    'function register(address asset, uint64 salt)',
+  ]);
+  const maker = d.demoMaker as Address | undefined;
+  if (d.dutchAuction && maker && d.aqua && d.swapRouter && (await c.readContract({ address: d.dutchAuction, abi: dutchAbi, functionName: 'strategiesFor', args: [NVDA] })).length === 0) {
+    const usdg = d.usdg as Address;
+    if ((await c.readContract({ address: usdg, abi: erc20Abi, functionName: 'allowance', args: [maker, d.aqua] })) < 10n ** 12n)
+      await send(maker, usdg, encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [d.aqua, maxUint256] }), 'USDG approve Aqua');
+    const [order] = await c.readContract({ address: d.dutchAuction, abi: dutchAbi, functionName: 'buildOrder', args: [maker, NVDA, 0n] });
+    const aquaAbi = parseAbi(['function ship(address app, bytes strategy, address[] tokens, uint256[] amounts) returns (bytes32)']);
+    const strategy = encodeAbiParameters([{ type: 'tuple', components: [{ name: 'maker', type: 'address' }, { name: 'traits', type: 'uint256' }, { name: 'data', type: 'bytes' }] }], [order]);
+    await send(maker, d.aqua, encodeFunctionData({ abi: aquaAbi, functionName: 'ship', args: [d.swapRouter, strategy, [usdg, NVDA], [5_000_000_000n, 0n]] }), 'Aqua.ship (Dutch NVDA)');
+    await send(maker, d.dutchAuction, encodeFunctionData({ abi: dutchAbi, functionName: 'register', args: [NVDA, 0n] }), 'NorenDutchAuction.register');
+    done.push('demo maker ships the NVDA Dutch-auction strategy (5,000 USDG virtual) from the same balance as its peg strategies');
+  }
+  return done;
 }

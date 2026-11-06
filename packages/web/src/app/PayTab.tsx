@@ -10,7 +10,7 @@ import { isAddress, type Address, type Hex } from "viem";
 import { msgOf } from "../ui";
 import { QR } from "../kit";
 import type { Wallet } from "./NorenApp";
-import { rhSdk, type Positions } from "./rh";
+import { dutchSdk, rhSdk, type Positions } from "./rh";
 import { Card, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
@@ -157,7 +157,7 @@ function Plans({ w }: { w: Wallet }) {
   return (
     <Card title="Pay in 3" sub="Plans on NorenCredit: stock locked at the Chainlink price, three USDG installments" pill={<span className="nk-pill">{plans.length} open</span>}>
       <div className="nk-pad">
-        {err ? <SetupCard title="NorenCredit isn't reachable" text={err} /> : !pos ? <Skel rows={2} /> : !plans.length ? <Empty title="No plans yet" text="Choose “Pay in 3” at a Noren checkout. Your stock stays locked until the third installment." /> : plans.map((p) => (
+        {err ? <SetupCard title="NorenCredit isn't reachable" text={err} /> : !pos ? <Skel rows={2} /> : !plans.length ? <Empty title="No Pay-in-3 plans on Robinhood Chain" text="A plan locks stock on NorenCredit for a Robinhood Chain merchant (SDK openPlan); when one is open, its Dutch-auction liquidation status shows here. “Pay in 3” at a Noren checkout on Arc draws on your credit line instead (Credit tab)." /> : plans.map((p) => (
           <div key={String(p.planId)} className="nk-box" style={{ marginBottom: 6 }}>
             <span className="nk-l"><span>Plan #{String(p.planId)} · {p.liquidation?.sharesText} {p.liquidation?.symbol} locked</span><span>{Number(p.plan.paid)}/3 paid</span></span>
             <div className="nk-meter"><i className={p.liquidatable.overdue || p.liquidatable.undercollateralised ? "bad" : ""} style={{ width: `${(Number(p.plan.paid) / 3) * 100}%` }} /></div>
@@ -165,11 +165,32 @@ function Plans({ w }: { w: Wallet }) {
               {p.liquidation?.schedule.map((s) => <li key={s.installment} data-done={s.paid}><span className="nk-check">{s.paid ? "✓" : s.installment}</span><div><b>{usdc(s.amountUsdg)} USDG</b><small>{s.paid ? "Paid" : `Due ${day(s.dueAt)}`}</small></div></li>)}
             </ul>
             {p.liquidation && <p className="nk-fine">{p.liquidation.message}</p>}
+            <DutchStatus w={w} planId={p.planId} />
             <button className="nk-cta" disabled={!!busy || !p.nextAmount} onClick={() => pay(p.planId)}>{busy === String(p.planId) ? <><Spin /> Paying…</> : `Pay installment ${Number(p.plan.paid) + 1} · ${usdc(p.nextAmount)} USDG`}</button>
           </div>
         ))}
         {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
       </div>
     </Card>
+  );
+}
+
+type Dutch = Awaited<ReturnType<ReturnType<typeof dutchSdk>["auctionStatus"]>>;
+/** The plan's partial Dutch-auction liquidation status, read live from NorenDutchAuction (createNorenDutch). */
+function DutchStatus({ w, planId }: { w: Wallet; planId: bigint }) {
+  const [s, setS] = useState<Dutch | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { let on = true; try { dutchSdk(w).auctionStatus(planId).then((x) => on && (setS(x), setErr(null))).catch((e) => on && setErr(msgOf(e))); } catch (e) { setErr(msgOf(e)); } return () => { on = false; }; }, [w.tick, planId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const tone = s?.open || s?.liquidatable ? "warn" : s ? "ok" : "";
+  return (
+    <div className={`nk-dutch ${tone}`} role="status" aria-label="Liquidation status">
+      <span className="nk-tag">Partial Dutch auction</span>
+      {err ? <p>{err}</p> : !s ? <p>Reading NorenDutchAuction…</p> : (
+        <>
+          <p><b>{s.open ? `Auction open · ${(Number(s.discountWad) / 1e16).toFixed(2)}% discount` : s.liquidatable ? "Liquidatable · anyone can open an auction" : "Not liquidatable"}</b> · health {s.healthWad >= 2n ** 255n ? "n/a" : (Number(s.healthWad) / 1e18).toFixed(2)}{s.open ? ` → target ${(Number(s.targetHealthWad) / 1e18).toFixed(2)}` : ""}{s.fills ? ` · ${s.fills} fill${s.fills === 1 ? "" : "s"}` : ""}</p>
+          <small>If it falls below health 1.00, a 1inch Aqua Dutch maker buys only enough collateral to bring it back to {(s.schedule.targetHealthBps / 10_000).toFixed(2)}; the discount starts at {s.schedule.startBps / 100}% and rises to {s.schedule.capBps / 100}% over {Math.round(s.schedule.durationSeconds / 60)} min. You keep the rest.</small>
+        </>
+      )}
+    </div>
   );
 }

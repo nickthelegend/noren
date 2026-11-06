@@ -13,6 +13,7 @@ import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import { SWAPVM_ATTRIBUTION } from "./SwapTab";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
+import { AquaMakerPanel } from "./AquaMaker";
 
 /** Length of the observed window. Yield is shown as fees earned in a window, never as a projected APY. */
 const span = (since: number) => { const s = Math.max(1, Math.floor(Date.now() / 1000) - since); return s < 3600 ? `${Math.round(s / 60)} min` : s < 172800 ? `${(s / 3600).toFixed(1)} h` : `${Math.round(s / 86400)} days`; };
@@ -74,7 +75,7 @@ export function EarnTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Earn">
-        <div className="nk-card-h"><b>Earn</b>
+        <div className="nk-card-h"><div><b>Earn</b><p>Your deposit becomes 1inch Aqua liquidity. It never leaves the vault.</p></div>
           <div className="nk-band" style={{ padding: 0 }} role="group" aria-label="Deposit or withdraw">{(["deposit", "withdraw"] as const).map((m) => <button key={m} aria-pressed={mode === m} onClick={() => { setMode(m); setAmount(""); }}>{m === "deposit" ? "Deposit" : "Withdraw"}</button>)}</div>
         </div>
         {err ? <div className="nk-pad"><div className="nk-err">{err}</div></div> : !rows || !v ? <Skel rows={3} /> : (
@@ -111,6 +112,13 @@ export function EarnTab({ w }: { w: Wallet }) {
           </>
         )}
       </section>
+
+      {v && <AquaMakerPanel w={w} maker={v.vault} title={`${v.shareSym} vault is an Aqua maker`} sub="Funds stay in the vault; Aqua only records what each strategy may trade"
+        jobs={{
+          loans: <>Lock your {v.shareSym} shares in <a href="#/app/borrow">Borrow</a> and the same deposit is your collateral.</>,
+          fees: <>The vault's strategy buys and sells {v.sym} at the Chainlink price plus its spread. That spread is the yield.</>,
+          liquidations: <>Its bid is one of the makers that liquidated {v.sym} collateral is sold into.</>,
+        }} />}
 
       {v && s && (
         <Card title="Your position" sub={`${v.shareSym} receipt shares; gains from your own Deposit and Withdraw logs`}>

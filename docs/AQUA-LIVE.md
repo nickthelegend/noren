@@ -107,6 +107,15 @@ Result: 0.999900 USDC from Ethereum Sepolia bought **0.888640 EURC** for the cus
 
 **Spend.** On Arc the deployer paid about 0.53 USDC in gas for its 15 transactions (deploys, configuration, maker setup and the four CRE writes) (12.864304 → 15.836176 USDC, which includes the 3.49964 USDC the maker received). The source chains spent 2 USDC on Arbitrum Sepolia (15 left) and 1 USDC on Ethereum Sepolia (19 left), plus a little ETH for gas. Base Sepolia's 0.1 USDC was not touched.
 
+## Swap on Arc: Uniswap v4 first, the Aqua maker when it quotes better
+
+Aqua is Noren's shared-liquidity layer, not its swap venue. The Noren app's Swap tab (USDC → EURC on Arc testnet, `packages/web/src/app/arc-swap.ts`) quotes both and routes to the better one, Uniswap v4 by default:
+
+- **Uniswap v4 on Arc testnet.** Uniswap's deployment docs list Arc mainnet (5042) only. The Arc mainnet v4 addresses also have code on Arc testnet (checked with `cast code` on Nov 6): PoolManager `0x8366a39CC670B4001A1121B8F6A443A643e40951` (24,009 bytes), V4Quoter `0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94`, StateView `0xF3334192D15450CdD385c8B70e03f9A6bD9E673b`, Universal Router 2.1.1 `0x4fcA4a51Ab4F23A7447b3284fBd7D73289A89Fb1` (its `poolManager()` is the PoolManager above) and Permit2. Universal Router 2.1.2 and the v2/v3 contracts have no code there. A USDC/EURC pool exists at fee 500 / tick spacing 10 with no hooks; other fee tiers revert. We use these as found; they are not documented by Uniswap for the testnet.
+- **The Aqua maker** is the live strategy above. Its quote is the router's own simulation, or the on-chain oracle formula when the taker has no allowance yet (labelled as such); a stale `NorenRateOracle` round shows "price stale" instead of a number.
+- **Live, from the app with the browser's test key:** Uniswap v4, 0.05 USDC → 0.041964 EURC, [`0x599879f5…`](https://explorer.testnet.arc.io/tx/0x599879f5950f8eb59494cdd686e8fda57c9b9c0dd6aa697543206df4d9785b31) (the route chosen by hand; it quoted lower); the Aqua maker, 0.05 USDC → 0.044436 EURC, [`0x12df0a9c…`](https://explorer.testnet.arc.io/tx/0x12df0a9cafae3004c5625d83ce641457b7e9facdd8a065890c82503c15654440) (the default best route at the time).
+- **Test:** `pnpm exec vitest run packages/web/src/app/arc-swap.live.test.ts` reads both live quotes (no transactions).
+
 ## Run it
 
 ```

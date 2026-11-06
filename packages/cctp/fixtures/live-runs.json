@@ -122,6 +122,36 @@
       "events": [
         "Bridged"
       ]
+    },
+    {
+      "file": "Noren app, Bridge tab (packages/web), signed by the browser's test key 0x6D6C8c418564B5aA9d4f49547f7D081f9C6B42cc, Nov 6 2026",
+      "network": "PUBLIC TESTNETS: Arc Testnet (5042002, CCTP domain 26) -> Robinhood Chain Testnet (46630, domain 35)",
+      "kind": "plain",
+      "amountUsdc6": "600000",
+      "approveTx": "0xdf2074fa72c37490d276c194608a77c8ac7bd5105ceed32091cad4e35f4a22f3",
+      "burnTx": "https://explorer.testnet.arc.io/tx/0x03797d2e9a08af41a78b901d89860dcc30990a9edfc5d91a1e31e02ccbe41307",
+      "iris": "https://iris-api-sandbox.circle.com/v2/messages/26?transactionHash=0x03797d2e9a08af41a78b901d89860dcc30990a9edfc5d91a1e31e02ccbe41307",
+      "mintedUsdc6": "600000",
+      "feeExecutedUsdc6": "0",
+      "mintTx": "https://explorer.testnet.chain.robinhood.com/tx/0xa74ed6e3965976538cfd4b37c044f169e80f8549dbec3bfcf149416ad739c954",
+      "relayedBy": "this browser (MessageTransmitterV2.receiveMessage on Robinhood Chain testnet)",
+      "events": []
+    },
+    {
+      "file": "Noren app, Bridge tab (packages/web), signed by the browser's test key 0x6D6C8c418564B5aA9d4f49547f7D081f9C6B42cc, Nov 6 2026",
+      "network": "PUBLIC TESTNETS: Robinhood Chain Testnet (46630, CCTP domain 35) -> Arc Testnet (5042002, domain 26)",
+      "kind": "plain",
+      "amountUsdc6": "500000",
+      "approveTx": "0xa52150d962c23fac7ad038631469d3c5668136be467a542907f98c3858cc17d6",
+      "burnTx": "https://explorer.testnet.chain.robinhood.com/tx/0x47a2e51abf964354da8feed31007ae2d3a7218f9a3a962d66e1e88d01b1927c9",
+      "iris": "https://iris-api-sandbox.circle.com/v2/messages/35?transactionHash=0x47a2e51abf964354da8feed31007ae2d3a7218f9a3a962d66e1e88d01b1927c9",
+      "mintedUsdc6": "499930",
+      "feeExecutedUsdc6": "70",
+      "mintTx": "https://explorer.testnet.arc.io/tx/0x677116575e3ed4d77a8fa026bc51e9290a027b0072b283757414ededb8a2228d",
+      "relayedBy": "this browser (NorenArcHook.relay on Arc testnet)",
+      "events": [
+        "Bridged"
+      ]
     }
   ]
 }

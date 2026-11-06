@@ -58,7 +58,7 @@ const SURFACES = [
     cap: "At 375 px: private balance, credit limit, stock held." },
   { k: "sdk", name: "Noren SDK", href: "#developers", cta: "Read the SDK", img: "/art/surface-checkout.jpg", w: 1200, h: 750,
     line: "Drop-in hosted checkout and a TypeScript merchant API. Create a link, send the customer to it, verify the signed webhook.",
-    cap: "The hosted checkout the SDK links to, with all three ways to pay." },
+    cap: "The hosted checkout the SDK links to, with the four ways to pay." },
 ];
 
 type Power = { k: string; t: string; s: Status[]; d: string; m?: string; art?: string; alt?: string; tone?: "dark" };
@@ -73,26 +73,26 @@ const POWERS: Power[] = [
     d: "Pay later on your credit line, then repay in three parts in USDC before the line expires.",
     m: "14.02 USDC checkout → 4.67 × 3" },
   { k: "earn", t: "Earn", s: ["live"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
-    d: "Deposit NVDA, TSLA, AAPL or ETH into a deposit vault and get receipt shares. The vault backs its own 1inch Aqua maker, so its spread on real fills is your yield, and you can withdraw any time." },
+    d: "Deposit NVDA, TSLA, AAPL or ETH into a deposit vault and get receipt shares. The vault is a 1inch Aqua maker: your deposit stays in it, its spread on real fills is your yield, and the same shares are collateral in Borrow. Withdraw any time." },
   { k: "borrow", t: "Borrow at a Chainlink price", s: ["live"],
     d: "Lock your Earn receipt shares and borrow USDG at your reputation LTV (66% up to 80%), with the health factor and liquidation price from Chainlink. Or lock Stock Tokens for a USDC line on Arc, opened by a CRE workflow.",
     m: "2 NVDA locked = $371.41 collateral" },
   { k: "human", t: "Credit for real humans", s: ["live"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
     d: "No stock? Verify with World ID (production, Selfie Check in World App) for one small starter line per human and a reputation milestone. Noren keeps only the nullifier. A sealed second opinion runs on 0G Private Computer, verified independently as TeeML." },
   { k: "bridge", t: "From any chain", s: ["testnet", "live"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
-    d: "Bring USDC to Arc from 10 chains with Circle CCTP, or pay an invoice on arrival. Sell stock on Robinhood and get USDC on Arc from a 1inch Aqua maker, with Chainlink CRE carrying the order. Swap at the better of an Aqua maker and Uniswap v4.",
+    d: "Bring USDC to Arc from 10 chains with Circle CCTP, or pay an invoice on arrival. Robinhood Chain ⇄ Arc both ways from the app. Sell stock on Robinhood and get USDC on Arc from a 1inch Aqua maker, with Chainlink CRE carrying the order. Swaps go to Uniswap v4 unless Noren's Aqua maker quotes better.",
     m: "Base Sepolia → Arc: invoice paid on arrival" },
 ];
 
-/** Each partner's one job in Noren, in the order of the positioning: the engine, the rails, orchestration, credit. */
+/** Each partner's one job in Noren, in the order of the positioning: shared liquidity, the rails, orchestration, credit. */
 const BUILT: { name: string; logos: string[]; use: string; s: Status; note?: string }[] = [
-  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "The engine that turns anything into the merchant's USDC: stock payments, liquidations and cross-chain fills, all priced by NorenOraclePeg, a SwapVM instruction we added that pegs makers to Chainlink. Official Aqua v1.0.0 is live on Arc testnet.", s: "testnet", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
+  { name: "1inch Aqua + SwapVM", logos: ["1INCH"], use: "Shared liquidity: the lender pool and the Earn vaults are Aqua makers, and funds stay in them. One balance backs loans, earns fees from fills (stock payments, cross-chain orders, swaps when it beats Uniswap) and buys liquidated collateral, including partial Dutch auctions. Priced by NorenOraclePeg, a SwapVM instruction we added that pegs makers to Chainlink. Official Aqua v1.0.0 is live on Arc testnet.", s: "testnet", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
   { name: "Circle CCTP V2", logos: ["CIRCLE"], use: "Native USDC into Arc from 10 testnets, burned and minted by Circle. A hook can pay an invoice, open an Aqua order or fund Earn on arrival.", s: "testnet" },
   { name: "Chainlink CCIP", logos: ["CHAINLINK"], use: "Orders and credit instructions from Ethereum, Base and Robinhood Chain into Arc (Robinhood through a Base hub, since there is no direct lane).", s: "testnet" },
   { name: "Chainlink CRE + Data Feeds", logos: ["CHAINLINK"], use: "Orchestration and price checks: CRE relays CCTP burns, carries Aqua orders and credit lines between chains, writes FX rates and approves settlements. Feeds price every invoice and every stock.", s: "testnet", note: "CRE runs in the simulator with --broadcast; not on a DON" },
   { name: "World ID + 0G", logos: ["WORLD", "0G"], use: "How credit reaches real humans safely: one starter line per verified human (Noren keeps only the nullifier), and a sealed AI second opinion inside a 0G TEE.", s: "live", note: "Production World ID; a real check needs World App" },
   { name: "Kohaku privacy pools", logos: ["KOHAKU"], use: "Why the shop never sees who paid: the Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools, with the proof made in the browser.", s: "testnet" },
-  { name: "Uniswap v4", logos: ["UNISWAP"], use: "The second quote: the official V4Quoter, Universal Router and Permit2 on Robinhood Chain, against which every Aqua fill is compared.", s: "live" },
+  { name: "Uniswap v4", logos: ["UNISWAP"], use: "The default swap route. On Arc testnet: the USDC/EURC pool through V4Quoter and the Universal Router at Arc mainnet's v4 addresses (not in Uniswap's docs for the testnet). On Robinhood Chain: the same contracts on the fork. Noren's Aqua maker fills only when it beats Uniswap.", s: "testnet" },
   { name: "Relay / Across", logos: ["RELAY", "ACROSS"], use: "The mainnet route for USDG on Robinhood Chain to USDC on Arc. Quotes are live; no relayer fills a local fork.", s: "quotes" },
 ];
 
@@ -123,9 +123,9 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "1.09–1.13", u: "s", l: "to make the payment proof in a browser" },
   { v: "0", l: "payer addresses in the private payment tx" },
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
-  { v: "5.0–7.0", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
+  { v: "4.5–7.4", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
   { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
-  { v: "589", l: "tests passing across 21 suites on the final build, forks and live testnets included" },
+  { v: "590", l: "tests passing across 22 suites, forks and live testnets included" },
 ];
 
 function useReveal() {
@@ -206,7 +206,7 @@ export function Landing() {
         <div className="lx-hero-in">
           <span className="lx-pill mono"><i />Live on Arc, CCTP and CCIP testnets</span>
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
-          <p>Noren is a DEX and stablecoin payment infrastructure on Arc (liquidity, credit lines and cross-chain settlement), and payments are private by default: a merchant never learns which customer paid.</p>
+          <p>Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.</p>
           <div className="lx-ctas">
             <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
@@ -272,7 +272,7 @@ export function Landing() {
             <Tag>In the Noren app</Tag>
             <h2>Everything your money can do. <span>Only one of them shows nobody who you are.</span></h2>
           </div>
-          <p>Pay privately is the only private path. Paying with stocks, paying later and borrowing come from your public Robinhood Chain wallet, and the app says so on every screen.</p>
+          <p>Pay privately and Pay later, privately hide you from the shop. Paying with USDC or stocks, Pay in 3 and borrowing come from your public wallets, and the app says so on every screen. Swaps and bridges are public.</p>
         </div>
         <div className="nx-bento">
           {POWERS.map((p, i) => (
@@ -294,7 +294,7 @@ export function Landing() {
         <div className="nx-built-in">
           <div className="nx-head" data-reveal>
             <Tag dark>Built with</Tag>
-            <h2>One job each. <span>Aqua turns anything into USDC, CCTP and CCIP bring it to Arc, CRE orchestrates and checks prices, World ID and 0G keep credit human. Each labelled with what runs today.</span></h2>
+            <h2>One job each. <span>Aqua lets one balance back loans, fills and liquidations, CCTP and CCIP bring money to Arc, CRE orchestrates and checks prices, World ID and 0G keep credit human. Each labelled with what runs today.</span></h2>
           </div>
           <ul className="nx-built-list">
             {BUILT.map((b, i) => (

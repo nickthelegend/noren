@@ -1,6 +1,8 @@
 /**
- * Bridge: money into Arc.
- * 1. "Bring USDC to Arc": Circle CCTP V2 from any of 10 public testnets, finished on Arc by NorenArcHook (CctpCard).
+ * Bridge: Robinhood Chain ⇄ Arc first.
+ * 0. The hero: USDC both ways between Robinhood Chain testnet and Arc testnet over Circle CCTP V2 (public testnets),
+ *    and "Stocks on Robinhood → USDC on Arc" through the cross-chain Aqua order (fork demo), with a 3-step explainer.
+ * 1. "Bring USDC from": Circle CCTP V2 from the other 9 public testnets, finished on Arc by NorenArcHook (CctpCard).
  * 2. The mainnet route for USDG earned on Robinhood Chain: the customer escrows USDG in NorenSettlementDesk; the
  *    Chainlink CRE settlement workflow fetches live Relay and Across quotes, checks them against Chainlink USDG/USD and
  *    USDC/USD and approves or rejects on-chain; a keeper then deposits into the approved bridge. That runs on the
@@ -18,6 +20,8 @@ import { fmtUnits, parseAmount, USDG_TOKEN } from "./tokens";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
 import { CctpCard, RecentCctp } from "./CctpCard";
+import { ArcOut } from "./ArcOut";
+import { XChainSwap } from "./XChainSwap";
 
 const deskAbi = parseAbi(["function requestSettlement(uint256 amountUsdg6, address arcRecipient, uint16 maxSlippageBps) returns (bytes32 id)"]);
 type Quote = { relay: { outUsdc6: string; seconds: number; feeUsd?: string } | { error: string }; across: { outUsdc6: string; seconds: number } | { error: string } };
@@ -76,11 +80,12 @@ export function BridgeTab({ w }: { w: Wallet }) {
     } catch (e) { setErr(msgOf(e)); } finally { setBusy(null); }
   };
 
-  if (!desk) return <div className="nk-col"><CctpCard w={w} /><Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp /></div>;
+  const top = <><RobinhoodArc w={w} /><CctpCard w={w} title="Bring USDC from" sub="9 more chains over Circle CCTP V2, minted on Arc. No wrapped tokens." exclude={["robinhood-testnet"]} /></>;
+  if (!desk) return <div className="nk-col">{top}<Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp all /></div>;
 
   return (
     <div className="nk-col">
-      <CctpCard w={w} />
+      {top}
       <section className="nk-card" aria-label="USDG to Arc, mainnet route">
         <div className="nk-card-h"><div><b>USDG to Arc · mainnet route</b><p>Robinhood Chain has no CCTP on mainnet, so USDG goes through Relay or Across, approved by Chainlink CRE.</p></div><span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />fork</span></div>
         <div className="nk-box">
@@ -118,8 +123,48 @@ export function BridgeTab({ w }: { w: Wallet }) {
           {list.map((s) => <Transfer key={s.id} s={s} />)}
         </AnimatePresence>
       )}
-      <RecentCctp />
+      <RecentCctp all />
     </div>
+  );
+}
+
+/** The hero: Robinhood Chain ⇄ Arc. USDC both ways over CCTP (public testnets), and stock → USDC through Aqua. */
+function RobinhoodArc({ w }: { w: Wallet }) {
+  const [dir, setDir] = useState<"in" | "out" | "stock">("in");
+  return (
+    <section className="nk-card nk-rharc" aria-label="Robinhood Chain and Arc">
+      <div className="nk-card-h">
+        <div><b className="lg-row nk-rharc-t"><Mark id="ROBINHOOD" size={22} />Robinhood Chain <span aria-hidden>⇄</span><Mark id="ARC" size={22} />Arc</b><p>{dir === "stock" ? "Sell Stock Tokens on Robinhood, get USDC on Arc from a 1inch Aqua maker." : "USDC both ways, burned and minted by Circle CCTP V2. Public testnets."}</p></div>
+        <span className={`nk-pill ${dir === "stock" ? "fork" : "live"}`}>{dir === "stock" ? "fork demo" : "testnets"}</span>
+      </div>
+      <div className="nk-band nk-markets" role="tablist" aria-label="Direction">
+        {([["in", "Robinhood → Arc"], ["out", "Arc → Robinhood"], ["stock", "Stocks → USDC"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={dir === k} aria-pressed={dir === k} onClick={() => setDir(k)}>{l}</button>)}
+      </div>
+      <PathSteps kind={dir === "stock" ? "stock" : dir === "out" ? "out" : "in"} />
+      {dir === "in" ? <CctpCard w={w} from0="robinhood-testnet" lock bare /> : dir === "out" ? <ArcOut /> : <XChainSwap w={w} />}
+    </section>
+  );
+}
+
+/** The three steps of each cross-chain path, drawn from what the code does. */
+function PathSteps({ kind }: { kind: "in" | "out" | "stock" }) {
+  const steps = kind === "stock" ? [
+    { m: "ROBINHOOD", t: "Escrow on Robinhood", d: "NorenCrossChainEscrow locks your Stock Token and reads its Chainlink price" },
+    { m: "CHAINLINK", t: "Chainlink CRE carries the order", d: "with the price round, to NorenCrossChainSettler on Arc" },
+    { m: "1INCH", t: "Aqua maker settles on Arc", d: "its Chainlink-pegged strategy pays you USDC; CRE carries the fill back and the escrow releases the stock to the maker" },
+  ] : kind === "out" ? [
+    { m: "ARC", t: "Burn on Arc", d: "TokenMessengerV2.depositForBurn, fast finality" },
+    { m: "CIRCLE", t: "Circle attests", d: "Iris signs the burn message" },
+    { m: "ROBINHOOD", t: "Mint on Robinhood Chain", d: "MessageTransmitterV2.receiveMessage, sent from this browser" },
+  ] : [
+    { m: "ROBINHOOD", t: "Burn on Robinhood Chain", d: "TokenMessengerV2 burns your USDC and names NorenArcHook as the only contract that may finish it on Arc" },
+    { m: "CIRCLE", t: "Circle attests", d: "Iris signs the burn message" },
+    { m: "ARC", t: "Mint + hook on Arc", d: "NorenArcHook mints it and runs the action: your wallet here; a private balance, an invoice or an Aqua order when a hook rides along" },
+  ];
+  return (
+    <ol className="nk-path" aria-label="How it moves">
+      {steps.map((s, i) => <li key={s.t}><span className="nk-path-n"><Mark id={s.m} size={26} /><i>{i + 1}</i></span><div><b>{s.t}</b><small>{s.d}</small></div></li>)}
+    </ol>
   );
 }
 

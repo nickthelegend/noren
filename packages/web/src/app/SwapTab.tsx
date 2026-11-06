@@ -1,6 +1,8 @@
 /**
- * Swap: Stock Tokens, ETH and USDG on Robinhood Chain, best execution between 1inch Aqua makers and Uniswap v4.
- * "Cross-chain" sells a Stock Token on Robinhood for USDC on Arc from an Arc Aqua maker (XChainSwap, fork demo).
+ * Swap: best price via Uniswap v4; Noren's 1inch Aqua maker fills only when its Chainlink-pegged quote beats it.
+ * Three markets: USDC → EURC on the public Arc testnet (ArcSwap, real transactions), Stock Tokens, ETH and USDG on
+ * the Robinhood Chain fork, and "Cross-chain", which sells a Stock Token on Robinhood for USDC on Arc from an Arc
+ * Aqua maker (XChainSwap, fork demo). Swaps are public.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
@@ -8,8 +10,9 @@ import { msgOf } from "../ui";
 import type { Wallet } from "./NorenApp";
 import { swapper, type RouteMiss, type RouteQuote, type SwapQuote } from "./swap";
 import { TOKENS, USDG_TOKEN, fmtUnits, parseAmount, tokenBy, type Token } from "./tokens";
-import { Band, Card, Result, Spin, Toggle, TokenButton, shortHex } from "./kit";
+import { Band, Card, Result, Spin, TokenButton, shortHex } from "./kit";
 import { XChainSwap } from "./XChainSwap";
+import { ArcSwap } from "./ArcSwap";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
 
@@ -27,7 +30,8 @@ export function SwapTab({ w }: { w: Wallet }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
-  const [xc, setXc] = useState(false);
+  const [market, setMarket] = useState<"arc" | "rh" | "xc">("arc");
+  const xc = market === "xc";
   const seq = useRef(0);
   const amountIn = useMemo(() => parseAmount(amount, tin.decimals), [amount, tin.decimals]);
 
@@ -77,9 +81,11 @@ export function SwapTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Swap">
-        <div className="nk-card-h"><b>Swap</b>{xc ? <span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />→<Mark id="ARC" size={16} />fork demo</span> : <span className={`nk-pill ${q?.marketClosed ? "warn" : "live"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood Chain</>}</span>}</div>
-        <Toggle on={xc} onChange={setXc} title="Cross-chain" hint="Sell stock on Robinhood, get USDC on Arc from a 1inch Aqua maker" label="Cross-chain swap" />
-        {xc ? <XChainSwap w={w} /> : <>
+        <div className="nk-card-h"><div><b>Swap</b><p>Best price via Uniswap v4; Noren's Aqua maker fills when it beats it.</p></div>{market === "arc" ? <span className="nk-pill live"><Mark id="ARC" size={16} />Arc testnet</span> : xc ? <span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />→<Mark id="ARC" size={16} />fork demo</span> : <span className={`nk-pill ${q?.marketClosed ? "warn" : "fork"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood fork</>}</span>}</div>
+        <div className="nk-band nk-markets" role="tablist" aria-label="Market">
+          {([["arc", "USDC → EURC on Arc"], ["rh", "Stocks on Robinhood"], ["xc", "Stock → USDC on Arc"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={market === k} aria-pressed={market === k} onClick={() => setMarket(k)}>{l}</button>)}
+        </div>
+        {market === "arc" ? <ArcSwap /> : xc ? <XChainSwap w={w} /> : <>
         <div className="nk-box">
           <label htmlFor="nk-in"><span>You pay</span></label>
           <div className="nk-row">
@@ -103,7 +109,7 @@ export function SwapTab({ w }: { w: Wallet }) {
 
         {amountIn !== null && (q || loading) && (
           <div className="nk-routes" aria-label="Routes">
-            {loading && !q ? <div className="nk-skel"><i /><i /></div> : q?.routes.map((r) => <RouteRow key={r.id} r={r} best={best} tout={tout} fair={q.fair} />)}
+            {loading && !q ? <div className="nk-skel"><i /><i /></div> : [...(q?.routes ?? [])].sort((a, b) => (a.id === "v4" ? -1 : b.id === "v4" ? 1 : 0)).map((r) => <RouteRow key={r.id} r={r} best={best} tout={tout} fair={q?.fair ?? null} />)}
             {q?.routes.some((r) => r.id === "aqua") && <p className="nk-attrib">{SWAPVM_ATTRIBUTION}</p>}
           </div>
         )}
@@ -118,19 +124,19 @@ export function SwapTab({ w }: { w: Wallet }) {
         </>}
       </section>
 
-      <AnimatePresence mode="popLayout">{!xc && done && <SwapDone key={done.id} d={done} />}</AnimatePresence>
+      <AnimatePresence mode="popLayout">{market === "rh" && done && <SwapDone key={done.id} d={done} />}</AnimatePresence>
     </div>
   );
 }
 
 function RouteRow({ r, best, tout, fair }: { r: RouteQuote | RouteMiss; best: RouteQuote | null; tout: Token; fair: bigint | null }) {
-  const name = r.id === "aqua" ? "1inch Aqua maker" : "Uniswap v4";
+  const name = r.id === "aqua" ? "Noren's Aqua maker" : "Uniswap v4";
   if (!("out" in r)) return (
     <div className="nk-route" data-dead="true"><Mark id={r.id === "aqua" ? "1INCH" : "UNISWAP"} size={32} /><div><b>{name}</b><small>{r.error}</small></div><div className="r"><b>–</b></div></div>
   );
   const isBest = best === r;
   const diff = best && !isBest ? best.out - r.out : 0n;
-  const detail = r.id === "aqua" ? `SwapVM order pegged to Chainlink · maker ${shortHex(r.maker, 4)} · ${(r.spreadBps / 100).toFixed(2)}% spread` : `Pool ${(r.key.fee / 10_000).toFixed(2)}% fee · tick spacing ${r.key.tickSpacing} · no hooks`;
+  const detail = r.id === "aqua" ? `Fills only when it beats Uniswap · pegged to Chainlink · maker ${shortHex(r.maker, 4)} · ${(r.spreadBps / 100).toFixed(2)}% spread` : `Default route · pool ${(r.key.fee / 10_000).toFixed(2)}% fee · tick spacing ${r.key.tickSpacing} · no hooks`;
   return (
     <div className="nk-route" data-best={isBest}>
       <Mark id={r.id === "aqua" ? "1INCH" : "UNISWAP"} size={32} />

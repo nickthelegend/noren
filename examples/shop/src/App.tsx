@@ -260,7 +260,7 @@ function CheckoutButton() {
       <button className="btn btn-noren btn-wide" onClick={start} disabled={busy || !config || lines.length === 0} aria-busy={busy}>
         {busy ? 'Opening Noren…' : <>Checkout with <NorenMark /> <span className="noren-word">Noren</span></>}
       </button>
-      <p className="noren-note">Pay with USDC, privately from a shielded balance, with stocks, or in 3 parts on credit. Pay privately and Aubelle never sees your wallet.</p>
+      <p className="noren-note">Four ways at Noren's checkout: pay privately, pay with USDC, pay with stocks, or Pay in 3 / pay later, privately. Pay privately (or later, privately) and Aubelle never sees your wallet.</p>
       {fail && <p className="error" role="alert">{fail}</p>}
     </>
   );
@@ -332,7 +332,7 @@ function BagPage() {
 }
 
 // ---------------- Order confirmation ----------------
-const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, paid in USDG on Robinhood Chain', credit: 'Noren · Pay in 3 on credit' };
+const METHOD: Record<string, string> = { usdc: 'Noren · USDC on Arc', private: 'Noren · private balance (privacy pool)', stocks: 'Noren · stocks, paid in USDG on Robinhood Chain', credit: 'Noren · Pay in 3 / pay later on credit' };
 const short = (s: string, n = 6) => s.length > 2 * n + 2 ? `${s.slice(0, n + 2)}…${s.slice(-n)}` : s;
 /**
  * The payment transaction, opened in a new tab: the Arc testnet explorer when Noren runs on the public network, and
@@ -419,7 +419,7 @@ function IntegrationPanel() {
         <p>Aubelle's whole payment integration is one file of {lines} lines on the shop's backend: create a Noren invoice for the bag, send the shopper to Noren's hosted checkout, and trust the order only after a signed webhook.</p>
         <ol className="steps">
           <li><b>Invoice</b> for the bag total, with the order ID in metadata.</li>
-          <li><b>Redirect</b> to Noren's hosted checkout: USDC, a private balance, stocks or Pay in 3.</li>
+          <li><b>Redirect</b> to Noren's hosted checkout: pay privately, with USDC, with stocks, or Pay in 3 / pay later, privately.</li>
           <li><b>Webhook</b> signed with HMAC-SHA256; the shop verifies it and marks the order paid.</li>
         </ol>
         <p className="muted small">The secret key stays on the server. Prices are recomputed there, never taken from the browser.</p>

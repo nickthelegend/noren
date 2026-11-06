@@ -13,6 +13,7 @@ import { TOKENS, USDG_TOKEN, fmtUnits, parseAmount } from "./tokens";
 import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
+import { AquaMakerPanel } from "./AquaMaker";
 
 const symOf = (a: Address) => TOKENS.find((t) => t.address.toLowerCase() === a.toLowerCase())?.sym ?? shortHex(a, 4);
 type Pos = { debt: bigint; limit: bigint; health: bigint; ltvBps: number; liqLtvBps: number; rateBps: number; collateral8: bigint; liq: Record<string, bigint> };
@@ -104,6 +105,13 @@ export function BorrowTab({ w }: { w: Wallet }) {
           </>
         )}
       </section>
+
+      {!!w.oc.credit?.vault && <AquaMakerPanel w={w} maker={w.oc.credit.vault as Address} title="The lender pool is an Aqua maker" sub="NorenVault on Robinhood Chain: the USDG you borrow here"
+        jobs={{
+          loans: <>Lends the USDG you borrow here and funds NorenCredit's Pay-in-3 plans. Your collateral is Earn shares, which are Aqua liquidity too.</>,
+          fees: <>Idle USDG backs Aqua strategies that buy stock below the Chainlink price; fills add to the pool's NAV.</>,
+          liquidations: <>Below health 1.00, NorenBorrow sells your collateral to Aqua makers and the USDG comes back here. Pay in 3 plans use partial Dutch auctions instead (Pay tab).</>,
+        }} />}
 
       <Card title="Collateral" sub="Earn receipt shares you lock here back your loan; unlocked shares keep earning in your wallet">
         <div className="nk-pad">

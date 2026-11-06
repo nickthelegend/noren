@@ -43,7 +43,13 @@ export function Checkout({ id }: { id: string }) {
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
   // Private by default: every other method is a public payment and says so.
-  const [method, setMethod] = useState<"usdc" | "private" | "credit-private" | "stocks" | "credit" | "xchain">("private");
+  // The Noren app hands off with ?m=usdc|stocks|later so the shop checkout and the app share the same four ways.
+  const [method, setMethod] = useState<"usdc" | "private" | "credit-private" | "stocks" | "credit" | "xchain">(() => {
+    const m = new URLSearchParams(location.hash.split("?")[1] ?? "").get("m");
+    return m === "usdc" ? "usdc" : m === "stocks" ? "stocks" : m === "later" ? "credit-private" : m === "xchain" ? "xchain" : "private";
+  });
+  const [more, setMore] = useState(method === "xchain");
+  const later = method === "credit" || method === "credit-private";
   // Set when "Pay later, privately" drew on a credit line for this payment (the merchant still sees a private payment).
   const [drawnOnCredit, setDrawnOnCredit] = useState<{ lineId: string; tx: string; amount: bigint } | null>(null);
   const [net] = useNet();
@@ -177,13 +183,21 @@ export function Checkout({ id }: { id: string }) {
             <>
               <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "credit-private" ? <>Pay <em>later</em>, privately</> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : method === "xchain" ? <>Pay from <em>another chain</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
-              <div className="co-methods four six" role="tablist" aria-label="Payment method">
-                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · {shop} never learns who paid</small></span></button>
-                <button role="tab" aria-selected={method === "credit-private"} disabled={working} onClick={() => setMethod("credit-private")}><Icon.eyeOff /><span><b>Pay later, privately</b><small>Private · your credit line tops up your private balance</small></span></button>
+              <div className="co-methods four" role="tablist" aria-label="Payment method">
+                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Default · USDC from your private balance; {shop} never learns who paid</small></span></button>
                 <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Public · your wallet on Arc</small></span></button>
                 <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Public · sold to the best price</small></span></button>
-                <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>Public · from your credit line</small></span></button>
-                <button role="tab" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}><Mark id="CIRCLE" size={20} /><span><b>Pay from another chain</b><small>Public · USDC from Base, Arbitrum, Ethereum and 7 more over Circle CCTP</small></span></button>
+                <button role="tab" aria-selected={later} disabled={working} onClick={() => setMethod("credit-private")}><Icon.layers /><span><b>Pay in 3 / Pay later, privately</b><small>Your credit line · private by default</small></span></button>
+              </div>
+              {later && (
+                <div className="co-sub" role="radiogroup" aria-label="Pay later">
+                  <button role="radio" aria-checked={method === "credit-private"} disabled={working} onClick={() => setMethod("credit-private")}><Icon.eyeOff /> Pay later, privately</button>
+                  <button role="radio" aria-checked={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /> Pay in 3 · public</button>
+                </div>
+              )}
+              <div className={`co-more ${more ? "open" : ""}`}>
+                <button type="button" className="co-more-t" aria-expanded={more} onClick={() => setMore((o) => !o)}><Mark id="CIRCLE" size={18} /><span>Pay from another chain</span><small>Public · USDC from 10 chains over Circle CCTP</small><i aria-hidden>{more ? "−" : "+"}</i></button>
+                {more && <button role="tab" className="co-more-go" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}>{method === "xchain" ? "Selected" : "Use this"}</button>}
               </div>
               {method !== "private" && method !== "credit-private" && method !== "xchain" && (
                 <div className="co-fund" role="note" aria-label="Public payment">

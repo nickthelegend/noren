@@ -1,5 +1,6 @@
 /**
- * The Noren app: the customer's side of Noren, one card per task. Swap, Bridge, Earn, Borrow, Credit, Pay.
+ * The Noren app: the customer's side of Noren. Home (balance, Pay, recent activity), then one card per task: Pay,
+ * Bridge, Earn, Credit, Borrow, Swap.
  * Every number is read from the two local forks (Robinhood Chain mainnet snapshot, Arc testnet fork) or a Noren
  * service; anything not running says "Setup required".
  */
@@ -22,14 +23,15 @@ import { EarnTab } from "./EarnTab";
 import { BorrowTab } from "./BorrowTab";
 import { CreditTab } from "./CreditTab";
 import { PayTab } from "./PayTab";
+import { HomeTab } from "./HomeTab";
 import { LiveArc, NetSwitch } from "../LiveArc";
 import { useNet } from "../network";
 import { Mark } from "../logos";
 
-export const TABS = ["swap", "bridge", "earn", "borrow", "credit", "pay"] as const;
+export const TABS = ["home", "pay", "bridge", "earn", "credit", "borrow", "swap"] as const;
 export type Tab = (typeof TABS)[number];
-const LABEL: Record<Tab, string> = { swap: "Swap", bridge: "Bridge", earn: "Earn", borrow: "Borrow", credit: "Credit", pay: "Pay" };
-const tabFromHash = (): Tab => { const m = /^#\/(?:app|credit)\/(\w+)/.exec(location.hash); return (TABS as readonly string[]).includes(m?.[1] ?? "") ? (m![1] as Tab) : "swap"; };
+const LABEL: Record<Tab, string> = { home: "Home", pay: "Pay", bridge: "Bridge", earn: "Earn", credit: "Credit", borrow: "Borrow", swap: "Swap" };
+const tabFromHash = (): Tab => { const m = /^#\/(?:app|credit)\/(\w+)/.exec(location.hash); return (TABS as readonly string[]).includes(m?.[1] ?? "") ? (m![1] as Tab) : "home"; };
 
 export type Wallet = {
   cfg: Config; oc: Onchain;
@@ -41,7 +43,7 @@ export function NorenApp() {
   const { cfg, err } = useConfig();
   const [tab, setTab] = useState<Tab>(tabFromHash);
   useEffect(() => { const on = () => setTab(tabFromHash()); addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
-  const go = (t: Tab) => { history.replaceState(null, "", `#/app/${t}`); setTab(t); };
+  const go = (t: Tab) => { history.replaceState(null, "", `#/app/${t}`); setTab(t); scrollTo({ top: 0 }); };
   const oc = useMemo(() => (cfg ? makeOnchain(cfg) : null), [cfg]);
   const [hold, setHold] = useState<Wallet["hold"]>(null);
   const [holdErr, setHoldErr] = useState<string | null>(null);
@@ -97,7 +99,8 @@ export function NorenApp() {
         <main className="nk-main">
           {net === "live" ? <div className="nk-col"><LiveArc context="app" /></div> : !w ? <div className="nk-col"><div className="nk-skel"><i /><i /><i /></div></div> : (
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={tab} className="nk-pane" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
+              <motion.div key={tab} className={`nk-pane${tab === "home" ? " wide" : ""}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
+                {tab === "home" && <HomeTab w={w} go={go} />}
                 {tab === "swap" && <SwapTab w={w} />}
                 {tab === "bridge" && <BridgeTab w={w} />}
                 {tab === "earn" && <EarnTab w={w} />}
@@ -108,7 +111,7 @@ export function NorenApp() {
             </AnimatePresence>
           )}
         </main>
-        <p className="nk-foot">Test networks only. Robinhood Chain runs as a local snapshot of mainnet (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as a local testnet fork. No real money moves.</p>
+        <p className={`nk-foot${tab === "home" ? " wide" : ""}`}>Test networks only. Robinhood Chain runs as a local snapshot of mainnet (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as a local testnet fork, except Swap on Arc and Bridge, which use the public testnets. No real money moves.</p>
       </div>
     </MotionConfig>
   );

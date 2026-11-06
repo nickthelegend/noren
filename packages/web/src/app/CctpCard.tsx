@@ -14,8 +14,8 @@ import { Mark } from "../logos";
 import { CCTP_CHAINS, CCTP_RUNS, CHAIN_MARK, runLabel, SOURCE_CHAINS, shortChain, type CctpChainKey, type SourceChainKey } from "../crosschain";
 import { fmt6, fmtGas, useCctpFlow, useFastFee, useSourceBalances, type Flow } from "../cctp-flow";
 
-export function CctpCard({ w }: { w: Wallet }) {
-  const [from, setFrom] = useState<SourceChainKey>("base-sepolia");
+export function CctpCard({ w, from0 = "base-sepolia", lock, exclude, title = "Bring USDC to Arc", sub = "From 10 chains, burned and minted by Circle. No wrapped tokens.", bare }: { w: Wallet; from0?: SourceChainKey; lock?: boolean; exclude?: SourceChainKey[]; title?: string; sub?: string; bare?: boolean }) {
+  const [from, setFrom] = useState<SourceChainKey>(from0);
   const [amount, setAmount] = useState("1");
   const [fast, setFast] = useState(true);
   const [relay, setRelay] = useState<RelayMode | null>(null);
@@ -32,7 +32,7 @@ export function CctpCard({ w }: { w: Wallet }) {
   const running = flow?.phase === "running";
   // Finish it myself only when this key can pay Arc gas (USDC is Arc's gas token); otherwise wait for the CRE relay.
   const mode: RelayMode = relay ?? (arc.b && arc.b.gas > 0n ? "self" : "cre");
-  useEffect(() => { if (flow?.phase === "done") setTick((t) => t + 1); }, [flow?.phase]);
+  useEffect(() => { if (flow?.phase === "done") { setTick((t) => t + 1); setAmount(""); } }, [flow?.phase]);
 
   const missing = !b ? null
     : b.gas === 0n ? `${src.name} gas (${src.gas}) for ${shortHex(who, 4)}`
@@ -43,10 +43,10 @@ export function CctpCard({ w }: { w: Wallet }) {
   const go = () => amt && run({ from, amount: amt, recipient: who, fast, relay: mode });
 
   return (
-    <section className="nk-card" aria-label="Bring USDC to Arc">
-      <div className="nk-card-h"><div><b>Bring USDC to Arc</b><p>From 10 chains, burned and minted by Circle. No wrapped tokens.</p></div><span className="nk-pill live"><Mark id="CIRCLE" size={16} />CCTP V2 · testnets</span></div>
+    <section className={bare ? "nk-bare" : "nk-card"} aria-label={title}>
+      {!bare && <div className="nk-card-h"><div><b>{title}</b><p>{sub}</p></div><span className="nk-pill live"><Mark id="CIRCLE" size={16} />CCTP V2 · testnets</span></div>}
       <div className="nk-box">
-        <span className="nk-l"><span>You send</span><button type="button" className="nk-chainbtn" onClick={() => setPicking(true)} disabled={running} aria-label={`Source chain: ${src.name}. Change`}><Mark id={CHAIN_MARK[from]} size={18} />{src.name}<Caret /></button></span>
+        <span className="nk-l"><span>You send</span><button type="button" className="nk-chainbtn" onClick={() => setPicking(true)} disabled={running || lock} aria-label={`Source chain: ${src.name}. Change`}><Mark id={CHAIN_MARK[from]} size={18} />{src.name}<Caret /></button></span>
         <div className="nk-row"><input inputMode="decimal" aria-label="USDC to bring to Arc" placeholder="0" value={amount} disabled={running} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC" }} />USDC</span></div>
         <div className="nk-sub"><span>{err ? <span className="nk-bad-t">{err}</span> : b ? `${fmtGas(b.gas)} ${src.gas} for gas` : "reading balances…"}</span><span>Balance {b ? <button type="button" onClick={() => setAmount(String(Number(b.usdc) / 1e6))}>{fmt6(b.usdc)}</button> : "–"}</span></div>
       </div>
@@ -59,7 +59,7 @@ export function CctpCard({ w }: { w: Wallet }) {
       <Band label="Speed" value={fast ? "fast" : "std"} options={["fast", "std"]} onChange={(v) => setFast(v === "fast")} fmt={(v) => (v === "fast" ? "Fast" : "Standard")} />
       <Band label="Finished on Arc by" value={mode} options={["cre", "self"]} onChange={setRelay} fmt={(v) => (v === "cre" ? "Chainlink CRE" : "This browser")} />
       {missing && !running && (
-        <div className="nk-setup" role="status"><span className="nk-tag">Setup required</span><b>Needs {missing}.</b><p>This is a test key kept in this browser. Fund it on {src.name} at <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">faucet.circle.com</a> (USDC) and the chain's gas faucet, then <button type="button" className="nk-linkbtn" onClick={() => setTick((t) => t + 1)}>check again</button>.</p><p className="nk-addr"><code>{who}</code><Copy text={who} /></p></div>
+        <div className="nk-setup" role="status"><span className="nk-tag">Setup required</span><b>Needs {missing}.</b><p>This is a test key kept in this browser. {from === "robinhood-testnet" ? <>Circle's faucet has no Robinhood testnet USDC: send some from Arc first (Arc → Robinhood), and get Robinhood testnet ETH for gas, then</> : <>Fund it on {src.name} at <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">faucet.circle.com</a> (USDC) and the chain's gas faucet, then</>} <button type="button" className="nk-linkbtn" onClick={() => setTick((t) => t + 1)}>check again</button>.</p><p className="nk-addr"><code>{who}</code><Copy text={who} /></p></div>
       )}
       <button className="nk-cta" disabled={running || !amt || !!missing || !b} onClick={go}>
         {running ? <><Spin /> {stepText(flow!)}</> : !amt ? "Enter an amount" : !b && !err ? "Reading balances…" : missing ? "Fund the test key first" : `Bring ${fmt6(amt)} USDC from ${shortChain(from)}`}
@@ -67,7 +67,7 @@ export function CctpCard({ w }: { w: Wallet }) {
       <p className="nk-fine">Public testnets, real transactions. Every Noren burn names NorenArcHook as the only contract allowed to finish it on Arc. The Chainlink CRE relay watches all 10 chains, fetches Circle's attestation with DON consensus and writes it to Arc; it runs with <code>cre workflow simulate --broadcast</code> today, not on a deployed DON, so choose “This browser” to finish the mint yourself when no relay is running.</p>
 
       <AnimatePresence initial={false}>{flow && <FlowCard key={flow.startedAt} f={flow} onClose={flow.phase === "running" ? undefined : reset} />}</AnimatePresence>
-      <AnimatePresence>{picking && <ChainSheet current={from} onClose={() => setPicking(false)} onPick={(k) => { setFrom(k); setPicking(false); }} />}</AnimatePresence>
+      <AnimatePresence>{picking && <ChainSheet current={from} exclude={exclude} onClose={() => setPicking(false)} onPick={(k) => { setFrom(k); setPicking(false); }} />}</AnimatePresence>
     </section>
   );
 }
@@ -98,7 +98,7 @@ export function FlowCard({ f, onClose, title }: { f: Flow; onClose?: () => void;
 
 const Caret = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m6 9 6 6 6-6" /></svg>;
 
-export function ChainSheet({ current, onClose, onPick }: { current: CctpChainKey; onClose: () => void; onPick: (k: SourceChainKey) => void }) {
+export function ChainSheet({ current, onClose, onPick, exclude }: { current: CctpChainKey; onClose: () => void; onPick: (k: SourceChainKey) => void; exclude?: SourceChainKey[] }) {
   const first = useRef<HTMLButtonElement>(null);
   useEffect(() => { first.current?.focus(); const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   return (
@@ -106,7 +106,7 @@ export function ChainSheet({ current, onClose, onPick }: { current: CctpChainKey
       <motion.div className="nk-sheet" {...pop}>
         <div className="nk-sheet-h"><b>Bring USDC from</b><button className="nk-x" onClick={onClose} aria-label="Close">×</button></div>
         <ul className="nk-list" role="listbox" aria-label="CCTP source chains">
-          {SOURCE_CHAINS.map((c, i) => (
+          {SOURCE_CHAINS.filter((c) => !exclude?.includes(c.key)).map((c, i) => (
             <li key={c.key}>
               <button ref={i === 0 ? first : undefined} role="option" aria-selected={c.key === current} onClick={() => onPick(c.key)}>
                 <Mark id={CHAIN_MARK[c.key]} size={36} />
@@ -122,17 +122,17 @@ export function ChainSheet({ current, onClose, onPick }: { current: CctpChainKey
 }
 
 /** The CCTP transfers Noren already ran on public testnets, both legs linked. */
-export function RecentCctp() {
-  const runs = CCTP_RUNS.filter((r) => r.to === "arc-testnet");
+export function RecentCctp({ all }: { all?: boolean }) {
+  const runs = CCTP_RUNS.filter((r) => all || r.to === "arc-testnet");
   return (
     <section className="nk-card" aria-label="Recent live transfers into Arc">
-      <div className="nk-card-h"><div><b>Already done on testnets</b><p>Real CCTP V2 transfers into Arc, finished by Noren's Chainlink CRE relay.</p></div></div>
+      <div className="nk-card-h"><div><b>Already done on testnets</b><p>Real CCTP V2 transfers{all ? ", both directions" : " into Arc"}, with both legs linked.</p></div></div>
       <ul className="nk-runs">
         {runs.map((r) => (
           <li key={r.burnTx}>
             <Mark id={CHAIN_MARK[r.from]} size={28} />
-            <div><b>{shortChain(r.from)} → Arc · {fmt6(r.minted)} USDC</b><small>{runLabel(r)}</small></div>
-            <div className="r"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink chain="arc-live" hash={r.mintTx} n={4}>mint</TxLink></div>
+            <div><b>{shortChain(r.from)} → {shortChain(r.to)} · {fmt6(r.minted)} USDC</b><small>{runLabel(r)}</small></div>
+            <div className="r"><TxLink explorer={CCTP_CHAINS[r.from].explorer} hash={r.burnTx} n={4}>burn</TxLink><TxLink explorer={CCTP_CHAINS[r.to].explorer} hash={r.mintTx} n={4}>mint</TxLink></div>
           </li>
         ))}
       </ul>

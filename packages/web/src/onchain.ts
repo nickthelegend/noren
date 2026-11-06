@@ -222,6 +222,8 @@ export function makeOnchain(cfg: Config) {
       const c = need();
       return { pub: c, wallet: createWalletClient({ chain: rhChain!, transport: http(credit!.robinhoodRpc!, { timeout: 45_000 }), account }), chain: rhChain!, account };
     },
+    /** The Arc fork's public client (reads only). */
+    arcPublic: () => arc,
     arcGas: () => arc.getBalance({ address: account.address }),
     arcUsdc: () => arc.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),
   };

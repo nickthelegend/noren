@@ -4,5 +4,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 // network (*.live.test.ts) run in their own package (see TESTING.md) and are excluded here. The demo shop's tests use
 // node:test and run with `pnpm --dir examples/shop test`.
 export default defineConfig({
-  test: { exclude: [...configDefaults.exclude, '**/*.fork.test.ts', '**/*.live.test.ts', '**/out/**', '**/lib/**', 'examples/shop/**'] },
+  test: { exclude: [...configDefaults.exclude, '**/*.fork.test.ts',
+    ...(process.argv.some((arg) => arg.endsWith('.live.test.ts')) ? [] : ['**/*.live.test.ts']),
+    '**/out/**', '**/lib/**', 'examples/shop/**'] },
 });
