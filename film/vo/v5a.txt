@@ -1,1 +1,1 @@
-Back at the café, a customer pays privately. Juhu Chai House gets its USDC — and the customer column just says: private.
+Back at the café, another customer pays privately. Their address isn't in the transaction, and Juhu Chai House just sees: private.

@@ -1,0 +1,104 @@
+[
+  {
+    "text": "She",
+    "start": 0.05,
+    "end": 0.25,
+    "id": "w0"
+  },
+  {
+    "text": "never",
+    "start": 0.25,
+    "end": 0.67,
+    "id": "w1"
+  },
+  {
+    "text": "has",
+    "start": 0.67,
+    "end": 0.92,
+    "id": "w2"
+  },
+  {
+    "text": "to",
+    "start": 0.92,
+    "end": 1.09,
+    "id": "w3"
+  },
+  {
+    "text": "sell",
+    "start": 1.09,
+    "end": 1.46,
+    "id": "w4"
+  },
+  {
+    "text": "66%",
+    "start": 1.46,
+    "end": 2.3,
+    "id": "w5"
+  },
+  {
+    "text": "of",
+    "start": 2.3,
+    "end": 2.54,
+    "id": "w6"
+  },
+  {
+    "text": "its",
+    "start": 2.54,
+    "end": 2.76,
+    "id": "w7"
+  },
+  {
+    "text": "value",
+    "start": 2.9,
+    "end": 3.51,
+    "id": "w8"
+  },
+  {
+    "text": "today",
+    "start": 3.58,
+    "end": 3.93,
+    "id": "w9"
+  },
+  {
+    "text": "up",
+    "start": 4.3,
+    "end": 4.57,
+    "id": "w10"
+  },
+  {
+    "text": "to",
+    "start": 4.67,
+    "end": 4.73,
+    "id": "w11"
+  },
+  {
+    "text": "80%",
+    "start": 4.73,
+    "end": 5.28,
+    "id": "w12"
+  },
+  {
+    "text": "as",
+    "start": 5.28,
+    "end": 5.4,
+    "id": "w13"
+  },
+  {
+    "text": "her",
+    "start": 5.4,
+    "end": 5.59,
+    "id": "w14"
+  },
+  {
+    "text": "reputation",
+    "start": 5.59,
+    "end": 6.24,
+    "id": "w15"
+  },
+  {
+    "text": "grows.",
+    "start": 6.24,
+    "end": 6.76,
+    "id": "w16"
+  }
+]

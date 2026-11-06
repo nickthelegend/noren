@@ -1,0 +1,44 @@
+[
+  {
+    "text": "a",
+    "start": 0.04,
+    "end": 0.07,
+    "id": "w0"
+  },
+  {
+    "text": "checkout",
+    "start": 0.07,
+    "end": 0.64,
+    "id": "w1"
+  },
+  {
+    "text": "she",
+    "start": 0.64,
+    "end": 0.85,
+    "id": "w2"
+  },
+  {
+    "text": "can",
+    "start": 0.85,
+    "end": 1.06,
+    "id": "w3"
+  },
+  {
+    "text": "pay",
+    "start": 1.06,
+    "end": 1.27,
+    "id": "w4"
+  },
+  {
+    "text": "in",
+    "start": 1.27,
+    "end": 1.41,
+    "id": "w5"
+  },
+  {
+    "text": "3.",
+    "start": 1.41,
+    "end": 1.83,
+    "id": "w6"
+  }
+]

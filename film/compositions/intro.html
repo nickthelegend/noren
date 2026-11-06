@@ -37,13 +37,14 @@
       </div>
     </div>
     <div class="win" id="intro-win">
-      <video id="intro-v0" class="clip" data-start="5.000" data-duration="10.000" data-track-index="1" src="assets/footage/intro-0.mp4" muted playsinline></video>
+      <video id="intro-v0" class="clip" data-start="5.000" data-duration="13.800" data-track-index="1" src="assets/footage/intro-0.mp4" muted playsinline></video>
     </div>
     <div class="bar" id="in-bar">
       <div class="tag" id="intro-tag"><i></i>01 · Noren</div>
-      <div id="intro-c0" class="cap clip" data-start="5.050" data-duration="3.100" data-track-index="3"><span class="in">Your balance, your salary, <em>every payment</em> you've made</span></div>
-      <div id="intro-c1" class="cap clip" data-start="8.300" data-duration="2.500" data-track-index="3"><span class="in">Spend your stocks? <em>Sell them first.</em></span></div>
-      <div id="intro-c2" class="cap clip" data-start="10.950" data-duration="4.000" data-track-index="3"><span class="in">Noren lets merchants accept stablecoins, stocks or credit — <em>privately</em></span></div>
+      <div id="intro-c0" class="cap clip" data-start="5.050" data-duration="2.650" data-track-index="3"><span class="in">Your balance, your salary, <em>every payment</em> you've made</span></div>
+      <div id="intro-c1" class="cap clip" data-start="7.900" data-duration="3.200" data-track-index="3"><span class="in">Spend your stocks? <em>Sell them first.</em></span></div>
+      <div id="intro-c2" class="cap clip" data-start="11.450" data-duration="1.650" data-track-index="3"><span class="in">Noren fixes <em>both</em></span></div>
+      <div id="intro-c3" class="cap clip" data-start="13.150" data-duration="5.550" data-track-index="3"><span class="in">Noren lets merchants accept stablecoins, stocks or credit — <em>privately</em></span></div>
       <div class="net" id="intro-net">noren-app-beta.vercel.app · the real website</div>
     </div>
   </div>
@@ -60,11 +61,13 @@
     tl.fromTo("#intro-win", { y: 1100 }, { y: 0, duration: 0.7, ease: "power3.out" }, 4.85);
     tl.fromTo("#in-bar", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 5.0);
     tl.fromTo("#intro-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 5.07);
-    tl.to("#intro-c0 .in", { opacity: 0, duration: 0.15 }, 7.98);
-    tl.fromTo("#intro-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 8.32);
-    tl.to("#intro-c1 .in", { opacity: 0, duration: 0.15 }, 10.63);
-    tl.fromTo("#intro-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 10.97);
-    tl.to("#intro-c2 .in", { opacity: 0, duration: 0.25 }, 14.65);
+    tl.to("#intro-c0 .in", { opacity: 0, duration: 0.15 }, 7.53);
+    tl.fromTo("#intro-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 7.92);
+    tl.to("#intro-c1 .in", { opacity: 0, duration: 0.15 }, 10.93);
+    tl.fromTo("#intro-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 11.47);
+    tl.to("#intro-c2 .in", { opacity: 0, duration: 0.15 }, 12.93);
+    tl.fromTo("#intro-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 13.17);
+    tl.to("#intro-c3 .in", { opacity: 0, duration: 0.25 }, 18.40);
     window.__timelines["intro"] = tl;
   </script>
 </template>

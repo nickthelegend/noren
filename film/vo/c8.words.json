@@ -1,0 +1,44 @@
+[
+  {
+    "text": "She",
+    "start": 0.01,
+    "end": 0.22,
+    "id": "w0"
+  },
+  {
+    "text": "repairs",
+    "start": 0.22,
+    "end": 0.74,
+    "id": "w1"
+  },
+  {
+    "text": "an",
+    "start": 0.74,
+    "end": 0.89,
+    "id": "w2"
+  },
+  {
+    "text": "installment",
+    "start": 0.89,
+    "end": 1.71,
+    "id": "w3"
+  },
+  {
+    "text": "from",
+    "start": 1.71,
+    "end": 2.01,
+    "id": "w4"
+  },
+  {
+    "text": "the",
+    "start": 2.01,
+    "end": 2.23,
+    "id": "w5"
+  },
+  {
+    "text": "app.",
+    "start": 2.23,
+    "end": 2.52,
+    "id": "w6"
+  }
+]

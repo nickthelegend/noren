@@ -1,0 +1,50 @@
+[
+  {
+    "text": "She",
+    "start": 0.05,
+    "end": 0.2,
+    "id": "w0"
+  },
+  {
+    "text": "can",
+    "start": 0.26,
+    "end": 0.44,
+    "id": "w1"
+  },
+  {
+    "text": "bring",
+    "start": 0.44,
+    "end": 0.81,
+    "id": "w2"
+  },
+  {
+    "text": "off-chain",
+    "start": 0.81,
+    "end": 1.44,
+    "id": "w3"
+  },
+  {
+    "text": "facts",
+    "start": 1.57,
+    "end": 1.84,
+    "id": "w4"
+  },
+  {
+    "text": "with",
+    "start": 1.84,
+    "end": 2.13,
+    "id": "w5"
+  },
+  {
+    "text": "reclaim",
+    "start": 2.18,
+    "end": 2.72,
+    "id": "w6"
+  },
+  {
+    "text": "to",
+    "start": 2.72,
+    "end": 2.95,
+    "id": "w7"
+  }
+]

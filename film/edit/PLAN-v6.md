@@ -122,3 +122,29 @@ sentence ends, LRA 3.3; turbo_v2_5 v1 1.69 st (3.31 st), LRA 3.0; v4b turbo had 
 five sentence pauses. The old declarative v1 measured 1.67 st. eleven_v3 was not retried (it said "No run" and
 "Arkwa" in the first test). v1, v4, v4e and v5c were regenerated once: whisper heard an extra word at v1's dash and garbled lines in v4e and v5c, so the dash became a colon; v4's
 "pays privately" was checked with whisper medium.en.
+
+## v6-final2 (3:49): everything back, the credit section on the local stack
+
+Nick rejected v6-final for missing the core demos. v6-final2 brings back every use case and runs to 229.3 s (ETHGlobal
+allows 2–4 min). The hosted credit was wiped and has no underwriter or CRE, so the whole credit section was recorded on
+the local full stack (`_wt/noren-final3`, `pnpm dev:all` + web, on the warmed Robinhood mainnet snapshot from
+`_wt/noren-v5`), badged "Local stack · Arc testnet fork + Robinhood Chain mainnet snapshot":
+
+| Take | What it shows (real fork transactions) |
+|---|---|
+| `lockup7` (new) | lock 1 NVDA → limit $124.26 (66%) → lock 2 more → $372.79 |
+| `qr7` (new) | World ID IDKit QR ("Connect your World ID"), then a Reclaim provider QR, waiting for the phone |
+| `world` | Nick's real Orb verification in World App (production, Nov 6), captioned as such |
+| ladder (off camera) | `dev-reputation-ladder.ts ontime/loan/attest` on the local fork: 3 on-time installments, a repaid loan, the ONCHAIN_REPAYMENT attestation (tx 0xb4bc…e6d7): tier 1 · 70% |
+| `credit4b` | limit $527.91 at 70%, "Recorded on-chain: proof type only", lock 3.9986 nNVDA → 527.70 USDC line via the underwriter + Chainlink CRE (6.6 s) |
+| `payin3` (new) | Pay in 3 at the checkout: 24.00 USDC from the line, "Paid on credit" |
+| `credit4c` | Pay later, privately: 20.00 USDC, proof 1.25 s, payer address in the tx: none |
+| `privcredit-m7` | Juhu Chai House (merchant) sees Customer: Private |
+| `repay3` | repay an installment, 21.33 USDC on Arc; CRE reports it to NorenCredit |
+| `credit4d` | after 3 real Aqua fills (`dev-maker-fill.ts`), NVDA fees pay the line down by 0.54 USDC |
+
+Recorder fix: the checkout binds the wallet when `/config` arrives; `credit4c` now holds `/config` 2.5 s so the
+browser-wallet restore lands first (the first attempt failed with "The active wallet changed").
+
+Narration: the story script extended for Earn, the credit steps, CCIP and the end positioning; the word "live" is gone
+from the voice (TTS read it as "liv"); same voice settings and stitching.

@@ -1,1 +1,1 @@
-Every time you pay a shop with crypto, you hand them your whole wallet: your balance, your salary, every payment you've ever made. And if you want to spend your stocks? You have to sell them first. We built Noren to fix both.
+Every time you pay a shop with crypto, you hand them your whole wallet: your balance, your salary, every payment you've ever made. And if you want to spend your stocks? You have to sell them first. Noren fixes both. Noren lets merchants accept stablecoins, stocks or credit — privately.

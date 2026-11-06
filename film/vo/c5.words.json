@@ -1,0 +1,104 @@
+[
+  {
+    "text": "Then",
+    "start": 0.05,
+    "end": 0.31,
+    "id": "w0"
+  },
+  {
+    "text": "she",
+    "start": 0.31,
+    "end": 0.55,
+    "id": "w1"
+  },
+  {
+    "text": "opens",
+    "start": 0.55,
+    "end": 0.9,
+    "id": "w2"
+  },
+  {
+    "text": "a",
+    "start": 0.96,
+    "end": 1.02,
+    "id": "w3"
+  },
+  {
+    "text": "credit",
+    "start": 1.02,
+    "end": 1.49,
+    "id": "w4"
+  },
+  {
+    "text": "line",
+    "start": 1.49,
+    "end": 1.7,
+    "id": "w5"
+  },
+  {
+    "text": "with",
+    "start": 1.92,
+    "end": 2.16,
+    "id": "w6"
+  },
+  {
+    "text": "her",
+    "start": 2.16,
+    "end": 2.4,
+    "id": "w7"
+  },
+  {
+    "text": "shares",
+    "start": 2.4,
+    "end": 2.86,
+    "id": "w8"
+  },
+  {
+    "text": "and",
+    "start": 2.93,
+    "end": 3.16,
+    "id": "w9"
+  },
+  {
+    "text": "Chainlink",
+    "start": 3.19,
+    "end": 4.02,
+    "id": "w10"
+  },
+  {
+    "text": "CRE",
+    "start": 4.02,
+    "end": 4.3,
+    "id": "w11"
+  },
+  {
+    "text": "carries",
+    "start": 4.4,
+    "end": 4.89,
+    "id": "w12"
+  },
+  {
+    "text": "the",
+    "start": 5.01,
+    "end": 5.2,
+    "id": "w13"
+  },
+  {
+    "text": "limit",
+    "start": 5.2,
+    "end": 5.48,
+    "id": "w14"
+  },
+  {
+    "text": "to",
+    "start": 5.71,
+    "end": 5.81,
+    "id": "w15"
+  },
+  {
+    "text": "ARK.",
+    "start": 5.81,
+    "end": 6.25,
+    "id": "w16"
+  }
+]

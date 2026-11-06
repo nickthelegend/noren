@@ -1,0 +1,74 @@
+[
+  {
+    "text": "and",
+    "start": 0.05,
+    "end": 0.3,
+    "id": "w0"
+  },
+  {
+    "text": "her",
+    "start": 0.31,
+    "end": 0.6,
+    "id": "w1"
+  },
+  {
+    "text": "NVDS",
+    "start": 0.6,
+    "end": 0.99,
+    "id": "w2"
+  },
+  {
+    "text": "and",
+    "start": 0.99,
+    "end": 1.27,
+    "id": "w3"
+  },
+  {
+    "text": "trading",
+    "start": 1.29,
+    "end": 1.89,
+    "id": "w4"
+  },
+  {
+    "text": "fees",
+    "start": 2.05,
+    "end": 2.34,
+    "id": "w5"
+  },
+  {
+    "text": "pay",
+    "start": 2.5,
+    "end": 2.58,
+    "id": "w6"
+  },
+  {
+    "text": "the",
+    "start": 2.58,
+    "end": 2.76,
+    "id": "w7"
+  },
+  {
+    "text": "line",
+    "start": 2.76,
+    "end": 3,
+    "id": "w8"
+  },
+  {
+    "text": "down",
+    "start": 3,
+    "end": 3.24,
+    "id": "w9"
+  },
+  {
+    "text": "for",
+    "start": 3.24,
+    "end": 3.54,
+    "id": "w10"
+  },
+  {
+    "text": "her.",
+    "start": 3.54,
+    "end": 3.84,
+    "id": "w11"
+  }
+]

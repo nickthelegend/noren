@@ -1,128 +1,128 @@
 [
   {
     "text": "Back",
-    "start": 0.05,
-    "end": 0.23,
+    "start": 0.07,
+    "end": 0.25,
     "id": "w0"
   },
   {
     "text": "at",
-    "start": 0.23,
-    "end": 0.34,
+    "start": 0.25,
+    "end": 0.37,
     "id": "w1"
   },
   {
     "text": "the",
-    "start": 0.34,
-    "end": 0.51,
+    "start": 0.37,
+    "end": 0.55,
     "id": "w2"
   },
   {
     "text": "cafe,",
-    "start": 0.51,
-    "end": 0.88,
+    "start": 0.56,
+    "end": 0.95,
     "id": "w3"
   },
   {
-    "text": "a",
-    "start": 0.88,
-    "end": 0.95,
+    "text": "another",
+    "start": 0.95,
+    "end": 1.47,
     "id": "w4"
   },
   {
     "text": "customer",
-    "start": 0.95,
-    "end": 1.53,
+    "start": 1.55,
+    "end": 2.12,
     "id": "w5"
   },
   {
     "text": "pays",
-    "start": 1.64,
-    "end": 1.85,
+    "start": 2.27,
+    "end": 2.5,
     "id": "w6"
   },
   {
-    "text": "privately,",
-    "start": 1.97,
-    "end": 2.68,
+    "text": "privately.",
+    "start": 2.5,
+    "end": 3.32,
     "id": "w7"
   },
   {
-    "text": "Juhoo",
-    "start": 2.68,
-    "end": 2.96,
+    "text": "Their",
+    "start": 3.57,
+    "end": 3.88,
     "id": "w8"
   },
   {
-    "text": "Chai",
-    "start": 2.96,
-    "end": 3.19,
+    "text": "address",
+    "start": 3.88,
+    "end": 4.4,
     "id": "w9"
   },
   {
-    "text": "House",
-    "start": 3.19,
-    "end": 3.48,
+    "text": "isn't",
+    "start": 4.4,
+    "end": 4.79,
     "id": "w10"
   },
   {
-    "text": "gets",
-    "start": 3.48,
-    "end": 3.76,
+    "text": "in",
+    "start": 4.79,
+    "end": 4.94,
     "id": "w11"
   },
   {
-    "text": "its",
-    "start": 3.76,
-    "end": 4.29,
+    "text": "the",
+    "start": 4.94,
+    "end": 5.17,
     "id": "w12"
   },
   {
-    "text": "USDC,",
-    "start": 4.29,
-    "end": 5.04,
+    "text": "transaction",
+    "start": 5.17,
+    "end": 6.03,
     "id": "w13"
   },
   {
     "text": "and",
-    "start": 5.24,
-    "end": 5.36,
+    "start": 6.03,
+    "end": 6.2,
     "id": "w14"
   },
   {
-    "text": "the",
-    "start": 5.36,
-    "end": 5.45,
+    "text": "Juhu",
+    "start": 6.2,
+    "end": 6.48,
     "id": "w15"
   },
   {
-    "text": "customer",
-    "start": 5.46,
-    "end": 5.76,
+    "text": "Chai",
+    "start": 6.48,
+    "end": 6.8,
     "id": "w16"
   },
   {
-    "text": "column",
-    "start": 5.81,
-    "end": 6.31,
+    "text": "House",
+    "start": 6.8,
+    "end": 7.24,
     "id": "w17"
   },
   {
     "text": "just",
-    "start": 6.4,
-    "end": 6.74,
+    "start": 7.24,
+    "end": 8.24,
     "id": "w18"
   },
   {
-    "text": "says",
-    "start": 6.8,
-    "end": 7.2,
+    "text": "sees",
+    "start": 8.3,
+    "end": 9.12,
     "id": "w19"
   },
   {
-    "text": "PRIVATE!",
-    "start": 7.2,
-    "end": 7.84,
+    "text": "private.",
+    "start": 9.12,
+    "end": 9.78,
     "id": "w20"
   }
 ]

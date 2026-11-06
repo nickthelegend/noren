@@ -1,0 +1,158 @@
+[
+  {
+    "text": "Ria's",
+    "start": 0.04,
+    "end": 0.42,
+    "id": "w0"
+  },
+  {
+    "text": "stocks",
+    "start": 0.42,
+    "end": 0.95,
+    "id": "w1"
+  },
+  {
+    "text": "can",
+    "start": 0.95,
+    "end": 1.21,
+    "id": "w2"
+  },
+  {
+    "text": "work",
+    "start": 1.21,
+    "end": 1.56,
+    "id": "w3"
+  },
+  {
+    "text": "for",
+    "start": 1.56,
+    "end": 1.82,
+    "id": "w4"
+  },
+  {
+    "text": "her",
+    "start": 1.82,
+    "end": 2.08,
+    "id": "w5"
+  },
+  {
+    "text": "too.",
+    "start": 2.08,
+    "end": 2.62,
+    "id": "w6"
+  },
+  {
+    "text": "In",
+    "start": 2.66,
+    "end": 2.77,
+    "id": "w7"
+  },
+  {
+    "text": "earn,",
+    "start": 2.77,
+    "end": 3.23,
+    "id": "w8"
+  },
+  {
+    "text": "her",
+    "start": 3.23,
+    "end": 3.46,
+    "id": "w9"
+  },
+  {
+    "text": "Nvidia",
+    "start": 3.46,
+    "end": 3.92,
+    "id": "w10"
+  },
+  {
+    "text": "becomes",
+    "start": 3.92,
+    "end": 4.46,
+    "id": "w11"
+  },
+  {
+    "text": "1-inch",
+    "start": 4.46,
+    "end": 4.82,
+    "id": "w12"
+  },
+  {
+    "text": "Aqua",
+    "start": 5.14,
+    "end": 5.31,
+    "id": "w13"
+  },
+  {
+    "text": "liquidity.",
+    "start": 5.38,
+    "end": 6.36,
+    "id": "w14"
+  },
+  {
+    "text": "The",
+    "start": 6.4,
+    "end": 6.57,
+    "id": "w15"
+  },
+  {
+    "text": "same",
+    "start": 6.57,
+    "end": 6.81,
+    "id": "w16"
+  },
+  {
+    "text": "deposit",
+    "start": 6.9,
+    "end": 7.34,
+    "id": "w17"
+  },
+  {
+    "text": "backs",
+    "start": 7.34,
+    "end": 7.69,
+    "id": "w18"
+  },
+  {
+    "text": "loans,",
+    "start": 7.69,
+    "end": 8.18,
+    "id": "w19"
+  },
+  {
+    "text": "earns",
+    "start": 8.18,
+    "end": 8.53,
+    "id": "w20"
+  },
+  {
+    "text": "trading",
+    "start": 8.53,
+    "end": 9.02,
+    "id": "w21"
+  },
+  {
+    "text": "fees",
+    "start": 9.02,
+    "end": 9.3,
+    "id": "w22"
+  },
+  {
+    "text": "and",
+    "start": 9.3,
+    "end": 9.51,
+    "id": "w23"
+  },
+  {
+    "text": "runs",
+    "start": 9.51,
+    "end": 9.79,
+    "id": "w24"
+  },
+  {
+    "text": "liquidations.",
+    "start": 9.79,
+    "end": 10.68,
+    "id": "w25"
+  }
+]

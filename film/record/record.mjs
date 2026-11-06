@@ -566,6 +566,8 @@ try {
     const link = (await import("node:fs")).readFileSync(`${HERE}state/link4.txt`, "utf8").trim();
     await p.goto(`${APP}/#/app`); await sleep(8000);   // the app reconnects the browser wallet first
     log("app account", await p.locator(".nk-chip").innerText().catch(() => "?"));
+    // hold /config so the browser-wallet restore lands before makeWallet() binds the account (else "active wallet changed")
+    await p.route(/\/config(\?|$)/, async (r) => { await sleep(2500); await r.continue(); });
     await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await p.reload(); await sleep(8000);
     await moveTo(900, 300, 1);
     await rollCamera(); await sleep(1500);
@@ -775,6 +777,71 @@ try {
     await until(async () => (await p.locator("[role=dialog] canvas, [role=dialog] svg, [role=dialog] img").count()) > 0, "reclaim QR", 60000).catch(() => {});
     await sleep(6000);
     result("reclaim modal", (await p.locator("[role=dialog]").last().innerText().catch(() => "")).replace(/\n+/g, " | ").slice(0, 500));
+    await cut(); await save();
+  }
+
+  // ---------------------------------------------------------------- v6-final2: the credit section on the local stack
+  if (take === "lockup7") {
+    // Lock NVDA into the Aqua pool in two steps and read the credit limit after each (the number has to visibly grow)
+    await p.goto(`${APP}/#/app`); await sleep(8000);
+    await moveTo(640, 420, 1);
+    await rollCamera(); await sleep(1500);
+    const dep = async (amt, tag) => {
+      await click(p.getByRole("tab", { name: "Earn" }), "earn tab"); await sleep(2500);
+      await click(p.getByRole("radio", { name: /nNVDA/ }).first(), "nNVDA vault"); await sleep(1200);
+      await typeIn(p.locator("#nk-earn"), amt, `deposit ${amt}`); await sleep(1000);
+      await click(p.locator(".nk-cta").first(), `deposit ${amt}`);
+      await until(async () => /Deposited|reverted|rror/.test(await status()), "deposit", 180000); result(tag, await status()); await sleep(2500);
+    };
+    const limit = async (tag) => {
+      await click(p.getByRole("tab", { name: "Credit" }), "credit tab"); await sleep(4500);
+      const now = p.locator("#nk-raise .nk-raise-now");
+      await now.scrollIntoViewIfNeeded(); await sleep(800);
+      await point(now); await sleep(3500);
+      result(tag, (await now.innerText()).replace(/\n+/g, " | "));
+    };
+    await dep(process.env.LOCK1 ?? "1", "deposit 1"); await limit("limit after first lock");
+    await dep(process.env.LOCK2 ?? "2", "deposit 2"); await limit("limit after second lock");
+    await cut(); await save();
+  }
+
+  if (take === "qr7") {
+    // Raise your limit: the real World ID request (IDKit QR on screen, nobody scans it here) and one Reclaim provider QR
+    await p.goto(`${APP}/#/app/credit`); await sleep(9000);
+    const raise = p.locator("#nk-raise");
+    await raise.scrollIntoViewIfNeeded(); await sleep(1200);
+    await moveTo(640, 400, 1);
+    await rollCamera(); await sleep(1500);
+    await click(raise.getByRole("button", { name: "Verify", exact: true }), "world id task"); await sleep(1500);
+    const vw = p.getByRole("button", { name: /Verify with World ID/ }).first();
+    await click(vw, "verify with World ID");
+    await sleep(6000); ev("result", "world qr", { value: "IDKit request open" });
+    await p.keyboard.press("Escape").catch(() => {}); await sleep(1500);
+    await click(raise.getByRole("button", { name: "Prove", exact: true }), "reclaim task"); await sleep(1800);
+    const prov = raise.getByRole("button", { name: /^Prove / }).first();
+    result("reclaim provider", await prov.getAttribute("aria-label"));
+    await click(prov, "reclaim provider");
+    await until(async () => (await p.locator("[role=dialog] canvas, [role=dialog] svg, [role=dialog] img").count()) > 0, "reclaim QR", 60000).catch(() => {});
+    await sleep(6000);
+    result("reclaim modal", (await p.locator("[role=dialog]").last().innerText().catch(() => "")).replace(/\n+/g, " | ").slice(0, 400));
+    await cut(); await save();
+  }
+
+  if (take === "payin3") {
+    // Pay in 3 at the checkout (public, from the credit line) for state/link-payin3.txt
+    const link = (await import("node:fs")).readFileSync(`${HERE}state/link-payin3.txt`, "utf8").trim();
+    await p.goto(`${APP}/#/app`); await sleep(8000);
+    await p.goto(link.replace(/^.*#/, `${MERCH}/#`)); await p.reload(); await sleep(8000);
+    await moveTo(900, 300, 1);
+    await rollCamera(); await sleep(1500);
+    await click(p.getByRole("tab", { name: /Pay in 3 \/ Pay later/ }), "pay in 3 / later"); await sleep(2000);
+    await click(p.getByRole("radio", { name: /Pay in 3/ }), "pay in 3"); await sleep(3000);
+    const go = p.locator(".btn.kaki").first();
+    await until(async () => !(await go.isDisabled()), "pay in 3 enabled", 90000);
+    result("button", await go.innerText()); await sleep(1200);
+    await click(go, "pay in 3 from the line");
+    await until(async () => /Paid on\s*credit/i.test(await p.locator("body").innerText()), "paid on credit", 300000); await sleep(2000);
+    result("paid", (await p.locator("body").innerText()).match(/Paid on[\s\S]{0,400}/)?.[0]?.replace(/\n+/g, " | ")); await sleep(4000);
     await cut(); await save();
   }
 

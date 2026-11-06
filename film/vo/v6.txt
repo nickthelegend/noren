@@ -1,1 +1,1 @@
-Live on public testnets — with Circle, Chainlink, 1inch, Uniswap, World and Kohaku. Noren. Pay with stablecoins, stocks or credit — privately.
+All of it runs on public testnets, with Circle, Chainlink, 1inch, Uniswap, World and Kohaku. Noren lets merchants accept stablecoins, stocks or credit — privately.

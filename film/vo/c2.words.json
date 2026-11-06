@@ -1,0 +1,98 @@
+[
+  {
+    "text": "She",
+    "start": 0.03,
+    "end": 0.27,
+    "id": "w0"
+  },
+  {
+    "text": "proves",
+    "start": 0.27,
+    "end": 0.82,
+    "id": "w1"
+  },
+  {
+    "text": "she's",
+    "start": 0.82,
+    "end": 1.26,
+    "id": "w2"
+  },
+  {
+    "text": "a",
+    "start": 1.27,
+    "end": 1.36,
+    "id": "w3"
+  },
+  {
+    "text": "real",
+    "start": 1.36,
+    "end": 1.72,
+    "id": "w4"
+  },
+  {
+    "text": "person",
+    "start": 1.72,
+    "end": 2.25,
+    "id": "w5"
+  },
+  {
+    "text": "with",
+    "start": 2.35,
+    "end": 2.63,
+    "id": "w6"
+  },
+  {
+    "text": "world",
+    "start": 2.63,
+    "end": 3.01,
+    "id": "w7"
+  },
+  {
+    "text": "id.",
+    "start": 3.32,
+    "end": 3.34,
+    "id": "w8"
+  },
+  {
+    "text": "That's",
+    "start": 3.37,
+    "end": 3.77,
+    "id": "w9"
+  },
+  {
+    "text": "a",
+    "start": 3.77,
+    "end": 3.84,
+    "id": "w10"
+  },
+  {
+    "text": "real",
+    "start": 3.84,
+    "end": 4.13,
+    "id": "w11"
+  },
+  {
+    "text": "object",
+    "start": 4.13,
+    "end": 4.57,
+    "id": "w12"
+  },
+  {
+    "text": "in",
+    "start": 4.57,
+    "end": 4.71,
+    "id": "w13"
+  },
+  {
+    "text": "world",
+    "start": 4.71,
+    "end": 5.08,
+    "id": "w14"
+  },
+  {
+    "text": "apps.",
+    "start": 5.08,
+    "end": 5.59,
+    "id": "w15"
+  }
+]

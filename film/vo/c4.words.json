@@ -1,0 +1,98 @@
+[
+  {
+    "text": "Every",
+    "start": 0.05,
+    "end": 0.38,
+    "id": "w0"
+  },
+  {
+    "text": "on-time",
+    "start": 0.38,
+    "end": 0.9,
+    "id": "w1"
+  },
+  {
+    "text": "repayment",
+    "start": 0.9,
+    "end": 1.51,
+    "id": "w2"
+  },
+  {
+    "text": "is",
+    "start": 1.64,
+    "end": 1.82,
+    "id": "w3"
+  },
+  {
+    "text": "recorded",
+    "start": 1.82,
+    "end": 2.63,
+    "id": "w4"
+  },
+  {
+    "text": "on-chain",
+    "start": 2.73,
+    "end": 3.3,
+    "id": "w5"
+  },
+  {
+    "text": "as",
+    "start": 3.41,
+    "end": 3.54,
+    "id": "w6"
+  },
+  {
+    "text": "a",
+    "start": 3.54,
+    "end": 3.61,
+    "id": "w7"
+  },
+  {
+    "text": "proof",
+    "start": 3.73,
+    "end": 3.91,
+    "id": "w8"
+  },
+  {
+    "text": "type",
+    "start": 4.07,
+    "end": 4.24,
+    "id": "w9"
+  },
+  {
+    "text": "only",
+    "start": 4.41,
+    "end": 4.82,
+    "id": "w10"
+  },
+  {
+    "text": "and",
+    "start": 5.09,
+    "end": 5.22,
+    "id": "w11"
+  },
+  {
+    "text": "her",
+    "start": 5.22,
+    "end": 5.44,
+    "id": "w12"
+  },
+  {
+    "text": "limit",
+    "start": 5.44,
+    "end": 5.79,
+    "id": "w13"
+  },
+  {
+    "text": "goes",
+    "start": 5.8,
+    "end": 6.09,
+    "id": "w14"
+  },
+  {
+    "text": "up.",
+    "start": 6.09,
+    "end": 6.48,
+    "id": "w15"
+  }
+]

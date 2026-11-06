@@ -1,260 +1,296 @@
 [
   {
     "text": "Every",
-    "start": 0,
+    "start": 0.01,
     "end": 0.37,
     "id": "w0"
   },
   {
     "text": "time",
-    "start": 0.46,
-    "end": 0.81,
+    "start": 0.37,
+    "end": 0.67,
     "id": "w1"
   },
   {
     "text": "you",
-    "start": 0.81,
-    "end": 1.08,
+    "start": 0.67,
+    "end": 0.89,
     "id": "w2"
   },
   {
     "text": "pay",
-    "start": 1.08,
-    "end": 1.35,
+    "start": 0.89,
+    "end": 1.11,
     "id": "w3"
   },
   {
     "text": "a",
-    "start": 1.35,
-    "end": 1.44,
+    "start": 1.11,
+    "end": 1.18,
     "id": "w4"
   },
   {
     "text": "shop",
-    "start": 1.44,
-    "end": 1.66,
+    "start": 1.18,
+    "end": 1.34,
     "id": "w5"
   },
   {
     "text": "with",
-    "start": 1.82,
-    "end": 2.16,
+    "start": 1.48,
+    "end": 1.78,
     "id": "w6"
   },
   {
     "text": "crypto,",
-    "start": 2.16,
-    "end": 2.76,
+    "start": 1.78,
+    "end": 2.39,
     "id": "w7"
   },
   {
     "text": "you",
-    "start": 2.76,
-    "end": 2.93,
+    "start": 2.39,
+    "end": 2.56,
     "id": "w8"
   },
   {
     "text": "hand",
-    "start": 2.93,
-    "end": 3.15,
+    "start": 2.56,
+    "end": 2.79,
     "id": "w9"
   },
   {
     "text": "them",
-    "start": 3.16,
-    "end": 3.4,
+    "start": 2.79,
+    "end": 3.02,
     "id": "w10"
   },
   {
     "text": "your",
-    "start": 3.4,
-    "end": 3.62,
+    "start": 3.02,
+    "end": 3.25,
     "id": "w11"
   },
   {
     "text": "whole",
-    "start": 3.71,
-    "end": 3.99,
+    "start": 3.25,
+    "end": 3.54,
     "id": "w12"
   },
   {
-    "text": "wallet.",
-    "start": 3.99,
-    "end": 4.6,
+    "text": "wallet,",
+    "start": 3.54,
+    "end": 4.02,
     "id": "w13"
   },
   {
-    "text": "Your",
-    "start": 4.6,
-    "end": 4.84,
+    "text": "your",
+    "start": 4.02,
+    "end": 4.22,
     "id": "w14"
   },
   {
     "text": "balance,",
-    "start": 4.84,
-    "end": 5.42,
+    "start": 4.22,
+    "end": 4.82,
     "id": "w15"
   },
   {
     "text": "your",
-    "start": 5.42,
-    "end": 5.67,
+    "start": 4.83,
+    "end": 5.06,
     "id": "w16"
   },
   {
     "text": "salary,",
-    "start": 5.67,
-    "end": 6.17,
+    "start": 5.11,
+    "end": 5.53,
     "id": "w17"
   },
   {
     "text": "every",
-    "start": 6.17,
-    "end": 6.49,
+    "start": 5.64,
+    "end": 5.96,
     "id": "w18"
   },
   {
     "text": "payment",
-    "start": 6.54,
-    "end": 6.94,
+    "start": 5.96,
+    "end": 6.41,
     "id": "w19"
   },
   {
     "text": "you've",
-    "start": 6.94,
-    "end": 7.32,
+    "start": 6.53,
+    "end": 6.67,
     "id": "w20"
   },
   {
     "text": "ever",
-    "start": 7.34,
-    "end": 7.57,
+    "start": 6.83,
+    "end": 7.05,
     "id": "w21"
   },
   {
     "text": "made.",
-    "start": 7.57,
-    "end": 8,
+    "start": 7.14,
+    "end": 7.62,
     "id": "w22"
   },
   {
     "text": "And",
-    "start": 8,
-    "end": 8.14,
+    "start": 7.63,
+    "end": 7.81,
     "id": "w23"
   },
   {
     "text": "if",
-    "start": 8.14,
-    "end": 8.22,
+    "start": 7.81,
+    "end": 7.94,
     "id": "w24"
   },
   {
     "text": "you",
-    "start": 8.22,
-    "end": 8.37,
+    "start": 7.94,
+    "end": 8.13,
     "id": "w25"
   },
   {
     "text": "want",
-    "start": 8.37,
-    "end": 8.56,
+    "start": 8.13,
+    "end": 8.33,
     "id": "w26"
   },
   {
     "text": "to",
-    "start": 8.56,
-    "end": 8.65,
+    "start": 8.44,
+    "end": 8.52,
     "id": "w27"
   },
   {
     "text": "spend",
-    "start": 8.65,
-    "end": 8.84,
+    "start": 8.52,
+    "end": 8.85,
     "id": "w28"
   },
   {
     "text": "your",
-    "start": 8.99,
-    "end": 9.07,
+    "start": 8.85,
+    "end": 9.1,
     "id": "w29"
   },
   {
     "text": "stocks,",
-    "start": 9.07,
-    "end": 9.44,
+    "start": 9.11,
+    "end": 9.63,
     "id": "w30"
   },
   {
     "text": "you",
-    "start": 9.44,
-    "end": 9.58,
+    "start": 9.63,
+    "end": 9.82,
     "id": "w31"
   },
   {
     "text": "have",
-    "start": 9.58,
-    "end": 9.67,
+    "start": 9.82,
+    "end": 10.08,
     "id": "w32"
   },
   {
     "text": "to",
-    "start": 9.82,
-    "end": 9.86,
+    "start": 10.08,
+    "end": 10.21,
     "id": "w33"
   },
   {
     "text": "sell",
-    "start": 9.86,
-    "end": 10.04,
+    "start": 10.21,
+    "end": 10.47,
     "id": "w34"
   },
   {
     "text": "them",
-    "start": 10.05,
-    "end": 10.17,
+    "start": 10.47,
+    "end": 10.73,
     "id": "w35"
   },
   {
     "text": "first.",
-    "start": 10.3,
-    "end": 10.66,
+    "start": 10.73,
+    "end": 11.29,
     "id": "w36"
   },
   {
-    "text": "We",
-    "start": 10.66,
-    "end": 10.79,
+    "text": "Norin",
+    "start": 11.35,
+    "end": 11.82,
     "id": "w37"
   },
   {
-    "text": "built",
-    "start": 10.79,
-    "end": 11.03,
+    "text": "fixes",
+    "start": 11.82,
+    "end": 12.3,
     "id": "w38"
   },
   {
-    "text": "Norin",
-    "start": 11.12,
-    "end": 11.45,
+    "text": "both.",
+    "start": 12.3,
+    "end": 12.93,
     "id": "w39"
   },
   {
-    "text": "to",
-    "start": 11.45,
-    "end": 11.5,
+    "text": "Norin",
+    "start": 13.03,
+    "end": 13.39,
     "id": "w40"
   },
   {
-    "text": "fix",
-    "start": 11.65,
-    "end": 11.78,
+    "text": "lets",
+    "start": 13.39,
+    "end": 13.69,
     "id": "w41"
   },
   {
-    "text": "both.",
-    "start": 11.78,
-    "end": 12.16,
+    "text": "merchants",
+    "start": 13.69,
+    "end": 14.35,
     "id": "w42"
+  },
+  {
+    "text": "accept",
+    "start": 14.36,
+    "end": 14.82,
+    "id": "w43"
+  },
+  {
+    "text": "stablecoins,",
+    "start": 14.82,
+    "end": 15.79,
+    "id": "w44"
+  },
+  {
+    "text": "stocks",
+    "start": 15.79,
+    "end": 16.24,
+    "id": "w45"
+  },
+  {
+    "text": "or",
+    "start": 16.24,
+    "end": 16.39,
+    "id": "w46"
+  },
+  {
+    "text": "credit",
+    "start": 16.39,
+    "end": 16.69,
+    "id": "w47"
+  },
+  {
+    "text": "privately.",
+    "start": 16.96,
+    "end": 17.58,
+    "id": "w48"
   }
 ]
