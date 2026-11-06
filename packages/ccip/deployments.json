@@ -1,0 +1,52 @@
+{
+  "note": "Public testnet deployments of Noren's CCIP contracts. Deployer/owner 0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80. Routers from the Chainlink CCIP directory API, each verified with eth_getCode.",
+  "5042002": {
+    "name": "Arc Testnet",
+    "ccipSelector": "3034092155422581607",
+    "router": "0xdE4E7FED43FAC37EB21aA0643d9852f75332eab8",
+    "onRamp": "0x0409822AC30A1A74fCE849E6163a86cF18fe1863",
+    "offRamp": "0xAB7a0743AC17D293e0A34f704367331Ec23D748f",
+    "explorer": "https://explorer.testnet.arc.io",
+    "NorenCcipGateway": "0x55005e60b4d4Bed4156BC635B1342bC55d9B6247",
+    "NorenArcActionRouter": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+    "deployTxs": {
+      "NorenCcipGateway": "0xb0823113722ec53d01fec9c8549132989445ce197c1a88e27acea3597d63637a",
+      "NorenArcActionRouter": "0x3fec86d1213e1cf2b237e0189503564bf1f9f6f3136d482b79637e40ce9afea3"
+    }
+  },
+  "46630": {
+    "name": "Robinhood Chain Testnet",
+    "ccipSelector": "2032988798112970440",
+    "router": "0x30D197C6F5bE050D5525dD94d01760FaCdB67e7C",
+    "onRamp": "0xFdf08F0e789682b00046837C424187d893d15083",
+    "offRamp": "0x6ad7dF87388A8f07f980D87974Aa62417a0F6471",
+    "explorer": "https://explorer.testnet.chain.robinhood.com"
+  },
+  "84532": {
+    "name": "Base Sepolia",
+    "ccipSelector": "10344971235874465080",
+    "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+    "onRamp": "0xA33b221A8427739c76f631a995ca60544bEdD632",
+    "offRamp": "0xa137536A3BFd81aD6f090981268b8C2818451d41",
+    "explorer": "https://sepolia.basescan.org"
+  },
+  "11155111": {
+    "name": "Ethereum Sepolia",
+    "ccipSelector": "16015286601757825753",
+    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777",
+    "explorer": "https://sepolia.etherscan.io"
+  },
+  "messages": [
+    {
+      "label": "Arc -> Base Sepolia, Noren action (AQUA_ORDER probe) from NorenCcipGateway to the deployer EOA (no destination contract yet, so CCIP delivered it without a callback)",
+      "messageId": "0x8dc21f93991c32eb1319f9ce95907708c3fa7a27d577fe5b460e5bcc61639ceb",
+      "ccipExplorer": "https://ccip.chain.link/msg/0x8dc21f93991c32eb1319f9ce95907708c3fa7a27d577fe5b460e5bcc61639ceb",
+      "sendTx": "0x6131993bf7307dc79f74ed6214b148d3387b03816e1526dfa76d78fc339b1a25",
+      "receiptTx": "0xea5ae1bcd5513d7513425e77729d01a424bc048194793118ebbbcbc2355fa413",
+      "status": "SUCCESS",
+      "deliverySeconds": 7,
+      "feeNativeUsdcWei": "110017493881702121"
+    }
+  ]
+}
