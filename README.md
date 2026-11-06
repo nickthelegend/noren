@@ -49,6 +49,14 @@ The checkout says it plainly: only "Pay privately" hides you.
 
 Fork transaction hashes vanish when the fork stops, so the numbers above are reproducible with the commands below rather than linked.
 
+## Screens
+
+| Noren Merchant | Noren app |
+|---|---|
+| ![Noren Merchant home: payment methods, credit-line exposure, recent payments](docs/img/dashboard.png) | ![Noren app: stock on Robinhood, credit score, line bridged to Arc by Chainlink CRE](docs/img/app.png) |
+| ![A pay-later payment in Noren Merchant](docs/img/payment-credit.png) | ![Checkout, pay with stocks: Chainlink price and vault spread](docs/img/checkout-stocks.png) |
+| ![Balances: USDG from stock payments and Settle to Arc with the CRE approval](docs/img/balances.png) | ![Phone: the Noren app at 375 px](docs/img/mobile-app.png) |
+
 ## Architecture
 
 ![Noren architecture](docs/img/architecture.png)

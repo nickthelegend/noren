@@ -1,4 +1,29 @@
-# Phase 2 test results
+# Test results
+
+## Integrated build (branch `web-integration`, Nov 6 2026)
+
+Everything ran on local nodes: an Anvil fork of Arc testnet (chain 5042002) and the Robinhood package's warmed snapshot of Robinhood Chain mainnet state (served as chain 46630 for the CRE simulator). No public transaction was sent; Arc mainnet, Robinhood mainnet, Relay, Across and World were only read.
+
+| Command | Result |
+|---|---|
+| `pnpm test` | **96 passed**, 0 failed, 13 files: core + server 19, World ID 43, 0G credit check 25, Robinhood SDK/underwriter (offline) 9. Fork (`*.fork.test.ts`) and live (`*.live.test.ts`) suites run in their packages. |
+| `pnpm exec tsc --noEmit`, `packages/web` typecheck and `vite build` | pass |
+| `pnpm e2e` | **9/9** Foundry checkout tests, **5** attack reverts (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), first proof 1.277 s, re-proof 1.139 s, refund approved, 39.03 s total |
+| `pnpm e2e:credit` (against `pnpm dev:all`) | **8/8** steps, 20.1–33.7 s across runs: fork faucet; EIP-712 attestation from the history underwriter (tier 1, collateral-only floor) verified by `NorenCredit.applyAttestation`; 2 NVDA locked (collateral $371.41 at Chainlink); CRE Robinhood → Arc in 5.0–7.0 s; pay later settled by the merchant server (`payInvoice` 108,892–143,092 gas); pay with stocks 0.040588 NVDA at $185.56 → 7.50 USDG; CRE carries `Drawn` and `Repaid` back to `NorenCredit` |
+| Headless Chromium, private payment against `pnpm dev:all` | ASP approval ~6 s after the shield; proof in the browser 1.09–1.13 s; click to paid 2.0–6.0 s; payer address in the tx: none |
+| CRE pricing at `dev:all` start | `NorenRateOracle` written through the MockKeystoneForwarder in 5.0–5.3 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
+| CRE credit bridge relay | one simulator run per event, 4.6–5.2 s, `--broadcast` through the Arc and Robinhood forwarders |
+| Settle to Arc | CRE settlement-desk workflow approved 7.50 USDG (Relay 7.475568, Across 7.491332 USDC quoted; fair 7.501225; minimum 7.426212) in 6.4–7.1 s. The Across SpokePool is not on the snapshot node, so the deposit for an Across approval is shown, not executed. |
+| Robinhood contracts (`sh packages/robinhood/scripts/test-fork.sh`) | **94 passed**, 7 suites, fresh mainnet fork |
+| `NorenCreditLine` (`forge test` in packages/arc-credit) | **47 passed** |
+| `NorenRateOracle` (`forge test` in packages/contracts) | **22 passed** (the `NorenCheckout` suite needs the e2e fixture and runs inside `pnpm e2e`) |
+| CRE workflows (`bun test`) | credit bridge **31 passed**, pricing **8 passed** |
+
+Browser QA at 1440 and 375 px (landing, Noren Merchant home/payments/payment/balances, Noren app, checkout with all three methods): no horizontal overflow on any route.
+
+## Earlier results
+
+### Phase 2
 
 ## Local stack update (2026-11-06)
 

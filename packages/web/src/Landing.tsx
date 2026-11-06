@@ -50,12 +50,13 @@ const SPECS: [string, string][] = [
 ];
 
 const SCREENS: [string, string, string][] = [
-  ["dash-home", "Home", "Today's volume against yesterday, the on-chain USDC balance, and period-over-period cards. Customers identified: 0."],
-  ["dash-payments", "Payments", "Filters, search, CSV export and row actions. Fiat prices sit under the USDC amount."],
-  ["dash-drawer", "Payment", "A full timeline from link to refund, gas, webhooks, and the Chainlink rounds behind the quote."],
-  ["dash-balances", "Balances", "USDC read straight from the payout address, with a payment and refund ledger."],
+  ["dash-home", "Home", "Noren Merchant: today against yesterday, the on-chain USDC balance, the payment-method mix and credit-line exposure."],
+  ["dash-payments", "Payments", "Every payment with its method: private pool, pay with stocks or pay later. Private ones have no customer."],
+  ["dash-drawer", "Payment", "A pay-later payment: the credit line, the Chainlink CRE bridge and the merchant's zero exposure."],
+  ["dash-balances", "Balances", "USDC on Arc, and USDG from stock payments with Settle to Arc and its CRE approval."],
+  ["app", "Noren app", "The customer's side: stock at Chainlink prices, a credit score, and a line bridged to Arc."],
+  ["checkout-later", "Checkout", "The hosted checkout with all three ways to pay; this one is paying later on a credit line."],
   ["dash-events", "Events", "Every event with its JSON and each signed webhook delivery."],
-  ["checkout-refunded", "Checkout", "The hosted checkout after a private payment priced in EUR, and a partial refund."],
 ];
 
 function useReveal() {
@@ -174,7 +175,7 @@ export function Landing() {
             <a className="lx-btn dark sm" href="#/dashboard">Open it</a>
           </div>
           <div className="lx-frame-shot"><img key={SCREENS[screen][0]} src={`/shots/${SCREENS[screen][0]}.jpg`} alt={`${SCREENS[screen][1]}: ${SCREENS[screen][2]}`} loading="lazy" width={1440} height={900} /></div>
-          <p className="lx-frame-cap mono">{SCREENS[screen][2]} Real capture, local Arc testnet fork.</p>
+          <p className="lx-frame-cap mono">{SCREENS[screen][2]} Real capture on the local forks.</p>
         </div>
       </section>
 
