@@ -34,7 +34,9 @@ export function readableError(error: any): string {
   } catch { /* inspect the next cause */ }
   return raw.includes('Setup required') ? raw : 'Transaction rejected: ' + raw.slice(0, 180);
 }
-export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
+export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
+  /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
+  mounts?: ((req: any, res: any) => Promise<boolean>)[] };
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
 export type CreditOptions = { bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
@@ -141,6 +143,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       const path = url.pathname;
       if (options.dev && req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': req.headers.origin === 'http://localhost:5190' || req.headers.origin === 'http://127.0.0.1:5190' ? req.headers.origin : '', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' }); res.end(); return; }
       if (options.dev) { const origin = req.headers.origin; if (origin === 'http://localhost:5190' || origin === 'http://127.0.0.1:5190') res.setHeader('access-control-allow-origin', origin); }
+      for (const mount of options.mounts ?? []) if (await mount(req, res)) return;
       if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, gateway: options.credit.gateway ?? null, ...options.credit.public } : null });
       if (req.method === 'GET' && path === '/credit/bridge') { if (!options.credit?.bridgeLog) throw new Error('Setup required: the CRE credit bridge relay is not running (pnpm dev:all with packages/cre-bridge)'); return send(res, 200, options.credit.bridgeLog()); }
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);

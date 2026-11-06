@@ -134,6 +134,9 @@ importers:
       '@noren/core':
         specifier: workspace:*
         version: link:../core
+      '@noren/world-id':
+        specifier: workspace:*
+        version: link:../world-id
       viem:
         specifier: 2.51.3
         version: 2.51.3(typescript@5.9.3)
@@ -170,6 +173,9 @@ importers:
       '@noren/core':
         specifier: workspace:*
         version: link:../core
+      '@noren/world-id':
+        specifier: workspace:*
+        version: link:../world-id
       assert:
         specifier: 2.1.0
         version: 2.1.0

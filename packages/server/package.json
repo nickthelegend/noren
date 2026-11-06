@@ -1,1 +1,1 @@
-{"name":"@noren/server","private":true,"type":"module","scripts":{"start":"tsx src/main.ts"},"dependencies":{"@noren/core":"workspace:*","viem":"2.51.3"}}
+{"name":"@noren/server","private":true,"type":"module","scripts":{"start":"tsx src/main.ts"},"dependencies":{"@noren/core":"workspace:*","viem":"2.51.3","@noren/world-id":"workspace:*"}}

@@ -15,7 +15,7 @@ const MNEMONIC = 'test test test test test test test test test test test junk';
 /** Anvil dev account 9 signs CRE broadcasts, so it never races the deployer (0) or the merchant (1) for nonces. */
 export const creAccount = mnemonicToAccount(MNEMONIC, { addressIndex: 9 });
 
-export type CreRun = { workflowDir: string; target: string; rpcs: Record<string, string>; config: unknown; broadcast?: boolean; triggerIndex?: number; txHash?: string; eventIndex?: number };
+export type CreRun = { workflowDir: string; target: string; rpcs: Record<string, string>; config: unknown; broadcast?: boolean; triggerIndex?: number; txHash?: string; eventIndex?: number; httpPayload?: unknown };
 
 export function prepareWorkflow(workflowDir: string) {
   const dir = resolve(workflowDir);
@@ -44,6 +44,7 @@ function args(run: CreRun, root: string, extra: string[]) {
   return ['workflow', 'simulate', 'workflow', '-R', root, '-T', run.target, '--config', join(root, 'config.json'), '-e', join(root, 'fork.env'), '--non-interactive',
     ...(run.triggerIndex === undefined ? [] : ['--trigger-index', String(run.triggerIndex)]),
     ...(run.txHash ? ['--evm-tx-hash', run.txHash, '--evm-event-index', String(run.eventIndex ?? 0)] : []),
+    ...(run.httpPayload === undefined ? [] : ['--http-payload', JSON.stringify(run.httpPayload)]),
     ...(run.broadcast ? ['--broadcast'] : []), ...extra];
 }
 

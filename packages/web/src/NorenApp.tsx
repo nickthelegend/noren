@@ -5,7 +5,8 @@
  * (or the underwriter's signed attestation); anything not yet deployed shows "Setup required".
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, short, usdc } from "./api";
+import { api, short, usdc, SERVER } from "./api";
+import { VerifyHuman } from "@noren/world-id/react";
 import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
 import { STOCKS, usd8, units, type Holding, type Line, type Onchain } from "./onchain";
 import { creditActions, type AiCheck, type Quote, type Underwriting, type Position } from "./credit-actions";
@@ -125,6 +126,9 @@ export function NorenApp() {
           <div className="na-col">
             <Panel title="Your credit score" sub="From this wallet's Robinhood Chain history, signed with EIP-712">
               {actions ? <Score actions={actions} /> : <Skel rows={3} />}
+            </Panel>
+            <Panel title="No stock? Start with a small line" sub="World ID: one unsecured starter line per unique human. Noren keeps only the nullifier, never who you are.">
+              <VerifyHuman serverUrl={SERVER} wallet={tk?.address} />
             </Panel>
             <Panel n="3" title="Bridged to Arc by Chainlink CRE" sub="CreditLineOpened on Robinhood → workflow → NorenCreditLine on Arc">
               {linesErr ? <SetupLine text={linesErr} /> : !lines ? <Skel rows={2} /> : <Bridge line={line} actions={actions} />}

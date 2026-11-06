@@ -14,6 +14,7 @@ import type { CreditOptions } from '../packages/server/src/server.ts';
 import { onStop, PORTS, run, startFork, startStack, type ArcContext } from './stack.ts';
 import { startPricing } from './dev-pricing.ts';
 import { deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
+import { creSimulate } from './cre.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
 const has = (p: string) => existsSync(resolve(p));
@@ -49,6 +50,29 @@ run(async () => {
   }
   let bridgeLog: BridgeEntry[] | undefined, creditLineAddr: Address | undefined, arcCreditFrom: bigint | undefined;
   const stack = await startStack({
+    mounts: async (arc) => {
+      // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
+      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return []; }
+      if (existsSync('.env')) process.loadEnvFile('.env');
+      const w = await import('../packages/world-id/src/server.ts');
+      const config = w.loadWorldIdConfig(process.env);
+      const gaps = w.missingSettings(config);
+      if (gaps.length) missing.push(`World ID: ${gaps.join(', ')} (Nick creates the World Developer Portal app, action "noren-credit")`);
+      const workflow = resolve('packages/cre-bridge/credit-bridge');
+      const httpIndex = process.env.NOREN_STARTER_CRE_TRIGGER_INDEX ? Number(process.env.NOREN_STARTER_CRE_TRIGGER_INDEX) : undefined;
+      const sink = httpIndex === undefined ? undefined : {
+        kind: 'cre-simulate' as const,
+        async open(r: any) {
+          const base = JSON.parse((await import('node:fs')).readFileSync(resolve(workflow, 'config.staging.json'), 'utf8'));
+          const out = await creSimulate({ workflowDir: workflow, target: 'local-fork', rpcs: { 'arc-testnet': arc.rpcUrl, 'robinhood-testnet': robinhoodRpc }, config: { ...base, robinhood: { ...base.robinhood, address: robinhood?.credit }, arc: { ...base.arc, address: creditLineAddr } }, broadcast: true, triggerIndex: httpIndex, httpPayload: w.httpTriggerPayload(r) });
+          const tx = /updated on [a-z-]+: tx (0x[0-9a-f]{64})/.exec(out)?.[1];
+          if (!tx) throw new Error('CRE human-starter run wrote nothing');
+          return { txHash: tx as `0x${string}` };
+        },
+      };
+      if (!sink) missing.push('World ID starter line: NOREN_STARTER_CRE_TRIGGER_INDEX unset (the bridge workflow\'s HTTP trigger handler index); verified humans are recorded and the line opens on retry');
+      return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink }))];
+    },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(rhFromBlock), arcFromBlock: String(await arc.client.getBlockNumber()) };
       if (has('packages/cre-pricing')) {
