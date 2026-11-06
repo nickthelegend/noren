@@ -7,6 +7,8 @@ import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
 import {NorenVault} from '../src/NorenVault.sol';
 import {NorenGateway} from '../src/NorenGateway.sol';
 import {NorenCredit} from '../src/NorenCredit.sol';
+import {NorenLiquidity} from '../src/NorenLiquidity.sol';
+import {IAqua, ISwapVMRouter} from '../src/interfaces/IAquaSwapVM.sol';
 import {INorenVault} from '../src/interfaces/INorenVault.sol';
 import {IWETH} from '../src/interfaces/IWETH.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
@@ -41,6 +43,10 @@ abstract contract RobinhoodBase is Test {
   NorenVault internal vault;
   NorenGateway internal gateway;
   NorenCredit internal credit;
+  /// @dev NorenAquaSwapVMRouter (modified SwapVM) redeployed on the fork against the official Aqua.
+  ISwapVMRouter internal swapRouter;
+  NorenLiquidity internal liquidity;
+  IAqua internal aqua = IAqua(RH.AQUA);
 
   IERC20 internal usdg = IERC20(RH.USDG);
   IWETH internal weth = IWETH(RH.WETH);
@@ -72,8 +78,15 @@ abstract contract RobinhoodBase is Test {
       owner, usdg, weth, oracle, INorenVault(address(vault)), gateway, underwriter, forwarder, _params(INTERVAL, GRACE)
     );
 
+    require(RH.AQUA.code.length > 0, 'official Aqua registry missing on this fork');
+    swapRouter = ISwapVMRouter(
+      deployCode(RH.NOREN_ROUTER_ARTIFACT, abi.encode(RH.AQUA, RH.WETH, owner, RH.NOREN_ROUTER_NAME, RH.NOREN_ROUTER_VERSION))
+    );
     vm.startPrank(owner);
     RH.configureOracle(oracle);
+    liquidity = new NorenLiquidity(owner, aqua, swapRouter, oracle);
+    gateway.setLiquidity(liquidity, true);
+    credit.setLiquidity(liquidity);
     vault.setModule(address(gateway), true);
     vault.setModule(address(credit), true);
     vault.setCredit(credit);
@@ -88,6 +101,34 @@ abstract contract RobinhoodBase is Test {
     vm.startPrank(lp);
     usdg.approve(address(vault), type(uint256).max);
     vault.deposit(100_000e6, lp);
+    vm.stopPrank();
+  }
+
+  /// @dev A maker funds its own wallet with real USDG, approves Aqua once, ships a NorenOraclePeg
+  /// strategy to the router and registers it with NorenLiquidity.
+  function _shipMaker(address maker, address asset, uint256 usdgAmount, uint16 bidBps, uint16 askBps, uint64 salt)
+    internal
+    returns (bytes32 strategyHash)
+  {
+    NorenLiquidity.PegTerms memory t = NorenLiquidity.PegTerms({
+      bidSpreadBps: bidBps,
+      askSpreadBps: askBps,
+      closedExtraBps: 300,
+      minPriceUsd8: 0,
+      maxPriceUsd8: 0,
+      salt: salt
+    });
+    if (usdg.balanceOf(maker) < usdgAmount) _fund(RH.USDG, maker, usdgAmount - usdg.balanceOf(maker));
+    (ISwapVMRouter.Order memory o,) = liquidity.buildOrder(maker, asset, t);
+    address[] memory tokens = new address[](2);
+    tokens[0] = RH.USDG;
+    tokens[1] = asset;
+    uint256[] memory amounts = new uint256[](2);
+    amounts[0] = usdgAmount;
+    vm.startPrank(maker);
+    usdg.approve(RH.AQUA, type(uint256).max);
+    aqua.ship(address(swapRouter), abi.encode(o), tokens, amounts);
+    strategyHash = liquidity.register(asset, t);
     vm.stopPrank();
   }
 

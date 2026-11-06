@@ -12,7 +12,7 @@ optimizer_runs = 200
 via_ir = true
 bytecode_hash = 'none'
 cbor_metadata = false
-fs_permissions = [{ access = 'read-write', path = './deployments' }]
+fs_permissions = [{ access = 'read-write', path = './deployments' }, { access = 'read', path = '../../aqua/swapvm-ext/out' }]
 
 [profile.default.lint]
 exclude_lints = ['block-timestamp', 'unsafe-typecast', 'mixed-case-function', 'mixed-case-variable', 'screaming-snake-case-immutable']
