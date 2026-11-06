@@ -90,7 +90,9 @@ export function Checkout({ id }: { id: string }) {
   const getUsdc = async () => { if (!wallet) return; setBusy("faucet"); setNote(null); try { await api.faucet(wallet.address); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
   // Hosted (public Arc testnet): shield only what this invoice still needs, rounded up to whole cents; the local fork tops up 20.
   const shortfall = amount - (bal ? bal.approved + bal.pending : 0n);
-  const shieldAmt = HOSTED ? (shortfall > 0n ? ((shortfall + 9_999n) / 10_000n) * 10_000n : 0n) : 20_000_000n;
+  // The live pool's Entrypoint takes deposits of at least 1 USDC (assetConfig.minimumDepositAmount).
+  const POOL_MIN = 1_000_000n;
+  const shieldAmt = HOSTED ? (shortfall > 0n ? (() => { const c = ((shortfall + 9_999n) / 10_000n) * 10_000n; return c < POOL_MIN ? POOL_MIN : c; })() : 0n) : 20_000_000n;
   const shield = async () => { if (!wallet || shieldAmt <= 0n) return; setBusy("shield"); setNote(null); try { await wallet.shield(shieldAmt); setNote(`Shielded ${usdc(shieldAmt)} USDC. The compliance check approves it in a few seconds.`); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
   const pay = async () => {
     if (!wallet || !view) return;
