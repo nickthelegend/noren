@@ -18,6 +18,16 @@ Changes (each file carries @custom:change with the date)
                                                        NorenOraclePeg at opcode 34.
   2026-11-06  foundry.toml                             upstream compiler settings except
                                                        optimizer_runs 700 -> 200 (EIP-170 size).
+  2026-11-06  src/instructions/NorenDutchDecay.sol     new instruction: Dutch-auction liquidation
+                                                       discount that wraps NorenOraclePeg; only the
+                                                       named auction house may take, the start is
+                                                       read on-chain from it, capped discount.
+  2026-11-06  src/routers/NorenAquaSwapVMRouter.sol    NorenDutchDecay appended at opcode 35
+                                                       (opcodes 0-34 unchanged).
+  2026-11-06  foundry.toml                             optimizer_runs 200 -> 50 so the router with
+                                                       both instructions fits EIP-170 (24,546 B).
+  The Arc Testnet router below was built before these three changes (commit a044e6a, opcode 34
+  only, 200 runs). NorenDutchDecay ships with the next router redeploy; it is not on Arc Testnet.
 
 Build and deploy (reproducible)
   pnpm install                                   # fetches the pinned upstream commits

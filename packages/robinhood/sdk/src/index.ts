@@ -34,6 +34,7 @@ export * from './addresses.js'
 export * from './abi.js'
 export * from './aqua.js'
 export * from './earn.js'
+export * from './dutch.js'
 
 export type Attestation = {
   borrower: Address
