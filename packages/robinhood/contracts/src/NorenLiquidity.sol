@@ -91,6 +91,17 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     uint256 oracleValueUsdg,
     uint256 feeUsdg
   );
+  /// @notice A maker sold `assetOut` of its inventory for `usdgIn` (ask side). fee = usdgIn - Chainlink value.
+  event MakerSale(
+    bytes32 indexed strategyHash,
+    address indexed maker,
+    address indexed asset,
+    address taker,
+    uint256 assetOut,
+    uint256 usdgIn,
+    uint256 oracleValueUsdg,
+    uint256 feeUsdg
+  );
   event CollateralLiquidated(
     address indexed asset, address indexed seller, uint256 amount, uint256 sold, uint256 bonus, uint256 proceedsUsdg, uint256 debtUsdg
   );
@@ -237,6 +248,23 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     }
   }
 
+  /// @notice Best maker quote to buy exactly `assetOut` of `asset` with USDG (lowest USDG in, ask side).
+  /// One-sided (buy-only) strategies and makers without enough inventory are skipped.
+  function bestAskForAsset(address asset, uint256 assetOut) public view returns (bytes32 strategyHash, uint256 usdgIn) {
+    bytes32[] storage list = _byAsset[asset];
+    bytes memory td = _takerData(false, type(uint256).max, address(0));
+    for (uint256 i; i < list.length; ++i) {
+      Strategy storage s = _strategies[list[i]];
+      if (s.askSpreadBps == ONE_SIDED || !_transferable(asset, s.maker)) continue;
+      try router.quote(_order(s), address(usdg), asset, assetOut, td) returns (uint256 uin, uint256 aout, bytes32) {
+        if (aout == assetOut && uin != 0 && (strategyHash == bytes32(0) || uin < usdgIn)) {
+          strategyHash = list[i];
+          usdgIn = uin;
+        }
+      } catch {}
+    }
+  }
+
   // ================================================================ swaps
 
   /// @notice Sell `asset` from the caller to the best maker so `to` receives exactly `usdgOut` USDG.
@@ -263,6 +291,34 @@ contract NorenLiquidity is Ownable2Step, ReentrancyGuard, INorenLiquidity {
     if (usdgOut < minUsdgOut) revert Slippage(minUsdgOut, usdgOut);
     _pull(asset, assetIn);
     _swap(strategyHash, asset, true, assetIn, usdgOut, to, assetIn, usdgOut);
+  }
+
+  /// @notice Buy exactly `assetOut` of `asset` from the best maker (Chainlink price plus its ask spread);
+  /// the caller pays USDG and `to` receives the asset. The maker's spread is booked as its fee.
+  function buyFromMakers(address asset, uint256 assetOut, uint256 maxUsdgIn, address to)
+    external
+    nonReentrant
+    returns (uint256 usdgIn, bytes32 strategyHash)
+  {
+    (strategyHash, usdgIn) = bestAskForAsset(asset, assetOut);
+    if (strategyHash == bytes32(0)) revert NoMakerLiquidity(asset, assetOut);
+    if (usdgIn > maxUsdgIn) revert Slippage(usdgIn, maxUsdgIn);
+    _pull(address(usdg), usdgIn);
+    Strategy storage s = _strategies[strategyHash];
+    usdg.forceApprove(address(router), usdgIn);
+    address recipient = to == address(0) || to == address(this) ? msg.sender : to;
+    (uint256 uin, uint256 aout,) = router.swap(_order(s), address(usdg), asset, assetOut, _takerData(false, usdgIn, recipient));
+    if (uin != usdgIn || aout != assetOut) revert FillMismatch(uin, aout);
+    uint256 valueUsdg;
+    try oracle.valueUsd8(asset, aout) returns (uint256 v) {
+      valueUsdg = oracle.usd8ToUsdg(v, Math.Rounding.Ceil);
+    } catch {}
+    uint256 fee = uin > valueUsdg ? uin - valueUsdg : 0;
+    s.fills += 1;
+    s.volumeUsdg += uin;
+    s.feesUsdg += fee;
+    makerFeesUsdg[s.maker] += fee;
+    emit MakerSale(strategyHash, s.maker, asset, msg.sender, aout, uin, valueUsdg, fee);
   }
 
   /// @notice Sell seized collateral to makers. Pulls up to `amount` of `asset` from the caller.

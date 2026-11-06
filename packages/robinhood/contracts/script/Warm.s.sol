@@ -10,6 +10,9 @@ import {NorenVault} from '../src/NorenVault.sol';
 import {NorenGateway} from '../src/NorenGateway.sol';
 import {NorenCredit} from '../src/NorenCredit.sol';
 import {NorenLiquidity} from '../src/NorenLiquidity.sol';
+import {NorenDepositVault} from '../src/NorenDepositVault.sol';
+import {NorenReputation} from '../src/NorenReputation.sol';
+import {NorenBorrow} from '../src/NorenBorrow.sol';
 import {RobinhoodMainnet as RH} from './RobinhoodMainnet.sol';
 
 interface IStockMultiplier {
@@ -50,6 +53,8 @@ contract Warm is Script {
   // Anvil published dev keys (#1 customer, #9 underwriter): fork use only.
   uint256 internal constant CUSTOMER_KEY = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
   uint256 internal constant UNDERWRITER_KEY = 0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6;
+  // Anvil #7: fork stand-in for the World ID server key (NorenReputation.worldIdSigner).
+  uint256 internal constant WORLD_ID_KEY = 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356;
   bytes32 internal constant PERMIT_TYPEHASH =
     keccak256('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)');
 
@@ -65,7 +70,14 @@ contract Warm is Script {
   function run() external {
     vm.startStateDiffRecording();
     _flows();
-    Vm.AccountAccess[] memory acc = vm.stopAndReturnStateDiff();
+    _print(vm.stopAndReturnStateDiff());
+    // recorded separately: one diff for every flow runs out of script memory
+    vm.startStateDiffRecording();
+    _earn();
+    _print(vm.stopAndReturnStateDiff());
+  }
+
+  function _print(Vm.AccountAccess[] memory acc) internal pure {
     for (uint256 i; i < acc.length; ++i) {
       console2.log(string.concat('WARM_ACCOUNT ', vm.toString(acc[i].account)));
       for (uint256 j; j < acc[i].storageAccesses.length; ++j) {
@@ -169,6 +181,72 @@ contract Warm is Script {
     credit.creditTerms(customer);
     credit.history(customer);
     console2.log('warmed demo flows for', customer);
+  }
+
+  /// @dev Deposit and earn, borrow, reputation (NorenDepositVault, NorenBorrow, NorenReputation).
+  function _earn() internal {
+    address b = vm.envOr('NOREN_RH_BORROW', address(0));
+    if (b == address(0)) return;
+    NorenBorrow borrow = NorenBorrow(b);
+    NorenReputation rep = borrow.reputation();
+    NorenDepositVault[] memory vs = borrow.vaults();
+    NorenLiquidity liquidity = NorenLiquidity(address(gateway.liquidity()));
+    address keeper = vm.addr(0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a); // Anvil #4
+    for (uint256 i; i < vs.length; ++i) {
+      address a = vs[i].asset();
+      vs[i].stats();
+      oracle.checkTransferable(a, customer, address(vs[i]));
+      oracle.checkTransferable(a, address(vs[i]), customer);
+      oracle.checkTransferable(a, address(vs[i]), keeper);
+      IERC20(a).balanceOf(keeper);
+      IERC20(a).allowance(customer, address(vs[i]));
+      liquidity.bestAskForAsset(a, 1e15);
+      liquidity.bestQuoteForUsdg(a, 10e6);
+    }
+    vm.startPrank(customer);
+    vs[0].depositETH{value: 1 ether}(customer);
+    for (uint256 i = 1; i < vs.length; ++i) {
+      IERC20(vs[i].asset()).approve(address(vs[i]), 1e18);
+      vs[i].deposit(1e18, customer);
+    }
+    IERC20(RH.USDG).approve(address(liquidity), type(uint256).max);
+    liquidity.buyFromMakers(RH.WETH, 0.1 ether, type(uint256).max, customer);
+    liquidity.buyFromMakers(vs[1].asset(), 1e17, type(uint256).max, customer);
+    uint256 sh = vs[0].balanceOf(customer);
+    IERC20(address(vs[0])).approve(address(borrow), type(uint256).max);
+    IERC20(address(vs[1])).approve(address(borrow), type(uint256).max);
+    borrow.lock(vs[0], sh / 2);
+    borrow.lock(vs[1], vs[1].balanceOf(customer));
+    borrow.borrow(100e6, customer);
+    borrow.healthFactor(customer);
+    borrow.liquidationPriceUsd8(customer, vs[0]);
+    IERC20(RH.USDG).approve(address(borrow), type(uint256).max);
+    borrow.repay(customer, type(uint256).max);
+    borrow.unlock(vs[0], sh / 4, customer);
+    vs[0].redeemETH(sh / 8, payable(customer), customer);
+    vs[0].redeemInKind(sh / 8, customer, customer);
+    vs[2].redeem(vs[2].maxRedeem(customer), customer, customer);
+    borrow.unlock(vs[0], borrow.lockedShares(customer, address(vs[0])), customer);
+    borrow.borrow(borrow.borrowLimitUsdg(customer), customer);
+    vm.stopPrank();
+    rep.creditLimitOf(customer);
+    uint64 exp = uint64(block.timestamp + 1 hours);
+    bytes32 nullifier = keccak256('warm-nullifier');
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(WORLD_ID_KEY, rep.hashVerifiedHuman(customer, nullifier, exp));
+    rep.verifyHuman(customer, nullifier, exp, abi.encodePacked(r, s, v));
+    uint64 first = uint64(block.timestamp - 200 days);
+    (v, r, s) = vm.sign(UNDERWRITER_KEY, rep.hashAccountAge(customer, first, exp));
+    rep.recordAccountAge(customer, first, exp, abi.encodePacked(r, s, v));
+    rep.breakdownOf(customer);
+    // liquidation of the nNVDA position through Aqua makers after a real multiplier cut (simulation only)
+    address nvdaAsset = vs[1].asset();
+    uint256 m = oracle.multiplier(nvdaAsset);
+    vm.prank(RH.MULTIPLIER_ADMIN);
+    IStockMultiplier(nvdaAsset).updateMultiplier(m * 40 / 100);
+    vm.prank(keeper);
+    borrow.liquidateViaAqua(customer, vs[1]);
+    vm.prank(RH.MULTIPLIER_ADMIN);
+    IStockMultiplier(nvdaAsset).updateMultiplier(m);
   }
 
   /// @dev Aqua maker reads (positions, best execution vs Uniswap v4) and a liquidation through SwapVM.
