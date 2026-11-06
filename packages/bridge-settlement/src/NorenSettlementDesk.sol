@@ -81,6 +81,8 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
   /// @notice Oldest Chainlink round the stock sale accepts (stock feeds stop while US markets are closed).
   uint64 public maxFeedAge = 4 days;
   uint256 public nonce;
+  /// @notice USDG held for open requests (Requested, Approved or Rejected). Only the balance above it is recoverable.
+  uint256 public escrowedUsdg6;
 
   mapping(address stockToken => address chainlinkUsdFeed) public stockFeed;
   mapping(bytes32 id => Settlement) private _settlements;
@@ -95,6 +97,8 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
   event StockSold(address indexed merchant, address indexed stock, uint256 amountIn, uint256 usdgOut, uint256 floorUsdg6, uint256 stockUsd8);
   event StockFeedSet(address indexed stock, address feed);
   event RolesSet(address forwarder, address keeper, address expectedWorkflowOwner);
+  event Recovered(address indexed token, address indexed to, uint256 amount);
+  event MaxFeedAgeSet(uint64 maxFeedAge);
 
   error NotOwner();
   error NotKeeper();
@@ -118,6 +122,7 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
   error InvalidPrice(address feed, int256 answer);
   error SwapBelowFloor(uint256 out, uint256 floor);
   error TooEarly(uint64 at);
+  error ExceedsRecoverable(uint256 recoverable, uint256 requested);
 
   modifier onlyOwner() {
     if (msg.sender != owner) revert NotOwner();
@@ -221,6 +226,7 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
       revert BadStatus(s.status);
     }
     s.status = Status.Cancelled;
+    escrowedUsdg6 -= s.amountUsdg6;
     usdg.safeTransfer(s.merchant, s.amountUsdg6);
     emit SettlementCancelled(id);
   }
@@ -254,6 +260,10 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
     // Whatever the report says, never accept a minimum below amount x (1 - the hard cap).
     uint256 floor = s.amountUsdg6 * (10_000 - MAX_SLIPPAGE_CAP_BPS) / 10_000;
     if (minOut < floor || quotedOut < minOut) revert MinOutBelowFloor(minOut, floor);
+    // And never below the merchant's own bound, at the prices the report itself attests (the workflow's formula).
+    if (usdgUsd8 == 0 || usdcUsd8 == 0) revert InvalidReport();
+    uint256 merchantFloor = (s.amountUsdg6 * usdgUsd8 / usdcUsd8) * (10_000 - s.maxSlippageBps) / 10_000;
+    if (minOut < merchantFloor) revert MinOutBelowFloor(minOut, merchantFloor);
     s.status = Status.Approved;
     s.route = Route(route);
     s.minOutUsdc6 = minOut;
@@ -293,6 +303,7 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
     }
 
     s.status = Status.Executed;
+    escrowedUsdg6 -= s.amountUsdg6;
     uint256 before = usdg.balanceOf(address(this));
     usdg.forceApprove(target, s.amountUsdg6);
     (bool ok, bytes memory ret) = target.call(data);
@@ -339,6 +350,19 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
 
   function setMaxFeedAge(uint64 maxFeedAge_) external onlyOwner {
     maxFeedAge = maxFeedAge_;
+    emit MaxFeedAgeSet(maxFeedAge_);
+  }
+
+  /// @notice Moves tokens the desk holds beyond open requests, for example an Across or Relay refund of a deposit
+  ///         that was never filled (refunds go to the depositor, which is this desk), back out. Escrowed USDG of open
+  ///         requests can never be taken.
+  function recover(IERC20 token, address to, uint256 amount) external onlyOwner nonReentrant {
+    if (to == address(0)) revert ZeroAddress();
+    uint256 recoverable = token.balanceOf(address(this));
+    if (address(token) == address(usdg)) recoverable = recoverable > escrowedUsdg6 ? recoverable - escrowedUsdg6 : 0;
+    if (amount > recoverable) revert ExceedsRecoverable(recoverable, amount);
+    token.safeTransfer(to, amount);
+    emit Recovered(address(token), to, amount);
   }
 
   // ---------------------------------------------------------------- internals
@@ -347,6 +371,7 @@ contract NorenSettlementDesk is IReceiver, ReentrancyGuard {
     if (arcRecipient == address(0)) revert ZeroAddress();
     if (maxSlippageBps == 0 || maxSlippageBps > MAX_SLIPPAGE_CAP_BPS) revert BadSlippage(maxSlippageBps);
     id = keccak256(abi.encode(block.chainid, address(this), nonce++));
+    escrowedUsdg6 += amountUsdg6;
     _settlements[id] = Settlement({
       merchant: merchant,
       requestedAt: uint64(block.timestamp),
