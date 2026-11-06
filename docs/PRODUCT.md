@@ -134,3 +134,15 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 | `packages/ai-underwriter` | credit check on 0G Private Computer |
 | `packages/world-id` | IDKit request signing, server verification, nullifier registry, `VerifyHuman` |
 | `scripts` | `dev:all`, `dev:stack`, e2e runners, CRE runner, Arc deploy |
+
+## Hosted mode (web build flags)
+
+Local dev needs none of these. A hosted build sets them at `vite build` time:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `VITE_NOREN_HOSTED` | unset | `1`: Arc is the public Arc testnet only. The "Arc testnet fork / Arc testnet (live)" switch and fork badges disappear, and the app always runs against the Noren server below. |
+| `VITE_NOREN_API` | `http://127.0.0.1:8790` | The Noren server API base (the older `VITE_NOREN_SERVER` still works). |
+| `VITE_NOREN_RH_RPC` | unset (the server's `/config`) | The Robinhood RPC the browser uses, e.g. a VPS-hosted mainnet snapshot. Wins over the server's value. |
+
+Everywhere, the UI names the Robinhood side "Robinhood Chain · mainnet snapshot" (real mainnet state at a past block, no real money) and the dev Arc chain "Arc testnet fork". Names only are in `packages/web/.env.example`.

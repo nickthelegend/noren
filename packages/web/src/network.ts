@@ -1,5 +1,5 @@
 /**
- * Network switch: "Local fork" (the full stack from pnpm dev:all) or "Arc testnet (live)", the public deployment
+ * Network switch: "Arc testnet fork" (the full stack from pnpm dev:all) or "Arc testnet (live)", the public deployment
  * recorded in deployments/5042002.json (contracts, the live private payment and refund, the CRE writes).
  * Only Arc has a live deployment: Robinhood Chain, fiat invoices and the browser checkout run on the forks.
  */
@@ -8,10 +8,20 @@ import { createPublicClient, http, parseAbi, toFunctionSelector } from "viem";
 import live from "../../../deployments/5042002.json";
 
 export type Net = "fork" | "live";
+/**
+ * Hosted mode (VITE_NOREN_HOSTED=1): the app always runs against the Noren server it is built for (VITE_NOREN_API), whose
+ * Arc is the public Arc testnet and whose Robinhood side is a hosted mainnet snapshot (VITE_NOREN_RH_RPC). There is no
+ * fork/live switch: "fork" here means "the full app backed by the server", which is the only mode.
+ */
+export const HOSTED = import.meta.env.VITE_NOREN_HOSTED === "1" || import.meta.env.VITE_NOREN_HOSTED === "true";
+/** How the UI names the Robinhood side: a snapshot of mainnet state, never "mainnet". */
+export const RH_LABEL = "Robinhood Chain · mainnet snapshot";
+/** How the UI names Arc: the public testnet when hosted, a local fork of it in dev. */
+export const ARC_LABEL = HOSTED ? "Arc testnet" : "Arc testnet fork";
 const KEY = "noren.network";
 const subs = new Set<(n: Net) => void>();
-const read = (): Net => { try { return localStorage.getItem(KEY) === "live" ? "live" : "fork"; } catch { return "fork"; } };
-export function setNet(n: Net) { try { localStorage.setItem(KEY, n); } catch { /* tab-only */ } subs.forEach((f) => f(n)); }
+const read = (): Net => { if (HOSTED) return "fork"; try { return localStorage.getItem(KEY) === "live" ? "live" : "fork"; } catch { return "fork"; } };
+export function setNet(n: Net) { if (HOSTED) return; try { localStorage.setItem(KEY, n); } catch { /* tab-only */ } subs.forEach((f) => f(n)); }
 export function useNet(): [Net, (n: Net) => void] {
   const [n, set] = useState<Net>(read);
   useEffect(() => { subs.add(set); return () => { subs.delete(set); }; }, []);

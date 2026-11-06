@@ -83,13 +83,13 @@ export function BridgeTab({ w }: { w: Wallet }) {
   };
 
   const top = <AnyChainArc w={w} />;
-  if (!desk) return <div className="nk-col">{top}<Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp all /></div>;
+  if (!desk) return <div className="nk-col">{top}<Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood Chain mainnet snapshot and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp all /></div>;
 
   return (
     <div className="nk-col">
       {top}
       <section className="nk-card" aria-label="USDG to Arc, mainnet route">
-        <div className="nk-card-h"><div><b>USDG to Arc · mainnet route</b><p>Robinhood Chain has no CCTP on mainnet, so USDG goes through Relay or Across, approved by Chainlink CRE.</p></div><span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />fork</span></div>
+        <div className="nk-card-h"><div><b>USDG to Arc · mainnet route</b><p>Robinhood Chain has no CCTP on mainnet, so USDG goes through Relay or Across, approved by Chainlink CRE.</p></div><span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />mainnet snapshot</span></div>
         <div className="nk-box">
           <label htmlFor="nk-br"><span>You send · Robinhood Chain</span></label>
           <div className="nk-row"><input id="nk-br" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /><span className="nk-token" data-static="true"><Coin t={USDG_TOKEN} />USDG</span></div>
@@ -117,7 +117,7 @@ export function BridgeTab({ w }: { w: Wallet }) {
         <button className="nk-cta" disabled={!!busy || !amt || (have !== undefined && !!amt && amt > have)} onClick={send}>
           {busy ? <><Spin /> {busy}</> : !amt ? "Enter an amount" : have !== undefined && amt > have ? "Not enough USDG" : "Bridge with Chainlink CRE approval"}
         </button>
-        <p className="nk-fine">Quotes are live mainnet quotes from Relay and Across (fetched by the Noren server, so your browser talks to no third party). On this local fork no real relayer fills on Arc, so the last step stays pending. Instructions (not tokens) from Robinhood reach Arc over Chainlink CCIP through a Base hub, because there is no direct lane.</p>
+        <p className="nk-fine">Quotes are live mainnet quotes from Relay and Across (fetched by the Noren server, so your browser talks to no third party). On the mainnet snapshot no real relayer fills on Arc, so the last step stays pending. Instructions (not tokens) from Robinhood reach Arc over Chainlink CCIP through a Base hub, because there is no direct lane.</p>
       </section>
 
       {list === null ? <Skel rows={1} /> : (
@@ -146,7 +146,7 @@ function AnyChainArc({ w }: { w: Wallet }) {
           <b className="lg-row nk-rharc-t">{dir === "stock" ? <><Mark id="ROBINHOOD" size={22} />Stocks <span aria-hidden>→</span><Mark id="ARC" size={22} />USDC on Arc</> : dir === "out" ? <><Mark id="ARC" size={22} />Send USDC from Arc to any chain</> : <><Mark id="ARC" size={22} />Bring USDC to Arc from any chain</>}</b>
           <p>{dir === "stock" ? "Sell Stock Tokens on Robinhood Chain, get USDC on Arc from a 1inch Aqua maker." : `Native USDC over Circle CCTP V2 from ${SOURCE_CHAINS.length} chains: burned on one side, minted on the other. No wrapped tokens. Public testnets.`}</p>
         </div>
-        <span className={`nk-pill ${dir === "stock" ? "fork" : "live"}`}>{dir === "stock" ? "fork demo" : <><Mark id="CIRCLE" size={16} />CCTP V2 · testnets</>}</span>
+        <span className={`nk-pill ${dir === "stock" ? "fork" : "live"}`}>{dir === "stock" ? "mainnet snapshot" : <><Mark id="CIRCLE" size={16} />CCTP V2 · testnets</>}</span>
       </div>
       <div className="nk-band nk-markets" role="tablist" aria-label="Direction">
         {([["in", "Any chain → Arc"], ["out", "Arc → any chain"], ["stock", "Stocks → USDC"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={dir === k} aria-pressed={dir === k} onClick={() => setDir(k)}>{l}</button>)}

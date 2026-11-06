@@ -70,7 +70,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
       <button className="btn ink full xl" disabled={!!busy || !!tx || !enough || !payout} onClick={pay}>
         {busy === "pay" ? <><span className="spin" /> Sending USDC…</> : busy === "verify" ? <><span className="spin" /> Verifying on Arc…</> : !payout ? `${shop} has no payout address` : !enough ? "Not enough USDC" : <><Mark id="USDC" size={20} /> Pay {usdc(amount)} USDC</>}
       </button>
-      <p className="faint sm center">USDC.transfer on the Arc fork, signed by your test key in this browser.</p>
+      <p className="faint sm center">USDC.transfer on Arc, signed by your test key in this browser.</p>
     </div>
   );
 }

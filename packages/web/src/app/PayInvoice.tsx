@@ -184,7 +184,7 @@ export function PayInvoice({ w, initial, onDone }: { w: Wallet; initial?: string
                       ))}
                     </div>
                     {!enough && bal && !working && (
-                      <div className="nk-setup" role="status"><span className="nk-tag">Top up first</span><b>Your private balance is {usdc(bal.approved)} USDC.</b><p>{hasPublic ? `Your wallet holds ${usdc(w.arcUsdc!)} USDC on the Arc fork: move 20 into your private balance.` : "Test network: get fork USDC and move 20 into your private balance in one step."}</p>
+                      <div className="nk-setup" role="status"><span className="nk-tag">Top up first</span><b>Your private balance is {usdc(bal.approved)} USDC.</b><p>{hasPublic ? `Your wallet holds ${usdc(w.arcUsdc!)} USDC on Arc: move 20 into your private balance.` : "Test network: get fork USDC and move 20 into your private balance in one step."}</p>
                         <button className="nk-btn ink" disabled={!!busy} onClick={topUp}>{busy ? <><Spin /> {busy}</> : hasPublic ? "Shield 20 USDC from your wallet" : "Add 20 test USDC privately"}</button></div>
                     )}
                     <ol className="nk-steps" aria-label="Private payment steps">

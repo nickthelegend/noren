@@ -100,7 +100,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const firstRun = !!baseCfg && !err && (tab === "onboard" || (!devToken && !session && tab === "home") || (!!session && stores !== null && stores.length === 0 && tab === "home"));
   if (firstRun && baseCfg) return (
     <div className="ob-page">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
       <Onboard cfg={baseCfg} session={session} onSession={setSession} onStore={(st) => { setStores((l) => [...(l ?? []), st]); setStoreId(st.id); }} onDone={() => go("#/dashboard")} />
       <Toasts />
     </div>
@@ -110,7 +110,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
 
   return (
     <div className="sd">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
@@ -140,7 +140,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
         </header>
 
         <main className="sd-main">
-          {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the local fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
+          {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the Arc testnet fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
             <>
               {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}
@@ -282,7 +282,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
-        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood Chain mainnet snapshot, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
           <>
             <dl className="sd-dl">
               <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
@@ -400,7 +400,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
             <label className="sd-settle-amt"><span>Amount</span><input className="sd-input" inputMode="decimal" placeholder={fmt(usdg)} value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USDG to settle" /></label>
             <button className="sd-btn primary" disabled={busy || usdg <= 0 || !d.relay} onClick={settle}>{busy ? "Requesting…" : "Settle to Arc"}</button>
           </div>
-          <p className="sd-muted sm">A Chainlink CRE workflow compares live Relay and Across quotes with Chainlink USDG/USD and USDC/USD before approving; a keeper then deposits into Relay. On a local fork no real relayer fills the Arc side, so the fill stays pending.</p>
+          <p className="sd-muted sm">A Chainlink CRE workflow compares live Relay and Across quotes with Chainlink USDG/USD and USDC/USD before approving; a keeper then deposits into Relay. On the snapshot no real relayer fills the Arc side, so the fill stays pending.</p>
           {d.settlements.length > 0 && (
             <ul className="sd-settle-list">{d.settlements.map((x) => (
               <li key={x.id}>

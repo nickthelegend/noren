@@ -1,5 +1,12 @@
 /** Talks to the Noren merchant server (packages/server). Every call is real; errors surface as readable messages. */
-export const SERVER = (import.meta.env.VITE_NOREN_SERVER as string | undefined) ?? "http://127.0.0.1:8790";
+/** The Noren server: VITE_NOREN_API (hosted), else the older VITE_NOREN_SERVER, else the local dev server. */
+export const SERVER = ((import.meta.env.VITE_NOREN_API || import.meta.env.VITE_NOREN_SERVER) as string | undefined)?.replace(/\/+$/, "") || "http://127.0.0.1:8790";
+/** Robinhood RPC for the app (hosted: a VPS-hosted mainnet snapshot). When set it wins over the server's /config. */
+export const RH_RPC = (import.meta.env.VITE_NOREN_RH_RPC as string | undefined)?.trim() || null;
+const withRhRpc = (c: Config): Config => {
+  const credit = (c as unknown as { credit?: { robinhoodRpc?: string | null } | null }).credit;
+  return RH_RPC && credit ? ({ ...c, credit: { ...credit, robinhoodRpc: RH_RPC } } as Config) : c;
+};
 
 export type Config = {
   chainId: number; rpcUrl: string; aspUrl: string; merchant: `0x${string}`;
@@ -45,7 +52,7 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
 }
 
 export const api = {
-  config: () => call<Config>("/config"),
+  config: () => call<Config>("/config").then(withRhRpc),
   settlements: (merchant: string, token: string) => call<{ desk: string; usdg: string; relay: boolean; settlements: Settlement[] }>(`/merchants/${merchant}/settlements`, { token }),
   settle: (merchant: string, amountUsdg6: bigint, token: string) => call<{ requestTx: string }>(`/merchants/${merchant}/settlements`, { method: "POST", token, body: JSON.stringify({ amountUsdg6: amountUsdg6.toString() }) }),
   bridgeLog: () => call<{ source: string; written?: string; event: string; ms: number; handler: number; skipped?: string; error?: string }[]>("/credit/bridge"),

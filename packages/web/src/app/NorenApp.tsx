@@ -25,7 +25,7 @@ import { CreditTab } from "./CreditTab";
 import { PayTab } from "./PayTab";
 import { HomeTab } from "./HomeTab";
 import { LiveArc, NetSwitch } from "../LiveArc";
-import { useNet } from "../network";
+import { ARC_LABEL, HOSTED, RH_LABEL, useNet } from "../network";
 import { Mark } from "../logos";
 import { PRIVY_APP_ID, restoreBrowserWallet, useSigner } from "../signer";
 import { SignIn, WalletSwitch } from "./SignIn";
@@ -92,8 +92,8 @@ export function NorenApp() {
           <div className="nk-right">
             <NetSwitch />
             {net === "fork" && <span className="nk-nets" aria-label="Networks">
-              <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} /><Mark id="ROBINHOOD" size={16} />Robinhood fork</span>
-              <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />Arc fork</span>
+              <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} /><Mark id="ROBINHOOD" size={16} />{RH_LABEL}</span>
+              <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />{ARC_LABEL}</span>
             </span>}
             <div className="nk-prof">
               <button className="nk-chip" onClick={() => setMenu((o) => !o)} aria-expanded={menu} aria-haspopup="dialog"><i className="nk-ava" aria-hidden />{oc ? shortHex(oc.address, 6) : needsSignIn ? "Signed out" : "…"}</button>
@@ -117,7 +117,7 @@ export function NorenApp() {
             </AnimatePresence>
           )}
         </main>
-        <p className={`nk-foot${tab === "home" ? " wide" : ""}`}>Test networks only. Robinhood Chain runs as a local snapshot of mainnet (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as a local testnet fork, except Swap on Arc and Bridge, which use the public testnets. No real money moves.</p>
+        <p className={`nk-foot${tab === "home" ? " wide" : ""}`}>{HOSTED ? "Test networks only. Arc is the public Arc testnet; Robinhood Chain is a mainnet snapshot (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4 at a past block) served by Noren. No real money moves." : "Test networks only. Robinhood Chain runs as a mainnet snapshot (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as an Arc testnet fork, except Swap on Arc and Bridge, which use the public testnets. No real money moves."}</p>
       </div>
     </MotionConfig>
   );
@@ -140,8 +140,8 @@ function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
       </div>
       <div className="nk-menu-row"><small className="lg-row"><Mark id="ARC" size={14} />Arc</small></div>
       <div className="nk-bal" style={{ gridTemplateColumns: "1fr" }}><span>{w.arcUsdc === null ? "–" : usdc(w.arcUsdc)}<em><Mark id="USDC" size={14} />USDC on Arc</em></span></div>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Robinhood fork faucet: NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>
+      <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Test faucet (${RH_LABEL}): NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>
+      <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return `Test faucet (${ARC_LABEL}): test USDC and gas sent.`; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>
       {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
       <button className="nk-x" onClick={onClose} aria-label="Close">×</button>
     </div>

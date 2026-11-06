@@ -10,7 +10,7 @@ import "./landing.css";
 
 /** Honest status of each piece. Flip a value here when its branch lands. */
 type Status = "live" | "key" | "wip" | "quotes" | "testnet";
-const STATUS: Record<Status, string> = { live: "Runs on local fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
+const STATUS: Record<Status, string> = { live: "Runs on Arc testnet fork", key: "Needs key", wip: "In progress", quotes: "Live quotes", testnet: "Live on testnets" };
 const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {

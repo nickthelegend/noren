@@ -63,7 +63,7 @@ export function CctpPay({ view, shop }: { view: InvoiceView; shop: string }) {
       <label className="co-check-row"><input type="checkbox" checked={relay === "self"} disabled={running} onChange={(e) => setMine(e.target.checked)} /> <span>Finish the mint on Arc from this browser (needs a little Arc testnet USDC for gas). Otherwise Noren's Chainlink CRE relay finishes it.</span></label>
       <div className="co-privacy light">
         <Icon.card />
-        <p><b>Not private, on public testnets.</b> Your address on {src.name} is in the burn. The invoice is paid on <b>Arc testnet</b> by NorenArcActionRouter (event InvoicePaid); this page's invoice lives on the local fork, so it won't flip to “Paid” here. Noren Merchant lists it under cross-chain payments.</p>
+        <p><b>Not private, on public testnets.</b> Your address on {src.name} is in the burn. The invoice is paid on <b>Arc testnet</b> by NorenArcActionRouter (event InvoicePaid); this page's invoice lives on the Arc testnet fork, so it won't flip to “Paid” here. Noren Merchant lists it under cross-chain payments.</p>
       </div>
       {flow && (
         <ol className="co-steps">

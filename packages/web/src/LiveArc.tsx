@@ -1,6 +1,6 @@
 /** "Arc testnet (live)": the public deployment and its recorded payments, with explorer links and live reads. */
 import { useEffect, useState } from "react";
-import { LIVE, addrUrl, liveFacts, liveOracleFreshness, useNet, type Net, type OracleFreshness } from "./network";
+import { HOSTED, LIVE, RH_LABEL, addrUrl, liveFacts, liveOracleFreshness, useNet, type Net, type OracleFreshness } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { AQUA_LIVE, CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, runLabel, ccipMsgUrl, shortChain } from "./crosschain";
@@ -11,8 +11,9 @@ const usdc = (v: bigint | string) => (Number(BigInt(v)) / 1e6).toLocaleString("e
 
 export function NetSwitch({ dark }: { dark?: boolean }) {
   const [n, set] = useNet();
+  if (HOSTED) return null;
   const opt = (v: Net, t: string, s: string) => <button type="button" role="radio" aria-checked={n === v} aria-label={t} onClick={() => set(v)}>{v === "live" && <i aria-hidden />}<span className="la-long">{t}</span><span className="la-short" aria-hidden>{s}</span></button>;
-  return <div className={`la-switch ${dark ? "dark" : ""}`} role="radiogroup" aria-label="Network">{opt("fork", "Local fork", "Fork")}{opt("live", "Arc testnet (live)", "Live")}</div>;
+  return <div className={`la-switch ${dark ? "dark" : ""}`} role="radiogroup" aria-label="Network">{opt("fork", "Arc testnet fork", "Fork")}{opt("live", "Arc testnet (live)", "Live")}</div>;
 }
 
 export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" }) {
@@ -26,8 +27,8 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
   return (
     <section className="la" aria-label="Noren live on Arc testnet">
       <header><span className="la-dot" aria-hidden /><Mark id="ARC" size={24} /><div><b>Live on Arc testnet</b><small>chain {LIVE.chainId} · real testnet USDC · {f ? `block ${f.block.toString()}` : err ? "RPC unreachable" : "reading…"}</small></div></header>
-      {context === "checkout" && <p className="la-note">This hosted checkout runs on the local fork. On Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
-      {context === "app" && <p className="la-note">Arc, the CCTP rail, the CCIP gateways and 1inch Aqua on Arc are live on public testnets (below). Swap, Earn, Borrow and the Robinhood side of credit run on the Robinhood Chain fork; switch back to “Local fork” to use them.</p>}
+      {context === "checkout" && <p className="la-note">This checkout runs on a local Arc testnet fork. On the public Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
+      {context === "app" && <p className="la-note">Arc, the CCTP rail, the CCIP gateways and 1inch Aqua on Arc are live on public testnets (below). Swap, Earn, Borrow and the Robinhood side of credit run on {RH_LABEL}; switch back to “Arc testnet fork” to use them.</p>}
       <dl className="la-grid">
         <div><dt>NorenCheckout</dt><dd><a href={addrUrl(LIVE.checkout)} target="_blank" rel="noreferrer">{short(LIVE.checkout)}</a></dd></div>
         <div><dt>Privacy pool (USDC)</dt><dd><a href={addrUrl(LIVE.pool)} target="_blank" rel="noreferrer">{short(LIVE.pool)}</a>{f && <small>{usdc(f.poolBal)} USDC shielded now</small>}</dd></div>
@@ -52,7 +53,7 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
           <li key={m.id}><span className="la-x"><Mark id="CHAINLINK" size={16} /><b>{m.route}</b> · CCIP · {m.action} · delivered</span><a href={ccipMsgUrl(m.id)} target="_blank" rel="noreferrer" className="tx-link">{short(m.id, 4)}</a></li>
         ))}
       </ul>
-      <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain, fiat-priced invoices and this browser checkout are fork-only. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>
+      <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain (a mainnet snapshot), fiat-priced invoices and this browser checkout run off the public deployment. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>
     </section>
   );
 }
