@@ -6,12 +6,15 @@
 import { useEffect, useState } from "react";
 import { createPublicClient, http, parseAbi, toFunctionSelector } from "viem";
 import live from "../../../deployments/5042002.json";
+import { HOSTED } from "./hosted";
 
 export type Net = "fork" | "live";
 const KEY = "noren.network";
 const subs = new Set<(n: Net) => void>();
-const read = (): Net => { try { return localStorage.getItem(KEY) === "live" ? "live" : "fork"; } catch { return "fork"; } };
-export function setNet(n: Net) { try { localStorage.setItem(KEY, n); } catch { /* tab-only */ } subs.forEach((f) => f(n)); }
+// The hosted build has one network, the public Arc testnet, served by the hosted server's /config: every screen runs the
+// interactive path ("fork" here only means "read everything from /config"), and the switch is hidden.
+const read = (): Net => { if (HOSTED) return "fork"; try { return localStorage.getItem(KEY) === "live" ? "live" : "fork"; } catch { return "fork"; } };
+export function setNet(n: Net) { if (HOSTED) return; try { localStorage.setItem(KEY, n); } catch { /* tab-only */ } subs.forEach((f) => f(n)); }
 export function useNet(): [Net, (n: Net) => void] {
   const [n, set] = useState<Net>(read);
   useEffect(() => { subs.add(set); return () => { subs.delete(set); }; }, []);

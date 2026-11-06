@@ -12,7 +12,7 @@ import "@fontsource/space-mono/400.css";
 import "@fontsource/space-mono/700.css";
 import "./app.css";
 import { api, usdc } from "../api";
-import { Logo, msgOf, useConfig } from "../ui";
+import { Logo, isFork, msgOf, useConfig } from "../ui";
 import type { Config } from "../api";
 import { makeOnchain, type Holding, type Onchain } from "../onchain";
 import { WETH } from "./tokens";
@@ -29,6 +29,8 @@ import { useNet } from "../network";
 import { Mark } from "../logos";
 import { PRIVY_APP_ID, restoreBrowserWallet, useSigner } from "../signer";
 import { SignIn, WalletSwitch } from "./SignIn";
+import { HOSTED, surfaceHref } from "../hosted";
+import { CircleFaucet, SnapshotNotice, robinhoodOff } from "../HostedNotice";
 
 export const TABS = ["home", "pay", "bridge", "earn", "credit", "borrow", "swap"] as const;
 export type Tab = (typeof TABS)[number];
@@ -57,21 +59,23 @@ export function NorenApp() {
   const [tick, setTick] = useState(0);
   const [menu, setMenu] = useState(false);
   const [net] = useNet();
+  const rhOff = robinhoodOff(cfg);
 
   const refresh = useCallback(() => {
     if (!oc) return;
-    oc.holdings().then(async (h) => {
+    if (rhOff) { setHold(null); setHoldErr("Robinhood Chain runs on the local mainnet snapshot (see the README)."); }
+    else oc.holdings().then(async (h) => {
       const { pub } = oc.robinhood();
       const weth = await pub.readContract({ address: WETH, abi: erc20Abi, functionName: "balanceOf", args: [oc.address] }).catch(() => 0n);
       setHold({ ...h, weth }); setHoldErr(null);
     }).catch((e) => setHoldErr(msgOf(e)));
     oc.arcUsdc().then(setArcUsdc).catch(() => setArcUsdc(null));
     setTick((t) => t + 1);
-  }, [oc]);
+  }, [oc, rhOff]);
   useEffect(() => { setHold(null); setArcUsdc(null); refresh(); const t = setInterval(refresh, 8000); return () => clearInterval(t); }, [refresh]);
 
   if (err) return (
-    <div className="nk"><main className="nk-main"><div className="nk-col"><div className="nk-setup" role="alert"><span className="nk-tag">Setup required</span><b>The Noren server isn't running.</b><p>{err}</p><p><code>pnpm dev:all</code> then <code>pnpm --filter @noren/web dev</code></p></div></div></main></div>
+    <div className="nk"><main className="nk-main"><div className="nk-col">{HOSTED ? <div className="nk-setup" role="alert"><span className="nk-tag">Server unavailable</span><b>The hosted Noren server didn't answer.</b><p>{err}</p></div> : <div className="nk-setup" role="alert"><span className="nk-tag">Setup required</span><b>The Noren server isn't running.</b><p>{err}</p><p><code>pnpm dev:all</code> then <code>pnpm --filter @noren/web dev</code></p></div>}</div></main></div>
   );
   const w: Wallet | null = cfg && oc ? { cfg, oc, hold, holdErr, arcUsdc, refresh, tick } : null;
   const credit = oc?.credit;
@@ -80,7 +84,7 @@ export function NorenApp() {
     <MotionConfig reducedMotion="user">
       <div className="nk">
         <header className="nk-nav">
-          <a className="nk-brand" href="#/"><Logo size={30} /><span>Noren</span><small>app</small></a>
+          <a className="nk-brand" href={surfaceHref("#/")}><Logo size={30} /><span>Noren</span><small>app</small></a>
           <nav className="nk-tabs" role="tablist" aria-label="Noren app">
             {TABS.map((t) => (
               <button key={t} role="tab" aria-label={LABEL[t]} aria-selected={tab === t} onClick={() => go(t)}>
@@ -91,7 +95,9 @@ export function NorenApp() {
           </nav>
           <div className="nk-right">
             <NetSwitch />
-            {net === "fork" && <span className="nk-nets" aria-label="Networks">
+            {HOSTED ? <span className="nk-nets" aria-label="Network">
+              <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />Arc testnet</span>
+            </span> : net === "fork" && <span className="nk-nets" aria-label="Networks">
               <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} /><Mark id="ROBINHOOD" size={16} />Robinhood fork</span>
               <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} /><Mark id="ARC" size={16} />Arc fork</span>
             </span>}
@@ -109,21 +115,23 @@ export function NorenApp() {
                 {tab === "home" && <HomeTab w={w} go={go} />}
                 {tab === "swap" && <SwapTab w={w} />}
                 {tab === "bridge" && <BridgeTab w={w} />}
-                {tab === "earn" && <EarnTab w={w} />}
-                {tab === "borrow" && <BorrowTab w={w} />}
-                {tab === "credit" && <CreditTab w={w} />}
+                {tab === "earn" && (rhOff ? <div className="nk-col"><SnapshotNotice what="Earn" detail="Deposits become 1inch Aqua liquidity for Stock Token markets on Robinhood Chain." /></div> : <EarnTab w={w} />)}
+                {tab === "borrow" && (rhOff ? <div className="nk-col"><SnapshotNotice what="Borrow" detail="Borrowing against Stock Tokens happens on Robinhood Chain." /></div> : <BorrowTab w={w} />)}
+                {tab === "credit" && (rhOff ? <div className="nk-col"><SnapshotNotice what="Credit: Pay in 3 and Pay later, privately" detail="Credit lines are backed by Stock Tokens on Robinhood Chain and bridged to Arc by Chainlink CRE." /></div> : <CreditTab w={w} />)}
                 {tab === "pay" && <PayTab w={w} />}
               </motion.div>
             </AnimatePresence>
           )}
+          {HOSTED && tab === "home" && w && <div className="nk-col" style={{ marginTop: 24 }}><LiveArc context="app" /></div>}
         </main>
-        <p className={`nk-foot${tab === "home" ? " wide" : ""}`}>Test networks only. Robinhood Chain runs as a local snapshot of mainnet (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as a local testnet fork, except Swap on Arc and Bridge, which use the public testnets. No real money moves.</p>
+        <p className={`nk-foot${tab === "home" ? " wide" : ""}`}>{HOSTED ? "Test networks only. Live on the public Arc testnet (chain 5042002): Pay, Send privately, Swap on Arc and Bridge send real testnet transactions. Robinhood Chain features (stocks, Earn, Borrow, Credit) run on a local mainnet snapshot: see the README and demo video. No real money moves." : <>Test networks only. Robinhood Chain runs as a local snapshot of mainnet (real Stock Tokens, Chainlink feeds, 1inch Aqua and Uniswap v4); Arc runs as a local testnet fork, except Swap on Arc and Bridge, which use the public testnets. No real money moves.</>}</p>
       </div>
     </MotionConfig>
   );
 }
 
 function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
+  const rhOff = robinhoodOff(w.cfg);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
   const run = async (k: string, f: () => Promise<string>) => { setBusy(k); setNote(null); try { setNote({ t: await f() }); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } };
@@ -132,16 +140,16 @@ function Profile({ w, onClose }: { w: Wallet; onClose: () => void }) {
   return (
     <div className="nk-menu" role="dialog" aria-label="Your wallet">
       <WalletSwitch />
-      <div className="nk-menu-row"><small>Your address on both chains</small><span>{w.oc.address}</span></div>
-      <div className="nk-bal" aria-label="Robinhood Chain balances">
+      <div className="nk-menu-row"><small>{rhOff ? "Your address" : "Your address on both chains"}</small><span>{w.oc.address}</span></div>
+      {!rhOff && <div className="nk-bal" aria-label="Robinhood Chain balances">
         <span>{h ? usdc(h.usdg) : "…"}<em><Mark id="USDG" size={14} />USDG</em></span>
         <span>{h ? (Number(h.eth) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em><Mark id="ETH" size={14} />ETH</em></span>
         <span>{h ? (Number(h.stocks.find((s) => s.sym === "NVDA")?.balance ?? 0n) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "…"}<em><Mark id="NVDA" size={14} />NVDA</em></span>
-      </div>
+      </div>}
       <div className="nk-menu-row"><small className="lg-row"><Mark id="ARC" size={14} />Arc</small></div>
       <div className="nk-bal" style={{ gridTemplateColumns: "1fr" }}><span>{w.arcUsdc === null ? "–" : usdc(w.arcUsdc)}<em><Mark id="USDC" size={14} />USDC on Arc</em></span></div>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Robinhood fork faucet: NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>
-      <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>
+      {!rhOff && <button className="nk-btn" disabled={!!busy} onClick={() => run("rh", async () => { const r = await api.robinhoodFaucet(w.oc.address); return `Robinhood fork faucet: NVDA and USDG moved from real holders (${Object.keys(r).join(", ")}).`; })}>{busy === "rh" ? "Moving tokens…" : "Get test stock and USDG (Robinhood fork)"}</button>}
+      {HOSTED || !isFork(w.cfg) ? <CircleFaucet variant="nk" where="The Noren app" address={w.oc.address} /> : <button className="nk-btn" disabled={!!busy} onClick={() => run("arc", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arc" ? "Sending…" : "Get test USDC (Arc fork)"}</button>}
       {note && <div className={note.bad ? "nk-err" : "nk-note"} role="status">{note.t}</div>}
       <button className="nk-x" onClick={onClose} aria-label="Close">×</button>
     </div>

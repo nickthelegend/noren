@@ -967,3 +967,14 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-more-t i { grid-area: i; font-style: normal; font-size: 18px; color: var(--faint); width: 24px; text-align: center; }
 .co-more-go { flex: none; min-height: 44px; margin-right: 6px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--ai); background: var(--white); color: var(--ai); font-weight: 600; font-size: 13px; cursor: pointer; }
 .co-more-go[aria-selected="true"] { background: var(--ai); color: var(--white); }
+
+/* Hosted build (public Arc testnet): Robinhood snapshot notices and the Circle faucet address row. */
+.hx-tag { display: inline-block; margin-bottom: 8px; font: 400 11px/1 var(--mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; color: #b4561c; }
+.hx-note { padding: 16px; border-radius: 14px; border: 1px dashed rgba(217, 119, 47, .5); background: #fffaf4; }
+.hx-note b { display: block; font-size: 15px; }
+.hx-note p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
+.hx-addr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; min-width: 0; }
+.hx-addr code { flex: 1 1 220px; min-width: 0; padding: 8px 10px; border-radius: 10px; background: rgba(28, 42, 94, .06); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; word-break: break-all; }
+.co-fund p.faint, .co-fund p.note, .co-fund p.err { margin: 8px 0 0; }
+.hx-row { margin-top: 10px; }
+.hx-row > a { text-align: center; }

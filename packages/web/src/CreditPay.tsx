@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
+import { surfaceHref } from "./hosted";
 import { payoutOf } from "./kit";
 import type { Line, Onchain } from "./onchain";
 import type { ReactNode } from "react";
@@ -40,7 +41,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   if (!line) return (
     <div className="co-credit-empty">
       <p><b>You don't have a credit line yet.</b> Lock Stock Tokens on Robinhood Chain to open a credit line. It reaches Arc through a Chainlink CRE workflow in a few seconds.</p>
-      <a className="btn line full" href="#/app">Open a credit line in the Noren app <Icon.arrow /></a>
+      <a className="btn line full" href={surfaceHref("#/app")}>Open a credit line in the Noren app <Icon.arrow /></a>
     </div>
   );
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { jsonBigints, parseInvoice, type Invoice } from "@noren/core";
 import { api, short, usdc, type InvoiceView } from "./api";
 import type { Wallet } from "./wallet";
-import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
+import { Icon, Logo, Setup, isFork, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
 import { CreditPrivatePay } from "./CreditPrivatePay";
 import { StockPay } from "./StockPay";
@@ -13,6 +13,8 @@ import { useNet } from "./network";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { STOCKS } from "./onchain";
+import { HOSTED, surfaceHref } from "./hosted";
+import { HostedTopUp, SnapshotNotice, robinhoodOff } from "./HostedNotice";
 
 const stockSym = (a?: string) => STOCKS.find((x) => x.token.toLowerCase() === a?.toLowerCase())?.sym;
 
@@ -83,6 +85,9 @@ export function Checkout({ id }: { id: string }) {
   const expired = view?.status === "expired" || (cd !== null && cd.left === 0 && view?.status !== "paid" && view?.status !== "refunded");
   const settled = view?.status === "paid" || view?.status === "refunded";
   const working = step === "binding" || step === "proving" || step === "relaying";
+  // Public Arc testnet (the hosted build): no fork faucet; Circle's faucet, then shield exactly what this invoice needs.
+  const publicNet = HOSTED || !isFork(cfg);
+  const rhOff = robinhoodOff(cfg);
 
   const getUsdc = async () => { if (!wallet) return; setBusy("faucet"); setNote(null); try { await api.faucet(wallet.address); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
   const shield = async () => { if (!wallet) return; setBusy("shield"); setNote(null); try { await wallet.shield(20_000_000n); setNote("Shielded 20 USDC. The compliance check approves it in a few seconds."); await load(); } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); } };
@@ -120,7 +125,7 @@ export function Checkout({ id }: { id: string }) {
         {/* --------------------------------------------------------------- summary */}
         <section className="co-sum">
           <div className="co-sum-in">
-            <a className="co-shop" href="#/"><span className="co-shop-mark" aria-hidden>{shop.slice(0, 1).toUpperCase()}</span><span>{shop}</span></a>
+            <a className="co-shop" href={surfaceHref("#/")}><span className="co-shop-mark" aria-hidden>{shop.slice(0, 1).toUpperCase()}</span><span>{shop}</span></a>
             <span className="co-k">Pay {shop}</span>
             {quote ? (
               <>
@@ -141,12 +146,12 @@ export function Checkout({ id }: { id: string }) {
                 : <p><b>Only “Pay privately” hides you.</b> {method === "usdc" ? "A USDC payment comes from your Arc wallet" : method === "stocks" ? "Paying with stocks or crypto comes from your Robinhood wallet" : method === "xchain" ? "Paying from another chain comes from your wallet there" : "Paying later comes from your credit line"}, so {shop} and the chain can link it to you.</p>}
             </div>
           </div>
-          <footer className="co-foot"><span>Powered by</span><a href="#/"><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
+          <footer className="co-foot"><span>Powered by</span><a href={surfaceHref("#/")}><Logo size={16} /> Noren</a><span className="mono faint">{short(id, 6)}</span></footer>
         </section>
 
         {/* --------------------------------------------------------------- pay */}
         <section className="co-pay">
-          <div className="co-net"><NetSwitch /></div>
+          {!HOSTED && <div className="co-net"><NetSwitch /></div>}
           {net === "live" ? <LiveArc context="checkout" /> : loadErr && !view ? (
             <div className="co-state"><Icon.x /><h2>This payment link doesn't work</h2><p>{loadErr}</p></div>
           ) : settled ? (
@@ -175,7 +180,7 @@ export function Checkout({ id }: { id: string }) {
                 </>}
               </dl>
               {doneUrl && view?.status === "paid" && <a className="btn ink full lg" href={doneUrl}>Return to {shop}{leaving ? ` (${leaving})` : ""} <Icon.arrow /></a>}
-              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool, out of your credit limit. Your repayment plan is in the <a href="#/app/credit">Noren app</a>.</p> : view?.method === "usdc" ? <p className="faint sm">A direct transfer on Arc, verified on-chain by {shop}'s Noren server.</p> : drawnOnCredit ? <p className="faint sm">{shop} was paid from the privacy pool and sees “Customer: Private”. Your lender sees a draw into the privacy pool, not which merchant it paid. Repay in the <a href="#/app/credit">Noren app</a>; repayments are public.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
+              {view?.method === "stocks" ? <p className="faint sm">{shop} received USDG on Robinhood Chain{view.stock?.route === "aqua-maker" ? " from a 1inch Aqua maker, which now holds your shares" : view.stock?.route === "vault" ? " from Noren's stock vault, which now holds your shares" : ""}.</p> : view?.method === "credit" ? <p className="faint sm">{shop} was paid in full from the Arc credit pool, out of your credit limit. Your repayment plan is in the <a href={surfaceHref("#/app/credit")}>Noren app</a>.</p> : view?.method === "usdc" ? <p className="faint sm">A direct transfer on Arc, verified on-chain by {shop}'s Noren server.</p> : drawnOnCredit ? <p className="faint sm">{shop} was paid from the privacy pool and sees “Customer: Private”. Your lender sees a draw into the privacy pool, not which merchant it paid. Repay in the <a href={surfaceHref("#/app/credit")}>Noren app</a>; repayments are public.</p> : <p className="faint sm">Your receipt opening is saved in this browser, so you can prove the purchase later if you need to.</p>}
             </div>
           ) : expired ? (
             <div className="co-state"><Icon.clock /><h2>This link has expired</h2><p>Ask {shop} for a new one. Nothing was charged.</p></div>
@@ -199,13 +204,15 @@ export function Checkout({ id }: { id: string }) {
                 <button type="button" className="co-more-t" aria-expanded={more} onClick={() => setMore((o) => !o)}><Mark id="CIRCLE" size={18} /><span>Pay from another chain</span><small>Public · USDC from 10 chains over Circle CCTP</small><i aria-hidden>{more ? "−" : "+"}</i></button>
                 {more && <button role="tab" className="co-more-go" aria-selected={method === "xchain"} disabled={working} onClick={() => setMethod("xchain")}>{method === "xchain" ? "Selected" : "Use this"}</button>}
               </div>
-              {method !== "private" && method !== "credit-private" && method !== "xchain" && (
+              {method !== "private" && method !== "credit-private" && method !== "xchain" && !(rhOff && method !== "usdc") && (
                 <div className="co-fund" role="note" aria-label="Public payment">
                   <p><b>This is a public payment.</b> {method === "usdc" ? "It comes straight from your Arc wallet (or from your wallet on another chain, if you bridge)" : method === "stocks" ? "It comes from your Robinhood Chain wallet" : "It draws on a credit line tied to your Robinhood Chain wallet"}, so {shop} and anyone reading the chain can link it to you.</p>
                   <div className="row2">{method === "credit" ? <button className="btn line" disabled={working} onClick={() => setMethod("credit-private")}><Icon.eyeOff /> Make it private: pay later, privately</button> : <button className="btn line" disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /> Make it private: shield first</button>}</div>
                 </div>
               )}
-              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit-private" && cfg && view ? <>
+              {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "xchain" && view ? <CctpPay view={view} shop={shop} /> : (method === "credit" || method === "credit-private" || method === "stocks") && rhOff ? (
+                <SnapshotNotice variant="co" what={method === "stocks" ? "Pay with stocks or crypto" : method === "credit" ? "Pay in 3" : "Pay later, privately"} detail={method === "stocks" ? "Paying with Stock Tokens or ETH settles on Robinhood Chain." : "Credit lines are backed by Stock Tokens on Robinhood Chain."} />
+              ) : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit-private" && cfg && view ? <>
                 <CreditPrivatePay cfg={cfg} view={view} shop={shop} wallet={wallet} bal={bal} payStep={step} proofSec={proofSec} onFunded={pay} onDrawn={setDrawnOnCredit} />
                 {note && <p className={step === "error" ? "err" : "note"} role="status">{note}</p>}
               </> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>
@@ -222,7 +229,10 @@ export function Checkout({ id }: { id: string }) {
                 </div>
               )}
 
-              {!enough && !working && bal && (
+              {!enough && !working && bal && publicNet && cfg && wallet && view && (
+                <HostedTopUp cfg={cfg} amount={amount} bal={bal} getWallet={async () => wallet} onChange={load} />
+              )}
+              {!enough && !working && bal && !publicNet && (
                 <div className="co-fund">
                   <p><b>Add funds to your private balance.</b> Test network: get free test USDC, then shield it into the pool. A compliance check clears it in a few seconds.</p>
                   <div className="row2">

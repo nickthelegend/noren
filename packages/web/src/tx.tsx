@@ -10,6 +10,7 @@ import { createPublicClient, decodeEventLog, erc20Abi, formatUnits, http, parseA
 import { api, short, type Config } from "./api";
 import { Copy, Icon, Logo, isFork, msgOf } from "./ui";
 import { creditOf } from "./onchain";
+import { HOSTED } from "./hosted";
 import { TOKENS } from "./app/tokens";
 import { EVENTS } from "./tx-events";
 import { Mark } from "./logos";
@@ -23,7 +24,7 @@ export const ROBINHOOD_EXPLORER = "https://robinhoodchain.blockscout.com";
 
 /** Where a transaction opens. `cfg` decides whether "arc" is the local fork or a real network. */
 export function txHref(chain: TxChain, hash: string, cfg?: Config | null) {
-  if (chain === "arc-live" || (chain === "arc" && cfg && !isFork(cfg))) return { href: `${ARC_EXPLORER}/tx/${hash}`, local: false, where: "Arc testnet explorer" };
+  if (chain === "arc-live" || (chain === "arc" && (HOSTED || (cfg && !isFork(cfg))))) return { href: `${ARC_EXPLORER}/tx/${hash}`, local: false, where: "Arc testnet explorer" };
   if (chain === "robinhood-mainnet") return { href: `${ROBINHOOD_EXPLORER}/tx/${hash}`, local: false, where: "Robinhood Chain explorer" };
   return { href: `${location.origin}${location.pathname}#/tx/${chain}/${hash}`, local: true, where: `local ${chain === "arc" ? "Arc" : "Robinhood"} fork transaction page` };
 }

@@ -8,7 +8,9 @@ import { createPublicClient, createWalletClient, erc20Abi, http, type Address, t
 import { activeAccount, walletTransport } from "./signer";
 import { localFork } from "@noren/core";
 import { SERVER, api, short, usdc, type Config, type InvoiceView } from "./api";
-import { Icon, msgOf } from "./ui";
+import { Icon, isFork, msgOf } from "./ui";
+import { HOSTED } from "./hosted";
+import { CircleFaucet } from "./HostedNotice";
 import { payoutOf } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "./tx";
@@ -22,6 +24,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
   const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<Hex | null>(null);
   const amount = BigInt(view.invoice.amount);
+  const publicNet = HOSTED || !isFork(cfg);
   const chain = localFork(cfg.rpcUrl);
   const pub = createPublicClient({ chain, transport: http(cfg.rpcUrl) });
 
@@ -57,7 +60,14 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
         <div><span>Wallet on Arc</span><b>{bal === null ? <span className="skel-t sm" /> : usdc(bal)}<em className="lg-row"><Mark id="USDC" size={16} />USDC</em></b><small className="faint mono">{addr ? short(addr, 6) : "…"}</small></div>
         <div><span>Pays to</span><b className="mono sm">{payout ? short(payout, 4) : "…"}</b><small className="faint">{shop}'s payout address</small></div>
       </div>
-      {bal !== null && !enough && !tx && (
+      {bal !== null && !enough && !tx && publicNet && (
+        <div className="co-fund" role="status">
+          <p><b>Not enough USDC in your Arc wallet.</b> This payment needs {usdc(amount)} USDC plus a little for gas.</p>
+          <CircleFaucet address={addr} />
+          <div className="row2"><a className="btn line" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Open the Circle faucet ↗</a><button className="btn line" disabled={!!busy} onClick={load}>Refresh balance</button></div>
+        </div>
+      )}
+      {bal !== null && !enough && !tx && !publicNet && (
         <button className="btn line full" disabled={!!busy} onClick={async () => { setBusy("faucet"); setNote(null); try { await api.faucet(addr!); await load(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } }}>
           {busy === "faucet" ? <><span className="spin" /> Sending…</> : "Get test USDC on Arc"}
         </button>
@@ -70,7 +80,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
       <button className="btn ink full xl" disabled={!!busy || !!tx || !enough || !payout} onClick={pay}>
         {busy === "pay" ? <><span className="spin" /> Sending USDC…</> : busy === "verify" ? <><span className="spin" /> Verifying on Arc…</> : !payout ? `${shop} has no payout address` : !enough ? "Not enough USDC" : <><Mark id="USDC" size={20} /> Pay {usdc(amount)} USDC</>}
       </button>
-      <p className="faint sm center">USDC.transfer on the Arc fork, signed by your test key in this browser.</p>
+      <p className="faint sm center">USDC.transfer on {publicNet ? "the public Arc testnet" : "the Arc fork"}, signed by your test key in this browser.</p>
     </div>
   );
 }

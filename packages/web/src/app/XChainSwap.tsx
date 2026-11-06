@@ -17,6 +17,7 @@ import { fmtUnits, parseAmount, tokenBy } from "./tokens";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
 import { SWAPVM_ATTRIBUTION } from "./SwapTab";
+import { SnapshotNotice, robinhoodOff } from "../HostedNotice";
 
 type XCfg = { settler: Address; escrow: Address; strategyHash: Hex; maker: Address; tokenIn: Address; srcChainId: string | number };
 type Relay = { chain: "robinhood" | "arc"; kind?: string; orderId?: Hex; source: Hex; written?: Hex; skipped?: string; error?: string; ms: number };
@@ -56,6 +57,7 @@ export function XChainSwap({ w }: { w: Wallet }) {
     return () => clearInterval(t);
   }, [o, x, clients, w]);
 
+  if (robinhoodOff(w.cfg)) return <div className="nk-pad"><SnapshotNotice what="Stocks → USDC on Arc" detail="Sells a Stock Token on Robinhood Chain for USDC on Arc from a 1inch Aqua maker, carried by Chainlink CRE." /></div>;
   if (!x) return <div className="nk-pad"><SetupCard title="Cross-chain Aqua isn't deployed on this stack" text="pnpm dev:all deploys the escrow on the Robinhood fork and the settler with an Aqua maker on the Arc fork, then relays orders through the Chainlink CRE simulator. It was skipped or failed; its log line says why." code="pnpm dev:all" /></div>;
 
   const insufficient = !!amountIn && have !== undefined && amountIn > have;

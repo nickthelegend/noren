@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api, SERVER, type Config } from "./api";
+import { HOSTED, SURFACE } from "./hosted";
 
 export const isFork = (cfg: Config | null) => !cfg || /127\.0\.0\.1|localhost/.test(cfg.rpcUrl);
 /** viem errors carry request dumps; show the human part only. */
@@ -25,6 +26,8 @@ export function useRoute(): Route {
   if (/^#\/(app|credit)\b/.test(hash)) return { page: "app" };
   const d = /^#\/(dashboard|merchant)(?:\/(balances|payments|links|developers|settings|onboard))?(?:\/([\w-]+))?/.exec(hash);
   if (d) return { page: "dashboard", tab: (d[2] as never) ?? "home", sub: d[3] };
+  // Noren Merchant's own deployment opens on the dashboard; the landing lives on the app surface.
+  if (SURFACE === "merchant" && /^(#\/?)?$/.test(hash)) return { page: "dashboard", tab: "home" };
   return { page: "home" };
 }
 
@@ -45,6 +48,14 @@ export function Copy({ text, label = "Copy" }: { text: string; label?: string })
 }
 
 export function Setup({ err, compact }: { err: string; compact?: boolean }) {
+  if (HOSTED) return (
+    <div className={`setup ${compact ? "compact" : ""}`} role="alert">
+      <span className="eyebrow">Server unavailable</span>
+      <h2>The hosted Noren server didn't answer.</h2>
+      <p>{err}</p>
+      <p className="faint sm">API: {SERVER}</p>
+    </div>
+  );
   return (
     <div className={`setup ${compact ? "compact" : ""}`} role="alert">
       <span className="eyebrow">Setup required</span>

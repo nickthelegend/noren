@@ -10,6 +10,8 @@ import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
 import { CCTP_CHAINS, CHAIN_MARK, crossChainPayments, type CrossChainPayment } from "./crosschain";
 import { privyActions } from "./signer";
+import { HOSTED, surfaceHref } from "./hosted";
+import { SnapshotNotice } from "./HostedNotice";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard";
@@ -19,6 +21,7 @@ type Row = InvoiceView & { quote?: Quote };
 type Currency = { code: string; name?: string; symbol?: string; decimals: number };
 
 const TOKEN_KEY = "noren.merchant.token";
+const TESTBAR = HOSTED ? "Noren Merchant · Test mode: payments settle on the public Arc testnet. No real funds." : "Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.";
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; } };
 const payLink = (id: string) => `${location.origin}${location.pathname}#/pay/${id}`;
 const go = (h: string) => { location.hash = h; };
@@ -100,7 +103,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const firstRun = !!baseCfg && !err && (tab === "onboard" || (!devToken && !session && tab === "home") || (!!session && stores !== null && stores.length === 0 && tab === "home"));
   if (firstRun && baseCfg) return (
     <div className="ob-page">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">{TESTBAR}</div>
       <Onboard cfg={baseCfg} session={session} onSession={setSession} onStore={(st) => { setStores((l) => [...(l ?? []), st]); setStoreId(st.id); }} onDone={() => go("#/dashboard")} />
       <Toasts />
     </div>
@@ -110,11 +113,11 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
 
   return (
     <div className="sd">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">{TESTBAR}</div>
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
-        )} items={[["Business settings", () => go("#/dashboard/settings")], ["Copy merchant ID", () => { if (cfg) { navigator.clipboard?.writeText(cfg.merchant); toast("Merchant ID copied"); } }], ...(stores && stores.length > 1 ? stores.filter((x) => x.id !== store?.id).map((x) => [`Switch to ${x.name}`, () => { saveStoreId(x.id); setStoreId(x.id); }] as [string, () => void]) : []), "sep", ["Set up a new store", () => go("#/dashboard/onboard")], ...(session ? [["Sign out", signOut] as [string, () => void]] : []), ["View landing page", () => go("#/")]]} />
+        )} items={[["Business settings", () => go("#/dashboard/settings")], ["Copy merchant ID", () => { if (cfg) { navigator.clipboard?.writeText(cfg.merchant); toast("Merchant ID copied"); } }], ...(stores && stores.length > 1 ? stores.filter((x) => x.id !== store?.id).map((x) => [`Switch to ${x.name}`, () => { saveStoreId(x.id); setStoreId(x.id); }] as [string, () => void]) : []), "sep", ["Set up a new store", () => go("#/dashboard/onboard")], ...(session ? [["Sign out", signOut] as [string, () => void]] : []), ["View landing page", () => { const to = surfaceHref("#/"); if (/^https?:/.test(to)) location.assign(to); else go(to); }]]} />
         <nav className="sd-nav">
           {nav.map(([k, t, I, c]) => <a key={k} href={`#/dashboard${k === "home" ? "" : `/${k}`}`} aria-current={tab === k ? "page" : undefined}><I /><span>{t}</span>{!!c && <em>{c}</em>}</a>)}
           <span className="sd-nav-h">Developers</span>
@@ -142,8 +145,9 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
         <main className="sd-main">
           {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the local fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
             <>
-              {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
+              {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span>{HOSTED ? <><b>Sign in or add a secret key</b> to create links, refund payments and manage webhooks.</> : <><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</>}</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}
+              {tab === "home" && HOSTED && <><div className="sd-section-h"><h2>Live data on Arc testnet</h2><span className="sd-muted">recorded runs, read live</span></div><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></>}
               {tab === "balances" && <Balances rows={rows} cfg={cfg} token={token} />}
               {tab === "payments" && (sub ? <PaymentPage id={sub} rows={rows} cfg={cfg} token={token} onDone={refresh} tick={tick} /> : <Payments rows={rows} cfg={cfg} />)}
               {tab === "links" && <Links rows={rows} onCreate={() => setCreating(true)} token={token} />}
@@ -282,7 +286,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
-        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+        {!credit?.creditLine && HOSTED ? <SnapshotNotice variant="sd" what="Pay later runs on the Robinhood snapshot" detail="Credit lines are backed by Stock Tokens on Robinhood Chain." /> : !credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
           <>
             <dl className="sd-dl">
               <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
@@ -353,7 +357,7 @@ function Balances({ rows, cfg, token }: { rows: Row[] | null; cfg: Config; token
           <dt>Read from</dt><dd className="mono">{cfg.rpcUrl}</dd>
         </dl>
       </section>
-      <SettleToArc cfg={cfg} token={token} />
+      {HOSTED ? <section className="sd-settle"><div className="sd-section-h"><h2>USDG on Robinhood Chain</h2></div><SnapshotNotice variant="sd" what="Settle to Arc" detail="Pay-with-stocks proceeds arrive as USDG on Robinhood Chain and settle to USDC on Arc through a Chainlink CRE-approved bridge." /></section> : <SettleToArc cfg={cfg} token={token} />}
       <div className="sd-section-h"><h2>Balance transactions</h2><span className="sd-muted">{ledger.length}</span></div>
       <div className="sd-table-wrap">
         {!rows ? <div className="sd-skel-rows"><i /><i /><i /></div> : ledger.length === 0 ? <Empty title="No balance transactions yet" text="Payments and refunds appear here as they settle on-chain." /> : (
@@ -834,7 +838,7 @@ function Keys({ cfg, token, setToken }: { cfg: Config; token: string; setToken: 
       {!token && (
         <section className="sd-panel narrow">
           <h2>Add your secret key</h2>
-          <p className="sd-muted">Paste the merchant token that <code>pnpm dev:stack</code> printed. It's stored in this browser only and sent only to {SERVER}.</p>
+          <p className="sd-muted">{HOSTED ? "Paste a merchant secret key for this store." : <>Paste the merchant token that <code>pnpm dev:stack</code> printed.</>} It's stored in this browser only and sent only to {SERVER}.</p>
           <div className="sd-row"><input className="sd-input mono" type="password" placeholder="Merchant token" value={draft} onChange={(e) => setDraft(e.target.value.trim())} aria-label="Secret key" autoComplete="off" /><button className="sd-btn primary" disabled={!draft} onClick={() => { setToken(draft); setDraft(""); toast("Secret key saved in this browser"); }}>Save</button></div>
         </section>
       )}

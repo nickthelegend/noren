@@ -15,6 +15,7 @@ import { XChainSwap } from "./XChainSwap";
 import { ArcSwap } from "./ArcSwap";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
+import { SnapshotNotice, robinhoodOff } from "../HostedNotice";
 
 type Done = { id: number; route: RouteQuote; other: RouteQuote | null; tin: Token; tout: Token; amountIn: bigint; hash?: string; received?: bigint; gasWei?: bigint; error?: string; step?: string };
 export const SWAPVM_ATTRIBUTION = "Powered by SwapVM — © Degensoft Ltd 2025";
@@ -32,6 +33,7 @@ export function SwapTab({ w }: { w: Wallet }) {
   const [done, setDone] = useState<Done | null>(null);
   const [market, setMarket] = useState<"arc" | "rh" | "xc">("arc");
   const xc = market === "xc";
+  const rhOff = robinhoodOff(w.cfg);
   const seq = useRef(0);
   const amountIn = useMemo(() => parseAmount(amount, tin.decimals), [amount, tin.decimals]);
 
@@ -50,7 +52,7 @@ export function SwapTab({ w }: { w: Wallet }) {
   const flip = () => { setTin(tout); setTout(tin); setAmount(""); setQ(null); };
 
   useEffect(() => {
-    if (!amountIn) { setQ(null); setQErr(null); return; }
+    if (!amountIn || rhOff) { setQ(null); setQErr(null); return; }
     const id = ++seq.current; setLoading(true); setQErr(null);
     const t = setTimeout(() => {
       sw.quote(tin, tout, amountIn).then((x) => { if (id === seq.current) setQ(x); }).catch((e) => { if (id === seq.current) { setQ(null); setQErr(msgOf(e)); } }).finally(() => id === seq.current && setLoading(false));
@@ -85,7 +87,7 @@ export function SwapTab({ w }: { w: Wallet }) {
         <div className="nk-band nk-markets" role="tablist" aria-label="Market">
           {([["arc", "USDC → EURC on Arc"], ["rh", "Stocks on Robinhood"], ["xc", "Stock → USDC on Arc"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={market === k} aria-pressed={market === k} onClick={() => setMarket(k)}>{l}</button>)}
         </div>
-        {market === "arc" ? <ArcSwap /> : xc ? <XChainSwap w={w} /> : <>
+        {market === "arc" ? <ArcSwap /> : rhOff ? <div className="nk-pad"><SnapshotNotice what={xc ? "Stock → USDC on Arc" : "Stocks on Robinhood"} detail={xc ? "Sells a Stock Token on Robinhood Chain for USDC on Arc from a 1inch Aqua maker, carried by Chainlink CRE." : "Stock Tokens, ETH and USDG trade through Uniswap v4 and Noren's 1inch Aqua maker on Robinhood Chain."} /></div> : xc ? <XChainSwap w={w} /> : <>
         <div className="nk-box">
           <label htmlFor="nk-in"><span>You pay</span></label>
           <div className="nk-row">

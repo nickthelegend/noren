@@ -3,6 +3,7 @@ import { Icon } from "./ui";
 import { Mark } from "./logos";
 import { AQUA_LIVE, CCTP_CHAINS, CCTP_RUNS, CCIP_MESSAGES, CHAIN_MARK, ccipMsgUrl, explorerTx, shortChain } from "./crosschain";
 import { LIVE } from "./network";
+import { surfaceHref } from "./hosted";
 import "./landing.css";
 
 /* Every number on this page comes from TESTING.md (local Arc testnet fork and Robinhood Chain mainnet snapshot, Nov 6 2026).
@@ -50,10 +51,10 @@ const CODE: Record<string, { file: string; lines: [string, string][] }> = {
 };
 
 const SURFACES = [
-  { k: "merchant", name: "Noren Merchant", href: "#/dashboard", cta: "Open Noren Merchant", img: "/art/surface-merchant.jpg", w: 1200, h: 750,
+  { k: "merchant", name: "Noren Merchant", href: surfaceHref("#/dashboard"), cta: "Open Noren Merchant", img: "/art/surface-merchant.jpg", w: 1200, h: 750,
     line: "The merchant dashboard. Payments with the method used, payment links priced in 9 currencies by Chainlink, refunds, balances, signed webhooks, API keys and credit-line exposure.",
     cap: "Home: today against yesterday, USDC balance on Arc, payment-method mix." },
-  { k: "app", name: "Noren app", href: "#/app", cta: "Open the Noren app", img: "/art/surface-app.jpg", w: 500, h: 1040,
+  { k: "app", name: "Noren app", href: surfaceHref("#/app"), cta: "Open the Noren app", img: "/art/surface-app.jpg", w: 500, h: 1040,
     line: "The customer's side. A private balance, Stock Tokens at live Chainlink prices, a credit score from on-chain history and a USDC line on Arc.",
     cap: "At 375 px: private balance, credit limit, stock held." },
   { k: "sdk", name: "Noren SDK", href: "#developers", cta: "Read the SDK", img: "/art/surface-checkout.jpg", w: 1200, h: 750,
@@ -208,7 +209,7 @@ export function Landing() {
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
           <p>Noren lets merchants accept stablecoins, stocks or credit — privately. A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.</p>
           <div className="lx-ctas">
-            <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
+            <a className="lx-btn light" href={surfaceHref("#/dashboard")}>Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
           </div>
         </div>
@@ -326,7 +327,7 @@ export function Landing() {
               <li key={t} data-reveal style={{ transitionDelay: `${i * 80}ms` }}><span className="mono">0{i + 1}</span><div><b>{t}</b><p>{d}</p></div></li>
             ))}
           </ol>
-          <a className="lx-btn dark" href="#/dashboard/onboard">Set up your store</a>
+          <a className="lx-btn dark" href={surfaceHref("#/dashboard/onboard")}>Set up your store</a>
         </div>
       </section>
 
@@ -375,7 +376,7 @@ export function Landing() {
         <h2>Open your shop's <em>curtain.</em></h2>
         <p>Run every chain, contract and workflow locally in one command, then take a private payment in under a minute.</p>
         <pre className="mono">pnpm install{"\n"}pnpm dev:all{"\n"}pnpm --filter @noren/web dev</pre>
-        <div className="lx-ctas"><a className="lx-btn light" href="#/dashboard">Open Noren Merchant</a><a className="lx-btn dark" href="#/app">Open the Noren app</a></div>
+        <div className="lx-ctas"><a className="lx-btn light" href={surfaceHref("#/dashboard")}>Open Noren Merchant</a><a className="lx-btn dark" href={surfaceHref("#/app")}>Open the Noren app</a></div>
       </section>
     </div>
   );

@@ -24,6 +24,7 @@ import { CCTP_CHAINS, CHAIN_MARK, SOURCE_CHAINS, shortChain } from "../crosschai
 import type { SourceChainKey } from "@noren/cctp";
 import { ArcOut } from "./ArcOut";
 import { XChainSwap } from "./XChainSwap";
+import { SnapshotNotice, robinhoodOff } from "../HostedNotice";
 
 const deskAbi = parseAbi(["function requestSettlement(uint256 amountUsdg6, address arcRecipient, uint16 maxSlippageBps) returns (bytes32 id)"]);
 type Quote = { relay: { outUsdc6: string; seconds: number; feeUsd?: string } | { error: string }; across: { outUsdc6: string; seconds: number } | { error: string } };
@@ -83,6 +84,7 @@ export function BridgeTab({ w }: { w: Wallet }) {
   };
 
   const top = <AnyChainArc w={w} />;
+  if (robinhoodOff(w.cfg)) return <div className="nk-col">{top}<SnapshotNotice what="USDG to Arc · mainnet route" detail="USDG earned on Robinhood Chain goes to Arc through Relay or Across, approved by a Chainlink CRE workflow." /><RecentCctp all /></div>;
   if (!desk) return <div className="nk-col">{top}<Card title="USDG to Arc · mainnet route"><div className="nk-pad"><SetupCard title="NorenSettlementDesk isn't deployed on this stack" text="This route needs the settlement desk on the Robinhood fork and its Chainlink CRE workflow. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></Card><RecentCctp all /></div>;
 
   return (

@@ -1,4 +1,5 @@
 /** Talks to the Noren merchant server (packages/server). Every call is real; errors surface as readable messages. */
+import { HOSTED } from "./hosted";
 export const SERVER = (import.meta.env.VITE_NOREN_SERVER as string | undefined) ?? "http://127.0.0.1:8790";
 
 export type Config = {
@@ -35,7 +36,7 @@ async function call<T>(path: string, init?: RequestInit & { token?: string }): P
   try {
     res = await fetch(`${SERVER}${path}`, { ...init, headers: { "content-type": "application/json", ...(init?.token ? { authorization: `Bearer ${init.token}` } : {}), ...(init?.headers ?? {}) } });
   } catch {
-    throw new Error(`Can't reach the Noren server at ${SERVER}. Start it with: pnpm dev:stack`);
+    throw new Error(HOSTED ? `The hosted Noren server at ${SERVER} did not answer; try again in a moment.` : `Can't reach the Noren server at ${SERVER}. Start it with: pnpm dev:stack`);
   }
   const text = await res.text();
   let body: any = null;
@@ -67,6 +68,8 @@ export const api = {
   deleteWebhook: (merchant: string, id: string, token: string) => call<{ deleted: boolean }>(`/merchants/${merchant}/webhooks/${id}`, { method: "DELETE", token }),
   eventLog: (merchant: string, token: string) => call<NorenEvent[]>(`/merchants/${merchant}/events`, { token }),
   events: () => new EventSource(`${SERVER}/events`),
+  /** Ask the ASP postman to approve new pool deposits now (instead of on its next tick). */
+  aspSync: () => call<{ root: string; posted?: string; approved: number }>("/asp/sync", { method: "POST", body: "{}" }),
 };
 
 export const usdc = (base: string | bigint | undefined) => base === undefined ? "–" : (Number(BigInt(base)) / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

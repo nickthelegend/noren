@@ -10,7 +10,8 @@ import { isAddress, toHex, type Address, type Hex } from "viem";
 import { PRIVY_APP_ID, privyActions, waitForPrivy } from "./signer";
 import { connectWallet, useBrowserWallets, type InjectedWallet } from "./browser-wallet";
 import { SERVER, usdc, type Config } from "./api";
-import { Copy, Icon, Logo, msgOf } from "./ui";
+import { Copy, Icon, Logo, isFork, msgOf } from "./ui";
+import { HOSTED } from "./hosted";
 import { QR } from "./kit";
 import "./onboard.css";
 import { TxLink } from "./tx";
@@ -26,7 +27,7 @@ export const saveStoreId = (id: string) => { try { localStorage.setItem(STORE_KE
 async function call<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
   let r: Response;
   try { r = await fetch(`${SERVER}${path}`, { ...init, headers: { "content-type": "application/json", ...(init.token ? { authorization: `Bearer ${init.token}` } : {}) } }); }
-  catch { throw new Error(`Can't reach the Noren server at ${SERVER}. Start it with pnpm dev:all`); }
+  catch { throw new Error(HOSTED ? `The hosted Noren server at ${SERVER} did not answer; try again in a moment.` : `Can't reach the Noren server at ${SERVER}. Start it with pnpm dev:all`); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 404 && /^\/(auth|stores)/.test(path)) throw new Error("Setup required: this Noren server has no store sign-up yet (restart pnpm dev:all on the app-dex branch)");
   if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
@@ -119,7 +120,7 @@ const { invoice } = await noren.invoices.create({
         <div className="ob-brand"><Logo size={28} /><b>Noren Merchant</b></div>
         <p>Set up your store in a minute. Customers can pay privately, with USDC, with stocks or crypto, or in 3 parts; you get USDC on Arc.</p>
         <ol className="ob-steps">{STEPS.map((t, i) => <li key={t} data-state={i < step ? "done" : i === step ? "now" : "todo"}><i>{i < step ? <Icon.check /> : i + 1}</i><span>{t}</span></li>)}</ol>
-        <p className="ob-fine">Test mode: Arc testnet and Robinhood Chain run as local forks. No real money.</p>
+        <p className="ob-fine">{HOSTED ? "Test mode: payments settle on the public Arc testnet. Robinhood Chain features run on a local mainnet snapshot. No real money." : "Test mode: Arc testnet and Robinhood Chain run as local forks. No real money."}</p>
       </aside>
 
       <section className="ob-main" aria-live="polite">
@@ -133,7 +134,7 @@ const { invoice } = await noren.invoices.create({
                 <Icon.user /><span><b>{busy === "privy" ? "Waiting for Privy…" : "Sign in with Privy"}</b><small>{PRIVY_APP_ID ? "Email, a wallet, or a new embedded wallet" : "Setup required: VITE_PRIVY_APP_ID"}</small></span><Icon.arrow />
               </button>
               <button className="ob-choice" disabled={!!busy} onClick={() => run("local", async () => { onSession(await signIn(cfg, "local")); setStep(1); })}>
-                <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>A key kept in this browser, for the local forks</small></span><Icon.arrow />
+                <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>{HOSTED ? "A test key kept in this browser" : "A key kept in this browser, for the local forks"}</small></span><Icon.arrow />
               </button>
               {wallets?.length ? wallets.map((w) => (
                 <button key={w.info.uuid} className="ob-choice" disabled={!!busy} onClick={() => run(w.info.uuid, async () => { onSession(await signIn(cfg, w)); setStep(1); })}>
@@ -184,7 +185,7 @@ const { invoice } = await noren.invoices.create({
           <div className="ob-card">
             <span className="ob-k">Step 3 of 3</span>
             <h1>Create your first payment link</h1>
-            <p><b>{store.name}</b> is live on the Arc fork (registered in tx <TxLink chain="arc" cfg={cfg} hash={store.registerTx} n={8} />). Make a link and share it, or print its QR at the counter.</p>
+            <p><b>{store.name}</b> is live on {isFork(cfg) ? "the Arc fork" : "Arc testnet"} (registered in tx <TxLink chain="arc" cfg={cfg} hash={store.registerTx} n={8} />). Make a link and share it, or print its QR at the counter.</p>
             {!link ? (
               <>
                 <div className="ob-row2">

@@ -9,7 +9,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { jsonBigints, parseInvoice, type Invoice } from "@noren/core";
 import type { Hex } from "viem";
 import { api, usdc, type InvoiceView } from "../api";
-import { msgOf } from "../ui";
+import { isFork, msgOf } from "../ui";
+import { HOSTED } from "../hosted";
+import { HostedTopUp } from "../HostedNotice";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
 import type { Wallet } from "./NorenApp";
@@ -183,7 +185,10 @@ export function PayInvoice({ w, initial, onDone }: { w: Wallet; initial?: string
                         </a>
                       ))}
                     </div>
-                    {!enough && bal && !working && (
+                    {!enough && bal && !working && (HOSTED || !isFork(w.cfg)) && (
+                      <HostedTopUp variant="nk" cfg={w.cfg} amount={amount} bal={bal} getWallet={async () => (walletRef.current ??= await loadWallet(w.cfg))} onChange={() => { w.refresh(); refresh(); }} />
+                    )}
+                    {!enough && bal && !working && !(HOSTED || !isFork(w.cfg)) && (
                       <div className="nk-setup" role="status"><span className="nk-tag">Top up first</span><b>Your private balance is {usdc(bal.approved)} USDC.</b><p>{hasPublic ? `Your wallet holds ${usdc(w.arcUsdc!)} USDC on the Arc fork: move 20 into your private balance.` : "Test network: get fork USDC and move 20 into your private balance in one step."}</p>
                         <button className="nk-btn ink" disabled={!!busy} onClick={topUp}>{busy ? <><Spin /> {busy}</> : hasPublic ? "Shield 20 USDC from your wallet" : "Add 20 test USDC privately"}</button></div>
                     )}

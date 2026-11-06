@@ -15,6 +15,7 @@ import { PayInvoice, WAYS } from "./PayInvoice";
 import { readActivity, type Activity } from "./activity";
 import { Empty, Skel, shortHex } from "./kit";
 import type { Line } from "../onchain";
+import { robinhoodOff } from "../HostedNotice";
 
 const ago = (t: number) => { const s = Math.max(0, Math.floor(Date.now() / 1000) - t); return s < 60 ? "just now" : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : new Date(t * 1000).toLocaleDateString([], { month: "short", day: "numeric" }); };
 const usd = (v6: bigint) => (Number(v6) / 1e6).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -43,7 +44,9 @@ export function HomeTab({ w, go }: { w: Wallet; go: (t: Tab) => void }) {
   const h = w.hold;
   const stocks6 = h ? h.stocks.reduce((s, x) => s + x.value8 / 100n, 0n) : null; // Chainlink value, 8 dp → 6 dp
   const credit = useMemo(() => (lines ? lines.filter((l) => !l.closed).reduce((s, l) => s + (l.limit > l.drawn - l.repaid ? l.limit - (l.drawn - l.repaid) : 0n), 0n) : null), [lines]);
-  const parts = [priv?.approved ?? null, w.arcUsdc, h?.usdg ?? null, stocks6];
+  // Robinhood Chain off (hosted build: it runs on the local mainnet snapshot): the total is Arc only, and says so.
+  const rhOff = robinhoodOff(w.cfg);
+  const parts = rhOff ? [priv?.approved ?? null, w.arcUsdc] : [priv?.approved ?? null, w.arcUsdc, h?.usdg ?? null, stocks6];
   const total = parts.every((p) => p !== null) ? parts.reduce((a, b) => a! + b!, 0n)! : null;
   const toPay = () => { payRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => document.getElementById("nk-paylink")?.focus(), 350); };
 
@@ -65,11 +68,11 @@ export function HomeTab({ w, go }: { w: Wallet; go: (t: Tab) => void }) {
             <span className="nk-wallet-addr nk-mono">{shortHex(w.oc.address, 6)}</span>
           </div>
           <b className="nk-wallet-total"><i>$</i>{total !== null ? usd(total) : "…"}</b>
-          <p className="nk-wallet-note">USDC and USDG at $1, Stock Tokens at their Chainlink price. Test networks.</p>
+          <p className="nk-wallet-note">{rhOff ? "USDC on the public Arc testnet, private and public. Robinhood Chain runs on a local mainnet snapshot." : "USDC and USDG at $1, Stock Tokens at their Chainlink price. Test networks."}</p>
           <div className="nk-wallet-split">
             <div className="priv"><small className="lg-row"><Mark id="KOHAKU" size={14} />Private · Arc</small><b>{priv ? usdc(priv.approved) : privErr ? "–" : "…"}</b><em>USDC{priv && priv.pending > 0n ? ` · +${usdc(priv.pending)} screening` : ""}</em></div>
             <div><small className="lg-row"><Mark id="ARC" size={14} />Public · Arc</small><b>{w.arcUsdc !== null ? usdc(w.arcUsdc) : "–"}</b><em>USDC</em></div>
-            <div><small className="lg-row"><Mark id="ROBINHOOD" size={14} />Robinhood Chain</small><b>{h ? usdc(h.usdg + (stocks6 ?? 0n)) : w.holdErr ? "–" : "…"}</b><em>{h ? `${usdc(h.usdg)} USDG · ${h.stocks.filter((s) => s.balance > 0n).map((s) => s.sym).join(", ") || "no stock"}` : "USDG + stock"}</em></div>
+            <div><small className="lg-row"><Mark id="ROBINHOOD" size={14} />Robinhood Chain</small><b>{h ? usdc(h.usdg + (stocks6 ?? 0n)) : w.holdErr ? "–" : "…"}</b><em>{rhOff ? "local snapshot · see README" : h ? `${usdc(h.usdg)} USDG · ${h.stocks.filter((s) => s.balance > 0n).map((s) => s.sym).join(", ") || "no stock"}` : "USDG + stock"}</em></div>
             <div><small className="lg-row"><Mark id="CHAINLINK" size={14} />Credit available</small><b>{credit !== null ? usdc(credit) : "…"}</b><em>{lines?.filter((l) => !l.closed).length ? "USDC on Arc" : "no line yet"}</em></div>
           </div>
         </section>
