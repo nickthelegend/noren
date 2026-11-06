@@ -11,8 +11,8 @@
   "scripts": {
     "test": "vitest run --root .",
     "typecheck": "tsc --noEmit -p .",
-    "live": "tsx --env-file-if-exists=../../.env scripts/live-check.ts",
-    "harness": "tsx --env-file-if-exists=../../.env scripts/harness.ts"
+    "live": "tsx scripts/live-check.ts",
+    "harness": "tsx scripts/harness.ts"
   },
   "dependencies": {
     "@worldcoin/idkit": "4.6.0",

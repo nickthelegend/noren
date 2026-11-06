@@ -6,6 +6,7 @@
 //    with the RP key and posts a fake proof under the real rp_id. A registered World ID 4.0 RP answers
 //    with a proof failure; app_not_migrated or a 404 means the Portal setup is incomplete.
 // A real success needs a person to approve in World App or the Simulator: use `pnpm --filter @noren/world-id harness`.
+import './env.ts';
 import { loadWorldIdConfig, missingSettings, setupRequired } from '../src/config.ts';
 import { signNorenRequest } from '../src/signing.ts';
 import { verifyWithWorld } from '../src/verify.ts';

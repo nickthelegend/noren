@@ -9,6 +9,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import './env.ts';
 import { build } from 'esbuild';
 import { createWorldIdHandler, loadWorldIdConfig, starterSinkFromEnv, WorldIdService } from '../src/server.ts';
 
