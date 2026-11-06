@@ -40,7 +40,12 @@ export function startSelfRepayFills(rpc: string, d: SelfRepayDeployment, log: (s
   let stopped = false;
   let busy = false;
 
+  // dev:all serves this fork as chain 46630 (CRE's robinhood-testnet) after Anvil started as 4663; Anvil's built-in
+  // signer still signs for 4663 and refuses eth_sendTransaction ("transaction-provided chain ID (46630) does not match
+  // the signer's chain ID (4663)"). Impersonating the trader sends without that signer.
+  let impersonated = false;
   const send = async (to: Address, data: Hex, what: string): Promise<Hex> => {
+    if (!impersonated) { await c.request({ method: 'anvil_impersonateAccount', params: [trader] }); impersonated = true; }
     const hash = (await c.request({ method: 'eth_sendTransaction', params: [{ from: trader, to, data }] })) as Hex;
     const r = await c.waitForTransactionReceipt({ hash });
     if (r.status !== 'success') throw new Error(`${what} reverted: ${hash}`);
