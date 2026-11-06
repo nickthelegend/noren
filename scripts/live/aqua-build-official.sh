@@ -65,7 +65,7 @@ const res = {
   metadataOffset: mx / 2,
   executableCodeIdentical: x.length === y.length && mx === my && x.slice(0, mx) === y.slice(0, my),
   fullyIdentical: x === y,
-  note: "Aqua has no immutables. The only difference is the 32-byte IPFS hash inside the CBOR metadata, which hashes source paths and file contents of the build environment, not the code.",
+  note: "Aqua has no immutables (its constructor only sets the Rescuable owner in storage). The only difference is the 32-byte IPFS hash inside the CBOR metadata, which hashes source paths and file contents of the build environment, not the code.",
   checkedAt: new Date().toISOString(),
 };
 require("node:fs").writeFileSync(out, JSON.stringify(res, null, 2) + "\n");

@@ -20,7 +20,10 @@ Bytecode check (build-check.json)
   The runtime bytecode built from that commit is 5,619 bytes, the same length as the code at
   0x1111113c…a90a on Arc mainnet, and identical to it byte for byte except the 32-byte IPFS hash
   inside the trailing CBOR metadata (that hash covers source paths and file contents of the build
-  environment, not the code). Aqua has no immutables and no constructor arguments.
+  environment, not the code). Aqua has no immutables. Its one constructor argument is the Rescuable
+  owner (storage, not code): it may only rescue tokens sent to the registry contract by mistake and has
+  no power over makers' balances or strategies. On Arc mainnet it is 1inch's deployer
+  0x0BD61d605C64A857C3D94779aEf7cA295702b3A2; on Noren's Arc Testnet copy it is Noren's deployer.
 
 Build and deploy (reproducible)
   pnpm install                                           # packages/aqua deps (solidity-utils, OZ)

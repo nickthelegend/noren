@@ -1,0 +1,33 @@
+{
+  "network": "Arc Testnet (5042002), PUBLIC",
+  "rpc": "https://rpc.testnet.arc.io",
+  "explorer": "https://explorer.testnet.arc.io",
+  "owner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "eurc": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+  "rateOracle": "0xdb828bdcf33ef0a5a32861e4831ff3dd87be831c",
+  "actionRouter": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+  "arcHook": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+  "creForwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1",
+  "create2Deployer": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+  "aquaSalt": "noren-arc-testnet: 1inch Aqua v1.0.0 (unmodified)",
+  "routerSalt": "noren-arc-testnet: NorenAquaSwapVMRouter 1.0.2-noren.1",
+  "routerName": "Noren SwapVM",
+  "routerVersion": "1.0.2-noren.1",
+  "route": {
+    "baseMaxAgeOpen": 90000,
+    "baseMaxAgeClosed": 259200,
+    "quoteMaxAge": 90000,
+    "quoteMaxDepegBps": 200,
+    "flags": 2
+  },
+  "terms": {
+    "askSpreadBps": 30,
+    "closedExtraBps": 100,
+    "minPriceUsd8": 80000000,
+    "maxPriceUsd8": 150000000,
+    "salt": 1
+  },
+  "eurcAllocation": 8000000
+}

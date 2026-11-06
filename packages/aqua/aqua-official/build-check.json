@@ -9,6 +9,6 @@
   "metadataOffset": 5566,
   "executableCodeIdentical": true,
   "fullyIdentical": false,
-  "note": "Aqua has no immutables. The only difference is the 32-byte IPFS hash inside the CBOR metadata, which hashes source paths and file contents of the build environment, not the code.",
-  "checkedAt": "2026-11-06T12:05:59.334Z"
+  "note": "Aqua has no immutables (its constructor only sets the Rescuable owner in storage). The only difference is the 32-byte IPFS hash inside the CBOR metadata, which hashes source paths and file contents of the build environment, not the code.",
+  "checkedAt": "2026-11-06T12:11:23.807Z"
 }
