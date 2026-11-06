@@ -82,6 +82,7 @@ export const Icon = {
   bolt: () => <S><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></S>,
   hook: () => <S><path d="M18 16.5a3.5 3.5 0 1 1-3.4-4.5" /><path d="M9.5 7.5 6 13.5h7.5" /><circle cx="12" cy="5" r="2.5" /><circle cx="6" cy="17" r="2.5" /></S>,
   receipt: () => <S><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z" /><path d="M9 8h6" /><path d="M9 12h6" /></S>,
+  user: () => <S><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" /></S>,
   lock: () => <S><rect x="4.5" y="10.5" width="15" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" /></S>,
   menu: () => <S><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></S>,
   layers: () => <S><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></S>,

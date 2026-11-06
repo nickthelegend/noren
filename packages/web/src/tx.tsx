@@ -15,6 +15,7 @@ import { EVENTS } from "./tx-events";
 import { Mark } from "./logos";
 import { PERMIT2, UNIVERSAL_ROUTER, V4_QUOTER } from "./app/swap";
 import { privateKeyToAccount } from "viem/accounts";
+import { activeAccount, activeMode } from "./signer";
 
 export type TxChain = "arc" | "robinhood" | "arc-live" | "robinhood-mainnet";
 export const ARC_EXPLORER = "https://explorer.testnet.arc.io";
@@ -90,6 +91,7 @@ function directory(cfg: Config, chain: "arc" | "robinhood") {
   }
   // The customer's test key lives in this browser (see onchain.ts): name it instead of showing a bare address.
   try { const k = JSON.parse(localStorage.getItem("noren.customer.v1") ?? "null")?.gasKey; if (k) put(privateKeyToAccount(k).address, { name: "You (this browser's test key)" }); } catch { /* no key in this browser */ }
+  if (activeMode() === "privy") put(activeAccount().address, { name: "You (your Noren wallet)" });
   return d;
 }
 

@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { createPublicClient, createWalletClient, erc20Abi, http, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { activeAccount, walletTransport } from "./signer";
 import { localFork } from "@noren/core";
 import { SERVER, api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
@@ -13,8 +13,6 @@ import { payoutOf } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
-
-function key(): Hex | null { try { return JSON.parse(localStorage.getItem("noren.customer.v1") ?? "null")?.gasKey ?? null; } catch { return null; } }
 
 export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: InvoiceView; shop: string; onPaid: () => void }) {
   const [addr, setAddr] = useState<Address | null>(null);
@@ -28,19 +26,17 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
   const pub = createPublicClient({ chain, transport: http(cfg.rpcUrl) });
 
   const load = async () => {
-    const k = key() ?? (await import("./onchain").then((m) => m.makeOnchain(cfg)).then(() => key()));
-    if (!k) return;
-    const a = privateKeyToAccount(k).address; setAddr(a);
+    const a = activeAccount().address; setAddr(a);
     pub.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [a] }).then(setBal).catch((e) => setNote({ t: msgOf(e), bad: true }));
   };
   useEffect(() => { load(); payoutOf(cfg.rpcUrl, cfg.deployment.checkout, view.invoice.merchant).then((p) => setPayout(/^0x0{40}$/.test(p) ? null : (p as Address))).catch((e) => setNote({ t: msgOf(e), bad: true })); }, [cfg, view.invoice.merchant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pay = async () => {
-    const k = key(); if (!k || !payout) return;
+    if (!payout) return;
     setBusy("pay"); setNote(null);
     try {
-      const account = privateKeyToAccount(k);
-      const w = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
+      const account = activeAccount();
+      const w = createWalletClient({ chain, transport: walletTransport(cfg.rpcUrl), account });
       await pub.simulateContract({ account, address: cfg.deployment.usdc, abi: erc20Abi, functionName: "transfer", args: [payout, amount] });
       const h = await w.writeContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "transfer", args: [payout, amount], chain });
       const r = await pub.waitForTransactionReceipt({ hash: h });

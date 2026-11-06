@@ -88,13 +88,25 @@ export function PayInvoice({ w, initial, onDone }: { w: Wallet; initial?: string
   const working = step === "binding" || step === "proving" || step === "relaying";
   const shop = view?.merchantName || "this shop";
 
+  const TOP_UP = 20_000_000n;
+  // A wallet that already holds 20 USDC on the Arc fork shields it; otherwise the fork faucet (once per address) funds it.
+  const hasPublic = w.arcUsdc !== null && w.arcUsdc >= TOP_UP;
   const topUp = async () => {
-    setBusy("Getting test USDC on the Arc fork…"); setNote(null);
+    setNote(null);
     try {
       walletRef.current ??= await loadWallet(w.cfg);
-      await api.faucet(walletRef.current.address);
+      const address = walletRef.current.address;
+      if (!hasPublic) {
+        setBusy("Getting test USDC on the Arc fork…");
+        try { await api.faucet(address); }
+        catch (e) {
+          if (!/Faucet already used/i.test(msgOf(e))) throw e;
+          const now = await w.oc.arcUsdc();
+          if (now < TOP_UP) throw new Error(`The Arc fork faucet already funded ${address.slice(0, 8)}…, and this wallet holds ${usdc(now)} USDC: not enough to shield 20. Restart pnpm dev:all for a fresh fork, or pay another way.`);
+        }
+      }
       setBusy("Moving 20 USDC into your private balance…");
-      await walletRef.current.shield(20_000_000n);
+      await walletRef.current.shield(TOP_UP);
       setNote("20 USDC is in your private balance. The compliance check clears it in a few seconds."); w.refresh(); await refresh();
     } catch (e) { setNote(msgOf(e)); } finally { setBusy(null); }
   };
@@ -172,8 +184,8 @@ export function PayInvoice({ w, initial, onDone }: { w: Wallet; initial?: string
                       ))}
                     </div>
                     {!enough && bal && !working && (
-                      <div className="nk-setup" role="status"><span className="nk-tag">Top up first</span><b>Your private balance is {usdc(bal.approved)} USDC.</b><p>Test network: get fork USDC and move 20 into your private balance in one step.</p>
-                        <button className="nk-btn ink" disabled={!!busy} onClick={topUp}>{busy ? <><Spin /> {busy}</> : "Add 20 test USDC privately"}</button></div>
+                      <div className="nk-setup" role="status"><span className="nk-tag">Top up first</span><b>Your private balance is {usdc(bal.approved)} USDC.</b><p>{hasPublic ? `Your wallet holds ${usdc(w.arcUsdc!)} USDC on the Arc fork: move 20 into your private balance.` : "Test network: get fork USDC and move 20 into your private balance in one step."}</p>
+                        <button className="nk-btn ink" disabled={!!busy} onClick={topUp}>{busy ? <><Spin /> {busy}</> : hasPublic ? "Shield 20 USDC from your wallet" : "Add 20 test USDC privately"}</button></div>
                     )}
                     <ol className="nk-steps" aria-label="Private payment steps">
                       {(["binding", "proving", "relaying"] as const).map((s, i) => {

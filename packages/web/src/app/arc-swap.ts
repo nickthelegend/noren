@@ -2,7 +2,8 @@ import {
   createPublicClient, createWalletClient, defineChain, encodeAbiParameters, erc20Abi,
   http, parseAbi, zeroAddress, type Address, type Hex, type PublicClient,
 } from "viem";
-import type { LocalAccount } from "viem/accounts";
+import type { Account } from "viem";
+import { walletTransport } from "../signer";
 
 export const ARC_SWAP = {
   chainId: 5042002,
@@ -177,11 +178,11 @@ function v4Input(amountIn: bigint, minOut: bigint): Hex {
 }
 
 export async function executeArcSwap(p: {
-  route: "uniswap" | "aqua"; amountIn: bigint; minOut: bigint; account: LocalAccount; onStep?: (s: string) => void;
+  route: "uniswap" | "aqua"; amountIn: bigint; minOut: bigint; account: Account; onStep?: (s: string) => void;
 }): Promise<{ hash: Hex; received: bigint; approvals: Hex[] }> {
   if (p.amountIn <= 0n || p.amountIn > 2n ** 128n - 1n || p.minOut < 0n || p.minOut > 2n ** 128n - 1n)
     throw new Error("Swap amount and minimum must be nonnegative uint128 values; input must be positive");
-  const wallet = createWalletClient({ chain, account: p.account, transport: http(ARC_SWAP.rpc) });
+  const wallet = createWalletClient({ chain, account: p.account, transport: walletTransport(ARC_SWAP.rpc) });
   const approvals: Hex[] = [];
   const before = await client.readContract({ address: ARC_SWAP.eurc, abi: erc20Abi, functionName: "balanceOf", args: [p.account.address] });
   if (p.route === "aqua") {

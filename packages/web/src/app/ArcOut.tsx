@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { createWalletClient, defineChain, http, type Hex } from "viem";
 import { attestFromArc, burnFromArc, mintFromArc, CCTP_CHAINS, type SourceChainKey } from "@noren/cctp";
 import { customerAccount } from "../onchain";
+import { walletTransport } from "../signer";
 import { Copy, msgOf } from "../ui";
 import { TxLink } from "../tx";
 import { Mark } from "../logos";
@@ -44,13 +45,13 @@ export function ArcOut({ to = "robinhood-testnet" as SourceChainKey }: { to?: So
     const put = (x: Partial<Run>) => setRun((r) => (r && r.started === started ? { ...r, ...x } : r));
     setRun({ started, amount: amt, step: "Approving USDC on Arc…" });
     try {
-      const arcWallet = createWalletClient({ account: me, chain: chainOf("arc-testnet"), transport: http(CCTP_CHAINS["arc-testnet"].rpcUrl) });
+      const arcWallet = createWalletClient({ account: me, chain: chainOf("arc-testnet"), transport: walletTransport(CCTP_CHAINS["arc-testnet"].rpcUrl) });
       const b = await burnFromArc({ toChain: to, amount: amt, recipient: me.address, walletClient: arcWallet, fast: true,
         onStatus: (s) => { if (s.step === "approving") put({ approveTx: s.txHash, step: "Approving USDC on Arc…" }); else if (s.step === "burning") put({ step: "Burning on Arc…" }); else if (s.step === "burned") put({ burnTx: s.burnTxHash, step: "Burned. Asking Circle…" }); } });
       put({ burnTx: b.burnTxHash, step: "Circle is attesting…" });
       const a = await attestFromArc(to, b.burnTxHash, { pollMs: 3000, onStatus: (s) => { if (s.step === "attestation-pending") put({ iris: s.irisStatus, step: `Circle is attesting (${s.irisStatus})…` }); } });
       put({ minted: a.minted, fee: a.feeExecuted, iris: "complete", step: `Minting on ${d.name}…` });
-      const dstWallet = createWalletClient({ account: me, chain: chainOf(to), transport: http(d.rpcUrl) });
+      const dstWallet = createWalletClient({ account: me, chain: chainOf(to), transport: walletTransport(d.rpcUrl) });
       const m = await mintFromArc(to, a, dstWallet);
       put({ mintTx: m.mintTxHash, step: "Minted", seconds: (Date.now() - started) / 1000 });
       setAmount("");
