@@ -6,7 +6,7 @@ Everything ran on local nodes: an Anvil fork of Arc testnet (chain 5042002) and 
 
 | Command | Result |
 |---|---|
-| `pnpm test` | **96 passed**, 0 failed, 13 files: core + server 19, World ID 43, 0G credit check 25, Robinhood SDK/underwriter (offline) 9. Fork (`*.fork.test.ts`) and live (`*.live.test.ts`) suites run in their packages. |
+| `pnpm test` | **99 passed**, 0 failed, 14 files: core + server 19, World ID 43, 0G credit check 25, Robinhood SDK/underwriter (offline) 9, settlement keeper 3. Fork (`*.fork.test.ts`) and live (`*.live.test.ts`) suites run in their packages. |
 | `pnpm exec tsc --noEmit`, `packages/web` typecheck and `vite build` | pass |
 | `pnpm e2e` | **9/9** Foundry checkout tests, **5** attack reverts (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), first proof 1.277 s, re-proof 1.139 s, refund approved, 39.03 s total |
 | `pnpm e2e:credit` (against `pnpm dev:all`) | **8/8** steps, 20.1–33.7 s across runs: fork faucet; EIP-712 attestation from the history underwriter (tier 1, collateral-only floor) verified by `NorenCredit.applyAttestation`; 2 NVDA locked (collateral $371.41 at Chainlink); CRE Robinhood → Arc in 5.0–7.0 s; pay later settled by the merchant server (`payInvoice` 108,892–143,092 gas); pay with stocks 0.040588 NVDA at $185.56 → 7.50 USDG; CRE carries `Drawn` and `Repaid` back to `NorenCredit` |

@@ -43,7 +43,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 
   | Suite | Result |
   |---|---|
-  | `pnpm test` | 96 offline tests |
+  | `pnpm test` | 99 offline tests |
   | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 39.0 s |
   | `pnpm e2e:credit` | 8/8 steps in 24.5 s; CRE Robinhood→Arc in 6.0 s |
   | Robinhood contracts | 94 Foundry tests |
@@ -56,44 +56,51 @@ The checkout says it plainly: only "Pay privately" hides you.
 
 ## Partner prizes (pick at most 3)
 
-**Recommended three: EF Best CROPS App, World Best Use of IDKit, Chainlink Best workflow with CRE.** The alternates (Arc, 0G, 1inch Aqua) are built, or partly built, but each has a hard gap noted below. One EF prize per project; Arc allows one track.
+**Recommended three: 1inch Build an Aqua App, EF Best CROPS App, Chainlink Best workflow with CRE.** None of them needs a credential from Nick; the only action is making the repo public. **1inch Aqua is still in progress** (branch `aqua-liquidity`, not merged into this submission yet). If it doesn't land in time, use World IDKit in its place, provided Nick has created the World app. World IDKit and 0G are the alternates if Nick creates the World app or the 0G key in time. Arc needs Nick's Arc Studio login and testnet USDC. One EF prize per project; Arc allows one track.
 
-### ✅ 1. Ethereum Foundation: Best CROPS App (recommended)
+### ⏳ 1. 1inch: Build an Aqua App (recommended once merged; in progress)
+Requirements: a sophisticated DeFi position on the **official** Aqua / SwapVM contracts (custom SwapVM instructions score higher); **on-chain token transfers in the demo** (forks are allowed); **real, steady git history**.
+- [ ] Official contracts: Aqua and SwapVM as officially deployed on Robinhood Chain (4663); addresses listed in the README once merged.
+- [ ] The position: Aqua makers quote Stock Tokens at Chainlink-pegged prices (`NorenOraclePeg` SwapVM instruction). They convert pay-with-stocks payments and buy collateral in liquidations.
+- [ ] On-chain token transfers on a Robinhood mainnet fork, shown in the demo: a stock payment filled by an Aqua maker, and a liquidation sold through SwapVM.
+- [x] Steady commit history: separate commits per contract and test suite on `aqua-liquidity` (`git log origin/aqua-liquidity`).
+- [ ] Merged into `web-integration`, with the Robinhood snapshot rebuilt and `pnpm e2e:credit` passing (web agent).
+
+### ✅ 2. Ethereum Foundation: Best CROPS App (recommended)
 Requirements: censorship resistant, open source, private, secure; privacy that is structural, not cosmetic; a README CROPS section; a demo of the moment it matters.
 - [x] Privacy is structural. The payer is unknown on-chain and to the merchant because of the invoice-bound ZK proof (Kohaku / Privacy Pools), not because of a UI choice. The five on-chain attack checks pass.
 - [x] README section titled "CROPS", one paragraph per letter, including what each third party learns.
-- [x] No third-party requests from the client: self-hosted fonts and prover artifacts; RPC only to the chain.
-- [x] Open source: MIT, one-command local build (`pnpm dev:all`). **Nick: make the repo public.**
-- [ ] Demo (≤ 3 min) leads with the property: Noren Merchant shows the payment with "Customer: Private" and "Customers identified: 0". (Record.)
-
-### ✅ 2. World: Best Use of IDKit (recommended)
-Requirements: a real "trust moment", the minimum sufficient credential, verification on the server or on-chain.
-- [x] Trust moment: an unsecured credit line has no collateral, so one human must get only one (Sybil resistance). World ID unlocks a 25 USDC starter line.
-- [x] Minimum sufficient credential: Selfie Check by default (configurable to Proof of Human or Passport). Noren stores only the nullifier.
-- [x] Server-side verification with World's verify API, IDKit 4 server-signed requests, and a nullifier registry; success, cancelled and already-used paths are handled.
-- [ ] **BLOCKED (Nick):** create the World Developer Portal app (action `noren-credit`) and set `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY` in `.env`. Until then the app shows "Setup required". Then record the success and already-used paths.
+- [x] No third-party requests from the client: fonts and prover artifacts are self-hosted, and RPC goes only to the chain.
+- [x] Open source: MIT, with a one-command local build (`pnpm dev:all`). **Nick: make the repo public.**
+- [ ] Demo (≤ 3 min) that leads with the property: Noren Merchant shows the payment with "Customer: Private" and "Customers identified: 0". (Record.)
 
 ### ✅ 3. Chainlink: Best workflow with CRE (recommended)
 Requirements: "a CRE Workflow that's used as an orchestration layer within your project"; "integrate at least one blockchain with an external API, system, data source, LLM, or AI agent"; "a successful simulation (via the CRE CLI) or a live deployment"; "meaningfully used".
-- [x] Two workflows, both used in the product. The credit bridge (Robinhood Chain ↔ Arc: 3 log triggers + 1 HTTP trigger) carries every credit line, draw and repayment. The pricing workflow brings Chainlink fiat feeds from Arc mainnet (external RPC) to `NorenRateOracle` on Arc, where invoices are re-verified.
-- [x] Successful simulations with `--broadcast` through the forwarders: 4.6–5.2 s per event; `pnpm e2e:credit` drives both directions.
-- [x] Also uses Chainlink Data Feeds (Arc fiat feeds, Robinhood stock, ETH and USDG feeds).
+- [x] Three workflows, all used in the product:
+  - **Credit bridge** (Robinhood Chain ↔ Arc; 3 log triggers + 1 HTTP trigger) carries every credit line, draw and repayment.
+  - **Pricing** brings Chainlink fiat feeds from Arc mainnet (external RPC) to `NorenRateOracle` on Arc, where every invoice quote is re-verified.
+  - **Settlement desk** approves USDG → Arc USDC settlements by checking live Relay and Across quotes (external APIs) against Chainlink USDG/USD and USDC/USD.
+- [x] Successful simulations with `--broadcast` through the MockKeystoneForwarders: 4.6–5.2 s per bridge event; `pnpm e2e:credit` drives both directions.
+- [x] Also uses Chainlink Data Feeds: Arc fiat feeds, and Robinhood stock, ETH and USDG feeds.
 - [ ] Show `cre workflow simulate` output in the demo.
 
-### Alternate: Arc (Circle): Best DeFi / Onchain Finance App Built End to End in Arc Studio
-Requirements: start in Arc Studio with a shareable Studio URL shown in the demo; working frontend and backend; architecture diagram; video; repo.
-- [x] Working frontend + backend on an Arc testnet fork; USDC settlement; credit pool on Arc; architecture diagram ([docs/img/architecture.png](docs/img/architecture.png)).
-- [ ] **BLOCKED (Nick):** `arc-studio login` → `pnpm studio:import` → share the Studio URL. **Honest gap:** the code predates the Studio app, so Studio can only be where the Arc contracts are imported, built, tested and deployed. A strict reading of "starting point" may count against it.
-- [ ] **BLOCKED (Nick):** at least 0.45 testnet USDC to `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Circle faucet), then `pnpm deploy:arc`.
+### Alternate: World: Best Use of IDKit
+Requirements: a real "trust moment", the minimum sufficient credential, verification on the server or on-chain.
+- [x] Trust moment: an unsecured credit line has no collateral, so each human must get only one (Sybil resistance). World ID unlocks a 25 USDC starter line.
+- [x] Minimum sufficient credential: Selfie Check by default (Proof of Human or Passport are configurable). Noren stores only the nullifier.
+- [x] Server-side verification with World's verify API, IDKit 4 server-signed requests and a nullifier registry. The success, cancelled and already-used paths are handled.
+- [ ] **BLOCKED (Nick):** create the World Developer Portal app (action `noren-credit`) and set `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY` in `.env`. Until then the app shows "Setup required". Then record the success and already-used paths.
 
 ### Alternate: 0G: Build with 0G Private Computer
 Requirements: inference on 0G Private Computer is in the main user flow; request IDs are shown.
-- [x] The credit decision for pay later runs on 0GM-1.0 in private (TeeML) mode, with independent TEE checks. The Noren app shows the decision, rationale, request ID and `tee_verified`.
-- [ ] **BLOCKED (Nick):** `ZG_PC_API_KEY` (private-mode key at pc.0g.ai). Until then the check is refused ("Setup required") and the deterministic history score decides, labelled as such.
+- [x] The credit decision for pay later runs on 0GM-1.0 in private (TeeML) mode, with independent TEE checks. The Noren app shows the decision, the rationale, the request ID and `tee_verified`.
+- [ ] **BLOCKED (Nick):** `ZG_PC_API_KEY` (a private-mode key from pc.0g.ai). Until it exists the check is refused ("Setup required") and the deterministic history score decides, labelled as such.
 
-### Alternate: 1inch: Build an Aqua App
-Requirements: a sophisticated position on the official Aqua / SwapVM contracts; on-chain token transfers in the demo (forks OK); real git history.
-- [ ] In progress on branch `aqua-liquidity`: maker strategies at Chainlink-pegged prices for pay-with-stocks conversion and liquidations, on the official Aqua + SwapVM deployments on Robinhood Chain. Not merged into this submission yet.
+### Alternate: Arc (Circle): Best DeFi / Onchain Finance App Built End to End in Arc Studio
+Requirements: start in Arc Studio, with a shareable Studio URL shown in the demo; a working frontend and backend; an architecture diagram; a video; a repo.
+- [x] Working frontend and backend on an Arc testnet fork; USDC settlement; credit pool on Arc; architecture diagram ([docs/img/architecture.png](docs/img/architecture.png)).
+- [ ] **BLOCKED (Nick):** run `arc-studio login`, then `pnpm studio:import`, then share the Studio URL. **Honest gap:** the code predates the Studio app, so Studio can only be where the Arc contracts are imported, built, tested and deployed. A strict reading of "starting point" may count against it.
+- [ ] **BLOCKED (Nick):** send at least 0.45 testnet USDC to `0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80` (Circle faucet), then run `pnpm deploy:arc`.
 
 ## Links
 - Repo: https://github.com/nickthelegend/noren (**private: make public before submitting**)
