@@ -149,3 +149,10 @@ The honest counterweight: the credit and lending story, Noren's most original pa
 - `a111364` README: AI-screener order; detail moved to docs/PRODUCT.md
 - `d8afa14` Submission form: tightened to ETHGlobal fields, per-prize requirement quotes
 - this report, plus the README wording for `pnpm test`
+
+
+## Addendum (coordinator, after this report)
+
+- **World ID:** a real production verification *was* recorded on Nov 6 2026, 11:01 UTC (Proof of Human, Orb credential, action `noren-credit`, server-verified via `/api/v4/verify`); the auditor didn't see it because the record lives in a gitignored data file in another worktree. Its starter line was written on the local Arc fork. README, the form and docs/WORLD.md now say so, and the film shows it.
+- **Landing fixes applied:** the fork chip now reads "Runs on local fork", the test count is 605 across 21 suites, World ID says it was verified for real with an Orb credential, and CCTP says 10 supported chains with live runs from 4.
+- **Video:** film v3 is done (180 s); paste its public link in README and the form once uploaded.

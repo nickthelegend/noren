@@ -111,7 +111,7 @@ The Studio app (https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b) 
 **Honest gap:** the code came before the Studio app, so a strict reading of "starting point" counts against us. The URL must be made shareable (Nick).
 
 ### Alternate: World: Best Use of IDKit
-One unsecured starter line per human, with Selfie Check. IDKit 4 server-signed requests, server verification via `/api/v4/verify`, and a nullifier registry (43 tests). The success, cancelled and already-used paths are handled. **Needed before choosing it:** one real World App verification on camera.
+One unsecured starter line per human, with Selfie Check. IDKit 4 server-signed requests, server verification via `/api/v4/verify`, and a nullifier registry (43 tests). The success, cancelled and already-used paths are handled. One real production verification is recorded: Proof of Human (Orb credential) in World App on Nov 6 2026, 11:01 UTC, verified by `/api/v4/verify` (action `noren-credit`); the 25 USDC starter line it triggered was written on the local Arc fork. The film shows it at 1:54.
 
 Also eligible, but not picked: EF Best CROPS App (README § CROPS; privacy comes from the invoice-bound proof) and 0G Private Computer (the sealed credit check, [docs/0G.md](docs/0G.md)).
 

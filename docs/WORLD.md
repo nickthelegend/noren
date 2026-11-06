@@ -173,3 +173,8 @@ The CRE workflow needs an **HTTP trigger** that takes `{kind, borrower, nullifie
 | `pnpm --filter @noren/world-id live` | The real verify endpoint. PASSes on the rejection today; the RP check reports BLOCKED until the `WORLD_*` settings exist. |
 | `pnpm --filter @noren/world-id harness` | http://127.0.0.1:8750: `/` is a plain IDKit page and `/react` is the `VerifyHuman` component, mounted on the same handler. |
 | `pnpm --filter @noren/world-id typecheck` | TypeScript check. |
+
+
+## Live result
+
+One real production verification is recorded: Proof of Human (Orb credential) in World App on Nov 6 2026, 11:01 UTC, verified by `/api/v4/verify` (action `noren-credit`); the 25 USDC starter line it triggered was written on the local Arc fork. The film shows it at 1:54. This deployment runs with `WORLD_CREDENTIAL=proof_of_human`, because the verifying person holds an Orb credential; the server still accepts exactly one credential type. Noren stores only the nullifier, the credential type, the time and the starter line (in the gitignored `data/world-id-nullifiers.json`).
