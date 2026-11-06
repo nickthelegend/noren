@@ -31,7 +31,7 @@ describe('Reclaim verifyProof (real SDK, live attestor list)', () => {
   }, 30_000);
 
   it('verifyAndRecord throws ReclaimProofRejected and stores nothing', async () => {
-    await expect(verifyAndRecord(await forged(), address, { storeFile, provider: { id: 'p', name: 'P' }, sessionId: 'live-test', config: { providerId: 'any' } })).rejects.toThrow(/ReclaimProofRejected: .*Identifier mismatch/);
+    await expect(verifyAndRecord(await forged(), address, { storeFile, provider: { label: 'binance_balance', id: 'p', name: 'P', group: 'balance' as const, points: 8 }, sessionId: 'live-test', config: { providerId: 'any' } })).rejects.toThrow(/ReclaimProofRejected: .*Identifier mismatch/);
     expect(existsSync(storeFile)).toBe(false);
   }, 30_000);
 

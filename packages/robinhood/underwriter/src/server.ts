@@ -40,10 +40,11 @@ const server = createServer(async (req, res) => {
       const history = await readWalletHistory(borrower)
       const offchain = await offchainProofOf(borrower)
       const score = scoreWallet(history, { offchain })
-      const ifVerified = offchain ? score : scoreWallet(history, { offchain: { provider: 'Reclaim', proofId: 'hypothetical' } })
+      // "After" for the UI: this wallet plus one more credit-score proof (+15, the largest boost), within the 20-point cap.
+      const ifVerified = scoreWallet(history, { offchain: { provider: 'Reclaim', proofId: 'hypothetical', points: (offchain?.points ?? 0) + 15 } })
       // When 0G is configured it sets the signed terms (see decide.ts); the score, this factor included, decides only without it.
       const decidedBy = process.env.ZG_PC_API_KEY ? '0g' : 'deterministic-score'
-      return send(200, { history, score, reclaim: { verified: !!offchain, ...(offchain ? { provider: offchain.provider, proofId: offchain.proofId } : {}), points: OFFCHAIN_PROOF_POINTS, decidedBy, ifVerified: { score: ifVerified.score, tier: ifVerified.tier, limitUsdg: ifVerified.limitUsdg } } })
+      return send(200, { history, score, reclaim: { verified: !!offchain, ...(offchain ? { provider: offchain.provider, proofId: offchain.proofId } : {}), points: Math.min(OFFCHAIN_PROOF_POINTS, offchain?.points ?? 0), maxPoints: OFFCHAIN_PROOF_POINTS, decidedBy, ifVerified: { score: ifVerified.score, tier: ifVerified.tier, limitUsdg: ifVerified.limitUsdg, collateralRatioBps: ifVerified.collateralRatioBps } } })
     }
     if (req.method === 'POST' && req.url === '/attest') {
       let raw = ''

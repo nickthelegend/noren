@@ -89,7 +89,8 @@ run(async () => {
       const { createReclaimHandler, missingReclaimEnv } = await import('../packages/server/src/reclaim.ts');
       const reclaimGaps = missingReclaimEnv(process.env);
       if (reclaimGaps.length) missing.push(`Reclaim: ${reclaimGaps.join(', ')} (Nick creates the app at dev.reclaimprotocol.org; docs/RECLAIM.md)`);
-      const reclaim = createReclaimHandler({ env: process.env, storeFile: resolve('data/reclaim-proofs.json') });
+      // A verified proof's kind + commitment goes on NorenReputation (recordAttestation, once the contract has it).
+      const reclaim = createReclaimHandler({ env: process.env, storeFile: resolve('data/reclaim-proofs.json'), onchain: robinhood?.reputation ? { rpcUrl: robinhoodRpc, reputation: robinhood.reputation as `0x${string}` } : undefined });
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
       if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [xchainOrders, reclaim, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
       const w = await import('../packages/world-id/src/server.ts');
