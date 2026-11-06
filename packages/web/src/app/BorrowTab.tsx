@@ -14,6 +14,7 @@ import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import type { ReactNode } from "react";
 import { TxLink } from "../tx";
 import { AquaMakerPanel } from "./AquaMaker";
+import { SelfRepayCard } from "./SelfRepay";
 
 const symOf = (a: Address) => TOKENS.find((t) => t.address.toLowerCase() === a.toLowerCase())?.sym ?? shortHex(a, 4);
 type Pos = { debt: bigint; limit: bigint; health: bigint; ltvBps: number; liqLtvBps: number; rateBps: number; collateral8: bigint; liq: Record<string, bigint> };
@@ -105,6 +106,8 @@ export function BorrowTab({ w }: { w: Wallet }) {
           </>
         )}
       </section>
+
+      <SelfRepayCard w={w} />
 
       {!!w.oc.credit?.vault && <AquaMakerPanel w={w} maker={w.oc.credit.vault as Address} title="The lender pool is an Aqua maker" sub="NorenVault on Robinhood Chain: the USDG you borrow here"
         jobs={{

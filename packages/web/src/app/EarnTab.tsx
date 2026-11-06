@@ -75,7 +75,7 @@ export function EarnTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Earn">
-        <div className="nk-card-h"><div><b>Earn</b><p>Your deposit becomes 1inch Aqua liquidity. It never leaves the vault.</p></div>
+        <div className="nk-card-h"><div><b>Earn</b><p>Don't sell your ETH or stocks: deposit them, they earn trading fees as 1inch Aqua liquidity, borrow USDG against them, and the fees pay your loan down.</p></div>
           <div className="nk-band" style={{ padding: 0 }} role="group" aria-label="Deposit or withdraw">{(["deposit", "withdraw"] as const).map((m) => <button key={m} aria-pressed={mode === m} onClick={() => { setMode(m); setAmount(""); }}>{m === "deposit" ? "Deposit" : "Withdraw"}</button>)}</div>
         </div>
         {err ? <div className="nk-pad"><div className="nk-err">{err}</div></div> : !rows || !v ? <Skel rows={3} /> : (
