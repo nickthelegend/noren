@@ -36,7 +36,7 @@ export function readableError(error: any): string {
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions };
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
-export type CreditOptions = { creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
+export type CreditOptions = { bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -140,6 +140,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       if (options.dev && req.method === 'OPTIONS') { res.writeHead(204, { 'access-control-allow-origin': req.headers.origin === 'http://localhost:5190' || req.headers.origin === 'http://127.0.0.1:5190' ? req.headers.origin : '', 'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS', 'access-control-allow-headers': 'content-type, authorization' }); res.end(); return; }
       if (options.dev) { const origin = req.headers.origin; if (origin === 'http://localhost:5190' || origin === 'http://127.0.0.1:5190') res.setHeader('access-control-allow-origin', origin); }
       if (req.method === 'GET' && path === '/config' && options.dev) return send(res, 200, { chainId: options.deployment.chainId, rpcUrl: options.rpcUrl, aspUrl: options.dev.aspUrl, deployment: options.deployment, merchant: merchantAddress, credit: options.credit ? { creditLine: options.credit.creditLine ?? null, robinhoodRpc: options.credit.robinhoodRpc ?? null, gateway: options.credit.gateway ?? null, ...options.credit.public } : null });
+      if (req.method === 'GET' && path === '/credit/bridge') { if (!options.credit?.bridgeLog) throw new Error('Setup required: the CRE credit bridge relay is not running (pnpm dev:all with packages/cre-bridge)'); return send(res, 200, options.credit.bridgeLog()); }
       if (req.method === 'GET' && path === '/pricing/currencies') return send(res, 200, CURRENCIES);
       if (req.method === 'GET' && path === '/pricing/quote') {
         const currency = url.searchParams.get('currency') ?? '';
