@@ -11,6 +11,7 @@ set -a; . "$ENV_FILE"; set +a
 [ -n "${NOREN_DEPLOYER_KEY:-}" ] || { echo "Setup required: NOREN_DEPLOYER_KEY" >&2; exit 1; }
 RPC=https://rpc.testnet.arc.io
 MT=0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275
+TM=0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA   # Circle TokenMessengerV2 (same address on every CCTP V2 testnet)
 USDC=0x3600000000000000000000000000000000000000
 FORWARDER=${FORWARDER:-0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1}   # CRE MockKeystoneForwarder, arc-testnet
 ROUTER=${ROUTER:-0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4}         # NorenArcActionRouter (packages/ccip, branch ccip)
@@ -23,7 +24,7 @@ done
 trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 nonce() { cast nonce "$OWNER" --block pending --rpc-url $RPC; }
 OUT=$(forge create src/NorenArcHook.sol:NorenArcHook --rpc-url $RPC --private-key "$NOREN_DEPLOYER_KEY" --broadcast --json --nonce "$(nonce)" \
-  --constructor-args $MT $USDC $FORWARDER "$OWNER")
+  --constructor-args $MT $USDC $TM $FORWARDER "$OWNER")
 ADDR=$(echo "$OUT" | jq -r .deployedTo); TX=$(echo "$OUT" | jq -r .transactionHash)
 [ "$ADDR" != null ] || { echo "deploy failed: $OUT" >&2; exit 1; }
 [ "$(cast call "$ADDR" 'localDomain()(uint32)' --rpc-url $RPC)" = 26 ] || { echo "localDomain != 26" >&2; exit 1; }
