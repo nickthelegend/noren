@@ -848,3 +848,4 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-settle li[data-on="true"] { border-style: solid; border-color: var(--moss); background: var(--moss-wash); }
 .co-settle b { display: block; font-size: 12.5px; } .co-settle span { display: block; font-size: 11px; color: var(--faint); line-height: 1.35; }
 @media (max-width: 420px) { .co-settle { grid-template-columns: 1fr; } }
+.co-net { display: flex; justify-content: flex-end; margin-bottom: 12px; }

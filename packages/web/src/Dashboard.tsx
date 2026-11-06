@@ -4,6 +4,8 @@ import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
 import { creditLineAbi, creditOf } from "./onchain";
+import { LiveArc, NetSwitch } from "./LiveArc";
+import { useNet } from "./network";
 import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
 
 export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard";
@@ -49,6 +51,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const [menu, setMenu] = useState(false);
   const [palette, setPalette] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [net] = useNet();
   const setToken = (t: string) => { setTokenState(t); try { localStorage.setItem(TOKEN_KEY, t); } catch { /* private mode */ } };
 
   useEffect(() => { api.config().then(setCfg).catch((e) => setErr(msgOf(e))); }, []);
@@ -111,14 +114,14 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
           <button className="sd-icon-btn sd-burger" onClick={() => setMenu((m) => !m)} aria-label="Menu" aria-expanded={menu}><Icon.menu /></button>
           <button className="sd-search" onClick={() => setPalette(true)}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg><span>Search payments, links, events</span><kbd>⌘K</kbd></button>
           <div className="sd-top-r">
-            <span className="sd-mode" title="Live mode needs the public Arc deployment"><i />Test mode</span>
+            <NetSwitch />
             <a className="sd-icon-btn" href="#/dashboard/developers" title="Developers" aria-label="Developers"><Icon.code /></a>
             <Menu trigger={(o) => <button className="sd-btn primary sm" onClick={o}><Icon.plus /> New</button>} items={[["Payment link", () => setCreating(true), !!token], ["Webhook endpoint", () => go("#/dashboard/developers/webhooks")], ["Business name", () => go("#/dashboard/settings")]]} />
           </div>
         </header>
 
         <main className="sd-main">
-          {err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
+          {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the local fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
             <>
               {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}

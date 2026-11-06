@@ -22,6 +22,8 @@ import { EarnTab } from "./EarnTab";
 import { BorrowTab } from "./BorrowTab";
 import { CreditTab } from "./CreditTab";
 import { PayTab } from "./PayTab";
+import { LiveArc, NetSwitch } from "../LiveArc";
+import { useNet } from "../network";
 
 export const TABS = ["swap", "bridge", "earn", "borrow", "credit", "pay"] as const;
 export type Tab = (typeof TABS)[number];
@@ -45,6 +47,7 @@ export function NorenApp() {
   const [arcUsdc, setArcUsdc] = useState<bigint | null>(null);
   const [tick, setTick] = useState(0);
   const [menu, setMenu] = useState(false);
+  const [net] = useNet();
 
   const refresh = useCallback(() => {
     if (!oc) return;
@@ -78,10 +81,11 @@ export function NorenApp() {
             ))}
           </nav>
           <div className="nk-right">
-            <span className="nk-nets" aria-label="Networks">
+            <NetSwitch />
+            {net === "fork" && <span className="nk-nets" aria-label="Networks">
               <span className="nk-net" title={credit?.robinhoodRpc ?? "not running"}><i className={credit?.robinhoodRpc ? "on" : ""} />Robinhood fork</span>
               <span className="nk-net" title={cfg?.rpcUrl}><i className={cfg ? "on" : ""} />Arc fork</span>
-            </span>
+            </span>}
             <div className="nk-prof">
               <button className="nk-chip" onClick={() => setMenu((o) => !o)} aria-expanded={menu} aria-haspopup="dialog"><i className="nk-ava" aria-hidden />{oc ? shortHex(oc.address, 6) : "…"}</button>
               {menu && w && <Profile w={w} onClose={() => setMenu(false)} />}
@@ -90,7 +94,7 @@ export function NorenApp() {
         </header>
 
         <main className="nk-main">
-          {!w ? <div className="nk-col"><div className="nk-skel"><i /><i /><i /></div></div> : (
+          {net === "live" ? <div className="nk-col"><LiveArc context="app" /></div> : !w ? <div className="nk-col"><div className="nk-skel"><i /><i /><i /></div></div> : (
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={tab} className="nk-pane" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
                 {tab === "swap" && <SwapTab w={w} />}

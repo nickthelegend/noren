@@ -6,6 +6,8 @@ import { Icon, Logo, Setup, TxRef, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
 import { StockPay } from "./StockPay";
 import { UsdcPay } from "./UsdcPay";
+import { LiveArc, NetSwitch } from "./LiveArc";
+import { useNet } from "./network";
 
 type Step = "idle" | "binding" | "proving" | "relaying" | "paid" | "error";
 
@@ -34,6 +36,7 @@ export function Checkout({ id }: { id: string }) {
   const [total, setTotal] = useState<number | null>(null);
   const [crowd, setCrowd] = useState<{ deposits: number; depositors: number } | null>(null);
   const [method, setMethod] = useState<"usdc" | "private" | "stocks" | "credit">("usdc");
+  const [net] = useNet();
 
   useEffect(() => { if (cfg) import("./wallet").then((m) => setWallet(m.makeWallet(cfg))).catch((e) => setNote(`Couldn't load the private wallet: ${msgOf(e)}`)); }, [cfg]);
   const load = useCallback(async () => {
@@ -126,7 +129,8 @@ export function Checkout({ id }: { id: string }) {
 
         {/* --------------------------------------------------------------- pay */}
         <section className="co-pay">
-          {loadErr && !view ? (
+          <div className="co-net"><NetSwitch /></div>
+          {net === "live" ? <LiveArc context="checkout" /> : loadErr && !view ? (
             <div className="co-state"><Icon.x /><h2>This payment link doesn't work</h2><p>{loadErr}</p></div>
           ) : settled ? (
             <div className="co-done">

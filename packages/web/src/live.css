@@ -1,0 +1,25 @@
+/* Arc testnet (live) panel and the network switch; inherits the surface's font. */
+.la-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid rgba(23, 32, 63, .14); background: rgba(255, 255, 255, .7); }
+.la-switch button { appearance: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; font: 600 12.5px/1 inherit; font-family: inherit; color: #575c72; cursor: pointer; white-space: nowrap; }
+.la-switch button[aria-checked="true"] { background: #1c2a5e; color: #fbf8f1; }
+.la-switch button i { width: 6px; height: 6px; border-radius: 50%; background: #2f7a55; box-shadow: 0 0 0 3px rgba(47, 122, 85, .18); }
+.la-switch.dark { border-color: rgba(255, 255, 255, .25); background: rgba(255, 255, 255, .08); }
+.la-switch.dark button { color: rgba(255, 255, 255, .8); } .la-switch.dark button[aria-checked="true"] { background: #fff; color: #17203f; }
+.la { display: grid; gap: 14px; padding: 20px; border-radius: 22px; background: #fffdf8; border: 1px solid rgba(47, 122, 85, .35); color: #17203f; min-width: 0; text-align: left; }
+.la header { display: flex; gap: 12px; align-items: center; }
+.la header b { display: block; font-size: 17px; } .la header small { display: block; font-size: 12.5px; color: #80849a; }
+.la-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #2f7a55; box-shadow: 0 0 0 4px rgba(47, 122, 85, .18); }
+.la-note { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(28, 42, 94, .06); font-size: 13.5px; line-height: 1.5; color: #1c2a5e; }
+.la-note code { font-size: 12px; }
+.la-grid { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.la-grid > div { padding: 10px 12px; border-radius: 12px; background: rgba(28, 42, 94, .045); min-width: 0; }
+.la-grid dt { font-size: 12px; color: #80849a; } .la-grid dd { margin: 4px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.la-grid dd small { display: block; margin-top: 2px; color: #575c72; font-size: 12px; }
+.la a { color: #1c2a5e; font-family: ui-monospace, "Space Mono", monospace; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(28, 42, 94, .3); }
+.la-tx { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.la-tx li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(23, 32, 63, .1); font-size: 13.5px; min-width: 0; }
+.la-tx li span { min-width: 0; } .la-tx li a { flex: none; font-size: 12px; }
+.la-fine { margin: 0; font-size: 12.5px; line-height: 1.5; color: #575c72; }
+@media (max-width: 520px) { .la-grid { grid-template-columns: 1fr; } .la-tx li { flex-direction: column; align-items: flex-start; } }
+.la-short { display: none; }
+@media (max-width: 720px) { .la-long { display: none; } .la-short { display: inline; } .la-switch button { padding: 0 10px; min-height: 36px; } }

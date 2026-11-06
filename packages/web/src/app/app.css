@@ -289,3 +289,4 @@ li[data-done="true"] .nk-check { background: var(--nk-ok); border-color: var(--n
 .nk .nw-card { font-family: var(--nk-sans); border-radius: 20px; background: var(--nk-box); border-color: transparent; }
 .nk .nw-card .btn.ink { min-height: 48px; border-radius: 14px; font: 700 15px/1 var(--nk-sans); }
 .nk .nw-title { font-size: 16px; }
+@media (max-width: 400px) { .nk-brand > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
