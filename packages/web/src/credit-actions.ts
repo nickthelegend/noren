@@ -12,7 +12,7 @@ import type { Holding, Line, Onchain } from "./onchain";
 
 export type Factor = { label: string; value: string; note?: string; points?: number; max?: number; missing?: boolean };
 /** What a verified Reclaim proof does to the history score ("reclaim" on the underwriter's /score). */
-export type ReclaimBoost = { verified: boolean; provider?: string; points: number; decidedBy: string; ifVerified: { score: number; tier: number; limitUsdg: bigint } };
+export type ReclaimBoost = { verified: boolean; provider?: string; points: number; maxPoints: number; decidedBy: string; ifVerified: { score: number; tier: number; limitUsdg: bigint; collateralRatioBps: number } };
 export type Underwriting = { score: number; tier: string; tierIndex: number; tiers: { name: string }[]; ltvBps: number; limitUsdg: bigint; factors: Factor[]; signer: string; onchainTier?: number; expires?: number; reclaim?: ReclaimBoost };
 export type AiCheck = { status: "approved" | "declined" | "refused"; tier?: number; limitUsdg?: number; collateralRatioBps?: number; rationale?: string; riskFlags?: string[]; requestId?: string; teeVerified?: boolean | null; independent?: string; verifiability?: string; provider?: string; model?: string; reason?: string; setupRequired?: boolean };
 export type Quote = { collateral8: bigint; ltvBps: number; limitUsdc6: bigint; termDays: number; liquidation8?: bigint; tier: number; needsAttestation: boolean };
@@ -54,7 +54,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
         note: f.status === "available" ? `${f.points.toFixed(1)} of ${f.maxPoints} points` : `Unavailable: ${f.note}`,
       }));
       return { score: score.score, tier: TIERS[score.tier]?.name ?? `Tier ${score.tier}`, tierIndex: score.tier - 1, tiers: TIERS.slice(1), ltvBps: score.collateralRatioBps, limitUsdg: BigInt(score.limitUsdg), factors, signer: "", onchainTier: onchain ? Number(onchain[0]) : undefined,
-        ...(reclaim ? { reclaim: { verified: !!reclaim.verified, provider: reclaim.provider, points: Number(reclaim.points), decidedBy: String(reclaim.decidedBy ?? ""), ifVerified: { score: Number(reclaim.ifVerified.score), tier: Number(reclaim.ifVerified.tier), limitUsdg: BigInt(reclaim.ifVerified.limitUsdg) } } } : {}) };
+        ...(reclaim ? { reclaim: { verified: !!reclaim.verified, provider: reclaim.provider, points: Number(reclaim.points), maxPoints: Number(reclaim.maxPoints ?? 20), decidedBy: String(reclaim.decidedBy ?? ""), ifVerified: { score: Number(reclaim.ifVerified.score), tier: Number(reclaim.ifVerified.tier), limitUsdg: BigInt(reclaim.ifVerified.limitUsdg), collateralRatioBps: Number(reclaim.ifVerified.collateralRatioBps ?? 0) } } } : {}) };
     },
     /** The sealed AI credit check on 0G Private Computer. Refusals (including "Setup required") come back as data. */
     async aiCheck(): Promise<AiCheck> {
