@@ -480,3 +480,15 @@ a.nk-way:hover { border-color: var(--nk-hair-2); background: var(--nk-box); }
 .nk-wmode .nk-btn { justify-self: start; width: auto; margin-top: 0; min-height: 36px; padding: 0 10px; }
 .nk-tag-k { font: 500 12.5px/1.4 var(--nk-sans); color: var(--nk-kaki-ink); }
 @media (max-width: 720px) { .nk-signin { margin-top: 0; padding: 24px 18px 20px; border-radius: 24px; } .nk-signin h1 { font-size: 26px; } }
+.nk-signin-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nk-signin-alt .nk-cta { min-height: 50px; font-size: 15px; }
+.nk-signin-alt .nk-cta:only-child { grid-column: 1 / -1; }
+.nk-bw { display: grid; gap: 8px; }
+.nk-bw-row { appearance: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; border-radius: 18px; border: 1px solid var(--nk-hair-2); background: var(--nk-card); color: var(--nk-ink); font: 700 16px/1 var(--nk-sans); cursor: pointer; text-align: left; }
+.nk-bw-row:hover:not(:disabled) { border-color: var(--nk-ai); }
+.nk-bw-row:disabled { opacity: .6; cursor: progress; }
+.nk-bw-row img, .nk-bw-row i { width: 24px; height: 24px; border-radius: 6px; flex: none; }
+.nk-bw-row i { background: var(--nk-ai-wash); }
+.nk-bw-none { margin: 0; padding: 14px 16px; border-radius: 16px; background: var(--nk-box); font: 500 14px/1.45 var(--nk-sans); color: var(--nk-dim); }
+.nk-seg button { padding: 0 6px; font-size: 12.5px; }
+@media (max-width: 380px) { .nk-signin-alt { grid-template-columns: 1fr; } }

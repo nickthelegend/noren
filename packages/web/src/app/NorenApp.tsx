@@ -27,7 +27,7 @@ import { HomeTab } from "./HomeTab";
 import { LiveArc, NetSwitch } from "../LiveArc";
 import { useNet } from "../network";
 import { Mark } from "../logos";
-import { PRIVY_APP_ID, useSigner } from "../signer";
+import { PRIVY_APP_ID, restoreBrowserWallet, useSigner } from "../signer";
 import { SignIn, WalletSwitch } from "./SignIn";
 
 export const TABS = ["home", "pay", "bridge", "earn", "credit", "borrow", "swap"] as const;
@@ -48,7 +48,8 @@ export function NorenApp() {
   const go = (t: Tab) => { history.replaceState(null, "", `#/app/${t}`); setTab(t); scrollTo({ top: 0 }); };
   const signer = useSigner();
   // Privy chosen but not signed in: the home screen is the sign-in. Otherwise every card signs with the active wallet.
-  const needsSignIn = !!PRIVY_APP_ID && signer.mode === "privy" && signer.status !== "in";
+  const needsSignIn = (!!PRIVY_APP_ID && signer.mode === "privy" && signer.status !== "in") || (signer.mode === "browser" && !signer.browser);
+  useEffect(() => { restoreBrowserWallet().catch(() => {}); }, []);
   const oc = useMemo(() => (cfg && !needsSignIn ? makeOnchain(cfg) : null), [cfg, needsSignIn, signer.signerKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [hold, setHold] = useState<Wallet["hold"]>(null);
   const [holdErr, setHoldErr] = useState<string | null>(null);
