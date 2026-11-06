@@ -71,7 +71,7 @@ export function NorenApp() {
           <a className="nk-brand" href="#/"><Logo size={30} /><span>Noren</span><small>app</small></a>
           <nav className="nk-tabs" role="tablist" aria-label="Noren app">
             {TABS.map((t) => (
-              <button key={t} role="tab" aria-selected={tab === t} onClick={() => go(t)}>
+              <button key={t} role="tab" aria-label={LABEL[t]} aria-selected={tab === t} onClick={() => go(t)}>
                 {tab === t && <motion.span className="nk-tab-pill" layoutId="nk-tab-pill" transition={spring} />}
                 <span className="nk-tab-l">{LABEL[t]}</span>
               </button>

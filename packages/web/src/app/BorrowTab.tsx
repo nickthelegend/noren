@@ -46,7 +46,7 @@ export function BorrowTab({ w }: { w: Wallet }) {
 
   const run = async (k: string, f: (x: ReturnType<Wallet["oc"]["robinhood"]>) => Promise<string>) => {
     setBusy(k); setNote(null);
-    try { const t = await f(w.oc.robinhood()); setNote({ t }); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
+    try { const t = await f(w.oc.robinhood()); setNote({ t }); setAmount(""); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
   };
   const tx = async (x: ReturnType<Wallet["oc"]["robinhood"]>, label: string, req: Record<string, unknown>) => {
     setNote({ t: label });
