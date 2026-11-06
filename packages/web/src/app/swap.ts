@@ -1,11 +1,11 @@
 /**
  * Swap on Robinhood Chain: best execution between two real venues, on the local snapshot fork of mainnet.
- * - 1inch Aqua makers (SwapVM, Chainlink-pegged, registered in NorenLiquidity). Sells go through
- *   NorenLiquidity.sellExactAsset; buys go straight to the maker's SwapVM order (makers only sell stock they hold).
+ * - 1inch Aqua makers (SwapVM, Chainlink-pegged, registered in NorenLiquidity): sells through sellExactAsset,
+ *   buys through buyFromMakers (makers only sell stock they hold, at the Chainlink price plus their ask spread).
  * - Uniswap v4: the official V4Quoter, and the official Universal Router (V4_SWAP) through Permit2.
  * Every number is an eth_call or a receipt on the fork. A venue that can't quote says why; nothing is estimated.
  */
-import { encodeAbiParameters, encodePacked, erc20Abi, maxUint256, parseAbi, zeroAddress, type Address, type Hex } from "viem";
+import { encodeAbiParameters, erc20Abi, maxUint256, parseAbi, zeroAddress, type Address, type Hex } from "viem";
 import type { Onchain } from "../onchain";
 import { USDG, creditOf } from "../onchain";
 import type { Config } from "../api";
@@ -25,10 +25,8 @@ const liquidityAbi = parseAbi([
   "function router() view returns (address)",
   "function oracle() view returns (address)",
   "function sellExactAsset(address asset, uint256 assetIn, uint256 minUsdgOut, address to) returns (uint256 usdgOut, bytes32 strategyHash)",
-]);
-const routerAbi = parseAbi([
-  "function quote((address maker, uint256 traits, bytes data) order, address tokenIn, address tokenOut, uint256 amount, bytes takerTraitsAndData) view returns (uint256 amountIn, uint256 amountOut, bytes32 orderHash)",
-  "function swap((address maker, uint256 traits, bytes data) order, address tokenIn, address tokenOut, uint256 amount, bytes takerTraitsAndData) returns (uint256 amountIn, uint256 amountOut, bytes32 orderHash)",
+  "function bestAskForAsset(address asset, uint256 assetOut) view returns (bytes32 strategyHash, uint256 usdgIn)",
+  "function buyFromMakers(address asset, uint256 assetOut, uint256 maxUsdgIn, address to) returns (uint256 usdgIn, bytes32 strategyHash)",
 ]);
 const oracleAbi = parseAbi([
   "function valueUsd8(address asset, uint256 amount) view returns (uint256)",
@@ -48,7 +46,7 @@ const wethAbi = parseAbi(["function deposit() payable", "function withdraw(uint2
 
 export type PoolKey = { currency0: Address; currency1: Address; fee: number; tickSpacing: number; hooks: Address };
 export type RouteQuote =
-  | { id: "aqua"; out: bigint; strategyHash: Hex; maker: Address; spreadBps: number; order?: { maker: Address; traits: bigint; data: Hex } }
+  | { id: "aqua"; out: bigint; strategyHash: Hex; maker: Address; spreadBps: number; usdgIn?: bigint }
   | { id: "v4"; out: bigint; key: PoolKey; zeroForOne: boolean; gasEstimate: bigint };
 export type RouteMiss = { id: "aqua" | "v4"; error: string };
 export type SwapQuote = { routes: (RouteQuote | RouteMiss)[]; best: RouteQuote | null; fair: bigint | null; marketClosed: boolean; at: number };
@@ -59,15 +57,6 @@ const short = (e: unknown) => {
   const m = e instanceof Error ? ((e as { shortMessage?: string }).shortMessage ?? e.message) : String(e);
   return m.split("\n")[0].replace(/^The contract function "\w+" reverted (with the following reason|with the following signature)?:?\s*/i, "").slice(0, 160);
 };
-
-/** SwapVM TakerTraits as NorenLiquidity builds them: slice table, flags, threshold, optional recipient. */
-function takerData(exactIn: boolean, threshold: bigint): Hex {
-  const end = 32n;
-  let idx = 32n | (end << 16n);
-  for (let k = 2n; k < 10n; k++) idx |= end << (16n * k);
-  const flags = 0x0040 | (exactIn ? 0x0001 : 0);
-  return encodePacked(["uint160", "uint16", "uint256"], [idx, flags, threshold]);
-}
 
 export function swapper(cfg: Config, oc: Onchain) {
   const credit = creditOf(cfg);
@@ -85,26 +74,20 @@ export function swapper(cfg: Config, oc: Onchain) {
         const s = await pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "strategy", args: [h] });
         return { id: "aqua", out, strategyHash: h, maker: s.maker, spreadBps: s.bidSpreadBps };
       }
-      // Buying: a maker sells only stock it holds (bought earlier at its bid), at the Chainlink price plus its ask spread.
-      const [hs, router] = await Promise.all([
-        pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "strategiesFor", args: [erc(tout)] }),
-        pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "router" }),
-      ]);
-      if (!hs.length) return { id: "aqua", error: `No Aqua maker trades ${tout.sym}` };
-      let best: RouteQuote | null = null, why = "";
-      for (const h of hs) {
-        const [order, s] = await Promise.all([
-          pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "order", args: [h] }),
-          pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "strategy", args: [h] }),
-        ]);
-        if (!s.active) continue;
-        if (s.askSpreadBps === 0xffff) { why = "makers only buy (one-sided strategy)"; continue; }
-        try {
-          const [, out] = await pub.readContract({ address: router, abi: routerAbi, functionName: "quote", args: [order, USDG, erc(tout), amountIn, takerData(true, 0n)] });
-          if (out > 0n && (!best || out > best.out)) best = { id: "aqua", out, strategyHash: h, maker: s.maker, spreadBps: s.askSpreadBps, order };
-        } catch (e) { why = /Insufficient|Underfunded|balance/i.test(short(e)) ? `makers hold no ${tout.sym} yet (they buy it at the bid, then resell it)` : short(e); }
-      }
-      return best ?? { id: "aqua", error: `No maker can sell ${tout.sym}: ${why || "no active strategy"}` };
+      // Buying: makers sell only stock they hold (bought earlier at their bid, e.g. deposit vaults), at the Chainlink
+      // price plus their ask spread. NorenLiquidity's ask side is exact-out, so size the order to spend about amountIn.
+      if (!oracle) return { id: "aqua", error: "Setup required: NorenAssetOracle isn't deployed on the Robinhood fork" };
+      const usd8 = await pub.readContract({ address: oracle, abi: oracleAbi, functionName: "usdgToUsd8", args: [amountIn, 0] });
+      const [guess] = await pub.readContract({ address: oracle, abi: oracleAbi, functionName: "assetForUsd8", args: [erc(tout), usd8, 0n] });
+      const ask = (out: bigint) => pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "bestAskForAsset", args: [erc(tout), out] });
+      const [h0, in0] = await ask(guess);
+      if (BigInt(h0) === 0n || in0 === 0n) return { id: "aqua", error: `No maker can sell ${tout.sym} at this size (makers sell only stock they hold)` };
+      let out = (guess * amountIn) / in0;
+      let [h, usdgIn] = await ask(out);
+      for (let i = 0; i < 3 && BigInt(h) !== 0n && usdgIn > amountIn; i++) { out = (out * amountIn) / usdgIn - 1n; [h, usdgIn] = await ask(out); }
+      if (BigInt(h) === 0n || usdgIn > amountIn) return { id: "aqua", error: `No maker can sell ${tout.sym} at this size` };
+      const st = await pub.readContract({ address: liquidity, abi: liquidityAbi, functionName: "strategy", args: [h] });
+      return { id: "aqua", out, strategyHash: h, maker: st.maker, spreadBps: st.askSpreadBps, usdgIn };
     } catch (e) { return { id: "aqua", error: short(e) }; }
   }
 
@@ -179,11 +162,11 @@ export function swapper(cfg: Config, oc: Onchain) {
           await pub.simulateContract({ account, address: liquidity!, abi: liquidityAbi, functionName: "sellExactAsset", args: [inAddr, amountIn, minOut, me] });
           hash = await send("Selling to the Aqua maker", { address: liquidity!, abi: liquidityAbi, functionName: "sellExactAsset", args: [inAddr, amountIn, minOut, me], chain, account });
         } else {
-          const router = await pub.readContract({ address: liquidity!, abi: liquidityAbi, functionName: "router" });
-          await approve(router);
-          const args = [route.order!, inAddr, erc(tout), amountIn, takerData(true, minOut)] as const;
-          await pub.simulateContract({ account, address: router, abi: routerAbi, functionName: "swap", args });
-          hash = await send("Buying from the Aqua maker", { address: router, abi: routerAbi, functionName: "swap", args, chain, account });
+          // Exact-out buy from the best maker: route.out of the asset for at most amountIn USDG.
+          await approve(liquidity!);
+          const args = [erc(tout), route.out, amountIn, me] as const;
+          await pub.simulateContract({ account, address: liquidity!, abi: liquidityAbi, functionName: "buyFromMakers", args });
+          hash = await send("Buying from the Aqua maker", { address: liquidity!, abi: liquidityAbi, functionName: "buyFromMakers", args, chain, account });
         }
       } else {
         await approve(PERMIT2);
