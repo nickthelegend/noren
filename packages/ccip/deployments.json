@@ -63,6 +63,78 @@
       "status": "SUCCESS",
       "deliverySeconds": 7,
       "feeNativeUsdcWei": "110017493881702121"
+    },
+    {
+      "label": "Base Sepolia -> Arc CREDIT_LINE (1 USDC, asOf 1)",
+      "hops": [
+        {
+          "messageId": "0xc54e5cf92c21ef23e7784dd1148e48a91b75eb9a0ff2bc52ab6d4de80664d504",
+          "ccipExplorer": "https://ccip.chain.link/msg/0xc54e5cf92c21ef23e7784dd1148e48a91b75eb9a0ff2bc52ab6d4de80664d504"
+        }
+      ],
+      "result": "DELIVERED; Arc receipt 0x7033c22339b8a4dc77c72151cd23a273caa46da19fd0d58a85863035d57e50a2"
+    },
+    {
+      "label": "Ethereum Sepolia -> Arc PAY_ON_CREDIT 0.10 USDC (arrived before the line; FAILED then retryFailed)",
+      "hops": [
+        {
+          "messageId": "0x3414a5d397f5c4222aa8a30bc75c085b53127533b62376dc132923b6ec2df1a4",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x3414a5d397f5c4222aa8a30bc75c085b53127533b62376dc132923b6ec2df1a4"
+        }
+      ],
+      "result": "DELIVERED after retry tx 0x78d3a38fd41c1c2b9bee066a94ad2c83837203cd5b00b9e0bd001155edc7d7ec"
+    },
+    {
+      "label": "Robinhood -> Base hub -> Arc CREDIT_LINE (2 USDC, asOf 2)",
+      "hops": [
+        {
+          "messageId": "0x8bf11c2010e50817e88d2c61a896dbcffde95af5352cda9b0c342f073bac477d",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x8bf11c2010e50817e88d2c61a896dbcffde95af5352cda9b0c342f073bac477d"
+        },
+        {
+          "messageId": "0xb3cca227dd74fa1c70bbae1e408cbe7540a8d51792422b87fc91441002d9bac8",
+          "ccipExplorer": "https://ccip.chain.link/msg/0xb3cca227dd74fa1c70bbae1e408cbe7540a8d51792422b87fc91441002d9bac8"
+        }
+      ],
+      "result": "DELIVERED; Arc receipt 0xf55345779ffe0773f35f63ce45889a490bf90857253d8a4cfa2124b9e442b619"
+    },
+    {
+      "label": "Robinhood -> Base hub -> Arc PAY_ON_CREDIT 0.25 USDC",
+      "hops": [
+        {
+          "messageId": "0x5b04344b6baea78121553f912df5dc3e959e320df7712ca4d82a5763559df93d",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x5b04344b6baea78121553f912df5dc3e959e320df7712ca4d82a5763559df93d"
+        },
+        {
+          "messageId": "0x5ed8f6065ca9eabb731bda4214dffe24dbf612d08196732b7c94223784b29984",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x5ed8f6065ca9eabb731bda4214dffe24dbf612d08196732b7c94223784b29984"
+        }
+      ],
+      "result": "DELIVERED; Arc receipt 0x98a71c16434fbfe30dee4afcbcab6f21ac000b40b22a5b7a65c4d36806e3d867"
+    },
+    {
+      "label": "Arc -> Base hub -> Robinhood LINE_REPORT (reverse path)",
+      "hops": [
+        {
+          "messageId": "0x56603748215991241c874b9dc17bc44e0dce534ed0f0fb7746e79922b4541009",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x56603748215991241c874b9dc17bc44e0dce534ed0f0fb7746e79922b4541009"
+        },
+        {
+          "messageId": "0x375c795306b068bb99b9a67652841871749b73b1d77f7714bc6213680d365c4b",
+          "ccipExplorer": "https://ccip.chain.link/msg/0x375c795306b068bb99b9a67652841871749b73b1d77f7714bc6213680d365c4b"
+        }
+      ],
+      "result": "DELIVERED; Robinhood receipt 0x450eb6fde395c508c6cf59dc7f8fdf5aa8eec3b4d3f0f3bc2e157f204d847b1d"
+    },
+    {
+      "label": "Robinhood -> Ethereum Sepolia 1 CCIP-BnM + Noren action (programmable token transfer)",
+      "hops": [
+        {
+          "messageId": "0xff21b3a60d9d5592c5316a3b288acd0a08a0c8aa73774bf67b72be18026c728e",
+          "ccipExplorer": "https://ccip.chain.link/msg/0xff21b3a60d9d5592c5316a3b288acd0a08a0c8aa73774bf67b72be18026c728e"
+        }
+      ],
+      "result": "FAILED (out of gas at 400k on Sepolia) then manual execution via OffRamp.execute tx 0xe7758a82738c48f4f62f2d0ffe8e0d5c0ce6854cba2a887880e3c223d5070322 -> SUCCESS"
     }
   ]
 }
