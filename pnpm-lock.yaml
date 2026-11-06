@@ -27,6 +27,25 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.10.1)(tsx@4.20.6)
 
+  packages/ai-underwriter:
+    dependencies:
+      viem:
+        specifier: 2.51.3
+        version: 2.51.3(typescript@5.9.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.10.1)(tsx@4.20.6)
+
   packages/contracts:
     dependencies:
       '@openzeppelin/contracts':
@@ -107,6 +126,9 @@ importers:
 
   packages/robinhood:
     dependencies:
+      '@noren/ai-underwriter':
+        specifier: workspace:*
+        version: link:../ai-underwriter
       '@openzeppelin/contracts':
         specifier: 5.1.0
         version: 5.1.0

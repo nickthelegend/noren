@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "sdk/**/*.ts",
+    "underwriter/**/*.ts",
+    "scripts/gen-abi.ts",
+    "vitest.config.ts"
+  ]
+}
