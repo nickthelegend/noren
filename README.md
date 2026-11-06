@@ -4,6 +4,8 @@
 
 ETHGlobal Mumbai entry. Everything below runs on local forks; every number was measured on Nov 6, 2026.
 
+Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party licenses](#third-party-licenses)).
+
 ![Noren checkout: pay privately, pay with stocks, or pay later](docs/img/checkout-methods.png)
 
 ## One product, three surfaces
@@ -46,7 +48,7 @@ The checkout says it plainly: only "Pay privately" hides you.
 | Settle to Arc: CRE settlement-desk workflow on a 7.50 USDG request | live quotes Relay 7.475568 / Across 7.491332 USDC against a Chainlink fair value of 7.501225; approved Across with a 7.426212 minimum in 6.4–7.1 s |
 | CRE pricing workflow → `NorenRateOracle` on Arc | written in 5.0 s; a €6.90 invoice (7.740672 USDC) passes `verifyQuote` at its own Chainlink rounds |
 | Browser, Noren app | fresh wallet, fork faucet, tier-1 terms (score 13/100, collateral-only floor), 1 NVDA locked → 123.80 USDC line, live on Arc after one CRE run (4.8 s), a ¥1,200 checkout (7.60 USDC via Chainlink) paid later, 1.90 USDC repaid |
-| Package suites | `NorenCredit`/`NorenGateway`/`NorenLiquidity`/`NorenVault` **111** Foundry tests on a fresh Robinhood mainnet fork (Aqua routing, Pay in 3, SwapVM liquidations); `NorenOraclePeg` + Aqua router **18**; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
+| Package suites | `NorenCredit`/`NorenGateway`/`NorenLiquidity`/`NorenVault` **112** Foundry tests on a fresh Robinhood mainnet fork (Aqua routing, Pay in 3, SwapVM liquidations); `NorenOraclePeg` + Aqua router **18**; `NorenCreditLine` **47**; `NorenRateOracle` **22**; CRE bridge **31** + pricing **8** (bun); World ID **43** and the 0G underwriter **25** run inside `pnpm test` |
 
 Fork transaction hashes vanish when the fork stops, so the numbers above are reproducible with the commands below rather than linked.
 
@@ -125,7 +127,9 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 - **Robinhood testnet has no Chainlink feeds**, so the Robinhood side is a snapshot of mainnet state. CRE only knows Robinhood *testnet*, so that node is served as chain 46630 with testnet's simulation forwarder. CRE workflows run in the CRE CLI simulator, not on a DON.
 - **Keys not yet created:** the 0G credit check needs `ZG_PC_API_KEY` and World ID needs `WORLD_APP_ID`, `WORLD_RP_ID` and `WORLD_RP_SIGNING_KEY`. Until then both say "Setup required" and nothing is faked; the history underwriter's deterministic score (labelled as such) decides terms.
 - **Settle to Arc** runs the CRE approval for real, but no relayer fills a local fork, so the USDC fill on Arc stays pending. The Robinhood snapshot carries the Relay Depository's code but not the Across SpokePool, so an Across approval is shown and not deposited; `sh packages/bridge-settlement/scripts/fork-settle.sh` runs both deposits on a live fork.
-- **1inch Aqua:** Aqua is the official registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Robinhood Chain. The SwapVM router is the official AquaSwapVMRouter (`0x111111338c5091E8440b67B168bAe16a668AC0De`) recompiled with one added opcode (`NorenOraclePeg`), so it is redeployed on the fork rather than called at the official address. Maker liquidity on the fork is seeded from a real USDG holder.
+- **1inch Aqua:** Aqua is the official registry `0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a` on Robinhood Chain. The SwapVM router is the official AquaSwapVMRouter (`0x111111338c5091E8440b67B168bAe16a668AC0De`) recompiled with one added opcode (`NorenOraclePeg`), so it is redeployed on the fork rather than called at the official address. Maker liquidity on the fork is seeded from a real USDG holder. To replay the Aqua flow on its own: `sh packages/aqua/scripts/aqua-demo.sh` (about 2 minutes on a fresh fork); a recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](packages/aqua/demo/aqua-demo-transcript.txt).
+- **Markets closed: wider spread.** From Saturday through Monday 06:00 UTC (and on marked holidays) the Chainlink stock feeds pause, so stock makers add 3% (`closedExtraBps` 300) to their spread and the checkout shows "markets closed: wider spread" next to the quote. A Saturday demo pays about 3% more stock for the same invoice.
+- **Snapshot freshness.** The Robinhood snapshot freezes the Chainlink answers it was built with, and USDG/USD goes stale 25 h after its last update, after which makers and the vault refuse to quote. Rebuild it on the day of a demo: `sh packages/robinhood/scripts/fork-snapshot.sh`.
 - Stock Tokens can't leave Robinhood Chain and their issuer can pause or block them; only stablecoin value crosses, as a credit limit carried by CRE. See [docs/BRIDGE-ROUTES.md](docs/BRIDGE-ROUTES.md).
 - The privacy pool on a fresh fork has few depositors, so timing can link a payment to a deposit; the checkout shows the anonymity set.
 - Browser proving was measured on a laptop, not yet on a phone. The contracts are unaudited.
@@ -148,7 +152,15 @@ Local runs write `deployments/5042002-fork.json` (e2e) and `deployments/31337-fo
 | `packages/world-id` | IDKit request signing, server verification, nullifier registry, `VerifyHuman` |
 | `scripts` | `dev:all`, `dev:stack`, e2e runners, CRE runner, Arc deploy |
 
-MIT © 2026 Nivesh Gajengi. Vendored Privacy Pools contracts keep their Apache-2.0 headers (see NOTICE). `packages/aqua/swapvm-ext` extends 1inch SwapVM and is distributed under the SwapVM-1.1 license that its files name.
+## Third-party licenses
+
+| Part | License |
+|---|---|
+| Noren (everything not listed below) | MIT, Copyright (c) 2026 Nivesh Gajengi. It calls Aqua and SwapVM only through their published ABIs. |
+| `packages/aqua/swapvm-ext` (`NorenOraclePeg`, `NorenAquaSwapVMRouter`) | Degensoft SwapVM-1.1 (`LicenseRef-Degensoft-SwapVM-1.1`). Powered by SwapVM — © Degensoft Ltd 2025. A Modified Work: modifications are copyleft and are published under the same license, with dated changes and build steps in its `NOTICE`. Non-commercial hackathon use (§4). Details: [docs/AQUA.md](docs/AQUA.md#license). |
+| Vendored Privacy Pools contracts (`packages/contracts/lib/privacy-pools-core`) | Apache-2.0; files keep their headers (see NOTICE). |
+
+No endorsement by 1inch, Degensoft or 0xbow is implied.
 
 ### Assets
 The app icon and the isometric illustrations were generated with ChatGPT; the curtain film on the landing page was generated with Google Gemini (Veo) and keeps Gemini's visible mark. Screenshots are real captures of this app on the local forks. Fonts: Geist, Geist Mono, Instrument Serif (OFL), bundled from Fontsource.
