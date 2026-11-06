@@ -9,12 +9,16 @@ import {Math} from '@oz/utils/math/Math.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
 import {NorenAssetOracle} from './NorenAssetOracle.sol';
 import {INorenVault} from './interfaces/INorenVault.sol';
+import {INorenLiquidity} from './interfaces/IAquaSwapVM.sol';
 import {IWETH} from './interfaces/IWETH.sol';
 
 /// @title NorenGateway
 /// @notice Merchants post USDG invoices; customers pay them with USDG, ETH or a Stock Token.
-/// Non-USDG payments go to the vault as inventory at the Chainlink price plus a spread and the
-/// vault pays the merchant the full invoice in USDG. NorenCredit settles invoices for Pay in 4.
+/// Non-USDG payments are converted through 1inch Aqua + SwapVM: NorenLiquidity sells the asset to
+/// the best maker strategy pegged to the Chainlink price and the maker pays the merchant the full
+/// invoice in USDG straight from its wallet. If no maker can fill, the payment falls back to the
+/// vault (asset kept as inventory at the Chainlink price plus a spread) when `vaultFallback` is on,
+/// and otherwise reverts with NoMakerLiquidity. NorenCredit settles invoices for Pay in 3.
 contract NorenGateway is Ownable2Step, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using Math for uint256;
@@ -44,6 +48,10 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   NorenAssetOracle public immutable oracle;
   INorenVault public immutable vault;
   address public credit;
+  /// @notice Aqua + SwapVM maker router; address(0) = vault only.
+  INorenLiquidity public liquidity;
+  /// @notice Use the vault when no maker strategy can fill (true by default).
+  bool public vaultFallback = true;
   mapping(address asset => uint16) public spreadBps;
   mapping(bytes32 key => Invoice) internal _invoices;
 
@@ -61,6 +69,9 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   event InvoiceSettledByCredit(address indexed merchant, bytes32 indexed invoiceId, address indexed borrower, uint256 amountUsdg);
   event SpreadSet(address indexed asset, uint16 bps);
   event CreditSet(address indexed credit);
+  event LiquiditySet(address indexed liquidity, bool vaultFallback);
+  event InvoiceRoutedToMaker(address indexed merchant, bytes32 indexed invoiceId, bytes32 indexed strategyHash, uint256 assetIn);
+  event InvoiceRoutedToVault(address indexed merchant, bytes32 indexed invoiceId, uint256 assetIn);
 
   error InvoiceExists();
   error InvoiceNotOpen(Status status);
@@ -72,6 +83,7 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   error BadValue();
   error ReceivedShort(uint256 expected, uint256 received);
   error BadConfig();
+  error NoMakerLiquidity(address asset, uint256 amountUsdg);
 
   constructor(address owner_, IERC20 usdg_, IWETH weth_, NorenAssetOracle oracle_, INorenVault vault_) Ownable(owner_) {
     usdg = usdg_;
@@ -95,6 +107,12 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   function setCredit(address credit_) external onlyOwner {
     credit = credit_;
     emit CreditSet(credit_);
+  }
+
+  function setLiquidity(INorenLiquidity liquidity_, bool vaultFallback_) external onlyOwner {
+    liquidity = liquidity_;
+    vaultFallback = vaultFallback_;
+    emit LiquiditySet(address(liquidity_), vaultFallback_);
   }
 
   // ---------------------------------------------------------------- merchants
@@ -123,11 +141,21 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
 
   // ---------------------------------------------------------------- customers
 
-  /// @notice How much of `asset` pays the invoice right now (rounded up), and the price used.
+  /// @notice How much of `asset` pays the invoice right now (rounded up), and the Chainlink price.
   function quote(address merchant, bytes32 invoiceId, address asset)
     public
     view
     returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)
+  {
+    Invoice memory inv = _openInvoice(merchant, invoiceId);
+    (assetIn, priceUsd8, marketClosed,) = _quote(asset, inv.amountUsdg);
+  }
+
+  /// @notice quote() plus the route: the Aqua strategy that fills it, or 0 for the vault (or USDG).
+  function quoteRoute(address merchant, bytes32 invoiceId, address asset)
+    external
+    view
+    returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed, bytes32 strategyHash)
   {
     Invoice memory inv = _openInvoice(merchant, invoiceId);
     return _quote(asset, inv.amountUsdg);
@@ -186,7 +214,8 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     _requireOpen(inv);
     uint256 amount = inv.amountUsdg;
     uint256 priceUsd8;
-    (assetIn, priceUsd8,) = _quote(asset, amount);
+    bytes32 strategyHash;
+    (assetIn, priceUsd8,, strategyHash) = _quote(asset, amount);
     if (assetIn > maxAssetIn) revert Slippage(assetIn, maxAssetIn);
     if (asset != NATIVE_ETH && msg.value != 0) revert BadValue();
 
@@ -202,33 +231,62 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     } else if (asset == NATIVE_ETH) {
       if (msg.value < assetIn) revert Slippage(assetIn, msg.value);
       weth.deposit{value: assetIn}();
-      IERC20(address(weth)).safeTransfer(address(vault), assetIn);
-      vault.disburse(merchant, amount);
+      _convert(address(weth), strategyHash, merchant, invoiceId, amount, assetIn);
       uint256 refund = msg.value - assetIn;
       if (refund != 0) {
         (bool ok,) = msg.sender.call{value: refund}('');
         if (!ok) revert BadValue();
       }
     } else {
-      oracle.checkTransferable(asset, msg.sender, address(vault));
-      uint256 before = IERC20(asset).balanceOf(address(vault));
-      IERC20(asset).safeTransferFrom(msg.sender, address(vault), assetIn);
-      uint256 got = IERC20(asset).balanceOf(address(vault)) - before;
+      address dest = strategyHash == bytes32(0) ? address(vault) : address(this);
+      oracle.checkTransferable(asset, msg.sender, dest);
+      uint256 before = IERC20(asset).balanceOf(dest);
+      IERC20(asset).safeTransferFrom(msg.sender, dest, assetIn);
+      uint256 got = IERC20(asset).balanceOf(dest) - before;
       if (got < assetIn) revert ReceivedShort(assetIn, got);
-      vault.disburse(merchant, amount);
+      _convert(asset, strategyHash, merchant, invoiceId, amount, assetIn);
     }
     emit InvoicePaid(merchant, invoiceId, msg.sender, inv.asset, assetIn, amount, priceUsd8);
   }
 
-  function _quote(address asset, uint256 amountUsdg) internal view returns (uint256 assetIn, uint256 priceUsd8, bool closed) {
+  /// @dev Maker route: the asset (held here) is sold to the strategy and the maker pays the merchant.
+  /// Vault route: the asset was sent to the vault, which pays the merchant from LP liquidity.
+  function _convert(address priced, bytes32 strategyHash, address merchant, bytes32 invoiceId, uint256 amount, uint256 assetIn)
+    internal
+  {
+    if (strategyHash == bytes32(0)) {
+      if (priced == address(weth)) IERC20(priced).safeTransfer(address(vault), assetIn);
+      vault.disburse(merchant, amount);
+      emit InvoiceRoutedToVault(merchant, invoiceId, assetIn);
+      return;
+    }
+    IERC20(priced).forceApprove(address(liquidity), assetIn);
+    (uint256 used, bytes32 filled) = liquidity.sellForUsdg(priced, amount, assetIn, merchant);
+    if (used != assetIn || filled != strategyHash) revert ReceivedShort(assetIn, used);
+    emit InvoiceRoutedToMaker(merchant, invoiceId, strategyHash, assetIn);
+  }
+
+  function _quote(address asset, uint256 amountUsdg)
+    internal
+    view
+    returns (uint256 assetIn, uint256 priceUsd8, bool closed, bytes32 strategyHash)
+  {
     // USDG settles 1:1 with no conversion, so it does not depend on a feed (priceUsd8 = 0).
-    if (asset == address(usdg)) return (amountUsdg, 0, false);
+    if (asset == address(usdg)) return (amountUsdg, 0, false, bytes32(0));
     address priced = asset == NATIVE_ETH ? address(weth) : asset;
     if (!oracle.isSupported(priced)) revert AssetNotAccepted(asset);
+    if (address(liquidity) != address(0)) {
+      (strategyHash, assetIn) = liquidity.bestQuoteForUsdg(priced, amountUsdg);
+      if (strategyHash != bytes32(0)) {
+        NorenAssetOracle.Price memory mp = oracle.price(priced);
+        return (assetIn, mp.usd8, mp.marketClosed, strategyHash);
+      }
+      if (!vaultFallback) revert NoMakerLiquidity(asset, amountUsdg);
+    }
     uint256 usd8 = oracle.usdgToUsd8(amountUsdg, Math.Rounding.Ceil);
     NorenAssetOracle.Price memory p;
     (assetIn, p) = oracle.assetForUsd8(priced, usd8, spreadBps[priced]);
-    return (assetIn, p.usd8, p.marketClosed);
+    return (assetIn, p.usd8, p.marketClosed, bytes32(0));
   }
 
   function _openInvoice(address merchant, bytes32 invoiceId) internal view returns (Invoice memory inv) {

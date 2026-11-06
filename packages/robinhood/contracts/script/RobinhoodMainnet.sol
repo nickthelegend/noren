@@ -35,6 +35,19 @@ library RobinhoodMainnet {
   address internal constant STOCK_PAUSER = 0xFCcF56B674113d9C4eb0F9B3370930ceD9E6Ab23;
   /// @dev Uniswap v4 PoolManager: the largest real holder of USDG, WETH and Stock Tokens; fork funding source.
   address internal constant POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
+  /// @dev Uniswap v4 V4Quoter on Robinhood Chain (used only to compare quotes against Aqua makers).
+  address internal constant V4_QUOTER = 0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94;
+
+  /// @dev Official 1inch deployments on Robinhood Chain (github.com/1inch/aqua deployments.md).
+  /// The router is AquaSwapVMRouter v1.0.2 (eip712Domain "1inch SwapVM v1.0" / "1.0.2").
+  address internal constant AQUA = 0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a;
+  address internal constant SWAPVM_ROUTER = 0x111111338c5091E8440b67B168bAe16a668AC0De;
+  /// @dev Build artifact of the modified router (packages/aqua/swapvm-ext, LicenseRef-Degensoft-SwapVM-1.1),
+  /// deployed from bytecode so Noren's MIT contracts never compile SwapVM source.
+  string internal constant NOREN_ROUTER_ARTIFACT =
+    '../../aqua/swapvm-ext/out/NorenAquaSwapVMRouter.sol/NorenAquaSwapVMRouter.json';
+  string internal constant NOREN_ROUTER_NAME = 'Noren SwapVM';
+  string internal constant NOREN_ROUTER_VERSION = '1.0.2-noren.1';
 
   /// @dev Chainlink heartbeat is 86 400 s; allow one extra hour. Stock feeds pause while US
   /// markets are closed, so they get three days inside the weekend/holiday window.

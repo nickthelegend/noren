@@ -9,7 +9,31 @@ import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
 import {NorenVault} from '../src/NorenVault.sol';
 import {NorenGateway} from '../src/NorenGateway.sol';
 import {NorenCredit} from '../src/NorenCredit.sol';
+import {NorenLiquidity} from '../src/NorenLiquidity.sol';
 import {RobinhoodMainnet as RH} from './RobinhoodMainnet.sol';
+
+interface IStockMultiplier {
+  function updateMultiplier(uint256) external;
+}
+
+interface IV4QuoterWarm {
+  struct PoolKey {
+    address currency0;
+    address currency1;
+    uint24 fee;
+    int24 tickSpacing;
+    address hooks;
+  }
+
+  struct QuoteExactSingleParams {
+    PoolKey poolKey;
+    bool zeroForOne;
+    uint128 exactAmount;
+    bytes hookData;
+  }
+
+  function quoteExactInputSingle(QuoteExactSingleParams memory params) external returns (uint256, uint256);
+}
 
 interface IPermit {
   function nonces(address) external view returns (uint256);
@@ -93,20 +117,31 @@ contract Warm is Script {
     _pay('warm-nvda', RH.NVDA, false);
     _pay('warm-tsla-permit', RH.TSLA, true);
     _pay('warm-aapl', RH.AAPL, false);
+    // vault fallback route (no maker liquidity) so vault inventory exists for buyInventory below
+    address liq = address(gateway.liquidity());
+    vm.prank(owner);
+    gateway.setLiquidity(NorenLiquidity(address(0)), true);
+    _pay('warm-nvda-vault', RH.NVDA, false);
+    vm.prank(owner);
+    gateway.setLiquidity(NorenLiquidity(liq), true);
     vm.prank(merchant);
     gateway.createInvoice(keccak256('warm-eth'), 25e6, uint64(block.timestamp + 1 days));
     (uint256 q,,) = gateway.quote(merchant, keccak256('warm-eth'), address(0));
     vm.prank(customer);
     gateway.pay{value: q}(keccak256('warm-eth'), merchant, address(0), q);
 
-    // Pay in 4 with NVDA and with ETH, repay, liquidation views
+    // Pay in 3 with NVDA and with ETH, repay, liquidation views
     uint256 planId = _plan('warm-plan-nvda', RH.NVDA);
     vm.startPrank(customer);
     IERC20(RH.USDG).approve(address(credit), type(uint256).max);
     credit.repay(planId, 1);
     vm.stopPrank();
     credit.planLiquidatable(planId);
+    credit.missedInstallments(planId);
+    for (uint8 k = 1; k <= 3; ++k) (credit.dueAt(planId, k), credit.installmentAmount(planId, k));
+    credit.params();
     _planEth('warm-plan-eth');
+    _aqua();
 
     // Arc credit line with TSLA: open, report, close, settle
     (uint256 col,) = oracle.assetForUsd8(RH.TSLA, 300e8, 0);
@@ -134,6 +169,41 @@ contract Warm is Script {
     credit.creditTerms(customer);
     credit.history(customer);
     console2.log('warmed demo flows for', customer);
+  }
+
+  /// @dev Aqua maker reads (positions, best execution vs Uniswap v4) and a liquidation through SwapVM.
+  function _aqua() internal {
+    NorenLiquidity liquidity = NorenLiquidity(address(gateway.liquidity()));
+    if (address(liquidity) == address(0)) return;
+    address[4] memory assets = [RH.NVDA, RH.TSLA, RH.AAPL, RH.WETH];
+    address maker;
+    for (uint256 i; i < assets.length; ++i) {
+      bytes32[] memory hs = liquidity.strategiesFor(assets[i]);
+      for (uint256 j; j < hs.length; ++j) {
+        NorenLiquidity.Strategy memory st = liquidity.strategy(hs[j]);
+        maker = st.maker;
+        liquidity.balances(hs[j]);
+        IERC20(assets[i]).balanceOf(st.maker);
+        oracle.valueUsd8(assets[i], 1e18);
+      }
+      liquidity.bestQuoteForAsset(assets[i], 1e18);
+      (address c0, address c1) = RH.USDG < assets[i] ? (RH.USDG, assets[i]) : (assets[i], RH.USDG);
+      try IV4QuoterWarm(RH.V4_QUOTER).quoteExactInputSingle(
+        IV4QuoterWarm.QuoteExactSingleParams(IV4QuoterWarm.PoolKey(c0, c1, 3000, 60, address(0)), c0 == assets[i], 1e18, '')
+      ) {} catch {}
+    }
+    if (maker == address(0)) return;
+    liquidity.strategiesOf(maker);
+    liquidity.makerFeesUsdg(maker);
+    IERC20(RH.USDG).balanceOf(maker);
+    // Pay in 3 plan liquidated through makers after a real Stock Token multiplier cut (simulation only)
+    uint256 planId = _plan('warm-plan-aqua-liq', RH.NVDA);
+    uint256 m = oracle.multiplier(RH.NVDA);
+    vm.prank(RH.MULTIPLIER_ADMIN);
+    IStockMultiplier(RH.NVDA).updateMultiplier(m * 60 / 100);
+    credit.liquidatePlanViaAqua(planId);
+    vm.prank(RH.MULTIPLIER_ADMIN);
+    IStockMultiplier(RH.NVDA).updateMultiplier(m);
   }
 
   function _pay(string memory tag, address asset, bool permit) internal {

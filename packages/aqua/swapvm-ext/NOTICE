@@ -1,0 +1,33 @@
+Powered by SwapVM — © Degensoft Ltd 2025
+
+packages/aqua/swapvm-ext — Noren's SwapVM extension (LicenseRef-Degensoft-SwapVM-1.1)
+
+Upstream
+  1inch/swap-vm v1.0.2, commit 32c687c2b73101fc26549e48fa1ff8a4d73afbac
+  (installed unmodified as the devDependency @1inch/swap-vm; never edited in place).
+  1inch/aqua 0.1.0, commit b51f3b6e3c02fa5208e1429f0f14706b025d9dd6 (IAqua interface only).
+  @1inch/solidity-utils 6.9.7 (MIT), @openzeppelin/contracts 5.4.0 (MIT).
+  Upstream third-party notices: THIRD_PARTY_NOTICES.upstream. License texts: LICENSES/.
+
+Changes (each file carries @custom:change with the date)
+  2026-11-06  src/instructions/NorenOraclePeg.sol      new instruction: Chainlink-pegged two-sided
+                                                       quote with Data Feeds safety checks.
+  2026-11-06  src/routers/NorenAquaSwapVMRouter.sol    copy of AquaSwapVMRouter v1.0.2 whose
+                                                       instruction table is the upstream AquaOpcodes
+                                                       table (opcodes 0-33, unchanged) plus
+                                                       NorenOraclePeg at opcode 34.
+  2026-11-06  foundry.toml                             upstream compiler settings except
+                                                       optimizer_runs 700 -> 200 (EIP-170 size).
+
+Build and deploy (reproducible)
+  pnpm install                                   # fetches the pinned upstream commits
+  cd packages/aqua/swapvm-ext && forge build     # solc 0.8.30, via-IR, cancun
+  sh packages/aqua/scripts/test-swapvm.sh        # tests on a fresh Robinhood mainnet fork
+  The router is deployed by packages/robinhood/contracts/script/Deploy.s.sol (CREATE2, local fork
+  only) with constructor (aqua = 0x1111113ccf1426a8e30e2bff5e005d929bf6a90a, weth =
+  0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73, owner, "Noren SwapVM", "1.0.2-noren.1").
+
+Use
+  Hackathon prototype (SwapVM-1.1 §4 non-commercial use). Any Commercial Use or crossing a
+  Commercial Trigger (§5) requires a Commercial License from Degensoft (license@degensoft.com).
+  No endorsement by Degensoft or 1inch is implied.

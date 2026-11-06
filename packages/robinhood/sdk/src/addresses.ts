@@ -27,4 +27,20 @@ export const FEEDS = {
   ETH: '0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9',
   USDG: '0x61B7e5650328764B076A108EFF5fa7282a1B9aD2',
 } as const satisfies Record<string, Address>
-export interface NorenAddresses { oracle: Address; vault: Address; gateway: Address; credit: Address; usdg: Address; weth: Address; deployBlock?: number; chainId?: number; rpcUrl?: string }
+export interface NorenAddresses {
+  oracle: Address
+  vault: Address
+  gateway: Address
+  credit: Address
+  usdg: Address
+  weth: Address
+  /** NorenLiquidity (Aqua maker registry and SwapVM routing). */
+  liquidity?: Address
+  /** NorenAquaSwapVMRouter: SwapVM v1.0.2 AquaSwapVMRouter + NorenOraclePeg, redeployed on the fork. */
+  swapRouter?: Address
+  /** Official 1inch Aqua registry. */
+  aqua?: Address
+  deployBlock?: number
+  chainId?: number
+  rpcUrl?: string
+}

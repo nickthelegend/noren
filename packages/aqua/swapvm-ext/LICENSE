@@ -1,0 +1,10 @@
+SPDX-License-Identifier: LicenseRef-Degensoft-SwapVM-1.1
+See LICENSES/SwapVM-1.1.txt for the full license text.
+
+This folder (packages/aqua/swapvm-ext) is a Modified Work of SwapVM:
+  SwapVM — © Degensoft Ltd 2025. Copyright © 2025 Degensoft Ltd. All rights reserved.
+  Modifications © 2026 Nivesh Gajengi, released under the same license
+  (LicenseRef-Degensoft-SwapVM-1.1), at no charge, with complete source in this folder.
+
+Everything else in the Noren repository is MIT (Copyright (c) 2026 Nivesh Gajengi) and only calls
+SwapVM through its published ABI (Pure Caller Use, SwapVM-1.1 §2.2 and §3.3).

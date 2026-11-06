@@ -16,7 +16,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UPSTREAM="${ROBINHOOD_RPC:-https://rpc.mainnet.chain.robinhood.com}"
-TMP_PORT=8722
+TMP_PORT="${NOREN_RH_SNAPSHOT_TMP_PORT:-8722}"
+SERVE_PORT="${NOREN_RH_FORK_PORT:-8720}"
 SNAP="$ROOT/.fork/robinhood-snapshot.json"
 mkdir -p "$ROOT/.fork"
 if lsof -nP -iTCP:$TMP_PORT -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $TMP_PORT busy" >&2; exit 1; fi
@@ -42,11 +43,11 @@ cast rpc --rpc-url http://127.0.0.1:$TMP_PORT evm_mine >/dev/null # a block so t
 stop
 trap - EXIT
 [ -s "$SNAP" ] || { echo "Snapshot was not written" >&2; exit 1; }
-python3 - "$D" "$BLOCK" <<'PY'
+python3 - "$D" "$BLOCK" "$SERVE_PORT" <<'PY'
 import json, sys
-p, block = sys.argv[1], int(sys.argv[2])
+p, block, port = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 d = json.load(open(p))
-d['rpcUrl'] = 'http://127.0.0.1:8720'
+d['rpcUrl'] = 'http://127.0.0.1:' + port
 d['network'] = 'robinhood-mainnet-snapshot'
 d['forkedFromBlock'] = block
 json.dump(d, open(p, 'w'), indent=2)

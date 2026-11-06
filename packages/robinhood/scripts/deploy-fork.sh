@@ -10,11 +10,15 @@ case "$RPC" in http://127.0.0.1:*) ;; *) echo "Refusing: deploy-fork only target
 [ "$(cast chain-id --rpc-url "$RPC" 2>/dev/null)" = 4663 ] || { echo "Start the fork first: sh scripts/fork.sh" >&2; exit 1; }
 
 # Anvil dev accounts (public test mnemonic): #0 owner/LP, #1 demo customer, #2 demo merchant,
+# #3 Aqua maker (a merchant with idle USDG), #4 liquidation keeper,
 # #8 stand-in CRE forwarder on the fork, #9 underwriter signer on the fork.
 OWNER=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 OWNER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 CUSTOMER=0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 MERCHANT=0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+MAKER=0x90F79bf6EB2c4f870365E785982E1f101E93b906
+MAKER_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+KEEPER=0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65
 FORWARDER="${NOREN_RH_FORWARDER:-0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f}"
 UNDERWRITER="${NOREN_RH_UNDERWRITER:-0xa0Ee7A142d267C1f36714E4a8F75612F20a79720}"
 INTERVAL="${NOREN_RH_INSTALLMENT_INTERVAL:-1209600}"
@@ -25,17 +29,20 @@ NVDA=0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC
 TSLA=0x322F0929c4625eD5bAd873c95208D54E1c003b2d
 AAPL=0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9
 
-for a in "$OWNER" "$CUSTOMER" "$MERCHANT" "$FORWARDER" "$UNDERWRITER"; do
+for a in "$OWNER" "$CUSTOMER" "$MERCHANT" "$MAKER" "$KEEPER" "$FORWARDER" "$UNDERWRITER"; do
   cast rpc --rpc-url "$RPC" anvil_setBalance "$a" 0x56BC75E2D63100000 >/dev/null # 100 ETH (fork gas only)
 done
 
+mkdir -p "$ROOT/.fork"
+(cd "$ROOT/../aqua/swapvm-ext" && forge build >/dev/null 2>"$ROOT/.fork/swapvm-build.log") || { echo "Setup required: pnpm install, then forge build in packages/aqua/swapvm-ext" >&2; exit 1; }
 cd "$ROOT/contracts"
 OUT="$(NOREN_RH_OWNER=$OWNER NOREN_RH_UNDERWRITER=$UNDERWRITER NOREN_RH_FORWARDER=$FORWARDER \
   NOREN_RH_INSTALLMENT_INTERVAL=$INTERVAL NOREN_RH_GRACE=$GRACE \
   forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC" --broadcast --private-key "$OWNER_KEY" 2>&1)" || { echo "$OUT" >&2; exit 1; }
 pick() { sed -nE "s/.*$1[[:space:]]+(0x[[:xdigit:]]{40}).*/\1/p" <<<"$OUT" | tail -1; }
 ORACLE=$(pick NOREN_RH_ORACLE); VAULT=$(pick NOREN_RH_VAULT); GATEWAY=$(pick NOREN_RH_GATEWAY); CREDIT=$(pick NOREN_RH_CREDIT)
-[ -n "$CREDIT" ] || { echo "$OUT" >&2; exit 1; }
+ROUTER=$(pick NOREN_RH_SWAPVM_ROUTER); LIQUIDITY=$(pick NOREN_RH_LIQUIDITY)
+[ -n "$CREDIT" ] && [ -n "$LIQUIDITY" ] || { echo "$OUT" >&2; exit 1; }
 DEPLOY_BLOCK=$(cast block-number --rpc-url "$RPC")
 
 # Seed from a real holder (Uniswap v4 PoolManager) by impersonation on the fork.
@@ -47,9 +54,17 @@ TX_CUST_USDG=$(send_pm $USDG $CUSTOMER 5000000000)
 TX_CUST_NVDA=$(send_pm $NVDA $CUSTOMER 20000000000000000000)
 TX_CUST_TSLA=$(send_pm $TSLA $CUSTOMER 10000000000000000000)
 TX_CUST_AAPL=$(send_pm $AAPL $CUSTOMER 10000000000000000000)
+TX_MAKER_USDG=$(send_pm $USDG $MAKER 50000000000)
 cast rpc --rpc-url "$RPC" anvil_stopImpersonatingAccount "$POOL_MANAGER" >/dev/null
 cast send --rpc-url "$RPC" --private-key "$OWNER_KEY" $USDG 'approve(address,uint256)' "$VAULT" 250000000000 >/dev/null
 TX_LP_DEPOSIT=$(cast send --rpc-url "$RPC" --private-key "$OWNER_KEY" "$VAULT" 'deposit(uint256,address)' 250000000000 "$OWNER" --json | jq -r .transactionHash)
+
+# Aqua maker: ships NVDA/TSLA/AAPL/WETH NorenOraclePeg strategies (10,000 USDG virtual each) and registers them.
+STRATEGIES="[]"
+if [ "${NOREN_AQUA_SEED_MAKERS:-1}" = 1 ]; then
+  SEED="$(NOREN_RH_LIQUIDITY=$LIQUIDITY forge script script/SeedMakers.s.sol:SeedMakers --rpc-url "$RPC" --broadcast --private-key "$MAKER_KEY" 2>&1)" || { echo "$SEED" >&2; exit 1; }
+  STRATEGIES=$(sed -nE 's/.*NOREN_AQUA_STRATEGY[[:space:]]+(0x[[:xdigit:]]{40})[[:space:]]+(0x[[:xdigit:]]{64}).*/{"asset":"\1","strategyHash":"\2"}/p' <<<"$SEED" | paste -sd, - | sed 's/^/[/;s/$/]/')
+fi
 
 mkdir -p "$ROOT/.fork"
 cat >"$ROOT/.fork/deployment.json" <<JSON
@@ -62,6 +77,13 @@ cat >"$ROOT/.fork/deployment.json" <<JSON
   "vault": "$VAULT",
   "gateway": "$GATEWAY",
   "credit": "$CREDIT",
+  "liquidity": "$LIQUIDITY",
+  "swapRouter": "$ROUTER",
+  "aqua": "0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a",
+  "officialSwapRouter": "0x111111338c5091E8440b67B168bAe16a668AC0De",
+  "demoMaker": "$MAKER",
+  "demoKeeper": "$KEEPER",
+  "makerStrategies": $STRATEGIES,
   "usdg": "$USDG",
   "weth": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
   "owner": "$OWNER",
@@ -71,7 +93,7 @@ cat >"$ROOT/.fork/deployment.json" <<JSON
   "demoMerchant": "$MERCHANT",
   "installmentInterval": $INTERVAL,
   "gracePeriod": $GRACE,
-  "seedTxs": {"lpFund": "$TX_LP_FUND", "lpDeposit": "$TX_LP_DEPOSIT", "customerUsdg": "$TX_CUST_USDG", "customerNvda": "$TX_CUST_NVDA", "customerTsla": "$TX_CUST_TSLA", "customerAapl": "$TX_CUST_AAPL"}
+  "seedTxs": {"lpFund": "$TX_LP_FUND", "lpDeposit": "$TX_LP_DEPOSIT", "customerUsdg": "$TX_CUST_USDG", "customerNvda": "$TX_CUST_NVDA", "customerTsla": "$TX_CUST_TSLA", "customerAapl": "$TX_CUST_AAPL", "makerUsdg": "$TX_MAKER_USDG"}
 }
 JSON
 cat "$ROOT/.fork/deployment.json"
