@@ -14,7 +14,7 @@ export type CreditCfg = {
   creditLine: Address | null; robinhoodRpc: string | null;
   /** First block worth scanning on the Robinhood fork (the fork point), as a decimal string. */
   robinhoodFromBlock?: string; arcFromBlock?: string;
-  creditContract?: Address; underwriterUrl?: string; gateway?: Address | null;
+  creditContract?: Address; underwriterUrl?: string; aiUnderwriterUrl?: string; stockOracle?: Address; gateway?: Address | null;
   /** 4663, or 46630 when dev:all runs the mainnet fork under Robinhood testnet's id for the CRE simulator. */
   robinhoodChainId?: number; [k: string]: unknown;
 };
@@ -179,6 +179,11 @@ export function makeOnchain(cfg: Config) {
       ]);
       const live = l.borrower !== "0x0000000000000000000000000000000000000000";
       return { live, closed: l.closed, limit: l.limitUsdc6, expiry: Number(l.expiry), drawn: l.drawnUsdc6, repaid: l.repaidUsdc6, updatedAt: Number(l.updatedAt), available };
+    },
+    /** Raw access to the Robinhood fork for the credit-line calls (credit-actions.ts). */
+    robinhood() {
+      const c = need();
+      return { pub: c, wallet: createWalletClient({ chain: rhChain!, transport: http(credit!.robinhoodRpc!, { timeout: 45_000 }), account }), chain: rhChain!, account };
     },
     arcGas: () => arc.getBalance({ address: account.address }),
     arcUsdc: () => arc.readContract({ address: cfg.deployment.usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }),

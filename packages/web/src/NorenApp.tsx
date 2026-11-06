@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, short, usdc } from "./api";
 import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
 import { STOCKS, usd8, units, type Holding, type Line, type Onchain } from "./onchain";
-import { creditActions, type Quote, type Underwriting, type Position } from "./credit-actions";
+import { creditActions, type AiCheck, type Quote, type Underwriting, type Position } from "./credit-actions";
 
 const ago = (t: number) => { const s = Math.max(0, Math.floor(Date.now() / 1000) - t); return s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
 const day = (t: number) => new Date(t * 1000).toLocaleDateString([], { month: "short", day: "numeric" });
@@ -162,10 +162,39 @@ function Score({ actions }: { actions: ReturnType<typeof creditActions> }) {
     <div className="na-score">
       <div className="na-gauge">
         <svg viewBox="0 0 180 100" role="img" aria-label={`Tier ${u.tier} of ${segs}`}>{u.tiers.map((t, i) => <path key={t.name} d={arc(i)} className={i <= u.tierIndex ? `on t${i}` : ""} />)}</svg>
-        <div><b>{u.tier}</b><small>{u.ltvBps / 100}% of collateral value</small></div>
+        <div><b>{u.tier}</b><small>{u.tierIndex < 0 ? `score ${u.score} of 100 · 30 needed` : `score ${u.score} of 100 · ${u.ltvBps / 100}% collateral`}</small></div>
       </div>
-      <ul className="na-factors">{u.factors.map((f) => <li key={f.label}><span>{f.label}</span><b className="num">{f.value}</b>{f.note && <small>{f.note}</small>}</li>)}</ul>
-      <p className="na-fine">Signed by underwriter <span className="mono">{short(u.signer, 4)}</span>{u.expires ? ` · valid until ${new Date(u.expires * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. NorenCredit checks the signature on-chain; a better history means less collateral.</p>
+      <ul className="na-factors">{u.factors.map((f) => <li key={f.label} data-missing={f.missing}><span>{f.label}</span><b className="num">{f.value}</b>{f.max ? <i className="na-bar" aria-hidden><i style={{ width: `${Math.min(100, ((f.points ?? 0) / f.max) * 100)}%` }} /></i> : null}{f.note && <small>{f.note}</small>}</li>)}</ul>
+      <p className="na-fine">{u.onchainTier ? `NorenCredit holds tier ${u.onchainTier} for this wallet. ` : ""}Read from this wallet's Robinhood Chain history. The underwriter signs an EIP-712 attestation and NorenCredit checks the signature on-chain; a better history means less collateral and a higher limit.</p>
+      <AiDecision actions={actions} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ 0G Private Computer credit check */
+function AiDecision({ actions }: { actions: ReturnType<typeof creditActions> }) {
+  const [r, setR] = useState<AiCheck | null>(null);
+  const [e, setE] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => { setBusy(true); setE(null); try { setR(await actions.aiCheck()); } catch (x) { setE(msgOf(x)); } finally { setBusy(false); } };
+  return (
+    <div className="na-ai">
+      <header><b>Second opinion: sealed AI credit check</b><span className="mono">0G Private Computer</span></header>
+      {e ? <SetupLine text={e} /> : !r ? (
+        <><p className="na-fine">Sends this wallet's history features (no address in the prompt) to a model running inside a TEE on 0G Private Computer, and shows its decision with the 0G request ID.</p>
+          <button className="btn line sm" disabled={busy} onClick={run}>{busy ? <><span className="spin" /> Asking 0G…</> : "Run the AI credit check"}</button></>
+      ) : r.status === "refused" ? (
+        r.setupRequired ? <SetupLine text={r.reason ?? "ZG_PC_API_KEY"} /> : <div className="na-setup"><span className="eyebrow">Refused, no terms</span><p>{r.reason}</p></div>
+      ) : (
+        <dl className="na-rows">
+          <dt>Decision</dt><dd><b>{r.status === "approved" ? `Approved · tier ${r.tier}` : "Declined"}</b></dd>
+          {r.status === "approved" && <><dt>Limit · collateral</dt><dd>{r.limitUsdg} USDG · {(r.collateralRatioBps ?? 0) / 100}%</dd></>}
+          <dt>Why</dt><dd className="wrap">{r.rationale}</dd>
+          <dt>0G request ID</dt><dd className="mono">{short(r.requestId, 8)}</dd>
+          <dt>TEE verified</dt><dd>{r.teeVerified === true ? "yes" : r.teeVerified === false ? "no" : "not checked"}</dd>
+          {r.model && <><dt>Model</dt><dd className="mono">{r.model}</dd></>}
+        </dl>
+      )}
     </div>
   );
 }
@@ -195,7 +224,7 @@ function LockForm({ actions, hold, busy, run, hasLine }: { actions: ReturnType<t
           <small>{s ? `${units(s.balance, 18)} available` : ""}</small>
         </label>
         <span className="na-knob" aria-hidden><Icon.arrow /></span>
-        <div className="na-leg out"><span>You can spend</span><div><b className="num">{q ? usdc(q.limitUsdc6) : "–"}</b><em>USDC on Arc</em></div><small>{q ? `${q.installments} installments · ${q.termDays} days` : qe ? "" : " "}</small></div>
+        <div className="na-leg out"><span>You can spend</span><div><b className="num">{q ? usdc(q.limitUsdc6) : "–"}</b><em>USDC on Arc</em></div><small>{q ? `${q.termDays}-day line${q.needsAttestation ? ` · tier ${q.tier} attestation first` : ""}` : qe ? "" : " "}</small></div>
       </div>
       {qe ? <SetupLine text={qe} /> : (
         <dl className="na-rows">
@@ -234,7 +263,7 @@ function Installments({ line, tk, actions, arcUsdc, busy, run }: { line: Line; t
   return (
     <div className="na-inst">
       {pe ? <SetupLine text={pe} /> : !plan ? <Skel rows={2} /> : plan.length === 0 ? <p className="na-empty">Nothing drawn yet.</p> : (
-        <ol>{plan.map((p, i) => <li key={i} data-paid={p.paid}><span className="na-n sm">{i + 1}</span><span>{day(p.due)}</span><b className="num">{usdc(p.amount)} USDC</b><em>{p.paid ? "Paid" : p === next ? "Next" : "Scheduled"}</em></li>)}</ol>
+        <ol>{plan.map((p, i) => <li key={i} data-paid={p.paid}><span className="na-n sm">{i + 1}</span><span>{day(p.due)}</span><b className="num">{usdc(p.amount)} USDC</b><em>{p.paid ? "Paid" : p === next ? "Next" : "Suggested"}</em></li>)}</ol>
       )}
       <div className="na-repay">
         <span>Arc USDC <b className="num">{arcUsdc === null ? "–" : usdc(arcUsdc)}</b></span>

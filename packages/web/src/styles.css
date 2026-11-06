@@ -1020,3 +1020,11 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-quote dd b { font-size: 17px; }
 @media (max-width: 560px) { .co-methods { grid-template-columns: minmax(0, 1fr); } .co-methods button { flex-direction: row; align-items: center; min-height: 56px; } }
 .co-plan-h { margin: 2px 0 -4px; font-size: 12.5px; color: var(--muted); }
+.na-factors li[data-missing="true"] b { color: var(--faint); }
+.na-bar { grid-column: 1 / -1; display: block; height: 4px; margin: 6px 0 2px; border-radius: 4px; background: var(--cloth); overflow: hidden; font-style: normal; }
+.na-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ai-2); }
+.na-ai { margin-top: 6px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--hair); background: var(--paper); display: grid; gap: 10px; }
+.na-ai header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.na-ai header b { font-size: 14px; } .na-ai header span { font-size: 11.5px; color: var(--kaki-2); }
+.na-ai .na-fine { margin: 0; } .na-ai .btn { justify-self: start; }
+.na-rows dd.wrap { text-align: left; grid-column: 1 / -1; padding-top: 0; color: var(--muted); }

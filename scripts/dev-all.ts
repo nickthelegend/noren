@@ -17,6 +17,14 @@ import { deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './d
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
 const has = (p: string) => existsSync(resolve(p));
+const UNDERWRITER_PORT = 8791, AI_UNDERWRITER_PORT = 8792;
+
+/** Starts a package's HTTP server in this process on one of the web agent's ports and registers it for shutdown. */
+async function listen(server: import('node:http').Server, port: number) {
+  await new Promise<void>((ok, fail) => { server.once('error', fail); server.listen(port, '127.0.0.1', ok); });
+  onStop(() => new Promise<void>(r => { server.closeAllConnections(); server.close(() => r()); }));
+  return `http://127.0.0.1:${port}`;
+}
 
 run(async () => {
   // Robinhood Chain *mainnet* state: real Stock Tokens and Chainlink feeds (Robinhood testnet has neither).
@@ -52,6 +60,22 @@ run(async () => {
         try { const c = await deployCreditLine(arc); creditLine = creditLineAddr = c.creditLine; arcCreditFrom = c.deployBlock; pub.arcFromBlock = String(c.deployBlock); console.log(`NorenCreditLine on Arc fork: ${c.creditLine} (pool ${Number(c.poolUsdc) / 1e6} USDC)`); }
         catch (e: any) { missing.push(`NorenCreditLine deploy failed: ${e.message}`); }
       } else missing.push('packages/arc-credit (NorenCreditLine): merge the cre-bridge branch');
+      if (has('packages/robinhood/underwriter/src/server.ts') && robinhood) {
+        try {
+          Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, ROBINHOOD_RPC: robinhoodRpc });
+          const { server } = await import('../packages/robinhood/underwriter/src/server.ts' as string);
+          pub.underwriterUrl = await listen(server, UNDERWRITER_PORT);
+        } catch (e: any) { missing.push(`History underwriter failed to start: ${e.message}`); }
+      } else missing.push('packages/robinhood/underwriter: merge the Robinhood branch with the underwriter');
+      if (has('packages/ai-underwriter/src/server.ts')) {
+        try {
+          const { createCreditServer } = await import('../packages/ai-underwriter/src/server.ts');
+          const { loadEnv } = await import('../packages/ai-underwriter/src/env.ts');
+          loadEnv();
+          pub.aiUnderwriterUrl = await listen(createCreditServer({ decisionsPath: resolve('data/ai-decisions.jsonl'), robinhoodUnderwriterUrl: `http://127.0.0.1:${UNDERWRITER_PORT}` }), AI_UNDERWRITER_PORT);
+          if (!process.env.ZG_PC_API_KEY) missing.push('0G credit check: ZG_PC_API_KEY is not set (Nick creates it on 0G Private Computer); checks are refused until then');
+        } catch (e: any) { missing.push(`0G credit check failed to start: ${e.message}`); }
+      }
       if (robinhood) Object.assign(pub, { creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
       pub.robinhoodChainId = Number(await rh.getChainId());
       return { bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
