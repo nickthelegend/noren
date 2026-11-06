@@ -13,6 +13,8 @@ import { creditOf } from "./onchain";
 import { TOKENS } from "./app/tokens";
 import { EVENTS } from "./tx-events";
 import { Mark } from "./logos";
+import { PERMIT2, UNIVERSAL_ROUTER, V4_QUOTER } from "./app/swap";
+import { privateKeyToAccount } from "viem/accounts";
 
 export type TxChain = "arc" | "robinhood" | "arc-live" | "robinhood-mainnet";
 export const ARC_EXPLORER = "https://explorer.testnet.arc.io";
@@ -79,7 +81,12 @@ function directory(cfg: Config, chain: "arc" | "robinhood") {
       put(v, { name: NAMES[k] ?? k });
     }
     put("0x8366a39CC670B4001A1121B8F6A443A643e40951", { name: "Uniswap v4 PoolManager", logo: "UNISWAP" });
+    put(UNIVERSAL_ROUTER, { name: "Uniswap Universal Router", logo: "UNISWAP" });
+    put(PERMIT2, { name: "Permit2", logo: "UNISWAP" });
+    put(V4_QUOTER, { name: "Uniswap v4 Quoter", logo: "UNISWAP" });
   }
+  // The customer's test key lives in this browser (see onchain.ts): name it instead of showing a bare address.
+  try { const k = JSON.parse(localStorage.getItem("noren.customer.v1") ?? "null")?.gasKey; if (k) put(privateKeyToAccount(k).address, { name: "You (this browser's test key)" }); } catch { /* no key in this browser */ }
   return d;
 }
 
@@ -138,7 +145,7 @@ function Val({ k, v, d, dir }: { k: string; v: unknown; d: Decoded; dir: Map<str
     return <span className="mono">{v.toString()}</span>;
   }
   if (Array.isArray(v)) return <span className="mono">[{v.map(String).join(", ")}]</span>;
-  return <span className="mono tx-raw">{String(v)}</span>;
+  return <span className={typeof v === "number" || typeof v === "boolean" ? "mono" : "mono tx-raw"}>{String(v)}</span>;
 }
 const fmtAmt = (v: bigint, dec: number) => { const s = formatUnits(v, dec); const n = Number(s); return Math.abs(n) >= 1e15 ? s : n.toLocaleString("en-US", { maximumFractionDigits: dec > 6 ? 6 : dec }); };
 

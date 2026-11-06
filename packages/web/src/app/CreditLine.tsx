@@ -10,6 +10,8 @@ import { creditActions, type Position, type Quote } from "../credit-actions";
 import type { Wallet } from "./NorenApp";
 import { Coin, Skel, Spin, SetupCard, TokenButton, Track } from "./kit";
 import { TOKENS, type Token } from "./tokens";
+import type { ReactNode } from "react";
+import { TxLink } from "../tx";
 
 const day = (t: number) => new Date(t * 1000).toLocaleDateString([], { month: "short", day: "numeric" });
 
@@ -36,8 +38,8 @@ export function CreditLineCard({ w }: { w: Wallet }) {
   const actions = useMemo(() => creditActions(w.cfg, w.oc), [w.cfg, w.oc]);
   const { lines, err, pos, log, line } = useLines(w);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
-  const run = async (k: string, f: () => Promise<string | void>) => { setBusy(k); setNote(null); try { const t = await f(); if (t) setNote({ t }); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } };
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
+  const run = async (k: string, f: () => Promise<ReactNode | void>) => { setBusy(k); setNote(null); try { const t = await f(); if (t) setNote({ t }); w.refresh(); } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); } };
 
   if (err) return <section className="nk-card"><div className="nk-card-h"><b>Credit line</b></div><div className="nk-pad"><SetupCard title="The credit line contracts aren't reachable" text={err} code="pnpm dev:all" /></div></section>;
   return (
@@ -60,7 +62,7 @@ export function CreditLineCard({ w }: { w: Wallet }) {
   );
 }
 
-function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<typeof creditActions>; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void; say: (t: string) => void }) {
+function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<typeof creditActions>; busy: string | null; run: (k: string, f: () => Promise<ReactNode | void>) => void; say: (t: string) => void }) {
   const [sym, setSym] = useState("NVDA");
   const [amt, setAmt] = useState("1");
   const [q, setQ] = useState<Quote | null>(null);
@@ -85,7 +87,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
       </div>
       <div className="nk-box">
         <span className="nk-l"><span>You can spend</span><span>{q ? `${q.termDays}-day line` : ""}</span></span>
-        <div className="nk-row"><output className={q ? "" : "dim"}>{q ? usdc(q.limitUsdc6) : "0"}</output><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC", color: "#2775ca" }} />USDC</span></div>
+        <div className="nk-row"><output className={q ? "" : "dim"}>{q ? usdc(q.limitUsdc6) : "0"}</output><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC" }} />USDC</span></div>
         <div className="nk-sub"><span>on Arc, after one Chainlink CRE run</span><span>{q?.needsAttestation ? "estimate: the signed attestation sets the final terms" : ""}</span></div>
       </div>
       {qe ? <div className="nk-err">{qe}</div> : (
@@ -95,7 +97,7 @@ function Lock({ w, actions, busy, run, say }: { w: Wallet; actions: ReturnType<t
           <dt>Liquidates if {sym} falls below</dt><dd className="warn">{q?.liquidation8 ? `$${usd8(q.liquidation8)}` : "–"}</dd>
         </dl>
       )}
-      <button className="nk-cta" disabled={!!busy || !q || tooMuch} onClick={() => run("lock", () => actions.open(s!, amt, say))}>
+      <button className="nk-cta" disabled={!!busy || !q || tooMuch} onClick={() => run("lock", async () => { const r = await actions.open(s!, amt, say); return <>{r.text} (tx <TxLink chain="robinhood" hash={r.hash} />). Chainlink CRE is bringing it to Arc.</>; })}>
         {busy === "lock" ? <><Spin /> Locking on Robinhood…</> : tooMuch ? `Not enough ${sym}` : `Lock ${amt || 0} ${sym} and open the line`}
       </button>
       {tooMuch && <p className="nk-fine">No stock yet? The wallet menu (top right) moves test NVDA to you on the fork.</p>}
@@ -108,14 +110,14 @@ function Bridge({ line, pos, log }: { line: Line; pos: Position | null; log: { s
   const live = !!pos?.live;
   return (
     <Track steps={[
-      { k: "Locked", on: true, d: `tx ${short(line.openedTx, 4)}` },
+      { k: "Locked", on: true, d: <TxLink chain="robinhood" hash={line.openedTx} n={4} /> },
       { k: "Chainlink CRE", on: live || !!run?.written, d: run?.written ? `${(run.ms / 1000).toFixed(1)} s` : "reporting…" },
       { k: "Live on Arc", on: live, d: live ? `${usdc(pos!.limit)} USDC` : "" },
     ]} />
   );
 }
 
-function Repay({ w, line, actions, busy, run }: { w: Wallet; line: Line; actions: ReturnType<typeof creditActions>; busy: string | null; run: (k: string, f: () => Promise<string | void>) => void }) {
+function Repay({ w, line, actions, busy, run }: { w: Wallet; line: Line; actions: ReturnType<typeof creditActions>; busy: string | null; run: (k: string, f: () => Promise<ReactNode | void>) => void }) {
   const [plan, setPlan] = useState<{ due: number; amount: bigint; paid: boolean }[] | null>(null);
   useEffect(() => { actions.schedule(line).then(setPlan).catch(() => setPlan([])); }, [actions, line.lineId, line.drawn, line.repaid]); // eslint-disable-line react-hooks/exhaustive-deps
   const owed = line.drawn - line.repaid;
@@ -132,7 +134,7 @@ function Repay({ w, line, actions, busy, run }: { w: Wallet; line: Line; actions
       {line.drawn === 0n ? <p className="nk-fine">Nothing drawn yet. Choose <b>Pay later</b> at any Noren checkout; the merchant is paid upfront from the Arc credit pool. Paying on credit is not private: the line is tied to this wallet.</p> : (
         <div className="nk-btns">
           {short6 && <button className="nk-btn" disabled={!!busy} onClick={() => run("arcfaucet", async () => { await api.faucet(w.oc.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arcfaucet" ? "Sending…" : "Get test USDC"}</button>}
-          <button className="nk-btn ink" disabled={!!busy || due <= 0n || short6} onClick={() => run("repay", async () => { const h = await w.oc.repay(line.lineId, due); return `Repaid ${usdc(due)} USDC on Arc (tx ${short(h, 6)}). Chainlink CRE reports it to NorenCredit.`; })}>{busy === "repay" ? "Repaying…" : due > 0n ? `Repay ${usdc(due)} USDC` : "All paid"}</button>
+          <button className="nk-btn ink" disabled={!!busy || due <= 0n || short6} onClick={() => run("repay", async () => { const h = await w.oc.repay(line.lineId, due); return <>Repaid {usdc(due)} USDC on Arc (tx <TxLink chain="arc" cfg={w.cfg} hash={h} />). Chainlink CRE reports it to NorenCredit.</>; })}>{busy === "repay" ? "Repaying…" : due > 0n ? `Repay ${usdc(due)} USDC` : "All paid"}</button>
         </div>
       )}
     </>

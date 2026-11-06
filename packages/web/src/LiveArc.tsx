@@ -1,6 +1,8 @@
 /** "Arc testnet (live)": the public deployment and its recorded payments, with explorer links and live reads. */
 import { useEffect, useState } from "react";
-import { LIVE, addrUrl, liveFacts, txUrl, useNet, type Net } from "./network";
+import { LIVE, addrUrl, liveFacts, useNet, type Net } from "./network";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
 import "./live.css";
 
 const short = (h: string, n = 6) => `${h.slice(0, n + 2)}…${h.slice(-4)}`;
@@ -21,7 +23,7 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
   const pay = pick(/^pay \d/i), refund = pick(/^refund \d/i), shield = pick(/^shield/i);
   return (
     <section className="la" aria-label="Noren live on Arc testnet">
-      <header><span className="la-dot" aria-hidden /><div><b>Live on Arc testnet</b><small>chain {LIVE.chainId} · real testnet USDC · {f ? `block ${f.block.toString()}` : err ? "RPC unreachable" : "reading…"}</small></div></header>
+      <header><span className="la-dot" aria-hidden /><Mark id="ARC" size={24} /><div><b>Live on Arc testnet</b><small>chain {LIVE.chainId} · real testnet USDC · {f ? `block ${f.block.toString()}` : err ? "RPC unreachable" : "reading…"}</small></div></header>
       {context === "checkout" && <p className="la-note">This hosted checkout runs on the local fork. On Arc testnet the same flow ran end to end from the SDK and the merchant server (<code>scripts/live/e2e-live.ts</code>): a private 2.50 USDC payment, then a 1.00 USDC refund into the shielded inbox.</p>}
       {context === "app" && <p className="la-note">Only Arc has a live deployment. Swap, Earn, Borrow and the Robinhood side of credit run on the Robinhood Chain fork; switch back to “Local fork” to use them.</p>}
       <dl className="la-grid">
@@ -31,11 +33,11 @@ export function LiveArc({ context }: { context: "app" | "checkout" | "merchant" 
         <div><dt>NorenCreditLine (CRE)</dt><dd><a href={addrUrl(LIVE.creditLine)} target="_blank" rel="noreferrer">{short(LIVE.creditLine)}</a></dd></div>
       </dl>
       <ul className="la-tx">
-        {shield && <li><span>Shield 5 USDC into the pool</span><a href={txUrl(shield.tx)} target="_blank" rel="noreferrer">{short(shield.tx, 8)} ↗</a></li>}
-        {pay && <li><span><b>Private payment, {usdc(e2e.invoice.amountUsdc6)} USDC</b> · proof {e2e.proofSeconds} s · {f ? (f.paid ? "NorenCheckout.paid = true now" : "not paid?") : "checking…"}</span><a href={txUrl(pay.tx)} target="_blank" rel="noreferrer">{short(pay.tx, 8)} ↗</a></li>}
-        {refund && <li><span>Refund 1.00 USDC to the shielded inbox</span><a href={txUrl(refund.tx)} target="_blank" rel="noreferrer">{short(refund.tx, 8)} ↗</a></li>}
-        <li><span>CRE pricing report → NorenRateOracle</span><a href={txUrl(LIVE.pricing.simulateTx)} target="_blank" rel="noreferrer">{short(LIVE.pricing.simulateTx, 8)} ↗</a></li>
-        <li><span>CRE credit-line report → NorenCreditLine</span><a href={txUrl(LIVE.credit.starterTx)} target="_blank" rel="noreferrer">{short(LIVE.credit.starterTx, 8)} ↗</a></li>
+        {shield && <li><span>Shield 5 USDC into the pool</span><TxLink chain="arc-live" hash={shield.tx} n={8} /></li>}
+        {pay && <li><span><b>Private payment, {usdc(e2e.invoice.amountUsdc6)} USDC</b> · proof {e2e.proofSeconds} s · {f ? (f.paid ? "NorenCheckout.paid = true now" : "not paid?") : "checking…"}</span><TxLink chain="arc-live" hash={pay.tx} n={8} /></li>}
+        {refund && <li><span>Refund 1.00 USDC to the shielded inbox</span><TxLink chain="arc-live" hash={refund.tx} n={8} /></li>}
+        <li><span>CRE pricing report → NorenRateOracle</span><TxLink chain="arc-live" hash={LIVE.pricing.simulateTx} n={8} /></li>
+        <li><span>CRE credit-line report → NorenCreditLine</span><TxLink chain="arc-live" hash={LIVE.credit.starterTx} n={8} /></li>
       </ul>
       <p className="la-fine">The payer's address appears in neither the payment nor the refund transaction. The live pool is new, so its anonymity set is tiny: timing can still link a payment to a deposit. Robinhood Chain, fiat-priced invoices and this browser checkout are fork-only. {err ? `Live reads failed: ${err}` : f ? `Payout now holds ${usdc(f.payoutBal)} USDC.` : ""}</p>
     </section>

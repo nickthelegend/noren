@@ -13,6 +13,8 @@ import { USDG } from "../onchain";
 import type { Wallet } from "./NorenApp";
 import { Coin, Card, Result, SetupCard, Skel, Spin, Track, shortHex } from "./kit";
 import { fmtUnits, parseAmount, USDG_TOKEN } from "./tokens";
+import { TxLink } from "../tx";
+import { Mark } from "../logos";
 
 const deskAbi = parseAbi(["function requestSettlement(uint256 amountUsdg6, address arcRecipient, uint16 maxSlippageBps) returns (bytes32 id)"]);
 type Quote = { relay: { outUsdc6: string; seconds: number; feeUsd?: string } | { error: string }; across: { outUsdc6: string; seconds: number } | { error: string } };
@@ -76,7 +78,7 @@ export function BridgeTab({ w }: { w: Wallet }) {
   return (
     <div className="nk-col">
       <section className="nk-card" aria-label="Bridge">
-        <div className="nk-card-h"><b>Bridge</b><span className="nk-pill">Robinhood → Arc</span></div>
+        <div className="nk-card-h"><b>Bridge</b><span className="nk-pill"><Mark id="ROBINHOOD" size={16} />Robinhood → <Mark id="ARC" size={16} />Arc</span></div>
         <div className="nk-box">
           <label htmlFor="nk-br"><span>You send · Robinhood Chain</span></label>
           <div className="nk-row"><input id="nk-br" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /><span className="nk-token" data-static="true"><Coin t={USDG_TOKEN} />USDG</span></div>
@@ -85,14 +87,14 @@ export function BridgeTab({ w }: { w: Wallet }) {
         <div className="nk-flip" aria-hidden style={{ cursor: "default" }}>↓</div>
         <div className="nk-box">
           <span className="nk-l"><span>You receive · Arc</span><span>to {shortHex(w.oc.address, 4)}</span></span>
-          <div className="nk-row"><output className={bestOut ? "" : "dim"}>{bestOut !== null ? fmtUnits(bestOut, 6, 2) : amt && !q && !qErr ? "…" : "0"}</output><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC", color: "#2775ca" }} />USDC</span></div>
+          <div className="nk-row"><output className={bestOut ? "" : "dim"}>{bestOut !== null ? fmtUnits(bestOut, 6, 2) : amt && !q && !qErr ? "…" : "0"}</output><span className="nk-token" data-static="true"><Coin t={{ sym: "USDC" }} />USDC</span></div>
           <div className="nk-sub"><span>Best live quote; the CRE workflow re-quotes and sets the minimum</span><span /></div>
         </div>
         {amt !== null && (
           <div className="nk-routes" aria-label="Live bridge quotes">
             {qErr ? <div className="nk-err">{qErr}</div> : !q ? <div className="nk-skel"><i /><i /></div> : outs.map(([id, name, x]) => (
               <div key={id} className="nk-route" data-best={"outUsdc6" in x && BigInt(x.outUsdc6) === bestOut} data-dead={!("outUsdc6" in x)}>
-                <span className="nk-route-i">{id === "relay" ? "RL" : "AX"}</span>
+                <Mark id={id === "relay" ? "RELAY" : "ACROSS"} size={32} />
                 <div><b>{name}</b><small>{"outUsdc6" in x ? `live quote · ~${x.seconds || "?"} s${"feeUsd" in x && x.feeUsd ? ` · relayer fee $${Number(x.feeUsd).toFixed(4)}` : ""}` : x.error}</small></div>
                 <div className="r"><b>{"outUsdc6" in x ? fmtUnits(BigInt(x.outUsdc6), 6, 4) : "–"}</b>{"outUsdc6" in x && BigInt(x.outUsdc6) === bestOut ? <small><span className="tag">Best</span></small> : null}</div>
               </div>
@@ -123,7 +125,7 @@ function Transfer({ s }: { s: Settlement }) {
   const approved = s.status === "approved" || s.status === "executed";
   const tone = s.status === "rejected" || s.status === "failed" ? "bad" : s.status === "executed" ? "good" : "";
   return (
-    <Result tone={tone} tag={`${usdc(s.amountUsdg6)} USDG → USDC`} link={<span title={s.requestTx}>{shortHex(s.requestTx, 6)}</span>}
+    <Result tone={tone} tag={`${usdc(s.amountUsdg6)} USDG → USDC`} link={<TxLink chain="robinhood" hash={s.requestTx} />}
       title={s.status === "requested" ? "Waiting for the CRE workflow…" : s.status === "rejected" ? "Rejected by the CRE workflow" : s.status === "failed" ? "Did not complete" : s.status === "approved" ? "Approved by Chainlink CRE" : "Deposited into Relay"}
       body={s.error ?? (s.cre?.decision ? `Decision: ${s.cre.decision}` : undefined)}
       kv={[["Relay quote", fmtQuote(s.quotes?.relay)], ["Across quote", fmtQuote(s.quotes?.across)], ["Minimum on Arc", s.approved ? `${usdc(s.approved.minOutUsdc6)} USDC` : "…"]]}>
@@ -131,7 +133,7 @@ function Transfer({ s }: { s: Settlement }) {
         <Track steps={[
           { k: "Escrowed", on: true, d: "Robinhood" },
           { k: "CRE approval", on: approved, d: s.cre ? `${(s.cre.ms / 1000).toFixed(1)} s` : "" },
-          { k: "Bridge deposit", on: s.status === "executed", d: s.deposit ? shortHex(s.deposit.tx, 4) : "" },
+          { k: "Bridge deposit", on: s.status === "executed", d: s.deposit ? <TxLink chain="robinhood" hash={s.deposit.tx} n={4} /> : "" },
           { k: "USDC on Arc", on: false, d: s.status === "executed" ? "needs a real relayer" : "" },
         ]} />
       </div>

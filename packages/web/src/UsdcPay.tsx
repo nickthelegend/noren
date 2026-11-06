@@ -10,6 +10,9 @@ import { localFork } from "@noren/core";
 import { SERVER, api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
 import { payoutOf } from "./kit";
+import type { ReactNode } from "react";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
 
 function key(): Hex | null { try { return JSON.parse(localStorage.getItem("noren.customer.v1") ?? "null")?.gasKey ?? null; } catch { return null; } }
 
@@ -18,7 +21,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
   const [bal, setBal] = useState<bigint | null>(null);
   const [payout, setPayout] = useState<Address | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<Hex | null>(null);
   const amount = BigInt(view.invoice.amount);
   const chain = localFork(cfg.rpcUrl);
@@ -46,7 +49,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
       const res = await fetch(`${SERVER}/invoices/${view.invoice.invoiceId}/pay-usdc`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ txHash: h }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(res.status === 404 ? "Setup required: this Noren server can't verify direct USDC payments yet (restart pnpm dev:all on the app-dex branch)" : j.error ?? `HTTP ${res.status}`);
-      setNote({ t: `Paid ${usdc(amount)} USDC to ${shop} (tx ${short(h, 6)}), verified on Arc.` });
+      setNote({ t: <>Paid {usdc(amount)} USDC to {shop} (tx <TxLink chain="arc" cfg={cfg} hash={h} />), verified on Arc.</> });
       onPaid();
     } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); load(); }
   };
@@ -55,7 +58,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
   return (
     <div className="co-credit">
       <div className="co-bal">
-        <div><span>Wallet on Arc</span><b>{bal === null ? <span className="skel-t sm" /> : usdc(bal)}<em>USDC</em></b><small className="faint mono">{addr ? short(addr, 6) : "…"}</small></div>
+        <div><span>Wallet on Arc</span><b>{bal === null ? <span className="skel-t sm" /> : usdc(bal)}<em className="lg-row"><Mark id="USDC" size={16} />USDC</em></b><small className="faint mono">{addr ? short(addr, 6) : "…"}</small></div>
         <div><span>Pays to</span><b className="mono sm">{payout ? short(payout, 4) : "…"}</b><small className="faint">{shop}'s payout address</small></div>
       </div>
       {bal !== null && !enough && !tx && (
@@ -69,7 +72,7 @@ export function UsdcPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoic
       </div>
       {note && <p className={note.bad ? "err" : "note"} role="status">{note.t}</p>}
       <button className="btn ink full xl" disabled={!!busy || !!tx || !enough || !payout} onClick={pay}>
-        {busy === "pay" ? <><span className="spin" /> Sending USDC…</> : busy === "verify" ? <><span className="spin" /> Verifying on Arc…</> : !payout ? `${shop} has no payout address` : !enough ? "Not enough USDC" : <><Icon.card /> Pay {usdc(amount)} USDC</>}
+        {busy === "pay" ? <><span className="spin" /> Sending USDC…</> : busy === "verify" ? <><span className="spin" /> Verifying on Arc…</> : !payout ? `${shop} has no payout address` : !enough ? "Not enough USDC" : <><Mark id="USDC" size={20} /> Pay {usdc(amount)} USDC</>}
       </button>
       <p className="faint sm center">USDC.transfer on the Arc fork, signed by your test key in this browser.</p>
     </div>

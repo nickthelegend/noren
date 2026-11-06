@@ -11,6 +11,8 @@ import { readVaults, vaultAbi, type VaultRow } from "./earn";
 import { TOKENS, fmtUnits, parseAmount } from "./tokens";
 import { Card, Coin, Empty, SetupCard, Skel, Spin, shortHex } from "./kit";
 import { SWAPVM_ATTRIBUTION } from "./SwapTab";
+import type { ReactNode } from "react";
+import { TxLink } from "../tx";
 
 /** Length of the observed window. Yield is shown as fees earned in a window, never as a projected APY. */
 const span = (since: number) => { const s = Math.max(1, Math.floor(Date.now() / 1000) - since); return s < 3600 ? `${Math.round(s / 60)} min` : s < 172800 ? `${(s / 3600).toFixed(1)} h` : `${Math.round(s / 86400)} days`; };
@@ -24,7 +26,7 @@ export function EarnTab({ w }: { w: Wallet }) {
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   useEffect(() => { if (!list.length) return; let on = true; readVaults(w, list, symOf).then((r) => on && (setRows(r), setErr(null))).catch((e) => on && setErr(msgOf(e))); return () => { on = false; }; }, [w.tick, list.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const v = rows?.find((r) => r.vault === sel) ?? rows?.find((r) => r.sym === "NVDA") ?? rows?.[0];
   const tok = v ? TOKENS.find((t) => t.sym === v.sym) : undefined;
@@ -61,7 +63,7 @@ export function EarnTab({ w }: { w: Wallet }) {
         await pub.simulateContract({ account, address: v.vault, abi: vaultAbi, functionName: fn, args: [amt, account.address, account.address] } as never);
         h = await send(fn === "redeemInKind" ? "Redeeming in kind (a feed is stale)…" : "Withdrawing…", { address: v.vault, abi: vaultAbi, functionName: fn, args: [amt, account.address, account.address], chain, account } as never);
       }
-      setNote({ t: `${mode === "deposit" ? "Deposited" : "Withdrew"} on Robinhood (tx ${shortHex(h, 6)}).` }); setAmount(""); w.refresh();
+      setNote({ t: <>{mode === "deposit" ? "Deposited" : "Withdrew"} on Robinhood (tx <TxLink chain="robinhood" hash={h} />).</> }); setAmount(""); w.refresh();
     } catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); }
   };
 
@@ -81,14 +83,14 @@ export function EarnTab({ w }: { w: Wallet }) {
               <label htmlFor="nk-earn"><span>{mode === "deposit" ? "You deposit" : "You redeem"}</span></label>
               <div className="nk-row">
                 <input id="nk-earn" inputMode="decimal" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} />
-                {mode === "deposit" && tok ? <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span> : <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym, color: "#1c2a5e" }} />{v.shareSym}</span>}
+                {mode === "deposit" && tok ? <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span> : <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym }} />{v.shareSym}</span>}
               </div>
               <div className="nk-sub"><span>{mode === "deposit" ? "Into the vault's Aqua maker" : "Shares are your receipt"}</span><span>{mode === "deposit" ? "Wallet" : "Shares"} <button type="button" onClick={() => setAmount(String(Number(max) / 10 ** (mode === "deposit" ? 18 : v.decimals)))}>{fmtUnits(max, mode === "deposit" ? 18 : v.decimals, 4)}</button></span></div>
             </div>
             <div className="nk-flip" aria-hidden style={{ cursor: "default" }}>↓</div>
             <div className="nk-box">
               <span className="nk-l"><span>{mode === "deposit" ? "You receive" : "You get back"}</span><span>{mode === "deposit" ? "receipt shares" : v.stats.priced ? `${v.sym}` : "in kind"}</span></span>
-              <div className="nk-row"><output className={preview ? "" : "dim"}>{preview !== null ? fmtUnits(preview, mode === "deposit" ? v.decimals : 18, 6) : "0"}</output>{mode === "deposit" ? <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym, color: "#1c2a5e" }} />{v.shareSym}</span> : tok && <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span>}</div>
+              <div className="nk-row"><output className={preview ? "" : "dim"}>{preview !== null ? fmtUnits(preview, mode === "deposit" ? v.decimals : 18, 6) : "0"}</output>{mode === "deposit" ? <span className="nk-token" data-static="true"><Coin t={{ sym: v.shareSym }} />{v.shareSym}</span> : tok && <span className="nk-token" data-static="true"><Coin t={tok} />{v.sym}</span>}</div>
               <div className="nk-sub"><span>{s?.priced ? `1 ${v.shareSym} = ${fmtUnits(s.assetsPerShare, 18, 6)} ${v.sym}` : "A feed is stale: withdrawals pay out in kind"}</span><span /></div>
             </div>
             <div className="nk-routes" role="radiogroup" aria-label="Vault">
@@ -96,7 +98,7 @@ export function EarnTab({ w }: { w: Wallet }) {
                 const t = TOKENS.find((x) => x.sym === r.sym);
                 return (
                   <button key={r.vault} role="radio" aria-checked={r.vault === v.vault} className="nk-route" data-best={r.vault === v.vault} onClick={() => setSel(r.vault)} style={{ cursor: "pointer" }}>
-                    {t ? <Coin t={t} /> : <span className="nk-route-i">{r.sym.slice(0, 2)}</span>}
+                    <Coin t={t ?? { sym: r.sym }} />
                     <div><b>{r.shareSym} · {r.sym} vault</b><small>{r.stats.fills > 0n ? `${fmtUnits(r.stats.feesUsdg, 6, 2)} USDG earned from ${r.stats.fills} fill${r.stats.fills === 1n ? "" : "s"}${r.stats.firstDepositAt > 0n ? ` in ${span(Number(r.stats.firstDepositAt))}` : ""}` : "No maker fills yet, so no yield yet"}</small></div>
                     <div className="r"><b>{r.stats.priced ? `$${fmtUnits(r.stats.navUsd8, 8, 0)}` : "–"}</b><small>NAV</small></div>
                   </button>

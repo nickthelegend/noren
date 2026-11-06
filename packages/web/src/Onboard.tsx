@@ -11,6 +11,7 @@ import { SERVER, usdc, type Config } from "./api";
 import { Copy, Icon, Logo, msgOf } from "./ui";
 import { QR } from "./kit";
 import "./onboard.css";
+import { TxLink } from "./tx";
 
 export type Session = { session: string; address: Address; expiresAt: number };
 export type StoreView = { id: string; name: string; payout: Address; merchant: Address; publishableKey: string; keys: { id: string; prefix: string; createdAt: number; revokedAt?: number }[]; createdAt: number; registerTx: Hex };
@@ -153,7 +154,7 @@ const { invoice } = await noren.invoices.create({
           <div className="ob-card">
             <span className="ob-k">Step 3 of 3</span>
             <h1>Create your first payment link</h1>
-            <p><b>{store.name}</b> is live on the Arc fork (registered in tx <span className="mono">{store.registerTx.slice(0, 10)}…</span>). Make a link and share it, or print its QR at the counter.</p>
+            <p><b>{store.name}</b> is live on the Arc fork (registered in tx <TxLink chain="arc" cfg={cfg} hash={store.registerTx} n={8} />). Make a link and share it, or print its QR at the counter.</p>
             {!link ? (
               <>
                 <div className="ob-row2">

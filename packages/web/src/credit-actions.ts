@@ -89,7 +89,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       return { collateral8: value8, ltvBps: Math.round(1e8 / ratio), limitUsdc6, termDays: 30, liquidation8, tier, needsAttestation };
     },
     /** Attest if needed, then lock the shares and open the line on Robinhood. The CRE bridge takes it to Arc. */
-    async open(s: Holding, amount: string, say: (step: string) => void = () => {}): Promise<string> {
+    async open(s: Holding, amount: string, say: (step: string) => void = () => {}): Promise<{ text: string; hash: Hex }> {
       const { pub, wallet, chain } = oc.robinhood();
       const q = await this.quote(s, amount);
       const send = async (req: Parameters<typeof wallet.writeContract>[0]) => { const h = await wallet.writeContract(req); const r = await pub.waitForTransactionReceipt({ hash: h }); if (r.status !== "success") throw new Error(`${req.functionName} reverted: ${h}`); return h; };
@@ -111,7 +111,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       await send({ address: s.token, abi: erc20Abi, functionName: "approve", args: [contract(), raw], chain });
       const expiry = BigInt(Math.floor(Date.now() / 1000) + 30 * 86400);
       const h = await send({ address: contract(), abi: creditAbi, functionName: "openCreditLine", args: [s.token, raw, q.limitUsdc6, expiry], chain });
-      return `Locked ${amount} ${s.sym} and opened a ${(Number(q.limitUsdc6) / 1e6).toFixed(2)} USDC line on Robinhood (tx ${h.slice(0, 10)}…). Chainlink CRE is bringing it to Arc.`;
+      return { text: `Locked ${amount} ${s.sym} and opened a ${(Number(q.limitUsdc6) / 1e6).toFixed(2)} USDC line on Robinhood`, hash: h };
     },
     arcLine: (lineId: Hex): Promise<Position> => oc.arcLine(lineId),
     /**

@@ -2,12 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { jsonBigints, parseInvoice, type Invoice } from "@noren/core";
 import { api, short, usdc, type InvoiceView } from "./api";
 import type { Wallet } from "./wallet";
-import { Icon, Logo, Setup, TxRef, msgOf, useConfig } from "./ui";
+import { Icon, Logo, Setup, msgOf, useConfig } from "./ui";
 import { CreditPay } from "./CreditPay";
 import { StockPay } from "./StockPay";
 import { UsdcPay } from "./UsdcPay";
 import { LiveArc, NetSwitch } from "./LiveArc";
 import { useNet } from "./network";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
+import { STOCKS } from "./onchain";
+
+const stockSym = (a?: string) => STOCKS.find((x) => x.token.toLowerCase() === a?.toLowerCase())?.sym;
 
 type Step = "idle" | "binding" | "proving" | "relaying" | "paid" | "error";
 
@@ -109,9 +114,9 @@ export function Checkout({ id }: { id: string }) {
             {quote ? (
               <>
                 <b className="co-amt">{fiat(quote)}<em>{quote.currency}</em></b>
-                <span className="co-conv"><span className="co-cl">Chainlink</span> {usdc(view?.invoice.amount)} USDC at 1 {quote.currency} = {Number(quote.rate).toFixed(4)} USDC</span>
+                <span className="co-conv"><span className="co-cl lg-row"><Mark id="CHAINLINK" size={14} />Chainlink</span> {usdc(view?.invoice.amount)} USDC at 1 {quote.currency} = {Number(quote.rate).toFixed(4)} USDC</span>
               </>
-            ) : <b className="co-amt">{view ? usdc(view.invoice.amount) : <span className="skel-t" />}<em>USDC</em></b>}
+            ) : <b className="co-amt">{view ? usdc(view.invoice.amount) : <span className="skel-t" />}<em className="lg-row"><Mark id="USDC" size={20} />USDC</em></b>}
             <ul className="co-lines">
               <li><span>{view?.description || "Payment"}</span><span>{view ? usdc(view.invoice.amount) : "…"}</span></li>
               <li className="faint"><span>Network fee</span><span>paid by {shop}</span></li>
@@ -140,9 +145,9 @@ export function Checkout({ id }: { id: string }) {
               <dl className="kv">
                 {proofSec && <><dt>Proof made on this device</dt><dd>{proofSec.toFixed(2)} s</dd></>}
                 {total && <><dt>Click to paid</dt><dd>{total.toFixed(1)} s</dd></>}
-                <dt>Transaction</dt><dd><TxRef cfg={cfg} hash={view?.paymentTx} /></dd>
+                <dt>Transaction</dt><dd><TxLink chain={view?.method === "stocks" ? "robinhood" : "arc"} cfg={cfg} hash={view?.paymentTx} n={8} /></dd>
                 {view?.method === "stocks" && view.stock ? <>
-                  <dt>You paid</dt><dd>{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} shares at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
+                  <dt>You paid</dt><dd className="lg-row">{stockSym(view.stock.asset) && <Mark id={stockSym(view.stock.asset)!} size={16} />}{(Number(view.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(view.stock.asset) ?? "shares"} at ${(Number(view.stock.priceUsd8) / 1e8).toFixed(2)}</dd>
                   <dt>Private</dt><dd>no: paid from your Robinhood wallet</dd>
                 </> : view?.method === "usdc" ? <>
                   <dt>Paid from</dt><dd>your wallet on Arc</dd>
@@ -165,9 +170,9 @@ export function Checkout({ id }: { id: string }) {
               <div className="co-pay-h"><h2>{method === "credit" ? <>Pay <em>later</em></> : method === "stocks" ? <>Pay with <em>stocks</em></> : method === "usdc" ? <>Pay with <em>USDC</em></> : <>Pay <em>privately</em></>}</h2>{cd && <span className="co-timer"><Icon.clock /> {cd.text}</span>}</div>
               {cancelUrl && back(cancelUrl) && <a className="co-cancel" href={back(cancelUrl)!}><Icon.back /> Back to {shop}</a>}
               <div className="co-methods four" role="tablist" aria-label="Payment method">
-                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Icon.card /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
-                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Icon.eyeOff /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
-                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><Icon.chart /><span><b>Pay with stocks</b><small>Sold to the best price, settles to Arc</small></span></button>
+                <button role="tab" aria-selected={method === "usdc"} disabled={working} onClick={() => setMethod("usdc")}><Mark id="USDC" size={20} /><span><b>Pay with USDC</b><small>Your wallet on Arc · one tap</small></span></button>
+                <button role="tab" aria-selected={method === "private"} disabled={working} onClick={() => setMethod("private")}><Mark id="KOHAKU" size={20} /><span><b>Pay privately</b><small>Private balance · zero-knowledge</small></span></button>
+                <button role="tab" aria-selected={method === "stocks"} disabled={working} onClick={() => setMethod("stocks")}><span className="co-stack" aria-hidden><Mark id="NVDA" size={20} /><Mark id="TSLA" size={20} /><Mark id="AAPL" size={20} /></span><span><b>Pay with stocks</b><small>Sold to the best price, settles to Arc</small></span></button>
                 <button role="tab" aria-selected={method === "credit"} disabled={working} onClick={() => setMethod("credit")}><Icon.layers /><span><b>Pay in 3</b><small>From your credit limit, repay later</small></span></button>
               </div>
               {method === "usdc" && cfg && view ? <UsdcPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "credit" && cfg && view ? <CreditPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : method === "stocks" && cfg && view ? <StockPay cfg={cfg} view={view} shop={shop} onPaid={load} /> : <>

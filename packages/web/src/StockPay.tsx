@@ -9,6 +9,9 @@ import { Icon, msgOf } from "./ui";
 import { USDG, usd8, units, type Holding, type Onchain } from "./onchain";
 import { swapper, type RouteQuote } from "./app/swap";
 import { TOKENS, USDG_TOKEN } from "./app/tokens";
+import type { ReactNode } from "react";
+import { TxLink } from "./tx";
+import { Mark } from "./logos";
 
 type Mirror = Awaited<ReturnType<typeof api.mirrorOnRobinhood>>;
 
@@ -21,7 +24,7 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
   const [q, setQ] = useState<Awaited<ReturnType<Onchain["stockQuote"]>> | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
+  const [note, setNote] = useState<{ t: ReactNode; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
   const [v4, setV4] = useState<{ need: bigint; route: RouteQuote } | { error: string } | null>(null);
   const [via, setVia] = useState<"aqua" | "v4">("aqua");
@@ -94,25 +97,25 @@ export function StockPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invoi
         setNote({ t: `Paying ${usdc(mirror.amountUsdg)} USDG to ${shop}…` });
         h = await tk.payWithStock(mirror.gateway, mirror.merchant, mirror.invoiceId, USDG, BigInt(mirror.amountUsdg));
       } else h = await tk.payWithStock(mirror.gateway, mirror.merchant, mirror.invoiceId, s.token, q.assetIn);
-      setTx(h); setNote({ t: `Paid on Robinhood Chain (tx ${short(h, 6)}). Waiting for ${shop} to see it…` }); onPaid(); }
+      setTx(h); setNote({ t: <>Paid on Robinhood Chain (tx <TxLink chain="robinhood" hash={h} />). Waiting for {shop} to see it…</> }); onPaid(); }
     catch (e) { setNote({ t: msgOf(e), bad: true }); } finally { setBusy(null); load(); }
   };
   return (
     <div className="co-credit">
       <div className="co-stock-pick" role="radiogroup" aria-label="Stock Token">
-        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} onClick={() => setSym(h.sym)}><span className="na-tick sm" aria-hidden>{h.sym[0]}</span><span><b>{h.sym}</b><small>{units(h.balance, 18)} held</small></span></button>)}
+        {hold.map((h) => <button key={h.sym} role="radio" aria-checked={h.sym === sym} onClick={() => setSym(h.sym)}><Mark id={h.sym} size={30} /><span><b>{h.sym}</b><small>{units(h.balance, 18)} held</small></span></button>)}
       </div>
       <dl className="co-quote">
-        <dt>You pay</dt><dd><b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
+        <dt>You pay</dt><dd className="lg-row">{sym && <Mark id={sym} size={16} />}<b className="num">{q ? units(q.assetIn, 18, 6) : "…"}</b> {sym}</dd>
         <dt>Chainlink price</dt><dd>{q ? `$${usd8(q.priceUsd8)}` : "…"}</dd>
         {q?.marketClosed && <><dt>US markets</dt><dd><span className="co-closed" title="Saturday, Sunday and Monday before 06:00 UTC the stock feeds pause, so makers add 3% to their spread">markets closed: wider spread</span></dd></>}
         <dt>Best execution</dt><dd>{!q ? "…" : q.route !== "aqua-maker" ? `Noren vault · ${(q.spreadBps / 100).toFixed(2)}% spread` : via === "v4" ? "Uniswap v4 → USDG" : "1inch Aqua maker · SwapVM, Chainlink-pegged"}</dd>
-        <dt>{shop} receives</dt><dd>{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
+        <dt>{shop} receives</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(mirror.amountUsdg)} USDG on Robinhood Chain</dd>
       </dl>
       {q?.route === "aqua-maker" && (
         <div className="co-routes" role="radiogroup" aria-label="Route">
-          <button role="radio" aria-checked={via === "aqua"} onClick={() => setVia("aqua")}><span><b>1inch Aqua maker</b><small>SwapVM order pegged to Chainlink, pays {shop} directly</small></span><b className="num">{units(q.assetIn, 18, 6)} {sym}</b></button>
-          <button role="radio" aria-checked={via === "v4"} disabled={!v4ok} onClick={() => setVia("v4")}><span><b>Uniswap v4</b><small>{v4ok ? `${(v4ok.route.id === "v4" ? v4ok.route.key.fee / 10000 : 0).toFixed(2)}% pool → USDG, then pays ${shop}; includes 0.5% slippage room` : v4 && "error" in v4 ? v4.error : "Quoting…"}</small></span><b className="num">{v4ok ? `${units(v4ok.need, 18, 6)} ${sym}` : "–"}</b></button>
+          <button role="radio" aria-checked={via === "aqua"} onClick={() => setVia("aqua")}><Mark id="1INCH" size={20} /><span><b>1inch Aqua maker</b><small>SwapVM order pegged to Chainlink, pays {shop} directly</small></span><b className="num">{units(q.assetIn, 18, 6)} {sym}</b></button>
+          <button role="radio" aria-checked={via === "v4"} disabled={!v4ok} onClick={() => setVia("v4")}><Mark id="UNISWAP" size={20} /><span><b>Uniswap v4</b><small>{v4ok ? `${(v4ok.route.id === "v4" ? v4ok.route.key.fee / 10000 : 0).toFixed(2)}% pool → USDG, then pays ${shop}; includes 0.5% slippage room` : v4 && "error" in v4 ? v4.error : "Quoting…"}</small></span><b className="num">{v4ok ? `${units(v4ok.need, 18, 6)} ${sym}` : "–"}</b></button>
         </div>
       )}
       <ol className="co-settle" aria-label="How the merchant gets paid">

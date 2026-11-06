@@ -2,13 +2,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { TOKENS, fmtUnits, type Token } from "./tokens";
+import { Mark } from "../logos";
 
 export const spring = { type: "spring", stiffness: 520, damping: 38 } as const;
 export const pop = { initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, exit: { opacity: 0, y: -10, scale: 0.98 }, transition: { type: "spring", stiffness: 380, damping: 32 } } as const;
 
-export const Coin = ({ t, lg }: { t: Pick<Token, "sym" | "color">; lg?: boolean }) => (
-  <span className={`nk-coin ${lg ? "lg" : ""}`} style={{ ["--c" as string]: t.color }} aria-hidden>{t.sym === "USDG" ? "$" : t.sym === "ETH" ? "Ξ" : t.sym === "USDC" ? "$" : t.sym.slice(0, 2)}</span>
-);
+/** A token's real logo (public/logos); receipt shares and anything else without one get a neutral circle. */
+export const Coin = ({ t, lg }: { t: Pick<Token, "sym"> & { color?: string }; lg?: boolean }) => <Mark id={t.sym} size={lg ? 36 : 28} />;
 
 const Caret = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m6 9 6 6 6-6" /></svg>;
 

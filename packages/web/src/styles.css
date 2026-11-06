@@ -911,3 +911,10 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
   .tx-card { padding: 16px; }
   .tx-top .site-brand span { display: none; }
 }
+.sd-pm-ic.round { width: 16px; height: 16px; border-radius: 50%; }
+.sd-pm-ic.round svg { width: 9px; height: 9px; }
+.sd-mix-l em.lg-row { gap: 4px; }
+.co-stack { display: inline-flex; flex: none; }
+.co-stack .lg-mark { box-shadow: 0 0 0 1.5px var(--white); }
+.co-stack .lg-mark + .lg-mark { margin-left: -8px; }
+.co-amt em.lg-row { gap: 6px; }
