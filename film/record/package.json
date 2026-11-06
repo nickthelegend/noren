@@ -8,8 +8,9 @@
     "retake-world": "sh retake-world.sh"
   },
   "devDependencies": {
-    "playwright": "1.63.0",
     "jsqr": "1.4.0",
-    "pngjs": "7.0.0"
+    "playwright": "1.63.0",
+    "pngjs": "7.0.0",
+    "viem": "2.51.3"
   }
 }

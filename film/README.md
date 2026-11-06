@@ -46,3 +46,14 @@ checkout opens on "Pay privately"; Noren Merchant shows "Customer: Private"), `n
 Bridge tab, then Noren Merchant's live "From other chains into Arc"), and `PAGES=<comma-separated explorer URLs>
 node record/record.mjs xexplorer` for the live runs in docs/PRIVACY.md, docs/AQUA-LIVE.md and docs/CCIP.md
 (sepolia.arbiscan.io shows a Cloudflare check to headless browsers, so the Arbitrum burn is shown on Blockscout).
+
+## Injected test wallet (v3)
+
+`record/wallet.mjs` gives the recorder a browser wallet without an extension: an EIP-1193 provider announced over
+EIP-6963 as "Test wallet (injected)" (and `window.ethereum` when the page has none). The key lives in Node
+(`record/state/wallet-key.json`, gitignored, 0600, generated once, never printed); the page calls one Playwright
+binding, and `personal_sign`, `eth_signTypedData_v4` and `eth_sendTransaction` are signed with viem and broadcast to the
+current chain's RPC (`WALLET=fork`: the `dev:all` forks; `WALLET=live`: Arc and Robinhood testnets). Reads are forwarded;
+`wallet_switchEthereumChain` / `wallet_addEthereumChain` emit `chainChanged`. `node record/wallet.test.mjs` checks it
+against a throwaway Anvil. Example: `WALLET=fork node record/record.mjs merchant3` (Noren Merchant: Browser wallet,
+SIWE, store, link, API keys). Privy sign-in is never completed by the recorder.

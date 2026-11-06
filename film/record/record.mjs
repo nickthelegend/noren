@@ -61,6 +61,9 @@ const CURSOR = () => {
 // The World ID take runs in a visible window, so the QR code can be scanned from the Mac's screen.
 const b = await chromium.launch({ headless: take !== "world", ...(take === "world" ? { channel: "chrome" } : {}), args: ["--hide-scrollbars", `--force-device-scale-factor=${DSF}`] });
 const ctx = await b.newContext({ viewport: VIEW, ...(take !== "landing" && existsSync(STATE) ? { storageState: STATE } : {}) });
+// WALLET=fork|live injects the film's test wallet (wallet.mjs: EIP-1193 + EIP-6963, key kept in Node)
+const TW = process.env.WALLET ? await (await import("./wallet.mjs")).installWallet(ctx, { net: process.env.WALLET, log }) : null;
+if (TW) log("test wallet (injected)", TW.address);
 await ctx.addInitScript(CURSOR);
 const p = await ctx.newPage();
 p.on("dialog", (d) => { log("dialog refused:", d.message()); d.dismiss(); }); // never accept a paid 0G re-check
@@ -119,6 +122,36 @@ async function save() { await ctx.storageState({ path: STATE }); }
 
 try {
   // ---------------------------------------------------------------- v3 takes (one browser profile, state/state.json)
+  if (take === "merchant3") {
+    // Noren Merchant onboarding with the injected test wallet: Browser wallet -> SIWE (signed in Node) -> business ->
+    // payouts -> first payment link -> API keys. Needs WALLET=fork (or live). The secret key is redacted in the edit.
+    if (!TW) throw new Error("merchant3 needs WALLET=fork");
+    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3500);
+    await moveTo(900, 420, 1);
+    await rollCamera(); await sleep(1500);
+    const bw = p.getByRole("button", { name: /Browser wallet/ });
+    result("browser wallet option", (await bw.innerText()).replace(/\n+/g, " | "));
+    await click(bw, "browser wallet");
+    await until(() => p.getByText("What's your business called?").isVisible(), "signed in with the injected wallet", 60000);
+    result("signed in", await p.locator(".ob-who").innerText().catch(() => ""));
+    await sleep(900);
+    await typeIn(p.locator(".ob-field input").first(), "Juhu Chai House", "business name");
+    await click(p.getByRole("button", { name: /Continue/ }), "continue"); await sleep(1200);
+    await click(p.getByRole("radio", { name: /USDC on Arc to my wallet/ }), "payout to my wallet"); await sleep(600);
+    await click(p.getByRole("button", { name: /Create store/ }), "create store");
+    await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 90000);
+    result("store", await p.locator(".ob-card p").first().innerText()); await sleep(1200);
+    await typeIn(p.locator(".ob-field input").nth(1), "Masala chai for the team", "description");
+    await click(p.getByRole("button", { name: /Create link/ }), "create link");
+    await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
+    const link = await p.locator(".ob-url").innerText(); result("link", link); await sleep(2000);
+    writeFileSync(`${HERE}state/link-merchant3.txt`, link);
+    await click(p.getByRole("button", { name: /^Continue/ }), "continue to keys"); await sleep(1200);
+    await point(p.locator(".ob-keys")); await sleep(2500);
+    await scrollBy(320, 1200); await sleep(2000);
+    await cut(); await save();
+  }
+
   if (take === "setup3") {
     // Off camera, nothing recorded: a store with a 12.50 link (Noren Merchant), then the same browser as the customer
     // with the fork faucets. Prints the test key's public address (for scripts/live/fund-test-key.ts).
