@@ -40,17 +40,22 @@ beforeAll(async () => {
   } catch {
     throw new Error(setup)
   }
-  // Deploy NorenDutchAuction (0.5% -> 8% over 1 h, keeper 25% of the discount, target health 1.10).
-  const art = JSON.parse(readFileSync(artifactPath, 'utf8')) as { abi: any; bytecode: { object: Hex } }
-  const hash = await wallet(owner).deployContract({
-    abi: art.abi,
-    bytecode: art.bytecode.object,
-    args: [owner.address, deployment.credit, deployment.swapRouter, 50, 800, 3600, 2500, 11_000],
-    chain: null,
-  })
-  deployment.dutchAuction = (await publicClient.waitForTransactionReceipt({ hash })).contractAddress as Address
-  const set = await wallet(owner).writeContract({ address: deployment.credit, abi: norenCreditAbi, functionName: 'setDutchAuction', args: [deployment.dutchAuction], chain: null })
-  await publicClient.waitForTransactionReceipt({ hash: set })
+  // NorenCredit.setDutchAuction is set-once (audit RH-C): a snapshot built by deploy-fork.sh already wired one, so use it.
+  // Otherwise deploy NorenDutchAuction (0.5% -> 8% over 1 h, keeper 25% of the discount, target health 1.10) and set it.
+  const wired = (await publicClient.readContract({ address: deployment.credit, abi: parseAbi(['function dutchAuction() view returns (address)']), functionName: 'dutchAuction' })) as Address
+  if (BigInt(wired) !== 0n) deployment.dutchAuction = wired
+  else {
+    const art = JSON.parse(readFileSync(artifactPath, 'utf8')) as { abi: any; bytecode: { object: Hex } }
+    const hash = await wallet(owner).deployContract({
+      abi: art.abi,
+      bytecode: art.bytecode.object,
+      args: [owner.address, deployment.credit, deployment.swapRouter, 50, 800, 3600, 2500, 11_000],
+      chain: null,
+    })
+    deployment.dutchAuction = (await publicClient.waitForTransactionReceipt({ hash })).contractAddress as Address
+    const set = await wallet(owner).writeContract({ address: deployment.credit, abi: norenCreditAbi, functionName: 'setDutchAuction', args: [deployment.dutchAuction], chain: null })
+    await publicClient.waitForTransactionReceipt({ hash: set })
+  }
   // 15-minute installments so two missed payments fit inside the feeds' maximum age.
   const prm = (await publicClient.readContract({ address: deployment.credit, abi: norenCreditAbi, functionName: 'params' })) as readonly any[]
   const sp = await wallet(owner).writeContract({

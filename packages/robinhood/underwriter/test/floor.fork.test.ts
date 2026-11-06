@@ -73,6 +73,6 @@ it('fresh wallet without Stock Tokens is declined with its factors', async () =>
   } else {
     expect(decision.logEntry?.zgRequestId).toBeTruthy() // 0G decided; its decision stands
   }
-  expect(decision.score.factors.length).toBe(5)
+  expect(decision.score.factors.length).toBe(6) // five history factors + offchainProof (Reclaim)
   for (const f of decision.score.factors) expect(f.source.length).toBeGreaterThan(0)
 }, 180_000)

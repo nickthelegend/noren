@@ -1,4 +1,5 @@
 // Walk an app wallet up NorenReputation's LTV ladder (66% → 70% → 75% → 80%) with REAL transactions on the local
+// (stage attest: the attester's private ONCHAIN_REPAYMENT attestation after the repayments; World ID stays a real proof)
 // Robinhood fork, so the Credit and Borrow pages can show the stock LTV move. Fork only (127.0.0.1, Anvil).
 //
 // Nothing here writes storage. Each stage sends the same contract calls the app makes, from the wallet itself
@@ -18,12 +19,13 @@ import { resolve } from 'node:path';
 import { createPublicClient, createWalletClient, erc20Abi, http, isAddress, parseAbi, parseEventLogs, toHex, type Address, type Hex } from 'viem';
 import { norenBorrowAbi, norenCreditAbi, norenDepositVaultAbi, norenGatewayAbi } from '../packages/robinhood/sdk/src/abi.ts';
 import { robinhoodFaucet } from '../packages/server/src/credit.ts';
+import { attestRepayment, attestationsFor } from '../packages/server/src/attestations.ts';
 
 const RPC = process.env.NOREN_RH_RPC ?? 'http://127.0.0.1:8646';
 const UNDERWRITER = process.env.NOREN_UNDERWRITER_URL ?? 'http://127.0.0.1:8791';
 const who = process.argv[2] as Address;
-const stage = (process.argv[3] ?? 'all') as 'ontime' | 'loan' | 'all';
-if (!isAddress(who) || !['ontime', 'loan', 'all'].includes(stage)) throw new Error('usage: tsx scripts/dev-reputation-ladder.ts 0x<address> [ontime|loan|all]');
+const stage = (process.argv[3] ?? 'all') as 'ontime' | 'loan' | 'attest' | 'all';
+if (!isAddress(who) || !['ontime', 'loan', 'attest', 'all'].includes(stage)) throw new Error('usage: tsx scripts/dev-reputation-ladder.ts 0x<address> [ontime|loan|attest|all]');
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(RPC)) throw new Error('Refusing: this script only targets a local fork');
 const pc: any = createPublicClient({ transport: http(RPC), cacheTime: 0 });
 // dev:all serves the mainnet snapshot as chain 46630 (the id CRE knows as robinhood-testnet); a plain fork keeps 4663.
@@ -33,6 +35,7 @@ if (!info) throw new Error('Refusing: ' + RPC + ' is not an Anvil fork');
 const d = JSON.parse(readFileSync(resolve('packages/robinhood/.fork/deployment.json'), 'utf8'));
 const NVDA = '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC' as Address;
 const NATIVE_ETH = '0x0000000000000000000000000000000000000000' as Address;
+const kindsAbi = parseAbi(['function attestationsOf(address account) view returns (uint8 tier, uint256 kinds, uint8 count)']);
 const repAbi = parseAbi(['function breakdownOf(address) view returns ((uint32 onTime, uint32 late, uint32 repaidLoans, uint32 liquidations, uint64 firstSeenAt, uint64 ageDays, bool verifiedHuman, uint256 points, uint256 milestones, uint8 tier, uint16 ltvBps, uint16 limitMultiplierBps))']);
 const minAbi = parseAbi(['function minMilestonePrincipal() view returns (uint256)', 'function minMilestoneAge() view returns (uint32)']);
 
@@ -49,7 +52,7 @@ const as = async (from: Address, to: Address, abi: any, functionName: string, ar
   } finally { await pc.request({ method: 'anvil_stopImpersonatingAccount', params: [from] }); }
 };
 const rep = async () => pc.readContract({ address: d.reputation, abi: repAbi, functionName: 'breakdownOf', args: [who] });
-const show = async (label: string) => { const b = await rep(); console.log(`${label}: ${b.points} points, tier ${b.tier}, LTV ${b.ltvBps / 100}% (World ID ${b.verifiedHuman ? 'yes' : 'no'}, ${b.onTime} on time, ${b.repaidLoans} loans repaid)`); return b; };
+const show = async (label: string) => { const [b, [, kinds, count]] = await Promise.all([rep(), pc.readContract({ address: d.reputation, abi: kindsAbi, functionName: 'attestationsOf', args: [who] }) as Promise<[number, bigint, number]>]); console.log(`${label}: ${b.points} points, tier ${b.tier}, LTV ${b.ltvBps / 100}% (World ID ${b.verifiedHuman ? 'yes' : 'no'}, ${b.onTime} on time, ${b.repaidLoans} loans repaid, ${count} private attestations, kinds bitmap ${kinds})`); return b; };
 const usdg = () => pc.readContract({ address: d.usdg, abi: erc20Abi, functionName: 'balanceOf', args: [who] }) as Promise<bigint>;
 const fund = async (needUsdg: bigint, needNvda: bigint) => {
   const [u, n, e] = await Promise.all([usdg(), pc.readContract({ address: NVDA, abi: erc20Abi, functionName: 'balanceOf', args: [who] }), pc.getBalance({ address: who })]);
@@ -108,4 +111,15 @@ if (stage === 'loan' || stage === 'all') {
     await as(who, d.borrow, norenBorrowAbi, 'repay', [who, 2n ** 256n - 1n], undefined, 'NorenBorrow.repay in full');
     await show('After a repaid loan');
   }
+}
+
+if (stage === 'attest' || stage === 'all') {
+  // The attester reads the repayments above on-chain and records a private ONCHAIN_REPAYMENT attestation (kind 5):
+  // the same call as the app's "Record my repayments on-chain" (POST /reputation/attest-repayment). +25 points and the
+  // repayment milestone the top tier needs.
+  const r = await attestRepayment({ rpcUrl: RPC, reputation: d.reputation, credit: d.credit, borrow: d.borrow }, resolve('data/attestations.json'), who);
+  console.log(r.status === 'recorded' ? `   fork tx ${r.tx}  NorenReputation.recordAttestation(kind 5 ONCHAIN_REPAYMENT, salted commitment, ${r.boostBps} bps)` : `On-chain repayment attestation: ${r.reason}`);
+  for (const a of await attestationsFor({ rpcUrl: RPC, reputation: d.reputation }, who)) console.log(`   recorded on-chain: ${a.kindName} (tx ${a.tx})`);
+  const b = await show('After the repayment attestation');
+  if (!b.verifiedHuman) console.log('Next: World ID in the app (+25 points, verified human) takes this wallet to 105 points: tier 3, 80% LTV.');
 }
