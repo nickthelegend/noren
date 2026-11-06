@@ -1,0 +1,28 @@
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 4ef0987c41bbf26f9db00f223d16e62fd12a811e770b0b4f1108aeabfb5eb494
+  Config hash: fe4d174b58f558eac27571866fec43f809859e5124bac077e40f3cf1f932f164
+2026-11-06T17:45:57Z [SIMULATION] Simulator Initialized
+
+2026-11-06T17:45:57Z [SIMULATION] Running trigger trigger=evm:ChainSelector:3478487238524512106@1.0.0
+2026-11-06T17:45:57Z [USER LOG] Noren burn on arbitrum-sepolia (domain 3) tx 0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21: 2000000 USDC6 to Arc, maxFee 390, minFinality 1000, hookData 416 bytes
+2026-11-06T17:45:58Z [USER LOG] Circle attestation ready: nonce 0xadecede564cf145d1e8fe5cf4ccc2b24ddba1bf18324b6b4753d804a5c921fd6, finality executed 1000, fee 260, 2 signature(s)
+2026-11-06T17:46:00Z [USER LOG] USDC minted on Arc through NorenArcHook: tx 0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae
+
+✓ Workflow Simulation Result:
+"{\"status\":\"minted\",\"source\":\"arbitrum-sepolia\",\"burnTx\":\"0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21\",\"nonce\":\"0xadecede564cf145d1e8fe5cf4ccc2b24ddba1bf18324b6b4753d804a5c921fd6\",\"amount\":\"2000000\",\"feeExecuted\":\"260\",\"minted\":\"1999740\",\"finalityThresholdExecuted\":1000,\"arcTx\":\"0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae\"}"
+
+2026-11-06T17:46:00Z [SIMULATION] Execution finished signal received
+2026-11-06T17:46:00Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+Fetching transaction receipt for 0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21...

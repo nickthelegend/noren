@@ -42,7 +42,7 @@ interface ILiveActionRouter {
 /// @notice The Arc Testnet Aqua stack on an Anvil fork of Arc Testnet (scripts/test-aqua-live.sh):
 /// official 1inch Aqua v1.0.0 (unmodified build), the Noren SwapVM router, the NorenRateOracle feed
 /// adapters reading the LIVE oracle's CRE-written Chainlink EUR/USD and USDC/USD rounds, the settler,
-/// and the LIVE NorenArcActionRouter. With NOREN_AQUA_LIVE=1 (fork taken after the live deployment)
+/// and the LIVE NorenArcActionRouter. With NOREN_AQUA_LIVE=true (fork taken after the live deployment)
 /// the tests run against the deployed addresses in live/arc-testnet.json; otherwise they deploy a
 /// fresh copy from live/config.json. Arc's native USDC is replaced by the fork-only ForkUSDC shim
 /// (stock Anvil can't execute it); EURC is the real Arc Testnet EURC contract.

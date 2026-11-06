@@ -312,6 +312,442 @@
           }
         }
       ]
+    },
+    {
+      "label": "CRE relay: Circle mint + NorenArcHook -> router (AQUA_ORDER) [arbitrum-sepolia]",
+      "hash": "0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae",
+      "url": "https://explorer.testnet.arc.io/tx/0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae",
+      "gasUsed": "649315",
+      "block": "71027240",
+      "events": [
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "value": "1999740000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0xc17d06b66fb2F308bb3af99231A45380A28563A2",
+            "value": "260000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0xc17d06b66fb2F308bb3af99231A45380A28563A2",
+            "value": "260"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "to": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "value": "1999740000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "to": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "AquaOrderOpened",
+          "args": {
+            "ref": "0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+            "beneficiary": "0x519042674306F780C277152A38365547AF180b8a",
+            "token": "0x3600000000000000000000000000000000000000",
+            "amount": "1999740",
+            "rail": "0xb15c6f4cb2704b59886404596581f035599143a4de893556943a4865c51863a5",
+            "source": "3",
+            "params": "0x0000000000000000000000000000000000000000000000000000000000066eee00000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000001a9454000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede1073b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "ActionExecuted",
+          "args": {
+            "rail": "0xb15c6f4cb2704b59886404596581f035599143a4de893556943a4865c51863a5",
+            "msgId": "0xadecede564cf145d1e8fe5cf4ccc2b24ddba1bf18324b6b4753d804a5c921fd6",
+            "kind": 3,
+            "beneficiary": "0x519042674306F780C277152A38365547AF180b8a",
+            "ref": "0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+            "token": "0x3600000000000000000000000000000000000000",
+            "amount": "1999740",
+            "ok": true
+          }
+        }
+      ]
+    },
+    {
+      "label": "CRE ROUTER_ORDER -> settler: Aqua fill USDC -> EURC [arbitrum-sepolia]",
+      "hash": "0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7",
+      "url": "https://explorer.testnet.arc.io/tx/0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7",
+      "gasUsed": "558988",
+      "block": "71027255",
+      "events": [
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "value": "1999740000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "AquaOrderClosed",
+          "args": {
+            "ref": "0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "amount": "1999740",
+            "filled": true
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "spender": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0x89b50855aa3be2f677cd6303cec089b5f319d72a",
+          "event": "Transfer",
+          "args": {
+            "from": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "to": "0x519042674306F780C277152A38365547AF180b8a",
+            "value": "1777227"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "1999740000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "spender": "0x550CD499f1E2da71527f14d6469364461966895B",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "1999740000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "1999740"
+          }
+        },
+        {
+          "address": "0x8717687866f988eebe3bd1d8999df820ffd9e295",
+          "event": "Swapped",
+          "args": {
+            "orderHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "taker": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "tokenIn": "0x3600000000000000000000000000000000000000",
+            "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "amountIn": "1999740",
+            "amountOut": "1777227"
+          }
+        },
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "OrderFilled",
+          "args": {
+            "orderId": "0xfab4939292b7b5048249fccdfb252546f85fcd4bda8a80de644da68960df2f0e",
+            "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "srcChainId": "421614",
+            "recipient": "0x519042674306F780C277152A38365547AF180b8a",
+            "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "amountIn": "1999740",
+            "amountOut": "1777227",
+            "delivered": true
+          }
+        }
+      ]
+    },
+    {
+      "label": "CRE relay: Circle mint + NorenArcHook -> router (AQUA_ORDER) [ethereum-sepolia]",
+      "hash": "0xc4d1c483154c875e08c76253fe04d2e39450e57a18496f077a8440882c4e870d",
+      "url": "https://explorer.testnet.arc.io/tx/0xc4d1c483154c875e08c76253fe04d2e39450e57a18496f077a8440882c4e870d",
+      "gasUsed": "649301",
+      "block": "71027400",
+      "events": [
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "value": "999900000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0xc17d06b66fb2F308bb3af99231A45380A28563A2",
+            "value": "100000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0xc17d06b66fb2F308bb3af99231A45380A28563A2",
+            "value": "100"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "to": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "value": "999900000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+            "to": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "AquaOrderOpened",
+          "args": {
+            "ref": "0xf921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+            "beneficiary": "0x519042674306F780C277152A38365547AF180b8a",
+            "token": "0x3600000000000000000000000000000000000000",
+            "amount": "999900",
+            "rail": "0xb15c6f4cb2704b59886404596581f035599143a4de893556943a4865c51863a5",
+            "source": "0",
+            "params": "0x0000000000000000000000000000000000000000000000000000000000aa36a700000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000000d4a2a000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede12df921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "ActionExecuted",
+          "args": {
+            "rail": "0xb15c6f4cb2704b59886404596581f035599143a4de893556943a4865c51863a5",
+            "msgId": "0x46c41123fc16e01c81116974e7643628d32f30fa8692de23d4cb91c66bc6b413",
+            "kind": 3,
+            "beneficiary": "0x519042674306F780C277152A38365547AF180b8a",
+            "ref": "0xf921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+            "token": "0x3600000000000000000000000000000000000000",
+            "amount": "999900",
+            "ok": true
+          }
+        }
+      ]
+    },
+    {
+      "label": "CRE ROUTER_ORDER -> settler: Aqua fill USDC -> EURC [ethereum-sepolia]",
+      "hash": "0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93",
+      "url": "https://explorer.testnet.arc.io/tx/0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93",
+      "gasUsed": "519988",
+      "block": "71027413",
+      "events": [
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "value": "999900000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0x3d2ddf0c08ed3574c25f07e5113caab5db6fa7a4",
+          "event": "AquaOrderClosed",
+          "args": {
+            "ref": "0xf921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+            "to": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "amount": "999900",
+            "filled": true
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "spender": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0x89b50855aa3be2f677cd6303cec089b5f319d72a",
+          "event": "Transfer",
+          "args": {
+            "from": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "to": "0x519042674306F780C277152A38365547AF180b8a",
+            "value": "888640"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "999900000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "to": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Approval",
+          "args": {
+            "owner": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "spender": "0x550CD499f1E2da71527f14d6469364461966895B",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0xfffffffffffffffffffffffffffffffffffffffe",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "999900000000000000"
+          }
+        },
+        {
+          "address": "0x3600000000000000000000000000000000000000",
+          "event": "Transfer",
+          "args": {
+            "from": "0x8717687866f988EEBe3bd1d8999DF820ffD9e295",
+            "to": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "value": "999900"
+          }
+        },
+        {
+          "address": "0x8717687866f988eebe3bd1d8999df820ffd9e295",
+          "event": "Swapped",
+          "args": {
+            "orderHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "taker": "0xD9f90E397770fAF66B228344Af5FE285B349d016",
+            "tokenIn": "0x3600000000000000000000000000000000000000",
+            "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "amountIn": "999900",
+            "amountOut": "888640"
+          }
+        },
+        {
+          "address": "0xd9f90e397770faf66b228344af5fe285b349d016",
+          "event": "OrderFilled",
+          "args": {
+            "orderId": "0x09b5a371cee25d05351a7aa0b210fb9709859cffe386fceb3d643ae2685c2387",
+            "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+            "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+            "srcChainId": "11155111",
+            "recipient": "0x519042674306F780C277152A38365547AF180b8a",
+            "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+            "amountIn": "999900",
+            "amountOut": "888640",
+            "delivered": true
+          }
+        }
+      ]
     }
   ],
   "routeKey": "0x5104dc4035c639c685612c6558cab9b9c3caf4fb2f13b5b2c77703e4214ebf86",
@@ -360,6 +796,88 @@
         "customerEurc": "444364",
         "makerEurc": "-444364",
         "makerUsdc": "500000"
+      }
+    }
+  },
+  "xchain": {
+    "arbitrum-sepolia-1": {
+      "from": "arbitrum-sepolia",
+      "network": "PUBLIC: Arbitrum Sepolia (421614, CCTP domain 3) -> Arc Testnet (5042002, domain 26)",
+      "ref": "0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+      "order": {
+        "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+        "minAmountOut": "1741908",
+        "recipient": "0x519042674306F780C277152A38365547AF180b8a",
+        "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+        "quotedEurcForFullAmount": "1777458",
+        "rateE18": "1121836417900893764",
+        "askBps": "30"
+      },
+      "amount": "2000000",
+      "maxFee": "390",
+      "approveTx": "0x6e9e635a7f8c99fe7a449f51f2d196c6ec99324d593cbd396e3fb3df6db41912",
+      "burnTx": "0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21",
+      "burnUrl": "https://sepolia.arbiscan.io/tx/0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21",
+      "hookData": "0x0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000519042674306f780c277152a38365547af180b8a3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000066eee00000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000001a9454000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede1073b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+      "attestation": {
+        "irisUrl": "https://iris-api-sandbox.circle.com/v2/messages/3?transactionHash=0xf302af9144e518322dfa2112f8a6173e1278826e9ae56a803ebd936303556a21",
+        "message": "0x00000001000000030000001aadecede564cf145d1e8fe5cf4ccc2b24ddba1bf18324b6b4753d804a5c921fd60000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d000003e8000003e80000000100000000000000000000000075faf114eafb1bdbe2f0316df893fd58ce46aa4d0000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d00000000000000000000000000000000000000000000000000000000001e84800000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f800000000000000000000000000000000000000000000000000000000000000186000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000043e6d090000000000000000000000000000000000000000000000000000000000000003000000000000000000000000519042674306f780c277152a38365547af180b8a3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000066eee00000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000001a9454000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede1073b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437",
+        "attestation": "0x394a9f7fa71dc3d57c50e5a2cbbcbedcd1809f2d25fa998d72dce50544f997b939ed0683137d4511e6b036ed99699d04e7120967ec979630a27a50f8f8eda5581b948940c0b2557214d728c228f36d2f2e1fb1093323371a6e8bbf199b4d47c1552db29e1edab9d02e317875fb0e801e48965a3b6361f0d254f63d4e3aadc41a1e1b",
+        "attestedAt": "2026-11-06T12:15:48.433Z"
+      },
+      "arcMintTx": "0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae",
+      "arcMintUrl": "https://explorer.testnet.arc.io/tx/0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae",
+      "minted": "1999740",
+      "aquaOrderOpenedLogIndex": 10,
+      "fillTx": "0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7",
+      "fillUrl": "https://explorer.testnet.arc.io/tx/0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7",
+      "orderId": "0xfab4939292b7b5048249fccdfb252546f85fcd4bda8a80de644da68960df2f0e",
+      "usdcIn": "1999740",
+      "eurcOut": "1777227",
+      "deltas": {
+        "customerEurc": "1777227",
+        "makerEurc": "-1777227"
+      }
+    },
+    "ethereum-sepolia-1": {
+      "from": "ethereum-sepolia",
+      "network": "PUBLIC: Ethereum Sepolia (11155111, CCTP domain 0) -> Arc Testnet (5042002, domain 26)",
+      "ref": "0xf921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+      "order": {
+        "tokenOut": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+        "minAmountOut": "870954",
+        "recipient": "0x519042674306F780C277152A38365547AF180b8a",
+        "maker": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "strategyHash": "0x1c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2",
+        "quotedEurcForFullAmount": "888729",
+        "rateE18": "1121836417900893764",
+        "askBps": "30"
+      },
+      "amount": "1000000",
+      "maxFee": "150",
+      "approveTx": "0x078cfdb5c60535e6bfc136b07d2207b2a5555429b266d15e4c733b7ecda28c1a",
+      "burnTx": "0xd551e5f5ba4baf7fc04675d6a911f44c39644ce7b6440bd6690462ca31bfe0e2",
+      "burnUrl": "https://sepolia.etherscan.io/tx/0xd551e5f5ba4baf7fc04675d6a911f44c39644ce7b6440bd6690462ca31bfe0e2",
+      "hookData": "0x0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000519042674306f780c277152a38365547af180b8af921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000aa36a700000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000000d4a2a000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede12df921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+      "attestation": {
+        "irisUrl": "https://iris-api-sandbox.circle.com/v2/messages/0?transactionHash=0xd551e5f5ba4baf7fc04675d6a911f44c39644ce7b6440bd6690462ca31bfe0e2",
+        "message": "0x00000001000000000000001a46c41123fc16e01c81116974e7643628d32f30fa8692de23d4cb91c66bc6b4130000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d000003e8000003e8000000010000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c72380000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d00000000000000000000000000000000000000000000000000000000000f42400000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f800000000000000000000000000000000000000000000000000000000000000096000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000043e6d920000000000000000000000000000000000000000000000000000000000000003000000000000000000000000519042674306f780c277152a38365547af180b8af921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000aa36a700000000000000000000000089b50855aa3be2f677cd6303cec089b5f319d72a00000000000000000000000000000000000000000000000000000000000d4a2a000000000000000000000000519042674306f780c277152a38365547af180b8a0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f801c97424c37aecc51258d16f4b0fb2e91f83b5bacb51bf5ed931aae2ecae995d2000000000000000000000000000000000000000000000000000000006aede12df921dd09d13cc1b0b51450bb8eb925f1e24b68dad0a192eafbec7e6f1643c996",
+        "attestation": "0xb3af0401269e4e9afc88251c79615d6da40b47c8eb43c11194f9fae9b02b807c4ff0b1997daf28843275afe291fcca6a7d425d3c7d860a97a5e033651b89a86e1c3b43d01516f3765c58d11c2c7d6da7d1ab5950378213ce9d54635af5c013793a7a84444ef3c835e95a484154755f67f09a3129b9f1828e3e40f29cf9a982beed1c",
+        "attestedAt": "2026-11-06T12:17:10.794Z"
+      },
+      "arcMintTx": "0xc4d1c483154c875e08c76253fe04d2e39450e57a18496f077a8440882c4e870d",
+      "arcMintUrl": "https://explorer.testnet.arc.io/tx/0xc4d1c483154c875e08c76253fe04d2e39450e57a18496f077a8440882c4e870d",
+      "minted": "999900",
+      "aquaOrderOpenedLogIndex": 10,
+      "fillTx": "0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93",
+      "fillUrl": "https://explorer.testnet.arc.io/tx/0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93",
+      "orderId": "0x09b5a371cee25d05351a7aa0b210fb9709859cffe386fceb3d643ae2685c2387",
+      "usdcIn": "999900",
+      "eurcOut": "888640",
+      "deltas": {
+        "customerEurc": "888640",
+        "makerEurc": "-888640"
       }
     }
   }

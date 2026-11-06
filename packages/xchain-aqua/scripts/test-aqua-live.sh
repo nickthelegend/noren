@@ -1,6 +1,6 @@
 #!/bin/sh
 # Foundry suite for the Arc Testnet Aqua stack (docs/AQUA-LIVE.md) on an Anvil fork of Arc Testnet,
-# port 8840 (aqua-live block). Fresh copy from live/config.json by default; NOREN_AQUA_LIVE=1 runs the
+# port 8840 (aqua-live block). Fresh copy from live/config.json by default; NOREN_AQUA_LIVE=true runs the
 # same tests against the deployed addresses in live/arc-testnet.json. Stops its anvil on exit.
 #   sh packages/xchain-aqua/scripts/test-aqua-live.sh [forge test args]
 set -eu
