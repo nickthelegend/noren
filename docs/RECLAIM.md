@@ -64,15 +64,12 @@ after verification. The row also keeps the salt of the on-chain commitment (neve
 
 ## On-chain, private
 
-After verification the server writes `NorenReputation.recordAttestation(borrower, kind, commitment, boostBps)` with
-the existing World ID attester key (fork: Anvil's published key #7):
-- `kind`: 1 credit score, 2 KYC, 3 balance, 4 identity; `boostBps` 1500 / 800 / 800 / 300;
-- `commitment = keccak256(abi.encode(uint8 kind, string proofId, bytes32 salt))`, salt kept off-chain.
-
-The chain learns "this wallet proved a credit score", nothing that identifies the proof or the person. The UI shows
-"Recorded on-chain: proof type only, no personal data" with the fork tx. `recordAttestation` comes with the
-contracts-audit branch; until the deployed NorenReputation has it, the server simulates the call first and reports
-`onchain: { status: "unavailable", reason: "…no recordAttestation yet…" }`, and the UI says so. Nothing is faked.
+After verification the server records `NorenReputation.recordAttestation(borrower, kind, commitment, 10000)` with the
+attester key (NorenCredit's underwriter; fork: Anvil's published key #9): kind 1 credit score, 2 KYC, 3 balance,
+4 identity; `commitment = keccak256(abi.encode(uint8 kind, bytes32 proofId, bytes32 salt))`, the salt kept off-chain.
+Every kind uses the same public weight (10,000 bps = 25 points), so the chain learns only the proof type. Each kind is
+recorded once per wallet. The UI shows "Recorded on-chain: proof type only, no personal data" with the tx. See
+docs/CREDIT.md for how kinds move the LTV ladder.
 
 ## Effect on the credit limit (contracts unchanged)
 
@@ -84,8 +81,7 @@ contracts-audit branch; until the deployed NorenReputation has it, the server si
 3. `GET /score/:address` returns `reclaim: { verified, provider?, points, maxPoints, decidedBy, ifVerified: { score,
    tier, limitUsdg, collateralRatioBps } }` ("if" = one more credit-score proof), so the app shows before and after.
 
-Honest limits: the borrow LTV ladder (NorenReputation 66 → 80%) doesn't read Reclaim until `recordAttestation` and its
-`boostBps` are live. When the 0G credit check is configured (`ZG_PC_API_KEY`), the sealed 0G model sets the signed
+Each recorded kind also adds 25 points on NorenReputation, which moves the 66 → 80% LTV ladder (docs/CREDIT.md). When the 0G credit check is configured (`ZG_PC_API_KEY`), the sealed 0G model sets the signed
 terms and does not read the proofs yet; `reclaim.decidedBy` says which path applies.
 
 ## A proof from Nick's phone
