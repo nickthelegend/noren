@@ -11,6 +11,7 @@ import {Math} from '@oz/utils/math/Math.sol';
 import {ReentrancyGuard} from '@oz/utils/ReentrancyGuard.sol';
 import {NorenAssetOracle} from './NorenAssetOracle.sol';
 import {INorenVault, INorenReceivables} from './interfaces/INorenVault.sol';
+import {IAqua, ISwapVMRouter, INorenLiquidityMaker} from './interfaces/IAquaSwapVM.sol';
 
 /// @title NorenVault
 /// @notice USDG liquidity for Noren. LPs deposit USDG for shares (ERC-4626). Approved modules
@@ -18,6 +19,12 @@ import {INorenVault, INorenReceivables} from './interfaces/INorenVault.sol';
 /// assets customers pay with (ETH as WETH, Stock Tokens) as inventory and sells it back to
 /// anyone at the Chainlink price plus a spread. NAV = idle USDG + receivables + inventory
 /// valued by NorenAssetOracle. Withdrawals are limited to idle USDG.
+///
+/// The owner can also make idle USDG back 1inch Aqua maker strategies (NorenOraclePeg via
+/// NorenLiquidity): Aqua only records a virtual balance, the USDG stays here until a fill pulls it,
+/// and the asset bought lands here as inventory, so NAV accounting is unchanged. Virtual balances
+/// may exceed idle USDG (LP withdrawals and disbursements come first); the instruction then
+/// refuses fills the vault cannot cover and Noren routes to another maker or the vault fallback.
 contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
   using SafeERC20 for IERC20;
   using Math for uint256;
@@ -35,6 +42,8 @@ contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
   event Disbursed(address indexed module, address indexed to, uint256 amountUsdg);
   event InventorySold(address indexed buyer, address indexed asset, uint256 amount, uint256 usdgIn, uint256 priceUsd8);
   event InventorySpreadSet(uint16 bps);
+  event AquaStrategyShipped(bytes32 indexed strategyHash, address indexed asset, uint256 usdgVirtual);
+  event AquaStrategyDocked(bytes32 indexed strategyHash, address indexed asset);
 
   error NotModule(address caller);
   error InsufficientLiquidity(uint256 requested, uint256 idle);
@@ -67,6 +76,45 @@ contract NorenVault is ERC4626, Ownable2Step, ReentrancyGuard, INorenVault {
     if (bps > 1_000) revert BadConfig();
     inventorySpreadBps = bps;
     emit InventorySpreadSet(bps);
+  }
+
+  // ---------------------------------------------------------------- Aqua maker (owner)
+
+  /// @notice Ship a vault-backed Aqua strategy for `token` with `usdgVirtual` of virtual USDG and
+  /// register it with NorenLiquidity. No USDG leaves the vault until a fill.
+  function shipAquaStrategy(
+    INorenLiquidityMaker liquidity,
+    address token,
+    INorenLiquidityMaker.PegTerms calldata t,
+    uint256 usdgVirtual
+  ) external onlyOwner returns (bytes32 strategyHash) {
+    if (token == asset() || !oracle.isSupported(token)) revert NotInventory(token);
+    IAqua aqua = liquidity.aqua();
+    ISwapVMRouter.Order memory o;
+    (o, strategyHash) = liquidity.buildOrder(address(this), token, t);
+    IERC20(asset()).forceApprove(address(aqua), type(uint256).max);
+    IERC20(token).forceApprove(address(aqua), type(uint256).max); // lets the strategy resell inventory
+    aqua.ship(address(liquidity.router()), abi.encode(o), _pair(token), _amounts(usdgVirtual));
+    liquidity.register(token, t);
+    emit AquaStrategyShipped(strategyHash, token, usdgVirtual);
+  }
+
+  /// @notice Dock a vault-backed strategy on Aqua (virtual balances to zero) and remove it from routing.
+  function dockAquaStrategy(INorenLiquidityMaker liquidity, bytes32 strategyHash, address token) external onlyOwner {
+    liquidity.aqua().dock(address(liquidity.router()), strategyHash, _pair(token));
+    liquidity.remove(strategyHash);
+    emit AquaStrategyDocked(strategyHash, token);
+  }
+
+  function _pair(address token) internal view returns (address[] memory tokens) {
+    tokens = new address[](2);
+    tokens[0] = asset();
+    tokens[1] = token;
+  }
+
+  function _amounts(uint256 usdgVirtual) internal pure returns (uint256[] memory amounts) {
+    amounts = new uint256[](2);
+    amounts[0] = usdgVirtual;
   }
 
   // ---------------------------------------------------------------- modules

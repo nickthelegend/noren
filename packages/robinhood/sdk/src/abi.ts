@@ -1131,6 +1131,29 @@ export const norenVaultAbi = [
   },
   {
     "type": "function",
+    "name": "dockAquaStrategy",
+    "inputs": [
+      {
+        "name": "liquidity",
+        "type": "address",
+        "internalType": "contract INorenLiquidityMaker"
+      },
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "idleUsdg",
     "inputs": [],
     "outputs": [
@@ -1510,6 +1533,72 @@ export const norenVaultAbi = [
   },
   {
     "type": "function",
+    "name": "shipAquaStrategy",
+    "inputs": [
+      {
+        "name": "liquidity",
+        "type": "address",
+        "internalType": "contract INorenLiquidityMaker"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "t",
+        "type": "tuple",
+        "internalType": "struct INorenLiquidityMaker.PegTerms",
+        "components": [
+          {
+            "name": "bidSpreadBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "askSpreadBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "closedExtraBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "minPriceUsd8",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "maxPriceUsd8",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "salt",
+            "type": "uint64",
+            "internalType": "uint64"
+          }
+        ]
+      },
+      {
+        "name": "usdgVirtual",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "symbol",
     "inputs": [],
     "outputs": [
@@ -1660,6 +1749,50 @@ export const norenVaultAbi = [
       },
       {
         "name": "value",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AquaStrategyDocked",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "asset",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "AquaStrategyShipped",
+    "inputs": [
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "asset",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "usdgVirtual",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
