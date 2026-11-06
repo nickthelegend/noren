@@ -8,12 +8,13 @@
   },
   "scripts": {
     "build": "forge build",
-    "test": "forge test && vitest run",
+    "test": "forge test && vitest run && cd cre/cctp-relay && bun test",
     "test:sol": "forge test",
     "test:sdk": "vitest run",
     "typecheck": "tsc --noEmit",
     "bridge": "tsx scripts/bridge.ts",
-    "deploy": "tsx scripts/deploy.ts"
+    "verify-chains": "tsx scripts/verify-chains.ts",
+    "deploy:arc-hook": "scripts/deploy-arc-hook.sh"
   },
   "dependencies": {
     "viem": "2.51.3"
