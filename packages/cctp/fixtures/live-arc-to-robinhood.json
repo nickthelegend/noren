@@ -27,5 +27,6 @@
     "mint": "171340 gas, 0.0000017134 ETH",
     "gasPrice": "0.01 gwei",
     "gasUsedForL1": 0
-  }
+  },
+  "mintBlock": 149502846
 }

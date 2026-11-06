@@ -172,14 +172,17 @@ contract NorenArcHookForkTest is Test {
     bytes memory message = vm.parseJsonBytes(rec, ".message");
     bytes memory attestation = vm.parseJsonBytes(rec, ".attestation");
     address recipient = vm.parseJsonAddress(rec, ".recipient");
-    vm.createSelectFork(vm.envOr("ROBINHOOD_TESTNET_RPC", string("https://rpc.testnet.chain.robinhood.com")));
+    // Fork one block before the public mint (fixtures .mintBlock), so the real attestation is replayed on-chain state
+    // where the nonce is still unused.
+    uint256 mintBlock = vm.parseJsonUint(rec, ".mintBlock");
+    vm.createSelectFork(vm.envOr("ROBINHOOD_TESTNET_RPC", string("https://rpc.testnet.chain.robinhood.com")), mintBlock - 1);
     bytes32 nonce = vm.parseJsonBytes32(rec, ".nonce");
-    if (IMessageTransmitterV2(MT).usedNonces(nonce) != 0) {
-      emit log("already minted on the public Robinhood testnet; nothing to replay on the fork");
-      return;
-    }
+    assertEq(IMessageTransmitterV2(MT).usedNonces(nonce), 0);
     uint256 before = IERC20Min(RH_USDC).balanceOf(recipient);
     assertTrue(IMessageTransmitterV2(MT).receiveMessage(message, attestation));
     assertEq(IERC20Min(RH_USDC).balanceOf(recipient) - before, 1_000_000);
+    // a second delivery of the same attested message is refused by Circle
+    vm.expectRevert();
+    IMessageTransmitterV2(MT).receiveMessage(message, attestation);
   }
 }
