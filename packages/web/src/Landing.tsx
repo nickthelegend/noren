@@ -44,15 +44,18 @@ const SPECS: [string, string][] = [
   ["Hosted checkout", "The customer opens the link, binds the invoice, proves on their own device and is done in seconds. No gas, no public wallet, no extension."],
   ["Private refunds", "Full or partial refunds go back into the customer's shielded inbox, fixed at payment time. You can't redirect it and you never learn whose it is."],
   ["Signed webhooks", "invoice.created, invoice.bound, payment.succeeded and refund.succeeded. HMAC-SHA256 signed, retried 3 times, every delivery logged."],
+  ["Any currency, Chainlink-priced", "Price a link in EUR, GBP, JPY, CAD, AUD, MXN, BRL or KRW. Noren reads Chainlink Data Feeds, locks the USDC quote until the link expires, and stores both round IDs so anyone can re-check it."],
   ["Compliance built in", "An ASP postman screens every deposit against USDC's own blacklist before it can pay you. Blocked funds never reach your till."],
   ["Selective receipts", "Each payment carries a receipt commitment the customer can open later for a warranty or tax, and only if they choose to."],
 ];
 
 const SCREENS: [string, string, string][] = [
-  ["dash-home", "Dashboard", "Gross volume, net, refunds and the privacy ledger. Customers identified: 0."],
-  ["dash-drawer", "Payment", "Timeline from link to refund, with gas and transactions. The customer is unknown."],
-  ["dash-events", "Events", "Every webhook event and delivery attempt, newest first."],
-  ["checkout-refunded", "Checkout", "The hosted checkout after a private payment and a partial refund."],
+  ["dash-home", "Home", "Today's volume against yesterday, the on-chain USDC balance, and period-over-period cards. Customers identified: 0."],
+  ["dash-payments", "Payments", "Filters, search, CSV export and row actions. Fiat prices sit under the USDC amount."],
+  ["dash-drawer", "Payment", "A full timeline from link to refund, gas, webhooks, and the Chainlink rounds behind the quote."],
+  ["dash-balances", "Balances", "USDC read straight from the payout address, with a payment and refund ledger."],
+  ["dash-events", "Events", "Every event with its JSON and each signed webhook delivery."],
+  ["checkout-refunded", "Checkout", "The hosted checkout after a private payment priced in EUR, and a partial refund."],
 ];
 
 function useReveal() {

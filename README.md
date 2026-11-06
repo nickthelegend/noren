@@ -14,7 +14,13 @@
 | Who pays gas | the customer | **the merchant (~$0.01 on Arc)** |
 
 ## What a merchant gets
-- **Dashboard** (`#/dashboard`): gross and net volume, refunds, a 24-hour volume chart, a privacy ledger ("customers identified: 0"), payments with a detail drawer (timeline, gas, transactions) and inline refunds, payment links, developer keys, webhooks and a live event log, and a public business name.
+- **Dashboard** (`#/dashboard`), built like a card-payments dashboard:
+  - **Home:** today vs yesterday, the on-chain USDC balance, and period-over-period cards (gross, net, payments, refunds, links, average). Customers identified: 0.
+  - **Balances:** the balance read live from the payout address, plus a payment/refund ledger with CSV export.
+  - **Payments:** status tabs, search, date filter, CSV export and row menus. Each payment has its own page with a timeline, gas, webhooks, a refund dialog, and the Chainlink rounds behind its quote.
+  - **Payment links:** a builder with live checkout preview and fiat pricing, plus copy link and QR.
+  - **Developers:** API keys, webhook endpoints with delivery stats, and a split-view event log.
+  - **Everywhere:** ⌘K search, the "+ New" menu and toasts.
 - **Hosted checkout** (`#/pay/:invoiceId`): merchant name, line item, countdown, private balance, the proof made on the customer's device, and a receipt.
 - **REST API + webhooks**: see [docs/API.md](docs/API.md). Events `invoice.created`, `invoice.bound`, `payment.succeeded` and `refund.succeeded` are HMAC-SHA256 signed (`noren-signature: t=…,v1=…`), retried 3 times, and every delivery is logged.
 - **SDK**: `@noren/core/merchant` (`createNoren`, `invoices.create/list/retrieve/refund`, `profile.set`, `webhooks.create/list/del`, `verifyWebhook`) and `@noren/core/customer` (`shield`, `refundInbox`, `proveInvoicePayment`).
@@ -26,6 +32,8 @@ const { invoice } = await noren.invoices.create({ amount: 7_500_000n, descriptio
 // later, in your webhook handler:
 const event = await verifyWebhook(rawBody, req.headers["noren-signature"], secret); // payment.succeeded → fulfil
 ```
+
+**Priced in any currency, with Chainlink.** Price a link in EUR, GBP, JPY, CAD, AUD, MXN, BRL or KRW. Noren reads Chainlink Data Feeds (fiat/USD and USDC/USD), checks decimals, positivity and staleness, rounds up, and locks the USDC quote until the link expires. Both round IDs are stored on the invoice, so anyone can re-check the quote with `getRoundData`. Chainlink feeds are live on **Arc mainnet** but not on Arc testnet, so prices are read from Arc mainnet (read-only `eth_call`, no transactions), while settlement stays on Arc testnet. `NorenQuoter.sol` is the on-chain consumer, tested in a fork of Arc mainnet against the real feeds. Measured Nov 6: €6.90 → 7.740672 USDC (EUR/USD round 18446744073709551777); ¥1,200 → 7.600519 USDC. Details are in [docs/CHAINLINK.md](docs/CHAINLINK.md).
 
 **Why "for EVM":** the contracts are plain Solidity on 0xbow's Privacy Pools, and the SDK is viem. Nothing is Arc-specific except the chain config and the USDC address, so it ports to any EVM chain with Circle USDC. The first (and only tested) network is Arc testnet, run as a local fork; the public deployment waits on testnet USDC.
 
@@ -71,7 +79,11 @@ MIT © 2026 Nivesh Gajengi (Noren code). Vendored Privacy Pools contracts keep t
 
 ![Dashboard home](docs/img/dashboard.png)
 
-![Payment drawer: timeline, refund, customer unknown](docs/img/drawer.png)
+![Payments list](docs/img/payments.png)
+
+![Payment page: timeline, webhooks, Chainlink quote](docs/img/drawer.png)
+
+![Balances: on-chain USDC and ledger](docs/img/balances.png)
 
 ![Hosted checkout after a private payment and refund](docs/img/checkout.png)
 

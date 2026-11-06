@@ -17,14 +17,14 @@ export const msgOf = (e: unknown) => {
 
 export type Route =
   | { page: "home" }
-  | { page: "dashboard"; tab: "home" | "payments" | "links" | "developers" | "settings"; sub?: string }
+  | { page: "dashboard"; tab: "home" | "balances" | "payments" | "links" | "developers" | "settings"; sub?: string }
   | { page: "pay"; id: string };
 export function useRoute(): Route {
   const [hash, setHash] = useState(() => location.hash);
   useEffect(() => { const on = () => { setHash(location.hash); window.scrollTo(0, 0); }; addEventListener("hashchange", on); return () => removeEventListener("hashchange", on); }, []);
   const m = /^#\/pay\/(0x[0-9a-fA-F]{64})/.exec(hash);
   if (m) return { page: "pay", id: m[1] };
-  const d = /^#\/(dashboard|merchant)(?:\/(payments|links|developers|settings))?(?:\/([\w-]+))?/.exec(hash);
+  const d = /^#\/(dashboard|merchant)(?:\/(balances|payments|links|developers|settings))?(?:\/([\w-]+))?/.exec(hash);
   if (d) return { page: "dashboard", tab: (d[2] as never) ?? "home", sub: d[3] };
   return { page: "home" };
 }

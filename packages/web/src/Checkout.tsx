@@ -41,6 +41,8 @@ export function Checkout({ id }: { id: string }) {
 
   if (err) return <div className="co-page"><Setup err={err} /></div>;
   const shop = view?.merchantName || "Noren merchant";
+  const quote = (view as { quote?: { currency: string; fiatAmount: string; rate: string } } | null)?.quote;
+  const fiat = (q: { currency: string; fiatAmount: string }) => { const d = q.currency === "JPY" || q.currency === "KRW" ? 0 : 2; return (Number(q.fiatAmount) / 10 ** d).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); };
   const amount = view ? BigInt(view.invoice.amount) : 0n;
   const enough = !!bal && bal.approved >= amount && amount > 0n;
   const expired = view?.status === "expired" || (cd !== null && cd.left === 0 && view?.status !== "paid" && view?.status !== "refunded");
@@ -85,10 +87,16 @@ export function Checkout({ id }: { id: string }) {
           <div className="co-sum-in">
             <a className="co-shop" href="#/"><span className="co-shop-mark" aria-hidden>{shop.slice(0, 1).toUpperCase()}</span><span>{shop}</span></a>
             <span className="co-k">Pay {shop}</span>
-            <b className="co-amt">{view ? usdc(view.invoice.amount) : <span className="skel-t" />}<em>USDC</em></b>
+            {quote ? (
+              <>
+                <b className="co-amt">{fiat(quote)}<em>{quote.currency}</em></b>
+                <span className="co-conv"><span className="co-cl">Chainlink</span> {usdc(view?.invoice.amount)} USDC at 1 {quote.currency} = {Number(quote.rate).toFixed(4)} USDC</span>
+              </>
+            ) : <b className="co-amt">{view ? usdc(view.invoice.amount) : <span className="skel-t" />}<em>USDC</em></b>}
             <ul className="co-lines">
               <li><span>{view?.description || "Payment"}</span><span>{view ? usdc(view.invoice.amount) : "…"}</span></li>
               <li className="faint"><span>Network fee</span><span>paid by {shop}</span></li>
+              {quote && <li className="faint"><span>Price</span><span>{fiat(quote)} {quote.currency}</span></li>}
               <li className="tot"><span>Total due</span><span>{view ? `${usdc(view.invoice.amount)} USDC` : "…"}</span></li>
             </ul>
             <div className="co-privacy">

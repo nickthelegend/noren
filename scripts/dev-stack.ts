@@ -53,7 +53,9 @@ async function main() {
   aspServer = postman.serve(8788);
   timer = setInterval(() => postman.tick().catch(e => console.error('ASP tick:', e.message)), 1000);
   const token = randomBytes(24).toString('hex');
+  // A fresh fork has fresh invoices, so clear their events too. The business name and webhook endpoints are merchant settings and stay.
   await rm('data/dev-stack-invoices.json', { force: true });
+  await rm('data/dev-stack-invoices.json.events.json', { force: true });
   merchantServer = createMerchantServer({ deployment, rpcUrl, localUnlockedMerchant: merchant, dataFile: 'data/dev-stack-invoices.json', dev: { aspUrl, merchantToken: token } });
   await new Promise<void>((resolve, reject) => { merchantServer!.once('error', reject); merchantServer!.listen(8790, '127.0.0.1', resolve); });
   console.log(`RPC: ${rpcUrl}`);

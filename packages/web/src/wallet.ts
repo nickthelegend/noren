@@ -20,9 +20,13 @@ function stored(): Stored {
   return s;
 }
 
-const storage = {
-  get: async (k: string) => { try { return localStorage.getItem(`noren.kohaku.${k}`); } catch { return null; } },
-  set: async (k: string, v: string) => { try { localStorage.setItem(`noren.kohaku.${k}`, v); } catch { /* ignore */ } },
+/** Kohaku's sync cache, namespaced per deployment so a redeployed pool (or a fresh fork) never reads stale state. */
+const storageFor = (cfg: Config) => {
+  const ns = `noren.kohaku.${cfg.chainId}.${cfg.deployment.pool.toLowerCase()}.${cfg.deployment.deploymentBlock}.`;
+  return {
+    get: async (k: string) => { try { return localStorage.getItem(ns + k); } catch { return null; } },
+    set: async (k: string, v: string) => { try { localStorage.setItem(ns + k, v); } catch { /* ignore */ } },
+  };
 };
 
 export function makeWallet(cfg: Config) {
@@ -32,7 +36,7 @@ export function makeWallet(cfg: Config) {
   const pub = createPublicClient({ chain, transport: http(cfg.rpcUrl) });
   const wallet = createWalletClient({ chain, transport: http(cfg.rpcUrl), account });
   const customer = createCustomer({
-    deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage,
+    deployment: cfg.deployment as never, rpcUrl: cfg.rpcUrl, aspUrl: cfg.aspUrl, storage: storageFor(cfg),
     deriveAt: async (path) => keccak256(concatHex([s.seed, keccak256(toBytes(path))])),
   });
   return {
