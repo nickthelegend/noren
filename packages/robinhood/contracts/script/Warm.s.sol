@@ -232,6 +232,10 @@ contract Warm is Script {
     rep.creditLimitOf(customer);
     uint64 exp = uint64(block.timestamp + 1 hours);
     bytes32 nullifier = keccak256('warm-nullifier');
+    // simulation only: the configured attester key is not available to this script, so point the
+    // registry at Anvil #7 for the warm run (nothing here is broadcast)
+    vm.prank(rep.owner());
+    rep.setWorldIdSigner(vm.addr(WORLD_ID_KEY));
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(WORLD_ID_KEY, rep.hashVerifiedHuman(customer, nullifier, exp));
     rep.verifyHuman(customer, nullifier, exp, abi.encodePacked(r, s, v));
     uint64 first = uint64(block.timestamp - 200 days);

@@ -1,6 +1,7 @@
 import { createWalletClient, hashTypedData, http, type Address, type Hex, type PublicClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { norenCreditAbi } from '../../sdk/src/abi.js'
+import { norenCreditAbi, norenReputationAbi } from '../../sdk/src/abi.js'
+import { ACCOUNT_AGE_TYPES } from '../../sdk/src/earn.js'
 import type { Attestation } from '../../sdk/src/index.js'
 
 // Anvil published dev key #9: used only when the target is a local chain-4663 fork.
@@ -74,4 +75,49 @@ export async function signAttestation({
   const wallet = createWalletClient({ account, transport: http(url), chain: publicClient.chain ?? undefined })
   const signature = await wallet.signTypedData({ domain, types: attestationTypes, primaryType: 'CreditAttestation', message: attestation })
   return { declined: false, attestation, signature, signer: key ? account.address : 'anvil-dev-key (fork only)', contract: credit, chainId }
+}
+
+/**
+ * Signs NorenReputation's EIP-712 AccountAge(account, firstSeenAt, expiry) with the underwriter key
+ * (the same key as CreditAttestation; NorenReputation checks it equals NorenCredit.underwriter()).
+ * firstSeenAt = now - the history scan's age in whole days (a lower bound on the real age).
+ */
+export async function signAccountAge({
+  account,
+  ageDays,
+  reputation,
+  publicClient,
+}: {
+  account: Address
+  ageDays: number
+  reputation: Address
+  publicClient: PublicClient
+}): Promise<{ declined: true; reason: string } | { declined: false; account: Address; firstSeenAt: bigint; expiry: bigint; signature: Hex; signer: string }> {
+  if (!(ageDays > 0)) return { declined: true, reason: 'Account age unknown or under a day: nothing to attest' }
+  const url = publicClient.transport.url ?? ''
+  const chainId = await publicClient.getChainId()
+  const local = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:|\/|$)/.test(url) && (chainId === 4663 || chainId === 46630)
+  const key = process.env.NOREN_RH_UNDERWRITER_KEY as Hex | undefined
+  if (!key && !local) throw new Error('Setup required: NOREN_RH_UNDERWRITER_KEY')
+  const signer = privateKeyToAccount(key ?? DEV_KEY)
+  const now = (await publicClient.getBlock()).timestamp
+  const firstSeenAt = now - BigInt(Math.floor(ageDays)) * 86_400n
+  const expiry = now + 600n
+  const domain = { name: 'NorenReputation', version: '1', chainId, verifyingContract: reputation } as const
+  const message = { account, firstSeenAt, expiry }
+  const local712 = hashTypedData({ domain, types: ACCOUNT_AGE_TYPES, primaryType: 'AccountAge', message })
+  const onChain = await publicClient.readContract({ address: reputation, abi: norenReputationAbi, functionName: 'hashAccountAge', args: [account, firstSeenAt, expiry] })
+  if (local712.toLowerCase() !== onChain.toLowerCase()) throw new Error('AccountAge hash mismatch with NorenReputation')
+  const signature = await signer.signTypedData({ domain, types: ACCOUNT_AGE_TYPES, primaryType: 'AccountAge', message })
+  return { declined: false, account, firstSeenAt, expiry, signature, signer: key ? signer.address : 'anvil-dev-key (fork only)' }
+}
+
+/**
+ * Reputation multiplier for the attested Pay-in-3 / Arc line limit (NorenReputation.limitMultiplierOf,
+ * 10,000 = 1x). Returns 1x with a reason when no NorenReputation is deployed.
+ */
+export async function reputationMultiplierBps(publicClient: PublicClient, reputation: Address | undefined, borrower: Address) {
+  if (!reputation) return { bps: 10_000, source: 'none: NorenReputation not deployed' }
+  const bps = await publicClient.readContract({ address: reputation, abi: norenReputationAbi, functionName: 'limitMultiplierOf', args: [borrower] })
+  return { bps: Number(bps), source: `NorenReputation ${reputation}` }
 }

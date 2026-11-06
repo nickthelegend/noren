@@ -12,7 +12,10 @@ Code: [`packages/robinhood`](../packages/robinhood) (package `@noren/robinhood`)
 | `NorenVault` | ERC-4626 USDG vault (`nvUSDG`, 12 decimals). LPs fund Pay-in-3 merchant payouts. On the fallback route (no Aqua maker can fill) it holds the assets customers pay with as inventory and sells them back at the oracle price plus a spread; the owner can also let idle USDG back an Aqua maker strategy (`shipAquaStrategy`). NAV = idle USDG + Pay-in-3 receivables + inventory at oracle prices. Withdrawals are capped at idle USDG |
 | `NorenGateway` | Merchant invoices in USDG. `pay(invoiceId, merchant, asset, maxAssetIn)` with USDG, native ETH (`asset = address(0)`) or a Stock Token, plus `payWithPermit` (EIP-2612). Stock/ETH is sold to the best Aqua maker through SwapVM (the maker pays the merchant); the vault is the fallback when no maker can fill (`vaultFallback`), otherwise `NoMakerLiquidity` |
 | `NorenCredit` | EIP-712 underwriting, Pay in 3, liquidations (through Aqua makers or a USDG-paying liquidator), and the Arc credit line (`openCreditLine`, `onReport`, `closeCreditLine`) |
-| `NorenLiquidity` | Aqua maker registry, best-quote routing over SwapVM, maker fee book, collateral sales for liquidations ([AQUA.md](AQUA.md)) |
+| `NorenLiquidity` | Aqua maker registry, best-quote routing over SwapVM (bid side and, for buyers, the ask side: `buyFromMakers`), maker fee book, collateral sales for liquidations ([AQUA.md](AQUA.md)) |
+| `NorenDepositVault` | Deposit and earn: nETH, nNVDA, nTSLA, nAAPL. Each vault is the maker of its own Aqua strategy and earns its spread ([EARN.md](EARN.md)) |
+| `NorenBorrow` | Borrow USDG from NorenVault against deposit shares at 66–80% LTV, health factor, Aqua liquidation. It is NorenVault's receivables source (Pay-in-3 receivables + loans) ([EARN.md](EARN.md)) |
+| `NorenReputation` | Points, milestones and tiers from on-time installments, repaid loans, account age and World ID (`VerifiedHuman` EIP-712); `creditLimitOf` ([EARN.md](EARN.md)) |
 
 Source: `packages/robinhood/contracts/src`. Addresses of the Robinhood mainnet tokens, feeds and the real role holders used on forks are in `contracts/script/RobinhoodMainnet.sol`.
 
@@ -79,7 +82,9 @@ Why no binary search for age: the public RPC prunes state older than ~10 minutes
 
 **Signing.** The key comes from `NOREN_RH_UNDERWRITER_KEY`. Only on a loopback RPC whose chain id is 4663 or 46630 (the fork re-tagged as Robinhood testnet for the CRE simulator) does it fall back to Anvil's published key #9, and the response says so. The EIP-712 domain uses the chain id the RPC reports, which is the contract's `block.chainid`. Before signing, the underwriter checks the signer equals `underwriter()`, the ratio is at least `minCollateralRatioBps()`, and its digest equals `hashAttestation()` on-chain.
 
-HTTP (port 8721): `GET /health`, `GET /score/:address`, `POST /attest {"borrower": "0x..."}`.
+**Reputation multiplier.** `/attest` multiplies the signed limit by `NorenReputation.limitMultiplierOf(borrower)` (1x to 2x by tier, [EARN.md](EARN.md)). It returns the multiplier and the base limit next to the signature. The collateral rule at open is unchanged. `POST /attest-age {"account": "0x..."}` signs NorenReputation's `AccountAge` from the mainnet first-activity scan.
+
+HTTP (port 8721): `GET /health`, `GET /score/:address`, `POST /attest {"borrower": "0x..."}`, `POST /attest-age {"account": "0x..."}`.
 
 ## EIP probes (`pnpm --filter @noren/robinhood probe`, Nov 6 2026)
 
@@ -113,20 +118,21 @@ Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG 
 
 ## Tests
 
-`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork; it builds `packages/aqua/swapvm-ext` first): **112 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (29), NorenCreditLine (17) and NorenAqua (17, see [AQUA.md](AQUA.md)). With no maker shipped, the pre-Aqua suites exercise the vault fallback. They cover:
+`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork; it builds `packages/aqua/swapvm-ext` first): **134 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (29), NorenCreditLine (17), NorenAqua (17, see [AQUA.md](AQUA.md)) and NorenEarn (22, see [EARN.md](EARN.md)). With no maker shipped, the pre-Aqua suites exercise the vault fallback. They cover:
 
 - **Payments:** stale price, weekend window, holiday, depeg, unsupported or disabled asset, slippage, invoice replay, expiry and cancellation, blocked payer, paused token.
 - **Underwriting:** wrong-key, tampered, replayed, expired, malformed and below-floor attestations; tier upgrades and downgrades.
 - **Pay in 3:** over-limit and under-collateralised opens; early collateral withdrawal (impossible until the last installment); one missed payment is not a default, two (or a missed final one) are; overdue liquidation math (vault made whole, liquidator gets debt + 5%); price-drop liquidation through a real `updateMultiplier`; bad debt when underwater; blocklisted borrower.
 - **Arc line:** forwarder-only, stale or replayed reports, future `asOf`, workflow metadata, two-step close, past-due and under-collateralised liquidation.
 
-`pnpm --filter @noren/robinhood test` (Vitest, snapshot served on 8720 plus live mainnet reads): **18 passed, 0 failed** in 6 files:
+`pnpm --filter @noren/robinhood test` (Vitest, snapshot served on 8720 plus live mainnet reads): **19 passed, 0 failed** in 7 files:
 
 - **score (9):** tier boundaries, liquidation cap, unavailable factors, and the collateral-only floor: one TSLA on a fresh wallet gives a tier-1, 150%, 173 USDG line, a fresh wallet without stock is declined with all five factors, history is never lowered.
 - **history.live (1):** real mainnet history of the Uniswap v4 PoolManager.
 - **attest.fork (1):** sign, apply, replay → `BadNonce`.
 - **floor.fork (2):** a brand-new key funded with 1 real NVDA gets the floor terms from `/attest` logic and opens a fully secured Arc line; a new key without stock is declined.
 - **sdk.fork (1):** USDG and NVDA paid by EIP-2612 permit, ETH paid natively, attestation applied, Pay in 3 opened and repaid by permit, Arc credit line opened, positions read.
+- **earn.fork (1):** deposit, a real ask-side fill, realised APY, liquidity-in-use error, World ID record and replay, borrow, repay, in-kind exit ([EARN.md](EARN.md)).
 - **aqua.fork (4):** NVDA payment routed to the seeded maker (fee booked), a maker ships and docks a strategy, maker vs Uniswap v4 best execution, Pay-in-3 schedule and liquidation sentence then a keeper liquidation through makers.
 
 `pnpm exec tsc -p tsconfig.json --noEmit` passes. The 0G path was not exercised here (`ZG_PC_API_KEY` is not set in this environment), so the decisions above came from the labelled deterministic score and floor.

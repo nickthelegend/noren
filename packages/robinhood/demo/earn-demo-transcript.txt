@@ -1,0 +1,55 @@
+Noren earn and borrow demo on http://127.0.0.1:8772 (Robinhood mainnet snapshot, block 107405037; fork transactions only)
+
+== Contracts
+   NorenBorrow 0x742500B9d81c4246A180FBd3ff6A070238Fd8E51 | NorenReputation 0x1b8A72d736Caa074fB7024A7472E7775606D7335 | lender pool NorenVault 0x1a7BBcb1329b6BE6599a0707353c4c810E3396FA
+   Noren ETH deposit (nETH) 0xf1eF70Db9631ac8D6eC516B23701FF1A644528BF
+   Noren NVDA deposit (nNVDA) 0xD712a0ad7e6eDF660C54359eA94F71d80a6bdADa
+   Noren TSLA deposit (nTSLA) 0x18f58FE135634F235A91a56F442EE38725C36Cb9
+   Noren AAPL deposit (nAAPL) 0xC225e51E7e4B698c7f4Ff8B06730D3Dec9093CC2
+
+== 1. Deposit 1 ETH and 2 NVDA; receipt shares back the vaults' Aqua maker strategies
+   fork tx 0x9cad4717388aeeec7668720717b3da57bda6d720245c999b609415fd2a20be4a  depositETH 1 ETH -> 1 nETH
+   fork tx 0x1471896c50439f2d3a45a4558b560470bb2634d2fb80834a57998369ce502784  deposit 2 NVDA -> 2 nNVDA
+   Deposit only                   credit limit  1,708.82  = deposits x 66% (1,708.82 USDG) + World ID starter 0.00 USDC; Pay-in-3 multiplier 1x
+
+== 2. Real maker fills earn the spread
+   fork tx 0xe2fffd7b18ae02f8585a9f4ba48843994b7d03a18578dc30ffe6ae662e46c807  trader buys 0.3 ETH from nETH at Chainlink + 40 bps: 668.56 USDG, fee 2.66
+   fork tx 0x3f8f9359688af5cd8370ba8b66281a1c1846d5a63e7d692a306b85ad5da926df  a shopper pays a 400 USDG invoice with ETH; maker nETH vault buys it at Chainlink - 25 bps, fee 1.00
+   nETH: 0.88066 WETH + 268.56 USDG; 1.001652 ETH per nETH; fees 3.67 USDG over 2 fills
+   Realised: 3.666093 USDG of maker fees from 2 fills over 1.0 h, annualised (simple). Not a forecast. = 1444.5% simple annualised
+   nNVDA: Realised: 0 USDG of maker fees from 0 fills over 1.0 h, annualised (simple). Not a forecast.
+
+== 3. World ID: the server records the verified human (one nullifier per account)
+   fork tx 0xf880f869e6eb33d70b0277e0f4de3359957b2b3c5be6f59376cd5385ff0ed6f7  NorenReputation.verifyHuman (signed by 0x55B3bb6cdAa459F0F5601FDE0a7d181EE106c02C)
+   Plus World ID                  credit limit  1,839.95  = deposits x 70% (1,814.95 USDG) + World ID starter 25.00 USDC; Pay-in-3 multiplier 1.25x
+
+== 4. On-time repayments: Pay in 3 paid on time, and a loan repaid
+   fork tx 0x1f9cb49c79ead8e669fca215f340f554c083fb1b3cb7b1fea98f7a08c24dee3c  Pay in 3 opened for 300 USDG (0.3 ETH collateral)
+   fork tx 0x149fdea527ef841a1b1da9aec658aa037da223f1fd6f9feb3fd57127a5fe2629  three installments paid on time (300.00 USDG)
+   Plus on-time Pay in 3          credit limit  1,969.59  = deposits x 75% (1,944.59 USDG) + World ID starter 25.00 USDC; Pay-in-3 multiplier 1.5x
+   fork tx 0x90b7d8ef5a2b0bc06376264d7b94fe55b66cce02818a75cbe707fb211d2fce99  owner: loan milestone minimum age 15 min (fork demo setting)
+   fork tx 0xf16935266db5ef159948f745fbd71b40e73653ccf0ed09b1275094f3432dd341  borrow 200 USDG against locked nETH
+   fork tx 0x9a760b40420bed0c13f1b61643aa96b9174fac421bfbf753e5b6376205e6a4be  loan repaid in full (200.00 USDG incl. 0.000306 USDG interest to the lender pool)
+   Plus a repaid loan             credit limit  2,099.23  = deposits x 80% (2,074.23 USDG) + World ID starter 25.00 USDC; Pay-in-3 multiplier 2x
+   reputation 105 points, tier 3; milestones: Verified human (World ID), Three on-time Pay-in-3 installments, First loan repaid, No late payments or liquidations
+   credit limit 1,708.82 -> 1,839.95 -> 1,969.59 -> 2,099.23 (+22.8%)
+
+== 5. Borrow at the top tier: 80% of the deposit's Chainlink value, never more
+   LTV 80%: locked collateral $2,223.28, borrow limit 1,778.66 USDG
+   limit + 1 wei refused: Over the borrow limit: debt would be 1778657562, limit 1778657561 USDG (6 dp)
+   fork tx 0x870cc691e5b4c663ca15317644d4f22b7e67dd3e4deb8b5ee763ae8852b1892a  borrow 1,778.66 USDG (80%)
+   health factor 1.0625 (liquidation at 1.0, 85% LTV); Your 0.8807 ETH deposit is liquidated if ETH < $2,071.11 (now $2,219.61)
+   fork tx 0x8be075fa50978dc818f5f7281393d581ad24efac4d6f7726ba8cd82934f8b9c6  repaid
+
+== 6. Liquidity in use and the in-kind exit
+   Liquidity in use: 1001651649656419240 requested, 880659765253303379 of the asset available now; the vault holds 268560345 USDG (6 dp) from sales until it buys back. Withdraw up to 880659765253303379, or withdraw in kind (asset + USDG).
+   fork tx 0xae108256457c797add684df53fd46e75a472542fac33e9b907d9c7810f2630ce  redeemInKind: 0.88066 ETH + 268.56 USDG
+
+== 7. Liquidation through Aqua makers (NVDA price drop via the real uiMultiplier role, impersonated on the fork)
+   fork tx 0xcff1d2ece4f55f8784e31d54d43164938818db3dd9a9e99ccfbfe80b35180f2b  borrow 295.57 USDG against 2 NVDA
+   fork tx 0xd62d5216859a4d3f346d28108f919017fde6b1e9adeed68afa72dce8efc01355  NVDA uiMultiplier -8% (stands in for a price drop past the 94.1% liquidation point)
+   health factor now 0.9775
+   fork tx 0xb5d5131644bea794abee01e907151651961f415164cdc0a5d21299aca102e77a  keeper liquidateViaAqua: lender pool repaid 295.57 USDG, 1.74787 NVDA sold to makers, keeper bonus 0.086957 NVDA, bad debt 0.00
+   reputation after the liquidation: 45 points, tier 1, LTV 70%
+
+(fork reverted to its snapshot)

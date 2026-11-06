@@ -185,7 +185,7 @@ contract NorenReputation is Ownable2Step, EIP712 {
     if (t == 0) return Tier(BASE_LTV_BPS, 10_000, 0, false, false);
     if (t == 1) return Tier(7_000, 12_500, 40, false, false);
     if (t == 2) return Tier(7_500, 15_000, 75, true, false);
-    return Tier(MAX_LTV_BPS, 20_000, 120, true, true);
+    return Tier(MAX_LTV_BPS, 20_000, 100, true, true);
   }
 
   function breakdownOf(address account) public view returns (Breakdown memory b) {
