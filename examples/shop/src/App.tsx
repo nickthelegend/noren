@@ -402,7 +402,7 @@ function IntegrationPanel() {
         <p>Aubelle's whole payment integration is one file of {lines} lines on the shop's backend: create a Noren invoice for the bag, send the shopper to Noren's hosted checkout, and trust the order only after a signed webhook.</p>
         <ol className="steps">
           <li><b>Invoice</b> for the bag total, with the order ID in metadata.</li>
-          <li><b>Redirect</b> to Noren's hosted checkout. The shopper pays privately.</li>
+          <li><b>Redirect</b> to Noren's hosted checkout: USDC, a private balance, stocks or Pay in 3.</li>
           <li><b>Webhook</b> signed with HMAC-SHA256; the shop verifies it and marks the order paid.</li>
         </ol>
         <p className="muted small">The secret key stays on the server. Prices are recomputed there, never taken from the browser.</p>
