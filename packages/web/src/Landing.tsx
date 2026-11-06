@@ -108,7 +108,7 @@ const LIVE_STRIP: { t: string; d: string; href: string; marks: string[] }[] = [
     return [{ t: `${shortChain(r.from)} → Arc: ${t}`, d: `CCTP V2, relayed by CRE · ${(Number(r.minted) / 1e6).toFixed(2)} USDC`, href: explorerTx("arc-testnet", r.mintTx), marks: [CHAIN_MARK[r.from], "CIRCLE"] }];
   }),
   ...CCTP_RUNS.filter((r) => r.from === "arc-testnet" && r.to === "robinhood-testnet").map((r) => ({ t: "Arc → Robinhood", d: "CCTP V2 out of Arc, 1 USDC", href: explorerTx("robinhood-testnet", r.mintTx), marks: ["ARC", "ROBINHOOD"] })),
-  ...CCIP_MESSAGES.filter((m) => m.from !== "arc-testnet").slice(0, 3).map((m) => ({ t: `CCIP: ${m.route}`, d: m.action, href: ccipMsgUrl(m.id), marks: [CHAIN_MARK[m.from], "CHAINLINK"] })),
+  ...CCIP_MESSAGES.filter((m) => m.from !== "arc-testnet" && !(m.from === "robinhood-testnet" && /CREDIT_LINE/.test(m.action))).map((m) => ({ t: `CCIP: ${m.route}`, d: m.action, href: ccipMsgUrl(m.id), marks: [CHAIN_MARK[m.from], "CHAINLINK"] })),
 ];
 
 const ONBOARD: [string, string][] = [
