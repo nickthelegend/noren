@@ -270,16 +270,20 @@ function Installments({ line, tk, actions, arcUsdc, busy, run }: { line: Line; t
   useEffect(() => { if (!actions) return; actions.schedule(line).then(setPlan).catch((e) => setPe(msgOf(e))); }, [actions, line.lineId, line.drawn, line.repaid]); // eslint-disable-line react-hooks/exhaustive-deps
   const owed = line.drawn - line.repaid;
   const next = plan?.find((p) => !p.paid);
+  // The next suggested part when NorenCredit publishes an installment count; otherwise the whole balance.
+  const due = owed <= 0n ? 0n : next ? (next.amount > owed ? owed : next.amount) : owed;
   return (
     <div className="na-inst">
-      {pe ? <SetupLine text={pe} /> : !plan ? <Skel rows={2} /> : plan.length === 0 ? <p className="na-empty">Nothing drawn yet.</p> : (
+      {pe ? <SetupLine text={pe} /> : !plan ? <Skel rows={2} /> : line.drawn === 0n ? <p className="na-empty">Nothing drawn yet.</p> : plan.length === 0 ? (
+        <p className="na-empty">Owe {usdc(owed)} USDC. Repay any amount, any time, before the line expires on {day(line.expiry)}.</p>
+      ) : (
         <ol>{plan.map((p, i) => <li key={i} data-paid={p.paid}><span className="na-n sm">{i + 1}</span><span>{day(p.due)}</span><b className="num">{usdc(p.amount)} USDC</b><em>{p.paid ? "Paid" : p === next ? "Next" : "Suggested"}</em></li>)}</ol>
       )}
       <div className="na-repay">
         <span>Arc USDC <b className="num">{arcUsdc === null ? "–" : usdc(arcUsdc)}</b></span>
-        {arcUsdc !== null && next && arcUsdc < next.amount && <button className="btn line sm" disabled={!!busy} onClick={() => run("arcfaucet", async () => { await api.faucet(tk.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arcfaucet" ? <><span className="spin" /> Sending…</> : "Get test USDC"}</button>}
-        <button className="btn ink sm" disabled={!!busy || owed <= 0n || !next || (arcUsdc ?? 0n) < (next?.amount ?? 0n)} onClick={() => run("repay", async () => { const h = await tk.repay(line.lineId, next!.amount > owed ? owed : next!.amount); return `Repaid ${usdc(next!.amount > owed ? owed : next!.amount)} USDC on Arc (tx ${short(h, 6)}). The CRE workflow reports it to NorenCredit.`; })}>
-          {busy === "repay" ? <><span className="spin" /> Repaying…</> : next ? `Repay · ${usdc(next.amount > owed ? owed : next.amount)} USDC` : "All paid"}
+        {arcUsdc !== null && due > 0n && arcUsdc < due && <button className="btn line sm" disabled={!!busy} onClick={() => run("arcfaucet", async () => { await api.faucet(tk.address); return "Arc fork faucet: test USDC and gas sent."; })}>{busy === "arcfaucet" ? <><span className="spin" /> Sending…</> : "Get test USDC"}</button>}
+        <button className="btn ink sm" disabled={!!busy || due <= 0n || (arcUsdc ?? 0n) < due} onClick={() => run("repay", async () => { const h = await tk.repay(line.lineId, due); return `Repaid ${usdc(due)} USDC on Arc (tx ${short(h, 6)}). The CRE workflow reports it to NorenCredit.`; })}>
+          {busy === "repay" ? <><span className="spin" /> Repaying…</> : due > 0n ? `Repay · ${usdc(due)} USDC` : "All paid"}
         </button>
       </div>
     </div>

@@ -16,6 +16,8 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ t: string; bad?: boolean } | null>(null);
   const [tx, setTx] = useState<string | null>(null);
+  const [n, setN] = useState<number | null>(null);
+  useEffect(() => { if (tk) import("./credit-actions").then((m) => m.creditActions(cfg, tk).installments()).then(setN).catch(() => setN(null)); }, [tk, cfg]);
 
   useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
   const load = useCallback(async () => {
@@ -28,7 +30,7 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   const amount = BigInt(view.invoice.amount);
   const line = lines?.filter((l) => !l.closed).at(-1);
   const available = line ? (line.limit > line.drawn - line.repaid ? line.limit - (line.drawn - line.repaid) : 0n) : 0n;
-  const part = amount / 4n, last = amount - part * 3n;
+  const parts = n ? Array.from({ length: n }, (_, i) => (i === n - 1 ? amount - (amount / BigInt(n)) * BigInt(n - 1) : amount / BigInt(n))) : [];
 
   if (err) return <div className="co-setup"><span className="eyebrow">Setup required</span><p>{err.replace(/^Setup required:\s*/, "")}</p></div>;
   if (!lines) return <div className="co-setup quiet"><span className="spin xs" /> Reading your credit line on Robinhood and Arc…</div>;
@@ -57,10 +59,10 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
         <div><span>Available credit</span><b>{usdc(available)}<em>USDC</em></b></div>
         <div><span>Line</span><b className="mono sm">{short(line.lineId, 4)}</b><small className="faint">limit {usdc(line.limit)}</small></div>
       </div>
-      <p className="co-plan-h">Suggested: repay in four parts before the line expires on {new Date(line.expiry * 1000).toLocaleDateString([], { month: "short", day: "numeric" })}. Any amount, any time.</p>
-      <ol className="co-plan" aria-label="Suggested repayment plan">
-        {[part, part, part, last].map((v, i) => <li key={i}><i>{i + 1}</i><span>{i === 0 ? "First" : i === 3 ? "Last" : `Part ${i + 1}`}</span><b className="num">{usdc(v)}</b></li>)}
-      </ol>
+      <p className="co-plan-h">{parts.length ? `Suggested: repay in ${parts.length} parts` : "Repay any amount, any time,"} before the line expires on {new Date(line.expiry * 1000).toLocaleDateString([], { month: "short", day: "numeric" })}.</p>
+      {parts.length > 0 && <ol className="co-plan" aria-label="Suggested repayment plan" style={{ gridTemplateColumns: `repeat(${parts.length}, minmax(0, 1fr))` }}>
+        {parts.map((v, i) => <li key={i}><i>{i + 1}</i><span>{i === 0 ? "First" : i === parts.length - 1 ? "Last" : `Part ${i + 1}`}</span><b className="num">{usdc(v)}</b></li>)}
+      </ol>}
       <div className="co-privacy light">
         <Icon.layers />
         <p><b>Not private.</b> A credit payment is tied to your credit line, and the line to your Robinhood wallet. {shop} is paid in full now; you repay the pool in USDC.</p>

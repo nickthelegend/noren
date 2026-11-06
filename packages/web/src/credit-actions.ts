@@ -104,13 +104,20 @@ export function creditActions(_cfg: Config, oc: Onchain) {
      * A suggested repayment plan: the amount drawn, in four equal parts spread over the line's term. The contract itself
      * only requires that nothing is owed after the line expires (plus a grace period); this is guidance, not a rule.
      */
+    /** Installment count from NorenCredit (public INSTALLMENTS). null when the contract doesn't expose it. */
+    async installments(): Promise<number | null> {
+      try { const { pub } = oc.robinhood(); return Number(await pub.readContract({ address: contract(), abi: parseAbi(["function INSTALLMENTS() view returns (uint256)"]), functionName: "INSTALLMENTS" })); }
+      catch { return null; }
+    },
     async schedule(line: Line): Promise<{ due: number; amount: bigint; paid: boolean }[]> {
       if (line.drawn === 0n) return [];
+      const n = await this.installments();
+      if (!n) return [];
       // Lines from the Noren app run 30 days, so the plan spans the line's own term (stable across reloads).
       const span = 30 * 86400, start = line.expiry - span;
-      const part = line.drawn / 4n, parts = [part, part, part, line.drawn - part * 3n];
+      const part = line.drawn / BigInt(n), parts = Array.from({ length: n }, (_, i) => (i === n - 1 ? line.drawn - part * BigInt(n - 1) : part));
       let covered = line.repaid;
-      return parts.map((amount, i) => { const paid = covered >= amount; covered = paid ? covered - amount : 0n; return { due: start + Math.round((span * (i + 1)) / 4), amount, paid }; });
+      return parts.map((amount, i) => { const paid = covered >= amount; covered = paid ? covered - amount : 0n; return { due: start + Math.round((span * (i + 1)) / n), amount, paid }; });
     },
   };
 }
