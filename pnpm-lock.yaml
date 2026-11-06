@@ -47,6 +47,13 @@ importers:
         version: 3.2.4(@types/debug@4.1.13)(@types/node@24.10.1)
 
   packages/aqua:
+    dependencies:
+      '@noren/robinhood':
+        specifier: workspace:*
+        version: link:../robinhood
+      viem:
+        specifier: 2.51.3
+        version: 2.51.3(typescript@5.9.3)
     devDependencies:
       '@1inch/aqua':
         specifier: github:1inch/aqua#b51f3b6e3c02fa5208e1429f0f14706b025d9dd6
@@ -60,6 +67,15 @@ importers:
       '@openzeppelin/contracts':
         specifier: 5.4.0
         version: 5.4.0
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
 
   packages/arc-credit:
     dependencies:

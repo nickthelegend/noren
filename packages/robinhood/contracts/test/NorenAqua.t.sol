@@ -10,7 +10,7 @@ import {NorenAssetOracle} from '../src/NorenAssetOracle.sol';
 import {NorenCredit} from '../src/NorenCredit.sol';
 import {NorenGateway} from '../src/NorenGateway.sol';
 import {NorenLiquidity} from '../src/NorenLiquidity.sol';
-import {ISwapVMRouter} from '../src/interfaces/IAquaSwapVM.sol';
+import {ISwapVMRouter, INorenLiquidityMaker} from '../src/interfaces/IAquaSwapVM.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
@@ -240,6 +240,51 @@ contract NorenAquaTest is RobinhoodBase {
     gateway.setLiquidity(liquidity, false);
     vm.expectRevert(abi.encodeWithSelector(NorenGateway.NoMakerLiquidity.selector, RH.NVDA, uint256(500e6)));
     gateway.quote(merchant, inv2, RH.NVDA);
+  }
+
+  // ------------------------------------------------------------ vault-backed maker (Aqua virtual balance)
+
+  /// @notice Idle lender-pool USDG backs a maker strategy without leaving the vault: Aqua records a
+  /// virtual balance, a fill pulls exactly the invoice, and the stock lands in the vault as inventory.
+  function test_vaultIdleUsdgBacksAMakerStrategy() public {
+    INorenLiquidityMaker.PegTerms memory t = INorenLiquidityMaker.PegTerms(40, 80, CLOSED_EXTRA, 0, 0, 0);
+    vm.prank(owner);
+    bytes32 h = vault.shipAquaStrategy(INorenLiquidityMaker(address(liquidity)), RH.NVDA, t, 50_000e6);
+    assertEq(liquidity.strategy(h).maker, address(vault));
+    assertEq(vault.idleUsdg(), 100_000e6, 'no USDG moved at ship');
+    uint256 navBefore = vault.totalAssets();
+
+    bytes32 inv = keccak256('vault-maker');
+    _invoice(inv, 500e6);
+    (uint256 quoted,,, bytes32 route) = gateway.quoteRoute(merchant, inv, RH.NVDA);
+    assertEq(route, h);
+    _fund(RH.NVDA, customer, quoted);
+    vm.startPrank(customer);
+    nvda.approve(address(gateway), quoted);
+    gateway.pay(inv, merchant, RH.NVDA, quoted);
+    vm.stopPrank();
+    assertEq(usdg.balanceOf(merchant), 500e6);
+    assertEq(vault.idleUsdg(), 100_000e6 - 500e6, 'the fill pulled exactly the invoice from the vault');
+    assertEq(nvda.balanceOf(address(vault)), quoted, 'stock is vault inventory');
+    uint256 fee = liquidity.makerFeesUsdg(address(vault));
+    assertGt(fee, 0);
+    assertApproxEqAbs(vault.totalAssets(), navBefore + fee, 1, 'NAV grows by the spread fee');
+    (uint256 u, uint256 n) = liquidity.balances(h);
+    assertEq(u, 50_000e6 - 500e6);
+    assertEq(n, quoted);
+
+    // LP withdrawals come first: with idle below the fill the strategy stops quoting
+    uint256 shares = vault.convertToShares(99_300e6); // leaves ~200 USDG idle
+    vm.prank(lp);
+    vault.redeem(shares, lp, lp);
+    (bytes32 best,) = liquidity.bestQuoteForUsdg(RH.NVDA, 500e6);
+    assertEq(best, bytes32(0), 'virtual balance never outruns real vault liquidity');
+
+    vm.prank(owner);
+    vault.dockAquaStrategy(INorenLiquidityMaker(address(liquidity)), h, RH.NVDA);
+    assertEq(liquidity.strategiesFor(RH.NVDA).length, 0);
+    vm.expectRevert();
+    vault.shipAquaStrategy(INorenLiquidityMaker(address(liquidity)), RH.NVDA, t, 1e6); // owner only
   }
 
   // ------------------------------------------------------------ Pay in 3

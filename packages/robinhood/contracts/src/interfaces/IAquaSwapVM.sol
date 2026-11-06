@@ -50,3 +50,24 @@ interface INorenLiquidity {
     external
     returns (uint256 proceeds, uint256 sold, uint256 bonus, uint256 excessUsdg);
 }
+
+/// @notice NorenLiquidity's maker-side API (used by NorenVault to run a vault-backed strategy).
+interface INorenLiquidityMaker {
+  struct PegTerms {
+    uint16 bidSpreadBps;
+    uint16 askSpreadBps;
+    uint16 closedExtraBps;
+    uint64 minPriceUsd8;
+    uint64 maxPriceUsd8;
+    uint64 salt;
+  }
+
+  function aqua() external view returns (IAqua);
+  function router() external view returns (ISwapVMRouter);
+  function buildOrder(address maker, address asset, PegTerms memory t)
+    external
+    view
+    returns (ISwapVMRouter.Order memory o, bytes32 strategyHash);
+  function register(address asset, PegTerms calldata t) external returns (bytes32 strategyHash);
+  function remove(bytes32 strategyHash) external;
+}

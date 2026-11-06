@@ -189,7 +189,7 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     return _pay(invoiceId, merchant, asset, maxAssetIn);
   }
 
-  /// @notice Called by NorenCredit when a Pay-in-4 plan funds the invoice.
+  /// @notice Called by NorenCredit when a Pay-in-3 plan funds the invoice.
   function settleByCredit(address merchant, bytes32 invoiceId, address borrower) external returns (uint256 amountUsdg) {
     if (msg.sender != credit) revert NotCredit();
     Invoice storage inv = _invoices[_key(merchant, invoiceId)];

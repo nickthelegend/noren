@@ -1,6 +1,6 @@
 # Noren credit on Robinhood Chain
 
-Noren's Robinhood Chain module lets a customer pay a merchant with USDG, ETH or a Robinhood Stock Token, buy now and pay in four USDG installments against stock or ETH collateral, and open a USDC credit line that a Chainlink CRE workflow carries to Arc, where it can be spent at Noren merchants.
+Noren's Robinhood Chain module lets a customer pay a merchant with USDG, ETH or a Robinhood Stock Token, buy now and pay in three USDG installments (Pay in 3) against stock or ETH collateral, and open a USDC credit line that a Chainlink CRE workflow carries to Arc, where it can be spent at Noren merchants. Stock and ETH conversions and liquidations go through 1inch Aqua maker strategies on SwapVM; see [AQUA.md](AQUA.md).
 
 Code: [`packages/robinhood`](../packages/robinhood) (package `@noren/robinhood`). Everything below runs on a **local Anvil fork of Robinhood Chain mainnet (chain 4663)** with the real USDG, WETH, Stock Tokens and Chainlink feeds. No mainnet transaction is ever sent. The contracts are unaudited.
 
@@ -9,9 +9,10 @@ Code: [`packages/robinhood`](../packages/robinhood) (package `@noren/robinhood`)
 | Contract | Role |
 | --- | --- |
 | `NorenAssetOracle` | Chainlink Data Feeds pricing with the safety rules below, Stock Token `uiMultiplier`, market-hours calendar, Stock Token pause/blocklist pre-checks |
-| `NorenVault` | ERC-4626 USDG vault (`nvUSDG`, 12 decimals). LPs fund merchant payouts. Holds the assets customers pay with as inventory and sells them back at the oracle price plus a spread. NAV = idle USDG + Pay-in-4 receivables + inventory at oracle prices. Withdrawals are capped at idle USDG |
-| `NorenGateway` | Merchant invoices in USDG. `pay(invoiceId, merchant, asset, maxAssetIn)` with USDG, native ETH (`asset = address(0)`) or a Stock Token, plus `payWithPermit` (EIP-2612) |
-| `NorenCredit` | EIP-712 underwriting, Pay in 4, liquidations, and the Arc credit line (`openCreditLine`, `onReport`, `closeCreditLine`) |
+| `NorenVault` | ERC-4626 USDG vault (`nvUSDG`, 12 decimals). LPs fund Pay-in-3 merchant payouts. On the fallback route (no Aqua maker can fill) it holds the assets customers pay with as inventory and sells them back at the oracle price plus a spread; the owner can also let idle USDG back an Aqua maker strategy (`shipAquaStrategy`). NAV = idle USDG + Pay-in-3 receivables + inventory at oracle prices. Withdrawals are capped at idle USDG |
+| `NorenGateway` | Merchant invoices in USDG. `pay(invoiceId, merchant, asset, maxAssetIn)` with USDG, native ETH (`asset = address(0)`) or a Stock Token, plus `payWithPermit` (EIP-2612). Stock/ETH is sold to the best Aqua maker through SwapVM (the maker pays the merchant); the vault is the fallback when no maker can fill (`vaultFallback`), otherwise `NoMakerLiquidity` |
+| `NorenCredit` | EIP-712 underwriting, Pay in 3, liquidations (through Aqua makers or a USDG-paying liquidator), and the Arc credit line (`openCreditLine`, `onReport`, `closeCreditLine`) |
+| `NorenLiquidity` | Aqua maker registry, best-quote routing over SwapVM, maker fee book, collateral sales for liquidations ([AQUA.md](AQUA.md)) |
 
 Source: `packages/robinhood/contracts/src`. Addresses of the Robinhood mainnet tokens, feeds and the real role holders used on forks are in `contracts/script/RobinhoodMainnet.sol`.
 
@@ -36,20 +37,22 @@ The tokens are beacon proxies (beacon and access registry `0xe10b6f6B275de231345
 | `updateMultiplier()` changes value immediately | `0x92905e8d0e2301BA143215B8D86D63fFD4188143` | Live read on every valuation; tests use it as a real price-drop path |
 | EIP-2612 `permit` (domain version "1") | - | `payWithPermit` |
 
-## Pay in 4
+## Pay in 3
 
 1. The underwriter signs `CreditAttestation(address borrower,uint8 tier,uint256 limitUsdg,uint16 collateralRatioBps,uint256 nonce,uint64 expiry)` with EIP-712 domain `NorenCredit` / `1` / chain id / `NorenCredit` address. Anyone may relay it with `applyAttestation`. Nonces are sequential per borrower, so an attestation applies once and an older, more generous one can't be replayed after a downgrade. The ratio can't go below the liquidation threshold plus 10 points (120%). The profile expires with the attestation.
 2. Repayment history moves the tier from the attested baseline: every two clean plans lift it a step, each late installment drops it one, each liquidation drops it two. A step is ±10 percentage points of collateral and ∓25% of the limit, and tier 0 means no credit.
 3. `openPlan(invoiceId, merchant, collateral, amount)` checks the limit and collateral ≥ invoice × ratio, locks the collateral (ETH is wrapped to WETH), marks the invoice paid and has the vault pay the merchant the invoice minus a 3% merchant fee (the LPs' yield).
-4. Installments are due at start + k × interval (production 14 days; tests use 15 minutes). `repay(planId, count)` / `repayWithPermit` pull USDG to the vault. The last installment returns the collateral.
-5. A plan is liquidatable when an installment is unpaid after the grace period (production 3 days) or the collateral value is below 110% of the debt. The liquidator pays the whole outstanding USDG to the vault and receives collateral worth the debt plus 5%. The rest goes back to the borrower. If the collateral is worth less than that, the liquidator takes all of it and pays its value / 1.05, and the shortfall is recorded as `badDebtUsdg`.
+4. Three installments (`INSTALLMENTS() = 3`) are due at start + k × interval, k = 1..3 (`installmentInterval` is a param: production 14 days; tests and the demo use 15 minutes). The last one takes the rounding remainder. `repay(planId, count)` / `repayWithPermit` pull USDG to the vault. The last installment returns the collateral.
+5. A plan is liquidatable after two missed payments (`MISSED_TO_DEFAULT() = 2`: two installments each past due plus the grace period, production 3 days), or when the final installment is missed, or when the collateral value is below 110% of the debt. `missedInstallments(planId)` reports the count. The SDK's `liquidationInfo(planId)` turns this into the app's sentence: "Your 10 NVDA liquidates if NVDA < $X or if you miss two payments".
+6. `liquidatePlanViaAqua(planId)` (default path): the collateral is sold to Aqua makers through SwapVM. The vault receives the outstanding USDG, the caller (keeper) receives collateral worth 5% of the debt and pays nothing, and the rest goes back to the borrower. Underwater collateral is sold after the keeper's 5/105 share, and the shortfall is `badDebtUsdg`. The sale must clear within 3% of the Chainlink value.
+7. `liquidatePlan(planId)` (fallback when no maker can fill): the liquidator pays the whole outstanding USDG to the vault and receives collateral worth the debt plus 5%. The rest goes back to the borrower. If the collateral is worth less than that, the liquidator takes all of it and pays its value / 1.05, and the shortfall is recorded as `badDebtUsdg`.
 
 ## Arc credit line (fixed interface)
 
 - `openCreditLine(collateral, amount, limitUsdc6, expiry)` locks collateral at the borrower's tier ratio (USDC valued at $1.00: Robinhood Chain has no USDC feed), uses the limit from the borrower's credit and emits `CreditLineOpened(address indexed borrower, bytes32 indexed lineId, uint256 limitUsdc6, uint64 expiry, uint256 collateralValueUsd8)`.
 - `onReport(metadata, report)` accepts only the configured CRE forwarder. `report = abi.encode(bytes32 lineId, uint256 drawnUsdc6, uint256 repaidUsdc6, uint64 asOf)`. `asOf` must increase strictly (replay protection) and may be at most 300 s in the future. The owner can also pin the CRE workflow ID and owner, decoded from `metadata` as in Chainlink's `ReceiverTemplate`. `supportsInterface` reports `IReceiver` and `IERC165`.
 - `utilisation(lineId)` returns the last reported `(drawn, repaid, asOf)`; the CRE bridge reads it before writing Arc activity back.
-- A line is liquidatable when Arc debt is outstanding after expiry plus grace, or the collateral value is below 110% of it.
+- A line is liquidatable when Arc debt is outstanding after expiry plus grace, or the collateral value is below 110% of it. `liquidateLineViaAqua(lineId)` sells the collateral to Aqua makers (as for plans); `liquidateLine` is the liquidator-pays-USDG fallback.
 - Closing has two steps so collateral can't leave while Arc debt is in flight. `closeCreditLine` emits `CreditLineClosed(bytes32 indexed lineId)` (the bridge should zero the Arc limit). The collateral comes back once an Arc report dated at or after the close shows `repaid >= drawn`. That report settles the line inside `onReport`, or the borrower calls `closeCreditLine` again. Liquidation also emits `CreditLineClosed`.
 
 **Bridge requirement beyond the fixed interface:** the CRE workflow should also trigger on `CreditLineClosed` (Robinhood). It should write `limitUsdc6 = 0` to `NorenCreditLine` on Arc and push a fresh `(drawn, repaid, asOf)` report back. Without that report a closed line whose Arc balance never changes waits forever.
@@ -96,11 +99,11 @@ The Robinhood public RPC is not an archive node. It serves state for roughly the
 - **Demos and SDK tests** use a warmed snapshot. `sh scripts/fork-snapshot.sh` forks mainnet on 8722, deploys with CREATE2 (salt `noren-robinhood-v1`) and seeds balances from the Uniswap v4 PoolManager (a real holder). It then simulates every demo flow with state-diff recording (`Warm.s.sol`, no broadcast) and writes each account and storage slot those flows read, at its real fork-block value, into the fork (`apply-warm.ts`). That step is needed because Anvil's dump keeps only state touched by its own transactions or `anvil_set*`. Finally it dumps the state. `sh scripts/serve-snapshot.sh` serves it on 8720 with no upstream. State that was never warmed reads as zero, which is correct for fresh addresses; extend `Warm.s.sol` for new flows.
 - The deploy script and the underwriter also accept chain id 46630 on a loopback fork, for the web stack's `anvil_setChainId(46630)` (CRE Robinhood-testnet simulation).
 
-Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG in the vault), #1 customer (5,000 USDG, 20 NVDA, 10 TSLA, 10 AAPL, ETH), #2 merchant, #8 stand-in CRE forwarder, #9 underwriter signer.
+Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG in the vault), #1 customer (5,000 USDG, 20 NVDA, 10 TSLA, 10 AAPL, ETH), #2 merchant, #3 Aqua maker (50,000 USDG; NVDA/TSLA/AAPL/WETH strategies with 10,000 USDG virtual each, shipped by `SeedMakers.s.sol`), #4 liquidation keeper, #8 stand-in CRE forwarder, #9 underwriter signer. `fork-snapshot.sh` honours `NOREN_RH_SNAPSHOT_TMP_PORT` and `NOREN_RH_FORK_PORT` (defaults 8722 / 8720).
 
 ## Risks
 
-- **Vault inventory risk.** The vault buys stock and ETH at the oracle price and holds it. A fall in price before it is resold is an LP loss. The spread (0.5% stocks, 0.3% ETH) and the weekend haircut are the only buffer. There is no on-chain hedge or DEX exit yet. `buyInventory` lets anyone buy inventory back at oracle + 0.5%.
+- **Vault inventory risk.** Stock and ETH payments now go to Aqua makers, so the vault only buys inventory on the fallback path (no maker can fill) or when it backs an Aqua strategy itself (`shipAquaStrategy`). There a fall in price before resale is an LP loss. The spread and the weekend haircut (or the strategy's `closedExtraBps`) are the only buffer. `buyInventory` lets anyone buy inventory back at oracle + 0.5%, and a vault-backed strategy resells at oracle + its ask.
 - **Oracle and market-hours risk.** Stock feeds freeze while US markets are closed, and Monday can open with a gap. Weekend intake is haircut 5%, but a gap bigger than the collateral buffer creates bad debt. The holiday calendar is owner-maintained. Robinhood Chain has no L2 sequencer-uptime feed listed, so sequencer downtime is not detected.
 - **Stock Token restrictions.** Robinhood Stock Tokens are for eligible non-US customers under Robinhood's terms (`terms()` on each token points to `https://robinhood.com/stocktoken/rhj`). They can be paused and accounts can be blocklisted. A paused token cannot be liquidated, and a blocklisted borrower's collateral waits in `claimable`. Any production use needs jurisdiction gating and KYC that this hackathon build does not have.
 - **Cross-chain settlement.** Arc draws are funded by the Arc pool, while line liquidation proceeds land in the Robinhood vault. Moving that value back to Arc (e.g. via CCTP) is not automated. Between a draw on Arc and its CRE report, Robinhood sees stale utilisation.
@@ -110,19 +113,20 @@ Demo accounts (Anvil published keys, local only): #0 owner and LP (250,000 USDG 
 
 ## Tests
 
-`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork): **94 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (28) and NorenCreditLine (17). They cover:
+`sh scripts/test-fork.sh` (Foundry, fresh Robinhood mainnet fork; it builds `packages/aqua/swapvm-ext` first): **112 passed, 0 failed**. The suites are RobinhoodBehaviour (6), NorenAssetOracle (16), NorenGateway (17 + 1), NorenVault (9), NorenCredit (29), NorenCreditLine (17) and NorenAqua (17, see [AQUA.md](AQUA.md)). With no maker shipped, the pre-Aqua suites exercise the vault fallback. They cover:
 
 - **Payments:** stale price, weekend window, holiday, depeg, unsupported or disabled asset, slippage, invoice replay, expiry and cancellation, blocked payer, paused token.
 - **Underwriting:** wrong-key, tampered, replayed, expired, malformed and below-floor attestations; tier upgrades and downgrades.
-- **Pay in 4:** over-limit and under-collateralised opens; early collateral withdrawal (impossible until the last installment); overdue liquidation math (vault made whole, liquidator gets debt + 5%); price-drop liquidation through a real `updateMultiplier`; bad debt when underwater; blocklisted borrower.
+- **Pay in 3:** over-limit and under-collateralised opens; early collateral withdrawal (impossible until the last installment); one missed payment is not a default, two (or a missed final one) are; overdue liquidation math (vault made whole, liquidator gets debt + 5%); price-drop liquidation through a real `updateMultiplier`; bad debt when underwater; blocklisted borrower.
 - **Arc line:** forwarder-only, stale or replayed reports, future `asOf`, workflow metadata, two-step close, past-due and under-collateralised liquidation.
 
-`pnpm --filter @noren/robinhood test` (Vitest, snapshot served on 8720 plus live mainnet reads): **14 passed, 0 failed** in 5 files:
+`pnpm --filter @noren/robinhood test` (Vitest, snapshot served on 8720 plus live mainnet reads): **18 passed, 0 failed** in 6 files:
 
 - **score (9):** tier boundaries, liquidation cap, unavailable factors, and the collateral-only floor: one TSLA on a fresh wallet gives a tier-1, 150%, 173 USDG line, a fresh wallet without stock is declined with all five factors, history is never lowered.
 - **history.live (1):** real mainnet history of the Uniswap v4 PoolManager.
 - **attest.fork (1):** sign, apply, replay → `BadNonce`.
 - **floor.fork (2):** a brand-new key funded with 1 real NVDA gets the floor terms from `/attest` logic and opens a fully secured Arc line; a new key without stock is declined.
-- **sdk.fork (1):** USDG and NVDA paid by EIP-2612 permit, ETH paid natively, attestation applied, Pay in 4 opened and repaid by permit, Arc credit line opened, positions read.
+- **sdk.fork (1):** USDG and NVDA paid by EIP-2612 permit, ETH paid natively, attestation applied, Pay in 3 opened and repaid by permit, Arc credit line opened, positions read.
+- **aqua.fork (4):** NVDA payment routed to the seeded maker (fee booked), a maker ships and docks a strategy, maker vs Uniswap v4 best execution, Pay-in-3 schedule and liquidation sentence then a keeper liquidation through makers.
 
 `pnpm exec tsc -p tsconfig.json --noEmit` passes. The 0G path was not exercised here (`ZG_PC_API_KEY` is not set in this environment), so the decisions above came from the labelled deterministic score and floor.

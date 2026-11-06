@@ -83,6 +83,18 @@ describe('Noren SDK: Aqua makers, pay with stocks, Pay in 3, liquidation through
     const c = createNorenRobinhood({ publicClient, walletClient: wallet(customer), addresses: deployment })
     const k = createNorenRobinhood({ publicClient, walletClient: wallet(keeper), addresses: deployment })
     expect(Number(await publicClient.readContract({ address: deployment.credit, abi: norenCreditAbi, functionName: 'INSTALLMENTS' }))).toBe(INSTALLMENTS)
+    // Shorten the schedule to 15-minute installments on this fork (owner = Anvil key #0; evm_revert
+    // restores it) so two missed payments fit inside the feeds' maximum age.
+    const owner = privateKeyToAccount('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
+    const prm = (await publicClient.readContract({ address: deployment.credit, abi: norenCreditAbi, functionName: 'params' })) as readonly any[]
+    const setParams = await wallet(owner).writeContract({
+      address: deployment.credit,
+      abi: norenCreditAbi,
+      functionName: 'setParams',
+      args: [{ installmentInterval: 900, gracePeriod: 900, liquidationThresholdBps: prm[2], liquidationBonusBps: prm[3], merchantFeeBps: prm[4], maxLineDuration: prm[5], reportSkew: prm[6] }],
+      chain: null,
+    })
+    await publicClient.waitForTransactionReceipt({ hash: setParams })
     const signed = await signAttestation({ borrower: customer.address, terms: { tier: 3, limitUsdg: 2_500_000_000n, collateralRatioBps: 13000 }, credit: deployment.credit, chainId: 4663, publicClient })
     if (signed.declined) throw new Error(signed.reason)
     await c.applyAttestation(signed)
