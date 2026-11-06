@@ -8,10 +8,11 @@ import {NorenGateway} from '../src/NorenGateway.sol';
 import {IRobinhoodStockToken} from '../src/interfaces/IRobinhoodStockToken.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 
-/// @notice Underwriting and Pay in 4 on the Robinhood mainnet fork.
+/// @notice Underwriting and Pay in 3 on the Robinhood mainnet fork.
 contract NorenCreditTest is RobinhoodBase {
   bytes32 internal constant INV = keccak256('bnpl-1');
   uint128 internal constant PRICE = 400e6; // 400 USDG purchase
+  uint256 internal constant FIRST = 133_333_333; // installments 1 and 2 of 400 USDG; the last is 133_333_334
 
   function setUp() public override {
     super.setUp();
@@ -106,7 +107,7 @@ contract NorenCreditTest is RobinhoodBase {
     assertEq(tier, 0);
   }
 
-  // ------------------------------------------------------------ Pay in 4
+  // ------------------------------------------------------------ Pay in 3
 
   function _nvdaFor(uint256 usdg, uint16 ratio) internal view returns (uint256 amt) {
     (amt,) = oracle.assetForUsd8(RH.NVDA, oracle.usdgToUsd8(usdg, Math.Rounding.Ceil) * ratio / 10_000, 0);
@@ -171,14 +172,14 @@ contract NorenCreditTest is RobinhoodBase {
     credit.openPlan(INV, merchant, RH.NVDA, col);
   }
 
-  function test_fourInstallmentsReturnCollateralAndRecordCleanPlan() public {
+  function test_threeInstallmentsReturnCollateralAndRecordCleanPlan() public {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 col = _nvdaFor(PRICE, 14_000);
     uint256 planId = _openPlan(col);
     _fund(RH.USDG, customer, PRICE);
     vm.startPrank(customer);
     usdg.approve(address(credit), PRICE);
-    for (uint8 i = 1; i <= 4; ++i) {
+    for (uint8 i = 1; i <= 3; ++i) {
       assertEq(nvda.balanceOf(customer), 0, 'collateral locked until the last installment');
       credit.repay(planId, 1);
       vm.warp(vm.getBlockTimestamp() + INTERVAL - 60);
@@ -187,7 +188,7 @@ contract NorenCreditTest is RobinhoodBase {
     assertEq(nvda.balanceOf(customer), col, 'collateral returned');
     assertEq(uint8(credit.plan(planId).status), uint8(NorenCredit.PlanStatus.Repaid));
     (uint32 onTime, uint32 late, uint32 completed, uint32 clean,) = credit.history(customer);
-    assertEq(onTime, 4);
+    assertEq(onTime, 3);
     assertEq(late, 0);
     assertEq(completed, 1);
     assertEq(clean, 1);
@@ -198,16 +199,18 @@ contract NorenCreditTest is RobinhoodBase {
   function test_installmentsSumToPrincipal() public {
     _attest(customer, 2, 1_000e6, 14_000);
     vm.prank(merchant);
-    gateway.createInvoice(keccak256('odd'), 333_333_333, uint64(block.timestamp + 1 days));
-    uint256 col = _nvdaFor(333_333_333, 14_000);
+    gateway.createInvoice(keccak256('odd'), 333_333_334, uint64(block.timestamp + 1 days));
+    uint256 col = _nvdaFor(333_333_334, 14_000);
     _fund(RH.NVDA, customer, col);
     vm.startPrank(customer);
     nvda.approve(address(credit), col);
     uint256 planId = credit.openPlan(keccak256('odd'), merchant, RH.NVDA, col);
     vm.stopPrank();
     uint256 sum;
-    for (uint8 i = 1; i <= 4; ++i) sum += credit.installmentAmount(planId, i);
-    assertEq(sum, 333_333_333);
+    for (uint8 i = 1; i <= 3; ++i) sum += credit.installmentAmount(planId, i);
+    assertEq(sum, 333_333_334);
+    assertEq(credit.installmentAmount(planId, 1), 111_111_111);
+    assertEq(credit.installmentAmount(planId, 3), 111_111_112, 'the last installment takes the remainder');
   }
 
   function test_earlyCollateralWithdrawalImpossible() public {
@@ -217,11 +220,11 @@ contract NorenCreditTest is RobinhoodBase {
     _fund(RH.USDG, customer, PRICE);
     vm.startPrank(customer);
     usdg.approve(address(credit), PRICE);
-    credit.repay(planId, 3);
+    credit.repay(planId, 2);
     vm.expectRevert(NorenCredit.NothingToClaim.selector);
     credit.claim(RH.NVDA);
     vm.expectRevert(NorenCredit.NothingDue.selector);
-    credit.repay(planId, 2); // cannot overpay past installment 4
+    credit.repay(planId, 2); // cannot overpay past installment 3
     vm.stopPrank();
     assertEq(nvda.balanceOf(address(credit)), col);
     assertEq(nvda.balanceOf(customer), 0);
@@ -236,20 +239,26 @@ contract NorenCreditTest is RobinhoodBase {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 col = _nvdaFor(PRICE, 14_000);
     uint256 planId = _openPlan(col);
-    _fund(RH.USDG, customer, 100e6);
+    _fund(RH.USDG, customer, FIRST);
     vm.startPrank(customer);
-    usdg.approve(address(credit), 100e6);
+    usdg.approve(address(credit), FIRST);
     credit.repay(planId, 1);
     vm.stopPrank();
-    // installment 2 due at start + 2*INTERVAL; liquidatable after grace
-    vm.warp(credit.dueAt(planId, 2) + GRACE);
+    // one missed payment (installment 2 past due + grace) is not a default
+    vm.warp(credit.dueAt(planId, 2) + GRACE + 1);
     (bool overdue,) = credit.planLiquidatable(planId);
+    assertFalse(overdue, 'one missed payment');
+    assertEq(credit.missedInstallments(planId), 1);
+    // the second missed payment (installment 3) makes it liquidatable once its grace ends
+    vm.warp(credit.dueAt(planId, 3) + GRACE);
+    (overdue,) = credit.planLiquidatable(planId);
     assertFalse(overdue, 'not before grace ends');
     vm.warp(vm.getBlockTimestamp() + 1);
     (overdue,) = credit.planLiquidatable(planId);
     assertTrue(overdue);
+    assertEq(credit.missedInstallments(planId), 2);
 
-    uint256 outstanding = PRICE - 100e6;
+    uint256 outstanding = PRICE - FIRST;
     uint256 debtUsd8 = oracle.usdgToUsd8(outstanding, Math.Rounding.Ceil);
     uint256 claimUsd8 = debtUsd8 * 10_500 / 10_000;
     uint256 expectedSeize = col * claimUsd8 / oracle.valueUsd8(RH.NVDA, col);
@@ -306,9 +315,9 @@ contract NorenCreditTest is RobinhoodBase {
     _attest(customer, 3, 2_500e6, 13_000);
     uint256 planId = _openPlan(_nvdaFor(PRICE, 13_000));
     vm.warp(credit.dueAt(planId, 1) + 1); // late but inside grace
-    _fund(RH.USDG, customer, 100e6);
+    _fund(RH.USDG, customer, FIRST);
     vm.startPrank(customer);
-    usdg.approve(address(credit), 100e6);
+    usdg.approve(address(credit), FIRST);
     credit.repay(planId, 1);
     vm.stopPrank();
     (uint8 tier, uint256 limit, uint16 ratio,) = credit.creditTerms(customer);
@@ -330,7 +339,7 @@ contract NorenCreditTest is RobinhoodBase {
       nvda.approve(address(credit), col);
       uint256 planId = credit.openPlan(id, merchant, RH.NVDA, col);
       usdg.approve(address(credit), 100e6);
-      credit.repay(planId, 4); // early payoff counts as on time
+      credit.repay(planId, 3); // early payoff counts as on time
       vm.stopPrank();
     }
     (uint8 tier, uint256 limit, uint16 ratio,) = credit.creditTerms(customer);
@@ -373,7 +382,7 @@ contract NorenCreditTest is RobinhoodBase {
     usdg.approve(address(credit), PRICE);
     _block(customer); // Robinhood blocklists the borrower mid-plan
     vm.prank(customer);
-    credit.repay(planId, 4); // repayment still succeeds
+    credit.repay(planId, 3); // repayment still succeeds
     assertEq(credit.claimable(customer, RH.NVDA), col);
     vm.prank(customer);
     vm.expectRevert(); // the token itself refuses while blocked
@@ -387,18 +396,18 @@ contract NorenCreditTest is RobinhoodBase {
   function test_repayWithUsdgPermit() public {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 planId = _openPlan(_nvdaFor(PRICE, 14_000));
-    _fund(RH.USDG, customer, 100e6);
+    _fund(RH.USDG, customer, FIRST);
     uint256 deadline = block.timestamp + 1 hours;
-    (uint8 v, bytes32 r, bytes32 s) = _permitSig(customerKey, RH.USDG, address(credit), 100e6, deadline);
+    (uint8 v, bytes32 r, bytes32 s) = _permitSig(customerKey, RH.USDG, address(credit), FIRST, deadline);
     vm.prank(customer);
-    credit.repayWithPermit(planId, 1, 100e6, deadline, v, r, s);
+    credit.repayWithPermit(planId, 1, FIRST, deadline, v, r, s);
     assertEq(credit.plan(planId).paid, 1);
   }
 
   function test_cannotRepayLiquidatedPlan() public {
     _attest(customer, 2, 1_000e6, 14_000);
     uint256 planId = _openPlan(_nvdaFor(PRICE, 14_000));
-    vm.warp(credit.dueAt(planId, 1) + GRACE + 1);
+    vm.warp(credit.dueAt(planId, 2) + GRACE + 1); // two missed payments
     _fund(RH.USDG, liquidator, PRICE);
     vm.startPrank(liquidator);
     usdg.approve(address(credit), PRICE);
@@ -406,6 +415,31 @@ contract NorenCreditTest is RobinhoodBase {
     vm.expectRevert(NorenCredit.PlanNotActive.selector);
     credit.repay(planId, 1);
     vm.stopPrank();
+  }
+
+  /// @notice "Miss two payments": a single missed installment is never a default on its own,
+  /// unless it is the final one.
+  function test_oneMissedPaymentIsNotADefaultButAMissedFinalOneIs() public {
+    _attest(customer, 2, 1_000e6, 14_000);
+    uint256 planId = _openPlan(_nvdaFor(PRICE, 14_000));
+    vm.warp(credit.dueAt(planId, 1) + GRACE + 1);
+    assertEq(credit.missedInstallments(planId), 1);
+    vm.expectRevert(NorenCredit.NotLiquidatable.selector);
+    credit.liquidatePlan(planId);
+    // pay the late installment and the second on time: nothing missed
+    _fund(RH.USDG, customer, 2 * FIRST);
+    vm.startPrank(customer);
+    usdg.approve(address(credit), 2 * FIRST);
+    credit.repay(planId, 2);
+    vm.stopPrank();
+    assertEq(credit.missedInstallments(planId), 0);
+    // missing only the final installment defaults once its grace ends
+    vm.warp(credit.dueAt(planId, 3) + GRACE);
+    (bool overdue,) = credit.planLiquidatable(planId);
+    assertFalse(overdue);
+    vm.warp(vm.getBlockTimestamp() + 1);
+    (overdue,) = credit.planLiquidatable(planId);
+    assertTrue(overdue, 'final installment missed');
   }
 
   function test_paramsGuarded() public {
