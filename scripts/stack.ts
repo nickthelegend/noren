@@ -32,10 +32,11 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { 
 async function rpcAlive(url: string) { try { const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}' }); return r.ok; } catch { return false; } }
 
 /** Starts an Anvil fork and registers it for shutdown. Refuses a port that already answers RPC. */
-export async function startFork(name: string, port: number, forkUrl: string, chainId: number, ready: (url: string) => Promise<void>) {
+/** `source` is an upstream RPC to fork, or `{ state }` to load an Anvil state dump (a warmed snapshot of a chain). */
+export async function startFork(name: string, port: number, source: string | { state: string }, chainId: number, ready: (url: string) => Promise<void>) {
   const url = `http://127.0.0.1:${port}`;
   if (await rpcAlive(url)) throw new Error(`Port ${port} already has an RPC server; stop it before starting the ${name} fork`);
-  const anvil: ChildProcess = spawn('anvil', ['--silent', '--host', '127.0.0.1', '--fork-url', forkUrl, '--chain-id', String(chainId), '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const anvil: ChildProcess = spawn('anvil', ['--silent', '--host', '127.0.0.1', ...(typeof source === 'string' ? ['--fork-url', source] : ['--load-state', source.state]), '--chain-id', String(chainId), '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
   onStop(async () => {
     if (anvil.pid && anvil.exitCode === null) {
       anvil.kill('SIGTERM');

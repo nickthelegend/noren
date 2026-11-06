@@ -1,7 +1,8 @@
 /**
  * `pnpm dev:all`: everything Noren needs, locally, in one command. Ctrl-C stops it all.
  *   - Arc testnet fork (8645) + Noren contracts + ASP postman (8788) + merchant server (8790)   [startStack]
- *   - Robinhood Chain mainnet fork (8646): real Stock Tokens, USDG and Chainlink feeds
+ *   - Robinhood Chain (8646): a warmed snapshot of mainnet state (real Stock Tokens, USDG, Chainlink feeds) with the
+ *     Robinhood contracts deployed
  *   - NorenCredit, NorenGateway, NorenVault + underwriter (packages/robinhood), NorenCreditLine (packages/arc-credit),
  *     and the Chainlink CRE bridge in the CRE CLI simulator (packages/cre-bridge), when those packages are present
  * A missing package is reported as "Setup required" and the rest still starts; nothing is faked in its place.
@@ -13,7 +14,7 @@ import { assertRobinhoodFork, ROBINHOOD } from '../packages/server/src/credit.ts
 import type { CreditOptions } from '../packages/server/src/server.ts';
 import { onStop, PORTS, run, startFork, startStack, type ArcContext } from './stack.ts';
 import { startPricing } from './dev-pricing.ts';
-import { deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
+import { adoptSnapshotDeployment, deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
 import { creSimulate } from './cre.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
@@ -28,20 +29,25 @@ async function listen(server: import('node:http').Server, port: number) {
 }
 
 run(async () => {
-  // Robinhood Chain *mainnet* state: real Stock Tokens and Chainlink feeds (Robinhood testnet has neither).
-  const robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, ROBINHOOD.rpc, ROBINHOOD.chainId, assertRobinhoodFork);
-  const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
-  const rhFromBlock: bigint = await rh.getBlockNumber();
-  console.log(`Robinhood fork RPC: ${robinhoodRpc} (mainnet state from block ${rhFromBlock})`);
   const missing: string[] = [];
-
+  // Robinhood Chain *mainnet* state: real Stock Tokens and Chainlink feeds (Robinhood testnet has neither). The public RPC
+  // keeps only ~10 minutes of state, so a live fork breaks; dev:all loads the Robinhood package's warmed snapshot
+  // (mainnet state at a block, with NorenCredit/NorenGateway/NorenVault deployed by its own scripts).
+  const snapshot = resolve('packages/robinhood/.fork/robinhood-snapshot.json');
   let robinhood: RobinhoodDeployment | undefined;
-  if (has('packages/robinhood/contracts/script/Deploy.s.sol')) {
-    try {
-      robinhood = await deployRobinhood(robinhoodRpc);
-      console.log(`Robinhood fork: NorenCredit ${robinhood.credit}, NorenGateway ${robinhood.gateway}, NorenVault ${robinhood.vault} (seeded 25,000 USDG, tx ${robinhood.vaultSeedTx})`);
-    } catch (e: any) { missing.push(`Robinhood deploy failed: ${e.message}`); }
-  } else missing.push('packages/robinhood (NorenCredit + underwriter): merge the Robinhood contracts branch (tsuke-credit)');
+  let robinhoodRpc: string;
+  if (existsSync(snapshot)) {
+    robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, { state: snapshot }, ROBINHOOD.chainId, assertRobinhoodFork);
+    robinhood = await adoptSnapshotDeployment(robinhoodRpc, resolve('packages/robinhood/.fork/deployment.json'));
+    console.log(`Robinhood snapshot: ${robinhoodRpc} (mainnet block ${robinhood.forkedFromBlock}); NorenCredit ${robinhood.credit}, NorenGateway ${robinhood.gateway}, NorenVault ${robinhood.vault}`);
+  } else {
+    robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, ROBINHOOD.rpc, ROBINHOOD.chainId, assertRobinhoodFork);
+    missing.push('Robinhood snapshot: run sh packages/robinhood/scripts/fork-snapshot.sh once (a live fork of the public RPC stops working after ~10 minutes)');
+    if (has('packages/robinhood/contracts/script/Deploy.s.sol')) {
+      try { robinhood = await deployRobinhood(robinhoodRpc); } catch (e: any) { missing.push(`Robinhood deploy failed: ${e.message}`); }
+    }
+  }
+  const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
 
   const bridgeReady = has('packages/cre-bridge/credit-bridge/workflow.yaml');
   if (bridgeReady) {
@@ -74,7 +80,7 @@ run(async () => {
       return [w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink }))];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
-      const pub: Record<string, unknown> = { robinhoodFromBlock: String(rhFromBlock), arcFromBlock: String(await arc.client.getBlockNumber()) };
+      const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
       if (has('packages/cre-pricing')) {
         try { const p = await startPricing(arc); pub.rateOracle = p.oracle; pub.rateOracleTx = p.tx; pub.rateSourceBlock = p.sourceBlock; }
         catch (e: any) { missing.push(`CRE pricing run failed: ${e.message}`); }
@@ -86,7 +92,7 @@ run(async () => {
       } else missing.push('packages/arc-credit (NorenCreditLine): merge the cre-bridge branch');
       if (has('packages/robinhood/underwriter/src/server.ts') && robinhood) {
         try {
-          Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, ROBINHOOD_RPC: robinhoodRpc });
+          Object.assign(process.env, { NOREN_RH_CREDIT: robinhood.credit, NOREN_RH_RPC: robinhoodRpc, NOREN_RH_DECISIONS_LOG: resolve('data/underwriter-decisions.jsonl') }); // history stays on Robinhood mainnet (read-only)
           const { server } = await import('../packages/robinhood/underwriter/src/server.ts' as string);
           pub.underwriterUrl = await listen(server, UNDERWRITER_PORT);
         } catch (e: any) { missing.push(`History underwriter failed to start: ${e.message}`); }

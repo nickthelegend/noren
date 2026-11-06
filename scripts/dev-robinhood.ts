@@ -18,7 +18,7 @@ const dev = (i: number) => mnemonicToAccount(MNEMONIC, { addressIndex: i });
 export const FORWARDER = { arc: '0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1' as Address, robinhood: '0x0b93082D9b3C7C97fAcd250082899BAcf3af3885' as Address };
 const POOL_MANAGER: Address = '0x8366a39CC670B4001A1121B8F6A443A643e40951'; // Uniswap v4 PoolManager: a real USDG holder
 
-export type RobinhoodDeployment = { oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex };
+export type RobinhoodDeployment = { oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex; forkedFromBlock?: number };
 
 async function rpc(url: string, method: string, params: unknown[] = []) {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -64,4 +64,20 @@ export async function deployCreditLine(arc: ArcContext, poolUsdc = 10_000_000_00
   const mint = await arc.client.request({ method: 'eth_sendTransaction', params: [{ from: arc.deployer, to: arc.deployment.usdc, data: encodeFunctionData({ abi: parseAbi(['function mint(address to, uint256 value)']), functionName: 'mint', args: [creditLine, poolUsdc] }) }] }) as Hex;
   if ((await arc.client.waitForTransactionReceipt({ hash: mint })).status !== 'success') throw new Error(`Credit pool funding reverted: ${mint}`);
   return { creditLine, deployBlock: r.blockNumber as bigint, deployTx: hash, poolUsdc };
+}
+
+/**
+ * The Robinhood package's warmed snapshot already has the contracts (its deploy-fork.sh + Warm.s.sol). Read its
+ * deployment record, check the code is there, and point NorenCredit at the CRE forwarder (owner call, fork only).
+ */
+export async function adoptSnapshotDeployment(robinhoodRpc: string, file: string, forwarder: Address = FORWARDER.robinhood): Promise<RobinhoodDeployment> {
+  const d = JSON.parse(readFileSync(file, 'utf8'));
+  const c: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
+  for (const k of ['oracle', 'vault', 'gateway', 'credit']) if ((await c.getCode({ address: d[k] }) ?? '0x') === '0x') throw new Error(`Snapshot has no ${k} at ${d[k]}: rebuild it with sh packages/robinhood/scripts/fork-snapshot.sh`);
+  const abi = parseAbi(['function setForwarder(address f)', 'function forwarder() view returns (address)']);
+  if ((await c.readContract({ address: d.credit, abi, functionName: 'forwarder' })).toLowerCase() !== forwarder.toLowerCase()) {
+    const h = await rpc(robinhoodRpc, 'eth_sendTransaction', [{ from: d.owner, to: d.credit, data: encodeFunctionData({ abi, functionName: 'setForwarder', args: [forwarder] }) }]) as Hex;
+    if ((await c.waitForTransactionReceipt({ hash: h })).status !== 'success') throw new Error(`NorenCredit.setForwarder reverted: ${h}`);
+  }
+  return { oracle: d.oracle, vault: d.vault, gateway: d.gateway, credit: d.credit, deployBlock: BigInt(d.deployBlock), owner: d.owner, underwriter: d.underwriter, forwarder, vaultSeedTx: d.seedTxs?.lpDeposit, forkedFromBlock: d.forkedFromBlock };
 }

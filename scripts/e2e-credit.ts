@@ -1,7 +1,7 @@
 /**
  * `pnpm e2e:credit`: the pay-with-stocks and pay-later flows, end to end, against a running `pnpm dev:all`.
  *   1. fork faucet: real NVDA + USDG to a fresh borrower on the Robinhood fork
- *   2. EIP-712 credit attestation (the underwriter service if it is running, else signed with the fork underwriter key)
+ *   2. EIP-712 credit attestation from the history underwriter (a wallet holding stock gets at least the collateral-only tier)
  *   3. NorenCredit.applyAttestation + openCreditLine on Robinhood (NVDA collateral at the Chainlink price)
  *   4. CRE bridge (simulator, --broadcast) writes the limit to NorenCreditLine on Arc
  *   5. a Noren invoice is paid later from the line on Arc; the merchant server settles it (method "credit")
@@ -11,7 +11,7 @@
  * Every chain is a local Anvil fork; borrower keys are fresh random keys; nothing touches a public chain.
  */
 import { createPublicClient, createWalletClient, erc20Abi, http, parseAbi, parseAbiItem, parseUnits, toHex, type Address, type Hex } from 'viem';
-import { generatePrivateKey, mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { localFork } from '@noren/core';
 import { ROBINHOOD } from '../packages/server/src/credit.ts';
 
@@ -59,17 +59,13 @@ ok('Robinhood fork faucet', `3 NVDA (tx ${f.NVDA}) and 120 USDG (tx ${f.USDG}) m
 
 // 2. attestation
 const nonce = await rh.readContract({ address: c.creditContract, abi: creditAbi, functionName: 'attestationNonce', args: [borrower.address] });
-let attestation: any, signature: Hex, signer: string;
-if (c.underwriterUrl) {
-  const r = await fetch(`${c.underwriterUrl}/attest`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ borrower: borrower.address }) }).then(r => r.json());
-  if (r.declined) throw new Error(`Underwriter declined a fresh wallet: ${r.reason}`);
-  attestation = { ...r.attestation, limitUsdg: BigInt(r.attestation.limitUsdg), nonce: BigInt(r.attestation.nonce), expiry: BigInt(r.attestation.expiry) }; signature = r.signature; signer = `underwriter service (${r.signer})`;
-} else {
-  const uw = mnemonicToAccount('test test test test test test test test test test test junk', { addressIndex: 9 });
-  attestation = { borrower: borrower.address, tier: 2, limitUsdg: 1_000_000_000n, collateralRatioBps: 14_000, nonce, expiry: BigInt(Math.floor(Date.now() / 1000) + 86400) };
-  signature = await uw.signTypedData({ domain: { name: 'NorenCredit', version: '1', chainId: c.robinhoodChainId, verifyingContract: c.creditContract }, types: { CreditAttestation: [{ name: 'borrower', type: 'address' }, { name: 'tier', type: 'uint8' }, { name: 'limitUsdg', type: 'uint256' }, { name: 'collateralRatioBps', type: 'uint16' }, { name: 'nonce', type: 'uint256' }, { name: 'expiry', type: 'uint64' }] }, primaryType: 'CreditAttestation', message: attestation });
-  signer = `fork underwriter key (Anvil #9; the underwriter service was not running)`;
-}
+if (!c.underwriterUrl) throw new Error('Setup required: the history underwriter is not running (pnpm dev:all with packages/robinhood/underwriter)');
+const r = await fetch(`${c.underwriterUrl}/attest`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ borrower: borrower.address }) }).then(r => r.json());
+if (r.declined || !r.attestation) throw new Error(`Underwriter declined the borrower: ${r.reason ?? r.error}`);
+const attestation = { ...r.attestation, limitUsdg: BigInt(r.attestation.limitUsdg), nonce: BigInt(r.attestation.nonce), expiry: BigInt(r.attestation.expiry) };
+const signature: Hex = r.signature;
+const signer = `underwriter service ${r.signer}${r.score ? `, score ${r.score.score}/100` : ''}${r.zg ? `, 0G: ${r.zg.status ?? r.zg.source ?? 'see decision'}` : ''}`;
+void nonce;
 const applied = await send(rhW, rh, { address: c.creditContract, abi: creditAbi, functionName: 'applyAttestation', args: [attestation, signature] });
 const terms = await rh.readContract({ address: c.creditContract, abi: creditAbi, functionName: 'creditTerms', args: [borrower.address] });
 ok('EIP-712 attestation verified on-chain', `tier ${terms[0]}, collateral ratio ${terms[2] / 100}%, signed by ${signer}; applyAttestation tx ${applied.hash}`);

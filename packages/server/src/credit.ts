@@ -70,7 +70,8 @@ export const ROBINHOOD = {
     MSFT: '0x45C3C877C15E6BA2EBB19eA114Ea508d14C1Af2E', GOOGL: '0xF6f373a037c30F0e5010d854385cA89185AE638b', AMZN: '0xD5a1508ceD74c084eBf3cBe853e2C968fB2a651C', META: '0x7C38C00C30BEe9378381E7B6135d7283356D71b1',
     ETH: '0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9', USDG: '0x61B7e5650328764B076A108EFF5fa7282a1B9aD2',
   } as Record<string, Address>,
-  holders: { NVDA: '0xd4EB21209C4D6093f80B5b84f5C45cc093EA14a3' as Address, USDG: '0x352A3666B27Bb09Aca7B4a71Ed624429B7549551' as Address },
+  /** Uniswap v4 PoolManager: a real holder of both, and its balances are in the warmed snapshot. */
+  holders: { NVDA: '0x8366a39CC670B4001A1121B8F6A443A643e40951' as Address, USDG: '0x8366a39CC670B4001A1121B8F6A443A643e40951' as Address },
 };
 
 const isLoopback = (url: string) => { try { return ['127.0.0.1', 'localhost'].includes(new URL(url).hostname); } catch { return false; } };
@@ -83,8 +84,12 @@ export async function assertRobinhoodFork(rpcUrl: string) {
   // 46630 is accepted because the CRE simulator only knows Robinhood *testnet*: dev:all runs the mainnet fork under that id.
   if (chain !== ROBINHOOD.chainId && chain !== ROBINHOOD.creChainId) throw new Error(`Setup required: Robinhood fork must report chain ${ROBINHOOD.chainId} or ${ROBINHOOD.creChainId}; RPC returned ${chain}`);
   const info = await rpc('anvil_nodeInfo').catch(() => null);
-  if (!info?.forkConfig?.forkUrl) throw new Error('Setup required: the Robinhood RPC is not an Anvil fork');
-  if (!String(info.forkConfig.forkUrl).includes('rpc.mainnet.chain.robinhood.com')) throw new Error('Setup required: the Robinhood fork must fork Robinhood Chain mainnet (real Stock Tokens and Chainlink feeds)');
+  if (!info) throw new Error('Setup required: the Robinhood RPC is not a local Anvil node');
+  // Either a live fork of mainnet, or a warmed snapshot of mainnet state (anvil --load-state): both carry the real
+  // Stock Token and Chainlink contracts. A snapshot outlives the public RPC's ~10 minutes of historical state.
+  if (info.forkConfig?.forkUrl && !String(info.forkConfig.forkUrl).includes('rpc.mainnet.chain.robinhood.com')) throw new Error('Setup required: the Robinhood fork must fork Robinhood Chain mainnet (real Stock Tokens and Chainlink feeds)');
+  const code = await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getCode', params: [ROBINHOOD.stocks.NVDA, 'latest'] }) }).then(r => r.json());
+  if (!code.result || code.result === '0x') throw new Error('Setup required: no NVDA Stock Token contract on this Robinhood node');
 }
 
 /** Gives `to` gas ETH, NVDA and USDG on the Robinhood fork by impersonating real mainnet holders. Returns the tx hashes. */
