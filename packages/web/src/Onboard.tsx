@@ -8,6 +8,7 @@ import { createSiweMessage } from "viem/siwe";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 import { isAddress, toHex, type Address, type Hex } from "viem";
 import { PRIVY_APP_ID, privyActions, waitForPrivy } from "./signer";
+import { connectWallet, useBrowserWallets, type InjectedWallet } from "./browser-wallet";
 import { SERVER, usdc, type Config } from "./api";
 import { Copy, Icon, Logo, msgOf } from "./ui";
 import { QR } from "./kit";
@@ -33,11 +34,8 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
 }
 export const listStores = (token: string) => call<StoreView[]>("/stores", { token });
 
-type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
-const injected = () => (window as unknown as { ethereum?: Eth }).ethereum;
-
-/** Sign in with Ethereum, with this browser's test wallet or an injected wallet (MetaMask, Rabby…). */
-async function signIn(cfg: Config, via: "local" | "injected"): Promise<Session> {
+/** Sign in with Ethereum, with this browser's test wallet or a browser wallet (EIP-6963 or window.ethereum). */
+async function signIn(cfg: Config, via: "local" | InjectedWallet): Promise<Session> {
   const { nonce } = await call<{ nonce: string }>("/auth/nonce");
   let address: Address, sign: (m: string) => Promise<Hex>;
   if (via === "local") {
@@ -46,9 +44,8 @@ async function signIn(cfg: Config, via: "local" | "injected"): Promise<Session> 
     if (!k) { k = generatePrivateKey(); try { localStorage.setItem(WALLET_KEY, k); } catch { /* tab-only */ } }
     const a = privateKeyToAccount(k); address = a.address; sign = (message) => a.signMessage({ message });
   } else {
-    const eth = injected(); if (!eth) throw new Error("No browser wallet found. Use the test wallet, or install a wallet extension.");
-    const [a] = (await eth.request({ method: "eth_requestAccounts" })) as Address[]; address = a;
-    sign = (message) => eth.request({ method: "personal_sign", params: [message, a] }) as Promise<Hex>;
+    const eth = via.provider, a = await connectWallet(eth); address = a;
+    sign = (message) => eth.request({ method: "personal_sign", params: [toHex(message), a] }) as Promise<Hex>;
   }
   const message = createSiweMessage({ domain: location.host, address, uri: location.origin, version: "1", chainId: cfg.chainId, nonce, issuedAt: new Date(), expirationTime: new Date(Date.now() + 10 * 60_000), statement: "Sign in to Noren Merchant. This costs nothing and sends no transaction." });
   const s = await call<Session>("/auth/siwe", { method: "POST", body: JSON.stringify({ message, signature: await sign(message) }) });
@@ -92,6 +89,7 @@ export function Onboard({ cfg, session, onSession, onStore, onDone }: { cfg: Con
   const [desc, setDesc] = useState("");
   const [link, setLink] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const wallets = useBrowserWallets();
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => { if (session && step === 0) setStep(1); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
   const run = async (k: string, f: () => Promise<void>) => { setBusy(k); setErr(null); try { await f(); } catch (e) { setErr(msgOf(e)); } finally { setBusy(null); } };
@@ -137,9 +135,13 @@ const { invoice } = await noren.invoices.create({
               <button className="ob-choice" disabled={!!busy} onClick={() => run("local", async () => { onSession(await signIn(cfg, "local")); setStep(1); })}>
                 <Icon.lock /><span><b>{busy === "local" ? "Signing in…" : "Use a test wallet"}</b><small>A key kept in this browser, for the local forks</small></span><Icon.arrow />
               </button>
-              <button className="ob-choice" disabled={!!busy || !injected()} onClick={() => run("injected", async () => { onSession(await signIn(cfg, "injected")); setStep(1); })}>
-                <Icon.shield /><span><b>{busy === "injected" ? "Waiting for your wallet…" : "Browser wallet"}</b><small>{injected() ? "MetaMask, Rabby or any EIP-1193 wallet" : "No browser wallet detected"}</small></span><Icon.arrow />
-              </button>
+              {wallets?.length ? wallets.map((w) => (
+                <button key={w.info.uuid} className="ob-choice" disabled={!!busy} onClick={() => run(w.info.uuid, async () => { onSession(await signIn(cfg, w)); setStep(1); })}>
+                  {w.info.icon ? <img src={w.info.icon} alt="" width={16} height={16} style={{ borderRadius: 4 }} /> : <Icon.shield />}<span><b>{busy === w.info.uuid ? `Waiting for ${w.info.name}…` : w.info.name}</b><small>Browser wallet: sign one message, nothing is sent on-chain</small></span><Icon.arrow />
+                </button>
+              )) : (
+                <button className="ob-choice" disabled><Icon.shield /><span><b>Browser wallet</b><small>{wallets === null ? "Looking for wallets…" : "No browser wallet detected"}</small></span><Icon.arrow /></button>
+              )}
             </div>
             {err && <p className="err" role="alert">{err}</p>}
           </div>

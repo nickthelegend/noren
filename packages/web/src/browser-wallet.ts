@@ -3,6 +3,7 @@
  * fallback, chain switching (wallet_switchEthereumChain, then wallet_addEthereumChain), and a viem transport that sends
  * signing calls to the wallet and everything else to our own RPC.
  */
+import { useEffect, useState } from "react";
 import { custom, http, type Address, type Chain, type Hex, type HttpTransportConfig, type Transport } from "viem";
 
 export type Eip1193 = { request(a: { method: string; params?: unknown[] }): Promise<unknown>; on?: (e: string, f: (...a: unknown[]) => void) => void; removeListener?: (e: string, f: (...a: unknown[]) => void) => void };
@@ -91,3 +92,16 @@ export function injectedTransport(p: Eip1193, url: string, opts?: HttpTransportC
     })(params);
   };
 }
+
+/** Injected wallets on this page, re-scanned on mount and when a wallet announces itself later. */
+export function useBrowserWallets() {
+  const [list, setList] = useState<InjectedWallet[] | null>(null);
+  useEffect(() => {
+    let on = true;
+    const scan = () => discoverWallets().then((l) => on && setList(l));
+    scan(); addEventListener("eip6963:announceProvider", scan);
+    return () => { on = false; removeEventListener("eip6963:announceProvider", scan); };
+  }, []);
+  return list;
+}
+

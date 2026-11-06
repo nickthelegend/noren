@@ -3,23 +3,11 @@
  * wallet (EIP-6963 or window.ethereum), or use this browser's test wallet. Without VITE_PRIVY_APP_ID there's no Privy
  * sign-in, and the app says so.
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Logo, msgOf } from "../ui";
 import { PRIVY_APP_ID, connectBrowserWallet, disconnectBrowserWallet, privyActions, setWalletMode, useSigner, type WalletMode } from "../signer";
-import { discoverWallets, type InjectedWallet } from "../browser-wallet";
+import { useBrowserWallets } from "../browser-wallet";
 import { Mark } from "../logos";
-
-/** Injected wallets on this page, re-scanned on mount and when a wallet announces itself later. */
-export function useBrowserWallets() {
-  const [list, setList] = useState<InjectedWallet[] | null>(null);
-  useEffect(() => {
-    let on = true;
-    const scan = () => discoverWallets().then((l) => on && setList(l));
-    scan(); addEventListener("eip6963:announceProvider", scan);
-    return () => { on = false; removeEventListener("eip6963:announceProvider", scan); };
-  }, []);
-  return list;
-}
 
 function BrowserWallets({ onError }: { onError: (e: string | null) => void }) {
   const list = useBrowserWallets();
