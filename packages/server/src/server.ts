@@ -9,6 +9,7 @@ import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork,
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
 import { assertRobinhoodFork, creditDrawProblem, ensureUniswapOnFork, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 import { AuthState } from './auth.ts';
+import { createPrivateRelay, type PrivateRelayOptions } from './private.ts';
 import { findStoreBySecret, mayAct, newSecretKey, publicStore, validName, validPayout, validateRedirect, validateMetadata, type Principal, type Store } from './stores.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
@@ -39,7 +40,9 @@ export function readableError(error: any): string {
 }
 export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUrl?: string; merchantKey?: Hex; localUnlockedMerchant?: Address; refundToken?: string; merchantToken?: string; dataFile: string; aspTree?: () => bigint[][]; dev?: { aspUrl: string; merchantToken: string; faucetUsdc?: bigint; faucetGas?: bigint }; credit?: CreditOptions;
   /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
-  mounts?: ((req: any, res: any) => Promise<boolean>)[] };
+  mounts?: ((req: any, res: any) => Promise<boolean>)[];
+  /** "Send privately": relay Kohaku withdrawals to any address (GET /private/relayer, POST /private/send). */
+  privateRelay?: Omit<PrivateRelayOptions, 'deployment' | 'rpcUrl'> };
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
 /** NorenRateOracle on Arc re-checks a fiat quote at the same Chainlink rounds (rates written by the CRE pricing workflow). */
 export type RateCheck = { oracle: Address; verified: boolean; detail: string };
@@ -181,6 +184,7 @@ export function createMerchantServer(options: ServerOptions): Server {
     }
     return { gateway, merchant, invoiceId: id, amountUsdg: row.invoice.amount.toString(), expiry: row.invoice.expiry.toString() };
   }
+  const privateRelay = options.privateRelay ? createPrivateRelay({ deployment: options.deployment, rpcUrl: options.rpcUrl, ...options.privateRelay }) : undefined;
   const server = createHttpServer(async (req, res) => {
     try {
       await ready; await devReady;
@@ -191,6 +195,7 @@ export function createMerchantServer(options: ServerOptions): Server {
       (req as any).norenMerchantAllowed = (address: string) => mayAct(principal(req), address, stores);
       (req as any).norenAuthenticated = () => !!principal(req);
       for (const mount of options.mounts ?? []) if (await mount(req, res)) return;
+      if (privateRelay && await privateRelay.mount(req, res)) return;
       if (req.method === 'GET' && path === '/auth/nonce') return send(res, 200, { nonce: auth.nonce() });
       if (req.method === 'POST' && path === '/auth/siwe') { const b = await body(req); const result = await auth.siwe(b.message, b.signature); await saveSessions(); return send(res, 200, result); }
       if (req.method === 'POST' && path === '/auth/logout') { const t = bearer(req); if (!t || !auth.address(t)) return send(res, 401, { error: 'Session required' }); auth.logout(t); await saveSessions(); return send(res, 200, { revoked: true }); }

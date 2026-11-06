@@ -3,7 +3,7 @@ import { viem as kohakuViem } from '@kohaku-eth/provider/viem';
 import { CommitmentSignalMapper, WithdrawSignalMapper } from '@fatsolutions/privacy-pools-core-circuits';
 import * as snarkjs from 'snarkjs';
 import { createPublicClient, http, type Address, type Hex } from 'viem';
-import { ARC_USDC, createReceiptOpening, encodeInvoiceData, localFork, type Deployment, type Invoice } from './index.ts';
+import { ARC_USDC, createReceiptOpening, encodeInvoiceData, encodeRelayData, localFork, type Deployment, type Invoice } from './index.ts';
 
 export type AspTree = bigint[][];
 export function aspServiceFactory(endpoint: string) {
@@ -93,12 +93,39 @@ export function createCustomer(options: CustomerOptions) {
       if (!opening || opening.commitment.toLowerCase() !== invoice.receiptCommitment.toLowerCase()) throw new Error('Receipt opening unavailable or mismatched');
       return { invoiceId: invoice.invoiceId, amount: invoice.amount, secret: opening.secret, commitment: opening.commitment };
     },
+    /**
+     * "Arrive private": the precommitment of this account's next deposit, computed client-side. It travels in a
+     * SHIELD action (CCTP hookData or a CCIP payload) and NorenShieldSink deposits the bridged USDC under it, so the
+     * money lands as this account's private balance. Kohaku finds the deposit on sync whoever the depositor is.
+     */
+    async nextPrecommitment(): Promise<bigint> {
+      await main.sync();
+      const next = await main.prepareShield({ asset, amount: 1n });
+      return BigInt(`0x${next.txns[0].data.slice(-64)}`);
+    },
+    /**
+     * "Send privately": a withdrawal proof that pays `recipient` through Kohaku's Entrypoint.relay. A relayer (the
+     * Noren server, `feeRecipient`) submits it, so on-chain the recipient is paid by the pool and the sender's
+     * address appears nowhere. `amount` leaves the private balance; the recipient gets it minus relayFeeBps.
+     */
+    async proveRelayedSend(p: { recipient: Address; amount: bigint; feeRecipient: Address; relayFeeBps: bigint }) {
+      if (p.amount <= 0n) throw new Error('amount must be positive');
+      await main.sync();
+      const withdrawal = { processooor: d.entrypoint, data: encodeRelayData({ recipient: p.recipient, feeRecipient: p.feeRecipient, relayFeeBps: p.relayFeeBps }) };
+      const [result] = await main.stateManager.getWithdrawalPayloads({ asset: BigInt(d.usdc), amount: p.amount, recipient: BigInt(d.entrypoint), checkoutWithdrawal: withdrawal });
+      return { withdrawal, scope: BigInt(result.withdrawalInfo.scope), proof: toSolidityProof(result.proofResult) };
+    },
     async proveInvoicePayment(invoice: Invoice) {
       await main.sync();
       const withdrawal = { processooor: d.checkout, data: encodeInvoiceData(invoice) };
       const [result] = await main.stateManager.getWithdrawalPayloads({ asset: BigInt(d.usdc), amount: invoice.amount, recipient: BigInt(d.checkout), checkoutWithdrawal: withdrawal });
-      const p = result.proofResult.proof;
-      return { withdrawal, proof: { pA: [BigInt(p.pi_a[0]), BigInt(p.pi_a[1])], pB: [[BigInt(p.pi_b[0][1]), BigInt(p.pi_b[0][0])], [BigInt(p.pi_b[1][1]), BigInt(p.pi_b[1][0])]], pC: [BigInt(p.pi_c[0]), BigInt(p.pi_c[1])], pubSignals: result.proofResult.publicSignals.map(BigInt) } };
+      return { withdrawal, proof: toSolidityProof(result.proofResult) };
     },
   };
+}
+
+/** snarkjs Groth16 output -> the Solidity WithdrawProof struct (pB coordinates swapped for the verifier). */
+export function toSolidityProof(r: { proof: any; publicSignals: (string | bigint)[] }) {
+  const p = r.proof;
+  return { pA: [BigInt(p.pi_a[0]), BigInt(p.pi_a[1])], pB: [[BigInt(p.pi_b[0][1]), BigInt(p.pi_b[0][0])], [BigInt(p.pi_b[1][1]), BigInt(p.pi_b[1][0])]], pC: [BigInt(p.pi_c[0]), BigInt(p.pi_c[1])], pubSignals: r.publicSignals.map(BigInt) };
 }
