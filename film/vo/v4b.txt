@@ -1,1 +1,1 @@
-Don't sell your ETH. Deposit it, and it earns trading fees as 1inch Aqua liquidity. Borrow against it, and those fees pay your loan down. Open a credit line from stock, and World ID lifts the limit. Swap uses Uniswap v4; Noren's Aqua maker fills when it's better.
+Don't sell your stocks. Deposit NVDA into Noren's Aqua pool, borrow up to 80% of its value, and the fees it earns pay your loan back. Credit tasks, like World ID and repaying on time, raise your limit. Swap uses Uniswap v4; Noren's Aqua maker fills when it's better.
