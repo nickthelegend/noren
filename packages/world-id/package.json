@@ -1,0 +1,31 @@
+{
+  "name": "@noren/world-id",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./react": "./src/VerifyHuman.tsx"
+  },
+  "scripts": {
+    "test": "vitest run --root .",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@worldcoin/idkit": "4.6.0",
+    "@worldcoin/idkit-core": "4.6.0",
+    "viem": "2.51.3"
+  },
+  "peerDependencies": {
+    "react": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "18.3.12",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

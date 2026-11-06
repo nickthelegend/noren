@@ -6,8 +6,10 @@
 # cached by then ("historical state ... is not available"). This script:
 #   1. forks mainnet on a temporary port (8722) a few blocks behind the head,
 #   2. deploys Noren (CREATE2) and seeds demo balances from a real holder (deploy-fork.sh),
-#   3. simulates every demo flow from the demo accounts (Warm.s.sol, no broadcast) so the
-#      fork caches all the real mainnet state those flows read,
+#   3. simulates every demo flow from the demo accounts (Warm.s.sol, no broadcast) with state-diff
+#      recording, then writes every account and slot those flows read, with its real value at the
+#      fork block, into the temporary fork (apply-warm.ts). Anvil's dump only holds state its own
+#      transactions or anvil_set* calls touched, so plain reads would otherwise be lost,
 #   4. dumps that state to .fork/robinhood-snapshot.json and stops the temporary fork.
 # Then serve it with scripts/serve-snapshot.sh (no upstream, port 8720).
 # Reads of state that was never warmed return zero on the snapshot; add flows to Warm.s.sol.
@@ -32,7 +34,11 @@ D="$ROOT/.fork/deployment.json"
 j() { python3 -c "import json,sys;print(json.load(open('$D'))['$1'])"; }
 cd "$ROOT/contracts"
 NOREN_RH_ORACLE=$(j oracle) NOREN_RH_VAULT=$(j vault) NOREN_RH_GATEWAY=$(j gateway) NOREN_RH_CREDIT=$(j credit) NOREN_RH_MERCHANT=$(j demoMerchant) \
-  forge script script/Warm.s.sol:Warm --rpc-url http://127.0.0.1:$TMP_PORT --sender "$(j demoCustomer)" -q >/dev/null
+  forge script script/Warm.s.sol:Warm --rpc-url http://127.0.0.1:$TMP_PORT --sender "$(j demoCustomer)" >"$ROOT/.fork/warm-output.txt" 2>&1 \
+  || { tail -20 "$ROOT/.fork/warm-output.txt" >&2; exit 1; }
+cd "$ROOT"
+pnpm exec tsx scripts/apply-warm.ts "$ROOT/.fork/warm-output.txt" http://127.0.0.1:$TMP_PORT
+cast rpc --rpc-url http://127.0.0.1:$TMP_PORT evm_mine >/dev/null # a block so the dump has a head with the new state
 stop
 trap - EXIT
 [ -s "$SNAP" ] || { echo "Snapshot was not written" >&2; exit 1; }

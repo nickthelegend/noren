@@ -94,6 +94,20 @@ contract NorenCreditLineTest is RobinhoodBase {
     assertEq(credit.lineOutstanding(lineId), 100e6);
   }
 
+  function test_utilisationReturnsLastReport() public {
+    _open();
+    (uint256 d0, uint256 r0, uint64 a0) = credit.utilisation(lineId);
+    assertEq(d0 + r0 + a0, 0, 'no report yet');
+    uint64 t = uint64(vm.getBlockTimestamp());
+    _report(75e6, 25e6, t);
+    (uint256 d, uint256 r, uint64 a) = credit.utilisation(lineId);
+    assertEq(d, 75e6);
+    assertEq(r, 25e6);
+    assertEq(a, t);
+    vm.expectRevert(abi.encodeWithSelector(NorenCredit.UnknownLine.selector, bytes32(uint256(1))));
+    credit.utilisation(bytes32(uint256(1)));
+  }
+
   function test_staleOrReplayedReportRejected() public {
     _open();
     uint64 t = uint64(block.timestamp);
