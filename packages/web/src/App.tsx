@@ -9,7 +9,8 @@ import { Icon, Logo, useRoute } from "./ui";
 export function App() {
   const route = useRoute();
   if (route.page === "dashboard") return <Dashboard tab={route.tab} sub={route.sub} />;
-  if (route.page === "pay") return <Checkout id={route.id} />;
+  // Keyed by the whole hash so an app handoff (#/pay/<id>?m=usdc) always starts on the chosen method.
+  if (route.page === "pay") return <Checkout key={location.hash} id={route.id} />;
   if (route.page === "app") return <NorenApp />;
   if (route.page === "tx") return <TxPage chain={route.chain} hash={route.hash} />;
   return <Site />;
