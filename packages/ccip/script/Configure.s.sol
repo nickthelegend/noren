@@ -9,7 +9,7 @@ import {NorenCcipHub} from "../src/NorenCcipHub.sol";
 import {NorenCcipInbox} from "../src/NorenCcipInbox.sol";
 
 /// @notice Wires peers, routes and gas limits on one chain after every chain is deployed.
-///         ROLE = arc | hub | base-gateway | sepolia-gateway | robinhood. Addresses come from env (see docs/CCIP.md).
+///         ROLE = arc | hub | base-gateway | sepolia-gateway | robinhood | robinhood-to-sepolia | sepolia-from-robinhood. Addresses come from env (see docs/CCIP.md).
 ///         Key from NOREN_DEPLOYER_KEY.
 contract Configure is Script {
   uint64 internal constant RH = 2032988798112970440;
@@ -71,8 +71,13 @@ contract Configure is Script {
       g.setPeer(BASE, hub, NorenCcipBase.Peer.HUB);
       g.setAllowedOrigin(ARC, true);
       NorenCcipInbox(vm.envAddress("RH_INBOX")).setReporter(ARC, vm.envAddress("ARC_ACTION_ROUTER"), true);
+    } else if (role == keccak256("robinhood-to-sepolia")) {
+      // Direct Robinhood -> Ethereum Sepolia lane (lists CCIP-BnM): programmable token transfers.
+      NorenCcipGateway(payable(rhGw)).setRoute(SEP, NorenCcipGateway.Route(SEP, sepGw, sepGw, GATEWAY_GAS, 0));
+    } else if (role == keccak256("sepolia-from-robinhood")) {
+      NorenCcipGateway(payable(sepGw)).setPeer(RH, rhGw, NorenCcipBase.Peer.GATEWAY);
     } else {
-      revert("ROLE must be arc | hub | base-gateway | sepolia-gateway | robinhood");
+      revert("ROLE must be arc | hub | base-gateway | sepolia-gateway | robinhood | robinhood-to-sepolia | sepolia-from-robinhood");
     }
     vm.stopBroadcast();
   }
