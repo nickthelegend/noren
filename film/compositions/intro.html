@@ -36,9 +36,9 @@
     </div>
     <div class="bar" id="in-bar">
       <div class="tag" id="intro-tag"><i></i>01 · Noren</div>
-      <div id="intro-c0" class="cap clip" data-start="6.100" data-duration="1.550" data-track-index="3"><span class="in">Noren: payments <em>private by default</em></span></div>
-      <div id="intro-c1" class="cap clip" data-start="7.650" data-duration="2.050" data-track-index="3"><span class="in">that also take <em>stocks</em> and <em>credit</em></span></div>
-      <div id="intro-c2" class="cap clip" data-start="9.700" data-duration="5.200" data-track-index="3"><span class="in">for merchants, consumers and developers</span></div>
+      <div id="intro-c0" class="cap clip" data-start="4.850" data-duration="3.400" data-track-index="3"><span class="in">Noren: a <em>DEX</em> and stablecoin payment rail on Arc</span></div>
+      <div id="intro-c1" class="cap clip" data-start="8.250" data-duration="2.650" data-track-index="3"><span class="in">credit lines and <em>cross-chain settlement</em></span></div>
+      <div id="intro-c2" class="cap clip" data-start="10.900" data-duration="4.000" data-track-index="3"><span class="in">payments <em>private by default</em></span></div>
       <div class="net" id="intro-net">noren · the real website, local build</div>
     </div>
   </div>
@@ -51,11 +51,11 @@
     tl.fromTo("#in-glow", { scale: 0.8, opacity: 0.4 }, { scale: 1.15, opacity: 1, duration: 4, ease: "sine.inOut" }, 0);
     tl.fromTo("#intro-win", { y: 1100 }, { y: 0, duration: 0.7, ease: "power3.out" }, 3.85);
     tl.fromTo("#in-bar", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 4.1);
-    tl.fromTo("#intro-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.12);
-    tl.to("#intro-c0 .in", { opacity: 0, duration: 0.15 }, 7.48);
-    tl.fromTo("#intro-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 7.67);
-    tl.to("#intro-c1 .in", { opacity: 0, duration: 0.15 }, 9.52);
-    tl.fromTo("#intro-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.72);
+    tl.fromTo("#intro-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.87);
+    tl.to("#intro-c0 .in", { opacity: 0, duration: 0.15 }, 8.08);
+    tl.fromTo("#intro-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 8.27);
+    tl.to("#intro-c1 .in", { opacity: 0, duration: 0.15 }, 10.73);
+    tl.fromTo("#intro-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 10.92);
     tl.to("#intro-c2 .in", { opacity: 0, duration: 0.25 }, 14.6);
     window.__timelines["intro"] = tl;
   </script>
