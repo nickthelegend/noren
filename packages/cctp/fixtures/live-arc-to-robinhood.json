@@ -22,5 +22,10 @@
   "mint": "done",
   "mintTxHash": "0xc74ce4d19f01cb573df7d3c3af0e30d06ef043d6a0832cf87b6380755d1a56b5",
   "mintUrl": "https://explorer.testnet.chain.robinhood.com/tx/0xc74ce4d19f01cb573df7d3c3af0e30d06ef043d6a0832cf87b6380755d1a56b5",
-  "mintedAt": "2026-11-06T11:38:33.099Z"
+  "mintedAt": "2026-11-06T11:38:33.099Z",
+  "robinhoodGas": {
+    "mint": "171340 gas, 0.0000017134 ETH",
+    "gasPrice": "0.01 gwei",
+    "gasUsedForL1": 0
+  }
 }

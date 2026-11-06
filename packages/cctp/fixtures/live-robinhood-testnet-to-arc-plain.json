@@ -1,0 +1,53 @@
+{
+  "network": "PUBLIC TESTNETS: Robinhood Chain Testnet (46630, CCTP domain 35) -> Arc Testnet (5042002, domain 26)",
+  "relayedBy": "Chainlink CRE workflow packages/cctp/cre/cctp-relay, cre workflow simulate --broadcast (CRE CLI v1.39), arc-testnet MockKeystoneForwarder",
+  "kind": "plain",
+  "fromChain": "robinhood-testnet",
+  "amount": "900000",
+  "recipient": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "hookData": null,
+  "maxFee": "189",
+  "minFinalityThreshold": 1000,
+  "relay": "cre",
+  "burnTxHash": "0xc5c221b026281d1832e92a108184ee535914a349eb2795de27d16a6ffca346f8",
+  "burnUrl": "https://explorer.testnet.chain.robinhood.com/tx/0xc5c221b026281d1832e92a108184ee535914a349eb2795de27d16a6ffca346f8",
+  "burnEventIndex": 3,
+  "irisUrl": "https://iris-api-sandbox.circle.com/v2/messages/35?transactionHash=0xc5c221b026281d1832e92a108184ee535914a349eb2795de27d16a6ffca346f8",
+  "message": "0x00000001000000230000001ae1faaa16a4b19e994864658471ac9c780f7800ba3392e2b550fbfdf6438337060000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d000003e8000003e8000000010000000000000000000000002fd79307e37ff0d60ae26a108fba5b22bfc34b120000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f8000000000000000000000000000000000000000000000000000000000000dbba00000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f8000000000000000000000000000000000000000000000000000000000000000bd000000000000000000000000000000000000000000000000000000000000007e00000000000000000000000000000000000000000000000000000000043e5d05",
+  "attestation": "0x7ca059231fbc7ee01c5cd78c288f4a5b5f288e76d1bc64426e823f4e2670830a0a35710cb52b977e14717a9b86b7826025168adf1e753d0486d06a62b5f883801cf65f24cfe6bbef51e03c2f6fbb4c755ffe6b258249ad9dc0e2816c8e45ea1e40419858be9693fdbedc4738dee665c3beaf2a5b8e2f1999f073b1c0719725531e1b",
+  "creTriggerIndex": 3,
+  "creLog": [
+    "2026-11-06T17:11:14Z [USER LOG] Noren burn on robinhood-testnet (domain 35) tx 0xc5c221b026281d1832e92a108184ee535914a349eb2795de27d16a6ffca346f8: 900000 USDC6 to Arc, maxFee 189, minFinality 1000, hookData 0 bytes",
+    "2026-11-06T17:11:14Z [USER LOG] Circle attestation ready: nonce 0xe1faaa16a4b19e994864658471ac9c780f7800ba3392e2b550fbfdf643833706, finality executed 1000, fee 126, 2 signature(s)",
+    "2026-11-06T17:11:17Z [USER LOG] USDC minted on Arc through NorenArcHook: tx 0x7828cd32598c10a81046bfcaf9cfc36baef7d327387b2fd8b34396565e836ac7",
+    "✓ Workflow Simulation Result:"
+  ],
+  "creResult": "\"{\\\"status\\\":\\\"minted\\\",\\\"source\\\":\\\"robinhood-testnet\\\",\\\"burnTx\\\":\\\"0xc5c221b026281d1832e92a108184ee535914a349eb2795de27d16a6ffca346f8\\\",\\\"nonce\\\":\\\"0xe1faaa16a4b19e994864658471ac9c780f7800ba3392e2b550fbfdf643833706\\\",\\\"amount\\\":\\\"900000\\\",\\\"feeExecuted\\\":\\\"126\\\",\\\"minted\\\":\\\"899874\\\",\\\"finalityThresholdExecuted\\\":1000,\\\"arcTx\\\":\\\"0x7828cd32598c10a81046bfcaf9cfc36baef7d327387b2fd8b34396565e836ac7\\\"}\"",
+  "arcTxHash": "0x7828cd32598c10a81046bfcaf9cfc36baef7d327387b2fd8b34396565e836ac7",
+  "arcTxUrl": "https://explorer.testnet.arc.io/tx/0x7828cd32598c10a81046bfcaf9cfc36baef7d327387b2fd8b34396565e836ac7",
+  "arcForwarder": "0x6e9ee680ef59ef64aa8c7371279c27e496b5edc1",
+  "arcEvents": [
+    {
+      "contract": "NorenArcHook",
+      "event": "Bridged",
+      "args": {
+        "nonce": "0xe1faaa16a4b19e994864658471ac9c780f7800ba3392e2b550fbfdf643833706",
+        "sourceDomain": 35,
+        "recipient": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "minted": "899874",
+        "feeExecuted": "126",
+        "depositor": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "finalityThresholdExecuted": 1000,
+        "viaCre": true
+      }
+    }
+  ],
+  "completedAt": "2026-11-06T11:41:17.620Z",
+  "approveTxHash": "0xbc2b33fadd36fcac2dde87a828b12c48c8b3160c534c1f48b781dce56a67a240",
+  "robinhoodGas": {
+    "approve": "55437 gas, 0.00000055437 ETH",
+    "burn": "111724 gas, 0.00000111724 ETH",
+    "gasPrice": "0.01 gwei",
+    "gasUsedForL1": 0
+  }
+}

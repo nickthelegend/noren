@@ -37,7 +37,8 @@ const OUT = new URL(`../fixtures/live-${from}-to-arc-${kind}.json`, import.meta.
 const prior = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : null;
 const burn = prior?.burnTxHash && !prior.arcTxHash
   ? { ...prior, amount: BigInt(prior.amount), maxFee: BigInt(prior.maxFee) }
-  : await bridgeToArc({ fromChain: from, amount, recipient: me, action: actions[kind], walletClient: wallet, waitForMint: false, onStatus: (s) => log(`status ${json(s)}`) });
+  : // The deployer key is shared by several agents on every chain, so source-chain txs also run under the lock.
+    await withArcLock(() => bridgeToArc({ fromChain: from, amount, recipient: me, action: actions[kind], walletClient: wallet, waitForMint: false, onStatus: (s) => log(`status ${json(s)}`) }));
 if (prior?.arcTxHash) throw new Error(`${fileURLToPath(OUT)} is already complete; pass a new kind or move it`);
 if (!prior?.burnTxHash) writeFileSync(OUT, `${json({ ...burn, pending: "burned; CRE relay not run yet" })}\n`);
 log(`burn ${burn.burnUrl}`);

@@ -55,7 +55,7 @@ if (!rec.mintTxHash) {
     log(`mint pending: no ${DST.gas} on ${DST.name} yet`);
     process.exit(2);
   }
-  const m = await mintFromArc(TO, { nonce: rec.nonce!, message: rec.message!, attestation: rec.attestation!, minted: BigInt(rec.minted!) }, walletFor(TO, pk), (s) => log(`status ${json(s)}`));
+  const m = await withArcLock(() => mintFromArc(TO, { nonce: rec.nonce!, message: rec.message!, attestation: rec.attestation!, minted: BigInt(rec.minted!) }, walletFor(TO, pk), (s) => log(`status ${json(s)}`)));
   Object.assign(rec, m, { mint: "done", mintedAt: new Date().toISOString() });
   save();
   log(`minted ${txUrl(TO, m.mintTxHash)}`);

@@ -63,6 +63,7 @@ export type BridgeResult = {
   maxFee: bigint;
   minFinalityThreshold: number;
   relay: RelayMode;
+  approveTxHash: Hex | null;
   burnTxHash: Hex;
   burnUrl: string;
   nonce?: Hex;
@@ -125,12 +126,14 @@ export const bridgeToArc = async (p: BridgeToArcParams): Promise<BridgeResult> =
     maxFee = bps === 0 ? 0n : maxFeeFor(amount, bps);
   }
 
+  let approveTxHash: Hex | null = null;
   const allowance = await pub.readContract({ address: src.usdc, abi: erc20Abi, functionName: "allowance", args: [account.address, src.tokenMessenger] });
   if (allowance < amount) {
     const approveTx = await p.walletClient.writeContract({ address: src.usdc, abi: erc20Abi, functionName: "approve", args: [src.tokenMessenger, amount], account, chain: null });
     p.onStatus?.({ step: "approving", txHash: approveTx, url: txUrl(p.fromChain, approveTx) });
     const r = await pub.waitForTransactionReceipt({ hash: approveTx });
     if (r.status !== "success") throw new BridgeError(`approve reverted: ${txUrl(p.fromChain, approveTx)}`);
+    approveTxHash = approveTx;
   }
 
   p.onStatus?.({ step: "burning", fast: minFinalityThreshold === FINALITY_FAST, maxFee });
@@ -151,7 +154,7 @@ export const bridgeToArc = async (p: BridgeToArcParams): Promise<BridgeResult> =
 
   const result: BridgeResult = {
     fromChain: p.fromChain, amount, recipient: p.recipient, hookData, maxFee, minFinalityThreshold, relay,
-    burnTxHash, burnUrl: txUrl(p.fromChain, burnTxHash),
+    approveTxHash, burnTxHash, burnUrl: txUrl(p.fromChain, burnTxHash),
   };
   if (p.waitForMint === false) return result;
   return { ...result, ...(await trackToArc({ ...p, burnTxHash, relay, expectedAmount: amount, hasHook: hookData !== null })) };
