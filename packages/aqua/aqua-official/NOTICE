@@ -1,0 +1,38 @@
+Aqua — © Degensoft Ltd 2025
+Powered by Aqua — © Degensoft Ltd 2025
+
+packages/aqua/aqua-official — 1inch's official Aqua registry, UNMODIFIED (LicenseRef-Degensoft-Aqua-Source-1.1)
+
+What this is
+  Noren redeploys 1inch's official Aqua registry (contract AquaRouter = Aqua + Simulator + Multicall)
+  on Arc Testnet (chain 5042002). 1inch deployed Aqua at 0x1111113ccf1426a8e30e2bff5e005d929bf6a90a on
+  Arc mainnet (5042) through a CREATE3 factory that has no code on Arc Testnet, so that address cannot
+  be used there. Noren deployed the same code at its own address. Nothing in Aqua was modified.
+
+Upstream
+  github.com/1inch/aqua, tag v1.0.0, commit 81c26e4619ce21556ab02b3284ee2685de21fb18.
+  Sources (src/), foundry.toml and remappings.txt are taken from that commit with `git archive`
+  and are never edited. Dependencies: @1inch/solidity-utils 6.9.7 and @openzeppelin/contracts 5.4.0,
+  the exact versions upstream v1.0.0 pins (MIT; see LICENSES/ and THIRD_PARTY_NOTICES).
+  LICENSE, LICENSES/ and THIRD_PARTY_NOTICES in this folder are copied unchanged from that commit.
+
+Bytecode check (build-check.json)
+  The runtime bytecode built from that commit is 5,619 bytes, the same length as the code at
+  0x1111113c…a90a on Arc mainnet, and identical to it byte for byte except the 32-byte IPFS hash
+  inside the trailing CBOR metadata (that hash covers source paths and file contents of the build
+  environment, not the code). Aqua has no immutables. Its one constructor argument is the Rescuable
+  owner (storage, not code): it may only rescue tokens sent to the registry contract by mistake and has
+  no power over makers' balances or strategies. On Arc mainnet it is 1inch's deployer
+  0x0BD61d605C64A857C3D94779aEf7cA295702b3A2; on Noren's Arc Testnet copy it is Noren's deployer.
+
+Build and deploy (reproducible)
+  pnpm install                                           # packages/aqua deps (solidity-utils, OZ)
+  bash scripts/live/aqua-build-official.sh               # fetch the pinned commit, build, compare
+  pnpm exec tsx scripts/live/aqua-live.ts deploy         # CREATE2 (0x4e59b448…956C) on Arc Testnet
+  The deploy step recompares the deployed runtime with Arc mainnet's code. Addresses and transactions
+  are recorded in packages/xchain-aqua/live/arc-testnet.json and docs/AQUA-LIVE.md.
+
+Use
+  Hackathon prototype (Aqua-Source-1.1 §4, non-commercial use). Commercial use or crossing a
+  Commercial Trigger (§5) requires a Commercial License from Degensoft (license@degensoft.com).
+  No endorsement by Degensoft or 1inch is implied. This is not 1inch's deployment.

@@ -1,0 +1,14 @@
+{
+  "upstream": "github.com/1inch/aqua@81c26e4619ce21556ab02b3284ee2685de21fb18 (tag v1.0.0), contract src/AquaRouter.sol:AquaRouter, unmodified",
+  "compiler": "solc 0.8.30, via-IR, optimizer 10,000,000 runs (upstream foundry.toml)",
+  "comparedWith": "runtime code at 0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a on Arc mainnet (5042)",
+  "runtimeBytes": 5619,
+  "mainnetRuntimeBytes": 5619,
+  "differingBytes": 32,
+  "differingBytesOutsideMetadata": 0,
+  "metadataOffset": 5566,
+  "executableCodeIdentical": true,
+  "fullyIdentical": false,
+  "note": "Aqua has no immutables (its constructor only sets the Rescuable owner in storage). The only difference is the 32-byte IPFS hash inside the CBOR metadata, which hashes source paths and file contents of the build environment, not the code.",
+  "checkedAt": "2026-11-06T12:11:23.807Z"
+}

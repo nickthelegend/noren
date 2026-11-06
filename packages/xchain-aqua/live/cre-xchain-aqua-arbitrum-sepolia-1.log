@@ -1,0 +1,28 @@
+✓ Workflow compiled
+✓ Simulation limits enabled
+  HTTP: req=120kb resp=250kb timeout=10s | ConfHTTP: req=125kb resp=500kb timeout=1m30s | Consensus obs=25kb | ChainWrite evm_report=50kb evm_gas=10000000 solana_report=265b solana_cu=300000 | WASM binary=100mb compressed=20mb
+  Binary hash: 2ce9bd5e4c8de8a4762ef74fcc58667daaa69f1eeb8de8f6de9c65dd3b7de0ce
+  Config hash: a019696a0058db55c63dc3829a15df51915e1fbe9f93d980a6ac9fdb9a9b6d4f
+2026-11-06T17:46:05Z [SIMULATION] Simulator Initialized
+
+2026-11-06T17:46:05Z [SIMULATION] Running trigger trigger=evm:ChainSelector:3034092155422581607@1.0.0
+2026-11-06T17:46:05Z [USER LOG] AquaOrderOpened on arc (tx 0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae log 19): ref 0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437 beneficiary 0x519042674306F780C277152A38365547AF180b8a 1999740 of 0x3600000000000000000000000000000000000000 from source 3
+2026-11-06T17:46:05Z [USER LOG] Report: ROUTER_ORDER 0x3b8da35c1c1ccfc8abc2309d190915cb5f76c5d3f2054de40ffc9c435b94f437: fill 1999740 of 0x3600000000000000000000000000000000000000 for 0x519042674306F780C277152A38365547AF180b8a through the maker's strategy
+2026-11-06T17:46:07Z [USER LOG] Delivered to arc 0xd9f90e397770faf66b228344af5fe285b349d016: tx 0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7
+
+✓ Workflow Simulation Result:
+"{\"status\":\"written\",\"chain\":\"arc\",\"receiver\":\"0xd9f90e397770faf66b228344af5fe285b349d016\",\"txHash\":\"0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7\"}"
+
+2026-11-06T17:46:07Z [SIMULATION] Execution finished signal received
+2026-11-06T17:46:07Z [SIMULATION] Skipping WorkflowEngineV2
+
+╭──────────────────────────────────────────────────────╮
+│ Simulation complete! Ready to deploy your workflow?  │
+│                                                      │
+│ Run cre account access to request deployment access. │
+╰──────────────────────────────────────────────────────╯
+Initializing...
+Loading settings...
+Checking RPC connectivity...
+Compiling workflow...
+Fetching transaction receipt for 0x36e932240b6b3ad35fcad9e2a3772ea39ed41c2e3177bd6079c5bef7137895ae...

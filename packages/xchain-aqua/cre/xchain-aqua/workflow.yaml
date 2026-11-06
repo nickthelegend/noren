@@ -14,3 +14,13 @@ staging-settings:
     workflow-path: "./main.ts"
     config-path: "./config.staging.json"
     secrets-path: ""
+
+# The LIVE Arc Testnet stack (docs/AQUA-LIVE.md): AquaOrderOpened on the live NorenArcActionRouter ->
+# ROUTER_ORDER report -> live NorenCrossChainSettler (scripts/live/aqua-live.ts writes the config).
+arc-live-settings:
+  user-workflow:
+    workflow-name: "noren-xchain-aqua-arc-live"
+  workflow-artifacts:
+    workflow-path: "./main.ts"
+    config-path: "./config.arc-live.json"
+    secrets-path: ""
