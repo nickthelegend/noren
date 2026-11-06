@@ -11,7 +11,9 @@ import type { Config } from "./api";
 import type { Holding, Line, Onchain } from "./onchain";
 
 export type Factor = { label: string; value: string; note?: string; points?: number; max?: number; missing?: boolean };
-export type Underwriting = { score: number; tier: string; tierIndex: number; tiers: { name: string }[]; ltvBps: number; limitUsdg: bigint; factors: Factor[]; signer: string; onchainTier?: number; expires?: number };
+/** What a verified Reclaim proof does to the history score ("reclaim" on the underwriter's /score). */
+export type ReclaimBoost = { verified: boolean; provider?: string; points: number; decidedBy: string; ifVerified: { score: number; tier: number; limitUsdg: bigint } };
+export type Underwriting = { score: number; tier: string; tierIndex: number; tiers: { name: string }[]; ltvBps: number; limitUsdg: bigint; factors: Factor[]; signer: string; onchainTier?: number; expires?: number; reclaim?: ReclaimBoost };
 export type AiCheck = { status: "approved" | "declined" | "refused"; tier?: number; limitUsdg?: number; collateralRatioBps?: number; rationale?: string; riskFlags?: string[]; requestId?: string; teeVerified?: boolean | null; independent?: string; verifiability?: string; provider?: string; model?: string; reason?: string; setupRequired?: boolean };
 export type Quote = { collateral8: bigint; ltvBps: number; limitUsdc6: bigint; termDays: number; liquidation8?: bigint; tier: number; needsAttestation: boolean };
 export type Position = { live: boolean; closed: boolean; limit: bigint; expiry: number; drawn: bigint; repaid: bigint; updatedAt: number; available: bigint };
@@ -44,14 +46,15 @@ export function creditActions(_cfg: Config, oc: Onchain) {
     /** History score from the underwriter, plus the terms NorenCredit holds on-chain for this wallet. */
     async underwrite(): Promise<Underwriting> {
       if (!c?.underwriterUrl) throw setup("the history underwriter isn't running (packages/robinhood)");
-      const { score } = await getJson(`${c.underwriterUrl}/score/${oc.address}`);
+      const { score, reclaim } = await getJson(`${c.underwriterUrl}/score/${oc.address}`);
       const onchain = c.creditContract ? await terms().catch(() => null) : null;
       const factors: Factor[] = (score.factors ?? []).map((f: { label: string; value: number | string; points: number; maxPoints: number; status: string; note: string; id: string }) => ({
         label: f.label, points: f.points, max: f.maxPoints, missing: f.status !== "available",
         value: typeof f.value === "number" ? (/holdings/i.test(f.id) ? usd(f.value) : f.value.toLocaleString("en-US", { maximumFractionDigits: 0 })) : f.value,
         note: f.status === "available" ? `${f.points.toFixed(1)} of ${f.maxPoints} points` : `Unavailable: ${f.note}`,
       }));
-      return { score: score.score, tier: TIERS[score.tier]?.name ?? `Tier ${score.tier}`, tierIndex: score.tier - 1, tiers: TIERS.slice(1), ltvBps: score.collateralRatioBps, limitUsdg: BigInt(score.limitUsdg), factors, signer: "", onchainTier: onchain ? Number(onchain[0]) : undefined };
+      return { score: score.score, tier: TIERS[score.tier]?.name ?? `Tier ${score.tier}`, tierIndex: score.tier - 1, tiers: TIERS.slice(1), ltvBps: score.collateralRatioBps, limitUsdg: BigInt(score.limitUsdg), factors, signer: "", onchainTier: onchain ? Number(onchain[0]) : undefined,
+        ...(reclaim ? { reclaim: { verified: !!reclaim.verified, provider: reclaim.provider, points: Number(reclaim.points), decidedBy: String(reclaim.decidedBy ?? ""), ifVerified: { score: Number(reclaim.ifVerified.score), tier: Number(reclaim.ifVerified.tier), limitUsdg: BigInt(reclaim.ifVerified.limitUsdg) } } } : {}) };
     },
     /** The sealed AI credit check on 0G Private Computer. Refusals (including "Setup required") come back as data. */
     async aiCheck(): Promise<AiCheck> {
