@@ -52,7 +52,7 @@ contract NorenShieldSink is INorenActionSink, Ownable2Step, ReentrancyGuard {
 
   /// @dev BN254 scalar field; a precommitment is a Poseidon hash, so it must be a field element.
   uint256 internal constant SNARK_SCALAR_FIELD =
-    21888242871839275222246405745257275088548364400416034343981259425135106482881 + 1736;
+    21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
   IERC20 public immutable usdc;
   IPrivacyEntrypoint public immutable entrypoint;

@@ -87,7 +87,7 @@ contract NorenShieldSinkForkTest is Test {
   ForkArcUsdc usdc;
   address alice = makeAddr("alice"); // source-chain sender and Arc beneficiary
   address merchant = makeAddr("merchant");
-  uint256 precommitment = uint256(keccak256("alice precommitment 0")) % 21888242871839275222246405745257275088548364400416034343981259425135106482881;
+  uint256 precommitment = uint256(keccak256("alice precommitment 0")) % 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
   function setUp() public {
     vm.createSelectFork(vm.envOr("ARC_TESTNET_RPC", string("https://rpc.testnet.arc.io")));
