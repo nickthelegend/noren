@@ -849,3 +849,16 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .co-settle b { display: block; font-size: 12.5px; } .co-settle span { display: block; font-size: 11px; color: var(--faint); line-height: 1.35; }
 @media (max-width: 420px) { .co-settle { grid-template-columns: 1fr; } }
 .co-net { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+
+/* logos (src/logos.tsx): round, crisp at 16/20/24 px, neutral circle when a logo is missing */
+.lg-mark { display: inline-grid; place-items: center; flex: none; border-radius: 50%; overflow: hidden; vertical-align: middle; box-shadow: inset 0 0 0 1px rgba(23, 32, 63, .08); }
+.lg-mark img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+.lg-none { background: #e6e3db; color: #5a5f75; font: 700 10px/1 var(--sans); letter-spacing: -.02em; }
+.lg-pair { position: relative; display: inline-block; flex: none; vertical-align: middle; }
+.lg-pair > .lg-mark { position: absolute; top: 0; }
+.lg-pair > .lg-mark:first-child { left: 0; z-index: 1; box-shadow: 0 0 0 1.5px var(--white, #fff); }
+.lg-pair > .lg-mark:last-child { right: 0; }
+.lg-row { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.tx-link { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: .92em; letter-spacing: -.01em; color: inherit; text-decoration: underline; text-decoration-color: rgba(23, 32, 63, .25); text-underline-offset: 3px; white-space: nowrap; }
+.tx-link:hover { text-decoration-color: currentColor; }
+.tx-link svg { opacity: .7; }
