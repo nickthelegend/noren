@@ -16,6 +16,8 @@ interface IAqua {
     external
     returns (bytes32 strategyHash);
   function dock(address app, bytes32 strategyHash, address[] calldata tokens) external;
+  /// @dev Adds `amount` to a shipped strategy's virtual balance and moves it from the caller to the maker.
+  function push(address maker, address app, bytes32 strategyHash, address token, uint256 amount) external;
 }
 
 /// @notice SwapVM v1.0.2 router ABI (swap(order, tokenIn, tokenOut, amount, takerTraitsAndData)).
