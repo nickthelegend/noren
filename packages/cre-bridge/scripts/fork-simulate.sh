@@ -248,6 +248,17 @@ rh_drawn_repaid() {
   fi
 }
 first_cols() { awk '{print $1}' | tr '\n' ' ' | sed 's/ $//'; }
+# NorenCredit settles only on an Arc report dated at or after the close. The two forks keep their own
+# clocks, so if Arc's clock is not after Robinhood's close, step Arc's next block just past it.
+align_arc_clock() {
+  close_ts=$(cast block "$(cast receipt "$1" blockNumber --rpc-url "$RH")" --field timestamp --rpc-url "$RH")
+  arc_ts=$(cast block latest --field timestamp --rpc-url "$ARC")
+  if [ "$arc_ts" -le "$close_ts" ]; then
+    cast rpc evm_setNextBlockTimestamp $((close_ts + 1)) --rpc-url "$ARC" >/dev/null
+    echo "   (fork clock alignment: Arc clock $arc_ts is not after the Robinhood close at $close_ts; next Arc block set to $((close_ts + 1)))"
+  fi
+}
+rh_status() { cast call "$RH_CREDIT" 'line(bytes32)((address,address,uint64,uint64,uint64,uint8,uint256,uint256,uint256,uint256))' "$1" --rpc-url "$RH" | tr -d '()' | tr ',' '\n' | sed -n 6p | tr -d ' '; }
 
 # --evm-event-index is the log's position inside the transaction. Anvil mines one tx per block here, so it also equals the block log index.
 echo "== 2a. cre workflow simulate handler 0, no --broadcast (dry run: nothing is sent)"
@@ -295,6 +306,7 @@ fi
 CLOSED_TOPIC=$(cast keccak 'CreditLineClosed(bytes32)')
 CLOSE_IDX=$(cast receipt "$CLOSE_TX" --json --rpc-url "$RH" | jq --arg t "$CLOSED_TOPIC" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key')
 echo "== 5. Robinhood fork: close requested, CreditLineClosed tx $CLOSE_TX; handler 1 --broadcast"
+align_arc_clock "$CLOSE_TX"
 simulate 1 --evm-tx-hash "$CLOSE_TX" --evm-event-index "$CLOSE_IDX" --broadcast
 ARC_CLOSE_TX=$(written_tx); [ -n "$ARC_CLOSE_TX" ] || { echo "handler 1 did not write" >&2; exit 1; }
 check_forwarded "$ARC" "$ARC_CLOSE_TX" $ARC_FORWARDER
@@ -303,18 +315,16 @@ if cast send "$CREDIT" 'payInvoice(bytes32,address,uint256,bytes32)' "$LINE" "$M
   echo "draw after close unexpectedly succeeded" >&2; exit 1
 fi
 echo "   payInvoice after close reverted: $(grep -o -m1 'LineClosed' "$WORK/after.log" || grep -i -m1 revert "$WORK/after.log" | cut -c 1-160)"
-echo "== 5b. replay the opened event after close: the workflow sees the frozen line and skips"
+echo "== 5b. handler 2 on the freeze (CreditLineFrozen): fresh utilisation back to Robinhood (70 still owed, so no settlement yet)"
+simulate 2 --evm-tx-hash "$ARC_CLOSE_TX" --evm-event-index "$(arc_log_index "$ARC_CLOSE_TX")" --broadcast
+RH_FREEZE_TX=$(written_tx); [ -n "$RH_FREEZE_TX" ] || { echo "handler 2 did not write (CreditLineFrozen)" >&2; exit 1; }
+check_forwarded "$RH" "$RH_FREEZE_TX" $RH_FORWARDER
+echo "   Robinhood $RECEIVER_NAME line: $(rh_state)"
+echo "== 5c. replay the opened event after close: the workflow sees the frozen line and skips"
 simulate 0 --evm-tx-hash "$OPEN_TX" --evm-event-index "$OPEN_IDX_IN_TX" --broadcast
 
 # ---------------------------------------------------------------- 6. final repay on Arc -> settle on Robinhood
-# NorenCredit settles only on an Arc report dated at or after the close. The two forks keep their own
-# clocks, so if Arc's clock is behind Robinhood's, step Arc's next block to just after the close.
-CLOSE_TS=$(cast block "$(cast receipt "$CLOSE_TX" blockNumber --rpc-url "$RH")" --field timestamp --rpc-url "$RH")
-ARC_TS=$(cast block latest --field timestamp --rpc-url "$ARC")
-if [ "$ARC_TS" -le "$CLOSE_TS" ]; then
-  cast rpc evm_setNextBlockTimestamp $((CLOSE_TS + 1)) --rpc-url "$ARC" >/dev/null
-  echo "== 6. Arc fork clock $ARC_TS is not after the Robinhood close at $CLOSE_TS; next Arc block set to $((CLOSE_TS + 1)) (fork clock alignment)"
-fi
+align_arc_clock "$CLOSE_TX"
 FINAL_TX=$(send_arc "$CREDIT" 'repay(bytes32,uint256)' "$LINE" 70000000 --private-key "$BORROWER_KEY")
 echo "== 6. Arc fork: repay the remaining 70 USDC, Repaid tx $FINAL_TX; handler 2 --broadcast"
 simulate 2 --evm-tx-hash "$FINAL_TX" --evm-event-index "$(arc_log_index "$FINAL_TX")" --broadcast
@@ -336,12 +346,64 @@ if cast send "$CREDIT" 'onReport(bytes,bytes)' 0x "$REPORT_ARC" --rpc-url "$ARC"
 if cast send "$RH_CREDIT" 'onReport(bytes,bytes)' 0x "$REPORT_RH" --rpc-url "$RH" --private-key "$BORROWER_KEY" >/dev/null 2>&1; then echo "direct Robinhood onReport succeeded" >&2; exit 1; fi
 echo "== 7. direct onReport from a non-forwarder reverted on both forks"
 
+# ---------------------------------------------------------------- 8. World ID starter limit (HTTP trigger, handler 3)
+HUMAN_KEY=$(cast wallet private-key --mnemonic "$MN" --mnemonic-index 3)
+HUMAN=$(cast wallet address --private-key "$HUMAN_KEY")
+NULLIFIER=$(cast keccak "fork-world-id-nullifier-$NOW")
+ARC_NOW=$(cast block latest --field timestamp --rpc-url "$ARC")
+STARTER_EXPIRY=$((ARC_NOW + 30 * 86400))
+STARTER_LINE=$(cast call "$CREDIT" 'starterLineId(address)(bytes32)' "$HUMAN" --rpc-url "$ARC")
+# Same JSON shape as packages/world-id httpTriggerPayload (lineId is optional and must match starterLineId).
+PAYLOAD=$(jq -cn --arg b "$HUMAN" --arg n "$NULLIFIER" --arg l "$STARTER_LINE" --argjson e "$STARTER_EXPIRY" \
+  '{kind: "noren.human-starter.v1", borrower: $b, nullifierHash: $n, lineId: $l, limitUsdc6: "25000000", expiry: $e}')
+echo "== 8. World ID starter: cre workflow simulate handler 3 (HTTP trigger) --broadcast, payload $PAYLOAD"
+simulate 3 --http-payload "$PAYLOAD" --broadcast
+ARC_HUMAN_TX=$(written_tx); [ -n "$ARC_HUMAN_TX" ] || { echo "handler 3 did not write" >&2; exit 1; }
+check_forwarded "$ARC" "$ARC_HUMAN_TX" $ARC_FORWARDER
+echo "   starter line $STARTER_LINE: $(cast call "$CREDIT" 'lines(bytes32)((address,uint64,uint64,bool,uint256,uint256,uint256,bool))' "$STARTER_LINE" --rpc-url "$ARC")"
+[ "$(cast call "$CREDIT" 'available(bytes32)(uint256)' "$STARTER_LINE" --rpc-url "$ARC" | first)" = 25000000 ] || { echo "starter line not open" >&2; exit 1; }
+echo "== 8b. same nullifier again: the workflow sees it spent and skips"
+simulate 3 --http-payload "$PAYLOAD" --broadcast
+grep -q "already used by" "$WORK/sim.log" || { echo "reused nullifier was not skipped" >&2; exit 1; }
+echo "== 8c. the human spends 10 USDC from the starter line; handler 2 must not report it to Robinhood"
+HUMAN_DRAW_TX=$(send_arc "$CREDIT" 'payInvoice(bytes32,address,uint256,bytes32)' "$STARTER_LINE" "$MERCHANT" 10000000 "$(cast keccak "starter-invoice-$NOW")" --private-key "$HUMAN_KEY")
+simulate 2 --evm-tx-hash "$HUMAN_DRAW_TX" --evm-event-index "$(arc_log_index "$HUMAN_DRAW_TX")" --broadcast
+grep -q "World ID starter line" "$WORK/sim.log" || { echo "starter-line draw was not skipped" >&2; exit 1; }
+echo "   Drawn tx $HUMAN_DRAW_TX on the starter line was skipped for Robinhood (no collateral line behind it)"
+
+# ---------------------------------------------------------------- 9. close a fully repaid line: the freeze report alone settles it
+if [ "$RECEIVER_MODE" = credit ]; then
+  echo "== 9. second line, fully repaid before close: open -> draw 10 -> repay 10 -> close -> freeze -> settle"
+  send_rh $NVDA 'approve(address,uint256)' "$RH_CREDIT" $COLLATERAL --private-key "$BORROWER_KEY" >/dev/null
+  OPEN2_TX=$(send_rh "$RH_CREDIT" 'openCreditLine(address,uint256,uint256,uint64)' $NVDA $COLLATERAL 100000000 $EXPIRY --private-key "$BORROWER_KEY")
+  OPEN2_RCPT=$(cast receipt "$OPEN2_TX" --json --rpc-url "$RH")
+  LINE2=$(echo "$OPEN2_RCPT" | jq -r --arg t "$OPENED_TOPIC" '[.logs[] | select(.topics[0] == $t)][0].topics[2]')
+  simulate 0 --evm-tx-hash "$OPEN2_TX" --evm-event-index "$(echo "$OPEN2_RCPT" | jq --arg t "$OPENED_TOPIC" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key')" --broadcast
+  [ -n "$(written_tx)" ] || { echo "line 2 was not opened on Arc" >&2; exit 1; }
+  D2=$(send_arc "$CREDIT" 'payInvoice(bytes32,address,uint256,bytes32)' "$LINE2" "$MERCHANT" 10000000 "$(cast keccak "inv-line2-$NOW")" --private-key "$BORROWER_KEY")
+  simulate 2 --evm-tx-hash "$D2" --evm-event-index "$(arc_log_index "$D2")" --broadcast
+  send_arc $ARC_USDC 'approve(address,uint256)' "$CREDIT" 10000000 --private-key "$BORROWER_KEY" >/dev/null
+  R2=$(send_arc "$CREDIT" 'repay(bytes32,uint256)' "$LINE2" 10000000 --private-key "$BORROWER_KEY")
+  simulate 2 --evm-tx-hash "$R2" --evm-event-index "$(arc_log_index "$R2")" --broadcast
+  CLOSE2_TX=$(send_rh "$RH_CREDIT" 'closeCreditLine(bytes32)' "$LINE2" --private-key "$BORROWER_KEY")
+  [ "$(rh_status "$LINE2")" = 2 ] || { echo "line 2 is not Closing after close" >&2; exit 1; }
+  align_arc_clock "$CLOSE2_TX"
+  simulate 1 --evm-tx-hash "$CLOSE2_TX" --evm-event-index "$(cast receipt "$CLOSE2_TX" --json --rpc-url "$RH" | jq --arg t "$CLOSED_TOPIC" '[.logs | to_entries[] | select(.value.topics[0] == $t)][0].key')" --broadcast
+  FREEZE2_TX=$(written_tx); [ -n "$FREEZE2_TX" ] || { echo "line 2 was not frozen on Arc" >&2; exit 1; }
+  simulate 2 --evm-tx-hash "$FREEZE2_TX" --evm-event-index "$(arc_log_index "$FREEZE2_TX")" --broadcast
+  SETTLE2_TX=$(written_tx); [ -n "$SETTLE2_TX" ] || { echo "freeze snapshot was not reported to Robinhood" >&2; exit 1; }
+  check_forwarded "$RH" "$SETTLE2_TX" $RH_FORWARDER
+  [ "$(rh_status "$LINE2")" = 3 ] || { echo "line 2 did not settle from the freeze report (status $(rh_status "$LINE2"))" >&2; exit 1; }
+  [ "$(cast call $NVDA 'balanceOf(address)(uint256)' "$BORROWER" --rpc-url "$RH" | first)" = $COLLATERAL ] || { echo "line 2 collateral not returned" >&2; exit 1; }
+  echo "   line 2 $LINE2 settled from the freeze report alone (status 3 = Closed); borrower NVDA back to $COLLATERAL"
+fi
+
 if [ "${NOREN_CRE_CAPTURE:-0}" = 1 ]; then
   mkdir -p "$ROOT/fixtures"
   jq -n --arg arcForkBlock "$ARC_FORK_BLOCK" --arg rhForkBlock "$RH_FORK_BLOCK" --arg rhChainId "$RH_CHAIN_ID" --arg credit "$CREDIT" --arg rhCredit "$RH_CREDIT" \
     --arg receiver "$RECEIVER_NAME" --arg creditRef "${CREDIT_COMMIT:-none}" --arg line "$LINE" --arg nvda "$NVDA_PRICE" --arg limit "$LIMIT_USDC6" \
     --arg open "$OPEN_TX" --arg arcOpen "$ARC_OPEN_TX" --arg draw "$DRAW_TX" --arg rhDraw "$RH_DRAW_TX" --arg repay "$REPAY_TX" --arg rhRepay "$RH_REPAY_TX" \
-    --arg close "$CLOSE_TX" --arg arcClose "$ARC_CLOSE_TX" --arg final "$FINAL_TX" --arg rhFinal "$RH_FINAL_TX" \
+    --arg close "$CLOSE_TX" --arg arcClose "$ARC_CLOSE_TX" --arg final "$FINAL_TX" --arg rhFinal "$RH_FINAL_TX" --arg rhFreeze "$RH_FREEZE_TX" --arg settle2 "${SETTLE2_TX:-}" --arg arcHuman "$ARC_HUMAN_TX" --arg humanDraw "$HUMAN_DRAW_TX" \
     '{note: "LOCAL FORKS ONLY. Captured by packages/cre-bridge/scripts/fork-simulate.sh with cre workflow simulate --broadcast. Arc = Anvil fork of Arc Testnet (5042002). Robinhood = Anvil fork of Robinhood Chain mainnet (4663). These hashes do not exist on any public chain.",
       arcForkBlock: $arcForkBlock, robinhoodForkBlock: $rhForkBlock, robinhoodForkChainId: $rhChainId,
       norenCreditLine: $credit, robinhoodReceiver: $receiver, robinhoodReceiverAddress: $rhCredit, robinhoodReceiverCommit: $creditRef,
@@ -351,7 +413,11 @@ if [ "${NOREN_CRE_CAPTURE:-0}" = 1 ]; then
         {step: "payInvoice -> Drawn 120 USDC (Arc)", tx: $draw}, {step: "NorenCredit.onReport via forwarder (Robinhood)", tx: $rhDraw},
         {step: "repay -> Repaid 50 USDC (Arc)", tx: $repay}, {step: "NorenCredit.onReport via forwarder (Robinhood)", tx: $rhRepay},
         {step: "closeCreditLine -> CreditLineClosed (Robinhood)", tx: $close}, {step: "NorenCreditLine.onReport limit 0 via forwarder (Arc)", tx: $arcClose},
-        {step: "repay -> Repaid 70 USDC (Arc)", tx: $final}, {step: "NorenCredit.onReport via forwarder, line settled (Robinhood)", tx: $rhFinal}
+        {step: "repay -> Repaid 70 USDC (Arc)", tx: $final}, {step: "NorenCredit.onReport via forwarder, line settled (Robinhood)", tx: $rhFinal},
+        {step: "CreditLineFrozen -> NorenCredit.onReport (fresh utilisation after close)", tx: $rhFreeze},
+        {step: "line 2 fully repaid, freeze report alone settles it (Robinhood)", tx: $settle2},
+        {step: "World ID starter (HTTP trigger) -> NorenCreditLine.onReport kind 2 via forwarder (Arc)", tx: $arcHuman},
+        {step: "payInvoice 10 USDC on the starter line (Arc), not relayed to Robinhood", tx: $humanDraw}
       ]}' >"$ROOT/fixtures/fork-run.json"
   echo "== transcript saved to fixtures/fork-run.json"
 fi

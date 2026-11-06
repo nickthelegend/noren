@@ -10,7 +10,10 @@ import {
   decodeClosed,
   decodeOpened,
   decodeRobinhoodReport,
+  decideHumanStarter,
   encodeHumanStarterReport,
+  parseHumanStarterPayload,
+  starterLineId,
   formatUsdc,
   TOPIC,
   robinhoodEventsAbi,
@@ -179,4 +182,50 @@ describe("World ID starter lines", () => {
     expect((r.length - 2) / 2).toBe(160);
     expect(BigInt(r.slice(0, 66))).toBe(2n);
   });
+});
+
+describe("World ID HTTP payload (handler 3)", () => {
+  const nullifier = keccak256(stringToHex("world-nullifier"));
+  const body = (extra: Record<string, unknown> = {}) => ({
+    kind: "noren.human-starter.v1", borrower: BORROWER, nullifierHash: nullifier, limitUsdc6: "25000000", expiry: Number(NOW + 86_400n), ...extra,
+  });
+  const empty: ArcLine = { borrower: zeroAddress, expiry: 0n, updatedAt: 0n, closed: false, limitUsdc6: 0n, unsecured: false };
+  const arc = { nullifierUsedBy: zeroAddress as Address, maxStarterLimitUsdc6: 25_000_000n, line: empty };
+
+  test("starterLineId matches NorenCreditLine.starterLineId (keccak256(abi.encode(string, address)))", () => {
+    expect(starterLineId(BORROWER)).toBe(
+      keccak256(encodeAbiParameters(parseAbiParameters("string, address"), ["noren.human-starter.v1", BORROWER])),
+    );
+  });
+  test("parses the world-id httpTriggerPayload shape", () => {
+    const r = parseHumanStarterPayload(body({ lineId: starterLineId(BORROWER) }));
+    expect(r).toEqual({ borrower: BORROWER, nullifierHash: nullifier, limitUsdc6: 25_000_000n, expiry: NOW + 86_400n, lineId: starterLineId(BORROWER) });
+  });
+  test("rejects a wrong kind, bad fields and a foreign lineId", () => {
+    expect(() => parseHumanStarterPayload(body({ kind: keccak256(stringToHex("noren.human-starter.v1")) }))).toThrow("kind must be");
+    expect(() => parseHumanStarterPayload(body({ borrower: "0x1234" }))).toThrow("bad borrower");
+    expect(() => parseHumanStarterPayload(body({ nullifierHash: "0x00" }))).toThrow("nullifierHash");
+    expect(() => parseHumanStarterPayload(body({ limitUsdc6: "-1" }))).toThrow("limitUsdc6");
+    expect(() => parseHumanStarterPayload(body({ expiry: "soon" }))).toThrow("expiry");
+    expect(() => parseHumanStarterPayload(body({ lineId: keccak256(stringToHex("other")) }))).toThrow("is not NorenCreditLine.starterLineId");
+  });
+  test("builds the kind 2 report", () => {
+    const d = decideHumanStarter(parseHumanStarterPayload(body()), arc, NOW);
+    expect(d.write).toBe(true);
+    if (d.write) expect(d.report).toBe(encodeHumanStarterReport(BORROWER, nullifier, 25_000_000n, NOW + 86_400n));
+  });
+  test("skips a used nullifier, refuses over-cap and bad expiry", () => {
+    const req = parseHumanStarterPayload(body());
+    expect(decideHumanStarter(req, { ...arc, nullifierUsedBy: MERCHANT }, NOW).write).toBe(false);
+    expect(() => decideHumanStarter(req, { ...arc, line: { ...empty, borrower: BORROWER, unsecured: true, limitUsdc6: 1n } }, NOW)).toThrow("exceed the Arc cap");
+    expect(() => decideHumanStarter(req, arc, NOW + 86_400n)).toThrow("in the past");
+    expect(() => decideHumanStarter(parseHumanStarterPayload(body({ expiry: Number(NOW + 91n * 86_400n) })), arc, NOW)).toThrow("90 days");
+    expect(() => decideHumanStarter(req, { ...arc, line: { ...empty, borrower: BORROWER } }, NOW)).toThrow("not a starter line");
+  });
+});
+
+test("CreditLineFrozen decodes as Arc activity (handler 2 reports the final snapshot)", () => {
+  const log = { address: CREDIT, topics: encodeEventTopics({ abi: creditLineAbi, eventName: "CreditLineFrozen", args: { lineId: LINE } }) as Hex[], data: "0x" as Hex };
+  expect(decodeArcActivity(log, CREDIT)).toEqual({ kind: "CreditLineFrozen", lineId: LINE, amount: 0n });
+  expect(TOPIC.creditLineFrozen).toBe(keccak256(stringToHex("CreditLineFrozen(bytes32)")));
 });

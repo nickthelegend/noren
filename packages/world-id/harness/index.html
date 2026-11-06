@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noren · World ID check</title>
+<style>
+  :root { --paper:#fbf8f1; --white:#fffdf8; --ink:#17203f; --ai:#1c2a5e; --ai-2:#2c3d7c; --wash:rgba(28,42,94,.07); --muted:#5a5f75; --hair:rgba(23,32,63,.12);
+    --ok:#2f7a55; --ok-w:rgba(47,122,85,.11); --bad:#b3412c; --bad-w:rgba(179,65,44,.09); --warn:#c4661f; --warn-w:rgba(217,119,47,.12); }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.5 system-ui,-apple-system,sans-serif; }
+  main { max-width:620px; margin:0 auto; padding:32px 16px 48px; display:grid; gap:16px; }
+  h1 { margin:0; font-size:20px; letter-spacing:-.01em; } p { margin:0; }
+  .muted { color:var(--muted); } .small { font-size:12.5px; }
+  .card { background:var(--white); border:1px solid var(--hair); border-radius:14px; padding:18px; display:grid; gap:12px; min-width:0; }
+  label { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  input { width:100%; min-height:40px; border:1px solid var(--hair); border-radius:10px; padding:0 12px; font:13px ui-monospace,monospace; background:#fff; color:var(--ink); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button { min-height:40px; padding:0 16px; border-radius:10px; border:1px solid transparent; font-weight:700; font-size:14px; cursor:pointer; background:var(--ai); color:#fff; }
+  button:hover:not(:disabled) { background:var(--ai-2); } button:disabled { opacity:.5; cursor:not-allowed; }
+  button.line { background:#fff; color:var(--ink); border-color:var(--hair); }
+  .chip { display:inline-flex; gap:6px; align-items:center; padding:3px 10px; border-radius:999px; background:var(--wash); font-size:12.5px; font-weight:600; }
+  .note { border-radius:10px; padding:10px 12px; font-size:13px; overflow-wrap:anywhere; }
+  .note.ok { background:var(--ok-w); } .note.ok b { color:var(--ok); }
+  .note.bad { background:var(--bad-w); } .note.bad b { color:var(--bad); }
+  .note.warn { background:var(--warn-w); } .note.warn b { color:var(--warn); }
+  .note.info { background:var(--wash); }
+  pre { margin:0; background:#111a3d; color:#e9ecf7; border-radius:10px; padding:12px; font:12px/1.5 ui-monospace,monospace; overflow:auto; max-height:340px; white-space:pre-wrap; word-break:break-all; }
+  a { color:var(--ai); word-break:break-all; }
+  .spin { width:14px; height:14px; border-radius:50%; border:2px solid var(--hair); border-top-color:var(--ai); display:inline-block; animation:s .8s linear infinite; vertical-align:-2px; }
+  @keyframes s { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<main>
+  <header class="card">
+    <h1>Noren · starter credit for a real human</h1>
+    <p class="muted">Live harness for <code>@noren/world-id</code>: real IDKit request, real World ID bridge, real Developer Portal verification, the same server handler the Noren app uses.</p>
+    <div class="row" id="cfg"><span class="spin"></span> <span class="muted">Loading config…</span></div>
+  </header>
+
+  <section class="card">
+    <label for="wallet">Wallet the proof is bound to</label>
+    <input id="wallet" value="0x70997970C51812dc3A010C7d01b50e0d17dc79C8" spellcheck="false" autocomplete="off">
+    <div class="row">
+      <button id="go" disabled>Verify with World ID</button>
+      <button id="cancel" class="line" hidden>Cancel</button>
+      <button id="status" class="line">Check status</button>
+    </div>
+    <div id="connect" hidden class="note info"></div>
+    <div id="out" hidden></div>
+  </section>
+
+  <section class="card">
+    <label>Last server response</label>
+    <pre id="raw" class="small">–</pre>
+  </section>
+</main>
+<script src="/idkit.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+const TITLE = { verified:['ok','Verified human'], already_used:['info','Already used'], cancelled:['info','Cancelled'], unavailable:['warn','Credential not available'],
+  expired:['warn','Request expired'], invalid:['bad','Proof rejected'], setup_required:['warn','Setup required'], error:['bad','Something went wrong'] };
+const PRESET = { selfie: 'selfieCheck', proof_of_human: 'proofOfHuman', passport: 'passport' };
+const fromIdkit = code => ({
+  user_rejected: { status:'cancelled', detail:'Closed in World ID before sharing a proof.' }, cancelled: { status:'cancelled', detail:'Cancelled here.' },
+  credential_unavailable: { status:'unavailable', code, detail:'This World ID has no such credential yet.' }, world_id_4_not_available: { status:'unavailable', code, detail:'World ID 4.0 is not available for this account.' },
+  max_verifications_reached: { status:'already_used', detail:'World ID says this human already used noren-credit.' }, nullifier_replayed: { status:'already_used', detail:'World ID says this human already used noren-credit.' },
+  timeout: { status:'expired', detail:'Timed out waiting for World ID.' }, rp_signature_expired: { status:'expired', detail:'The signed request expired.' },
+}[code] ?? { status:'invalid', code, detail:`World ID could not complete the check (${code}).` });
+let cfg = null, abort = null;
+
+function show(result) {
+  $('raw').textContent = JSON.stringify(result, null, 2);
+  const [tone, title] = TITLE[result.status] ?? TITLE.error;
+  let body = esc(result.detail ?? '');
+  if (result.status === 'verified') {
+    const s = result.starter;
+    body = `${esc(result.credential)} · line <code>${esc(s.lineId.slice(0, 14))}…</code> · ${Number(s.limitUsdc6) / 1e6} USDC until ${new Date(s.expiry * 1000).toLocaleDateString()}<br>Arc write: <b>${esc(s.status)}</b> ${esc(s.txHash ?? s.detail ?? '')}`;
+  } else if (result.code) body += ` <code>${esc(result.code)}</code>`;
+  $('out').innerHTML = `<div class="note ${tone}"><b>${esc(title)}</b><div>${body}</div></div>`;
+  $('out').hidden = false;
+}
+function busy(on) { $('go').disabled = on || !cfg?.configured; $('cancel').hidden = !on; }
+
+async function api(path, body) {
+  const res = await fetch(path, body ? { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(body) } : undefined);
+  return { ok: res.ok, body: await res.json() };
+}
+
+async function loadConfig() {
+  try {
+    cfg = (await api('/world-id/config')).body;
+    $('cfg').innerHTML = cfg.configured
+      ? `<span class="chip">${esc(cfg.environment === 'staging' ? 'Staging · World ID Simulator' : 'Production · World App')}</span><span class="chip">${esc(cfg.credential)}</span><span class="chip">action ${esc(cfg.action)}</span><span class="chip">${Number(cfg.starterLimitUsdc6) / 1e6} USDC · ${cfg.starterDays} days</span><span class="chip">sink: ${esc(cfg.starterSink)}</span>`
+      : `<div class="note warn" style="width:100%"><b>Setup required</b><div>Missing ${esc(cfg.missing.join(', '))} in the gitignored .env. See docs/WORLD.md.</div></div>`;
+  } catch (e) { $('cfg').innerHTML = `<div class="note bad"><b>Server unreachable</b><div>${esc(e.message)}</div></div>`; }
+  busy(false);
+}
+
+$('go').onclick = async () => {
+  $('out').hidden = true; $('connect').hidden = true; busy(true);
+  try {
+    const signed = await api('/world-id/request', { wallet: $('wallet').value.trim() });
+    if (!signed.ok) return show(signed.body);
+    const r = signed.body;
+    const request = await IDKit.request({ app_id: r.app_id, action: r.action, rp_context: r.rp_context, allow_legacy_proofs: false, environment: r.environment })
+      .preset(IDKit[PRESET[r.credential]]({ signal: r.signal }));
+    $('connect').innerHTML = `<b>Open in ${r.environment === 'staging' ? 'the <a href="https://simulator.worldcoin.org" target="_blank" rel="noreferrer">World ID Simulator</a> (paste this link)' : 'World App'}</b><div><a href="${esc(request.connectorURI)}" target="_blank" rel="noreferrer">${esc(request.connectorURI)}</a></div><div class="small muted"><span class="spin"></span> Waiting for approval · request ${esc(request.requestId)}</div>`;
+    $('connect').hidden = false;
+    abort = new AbortController();
+    const done = await request.pollUntilCompletion({ signal: abort.signal, timeout: 300000 });
+    $('connect').hidden = true;
+    if (!done.success) return show(abort.signal.aborted ? fromIdkit('cancelled') : fromIdkit(String(done.error)));
+    $('raw').textContent = 'Verifying on the Noren server…';
+    show((await api('/world-id/verify', { idkitResponse: done.result })).body);
+  } catch (e) {
+    show({ status:'error', code:'client', detail: e.message });
+  } finally { abort = null; busy(false); }
+};
+$('cancel').onclick = () => abort?.abort();
+$('status').onclick = async () => { const s = (await api(`/world-id/status/${encodeURIComponent($('wallet').value.trim())}`)).body; $('raw').textContent = JSON.stringify(s, null, 2); };
+loadConfig();
+</script>
+</body>
+</html>

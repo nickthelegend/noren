@@ -1,55 +1,71 @@
 {
   "note": "LOCAL FORKS ONLY. Captured by packages/cre-bridge/scripts/fork-simulate.sh with cre workflow simulate --broadcast. Arc = Anvil fork of Arc Testnet (5042002). Robinhood = Anvil fork of Robinhood Chain mainnet (4663). These hashes do not exist on any public chain.",
-  "arcForkBlock": "70975938",
-  "robinhoodForkBlock": "107318238",
+  "arcForkBlock": "70977741",
+  "robinhoodForkBlock": "107326963",
   "robinhoodForkChainId": "4663",
-  "norenCreditLine": "0x459b5fa897d97cB096f8Eb508dEe494683bA90F4",
+  "norenCreditLine": "0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe",
   "robinhoodReceiver": "NorenCredit",
-  "robinhoodReceiverAddress": "0x13dD90D4cd81E4d9283C242cc8D9b3043f17218f",
-  "robinhoodReceiverCommit": "02a58d579ab8c4d9ba3f8bd9baaaec8c42e5d6e2",
-  "lineId": "0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25",
+  "robinhoodReceiverAddress": "0x34Bf621a2de465D58Bea0eA8a277211B6459da97",
+  "robinhoodReceiverCommit": "4d16701cae883d147c98005a9aa608acca2db9fa",
+  "lineId": "0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa",
   "nvdaUsd8": "18556019809",
   "limitUsdc6": "1547533639",
   "flow": [
     {
       "step": "openCreditLine -> CreditLineOpened (Robinhood)",
-      "tx": "0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea"
+      "tx": "0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1"
     },
     {
       "step": "NorenCreditLine.onReport via forwarder (Arc)",
-      "tx": "0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b"
+      "tx": "0x79fc2d970b7746cd469d019774d07c2a56044b7d235a02718f2f664e814722be"
     },
     {
       "step": "payInvoice -> Drawn 120 USDC (Arc)",
-      "tx": "0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b"
+      "tx": "0x8d55261bcaff66309838e33287e529aa15aa678a044bb62c1ee81b850bf5b42a"
     },
     {
       "step": "NorenCredit.onReport via forwarder (Robinhood)",
-      "tx": "0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8"
+      "tx": "0x095357e3a6038422bcde7dd35b29380128f0664b4e2862d995db16c7c6d14772"
     },
     {
       "step": "repay -> Repaid 50 USDC (Arc)",
-      "tx": "0xb5d92857fcf77628726cc4056326ba5218047bb69b9b1ff3548e2a762b7950ca"
+      "tx": "0x23079857ae0be6b7fb167626d05db4f3557aef74805f86d4abd14bb5e31a8364"
     },
     {
       "step": "NorenCredit.onReport via forwarder (Robinhood)",
-      "tx": "0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34"
+      "tx": "0xd1250dd824d0788c1662c055b61295340890c481f4fb3dcf8de58974b16932af"
     },
     {
       "step": "closeCreditLine -> CreditLineClosed (Robinhood)",
-      "tx": "0x751d07d5b2514de773e61fe1e2d5f43fe6547eb4f7584779c4b3aab48b98c531"
+      "tx": "0x40f9ed42f315f96226b48af93b72599f87ce4dd1b166b63042e87bc013f40a9b"
     },
     {
       "step": "NorenCreditLine.onReport limit 0 via forwarder (Arc)",
-      "tx": "0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f"
+      "tx": "0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce"
     },
     {
       "step": "repay -> Repaid 70 USDC (Arc)",
-      "tx": "0x32573d7d4279d8ba8dd406fd3ecfa4606f781d4dabca7238bd2de19bfce294e4"
+      "tx": "0x3b2ed2a8c38732fe73697913da6777b49af8384e6a4e17da00bbdd66a72e5625"
     },
     {
       "step": "NorenCredit.onReport via forwarder, line settled (Robinhood)",
-      "tx": "0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878"
+      "tx": "0xaad75626e9d56bdcf5d5dd9b95956c46eec574fbe374f18a07aac3dabf837009"
+    },
+    {
+      "step": "CreditLineFrozen -> NorenCredit.onReport (fresh utilisation after close)",
+      "tx": "0x4f369435c008422359c53c31efae04cfb0e46098b11ed940d3cb15f20283457a"
+    },
+    {
+      "step": "line 2 fully repaid, freeze report alone settles it (Robinhood)",
+      "tx": "0x3c0dcf3652a637c65ad77e13e424e1bdcd3eb0b5e3fffce2ec222b41fa3caa77"
+    },
+    {
+      "step": "World ID starter (HTTP trigger) -> NorenCreditLine.onReport kind 2 via forwarder (Arc)",
+      "tx": "0x453fa3bab671ecd0cf75227a6c7cbc6e92765b0f98c5707c508a7c11eab5c7d6"
+    },
+    {
+      "step": "payInvoice 10 USDC on the starter line (Arc), not relayed to Robinhood",
+      "tx": "0x9342b0d20aee774de9473182e90da3e5f8d7112b8b23da772ab8759bb0630c94"
     }
   ]
 }

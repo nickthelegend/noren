@@ -1,87 +1,144 @@
-== Robinhood credit contract: NorenCredit from packages/robinhood on origin/tsuke-credit at 02a58d5
-== Arc Testnet fork http://127.0.0.1:8730 (fork block 70975938)
-== Robinhood Chain mainnet fork http://127.0.0.1:8731 (fork block 107318238 of chain 4663, served as chain id 4663)
+== Robinhood credit contract: NorenCredit from packages/robinhood on origin/tsuke-credit at 4d16701
+== Arc Testnet fork http://127.0.0.1:8730 (fork block 70977741)
+== Robinhood Chain mainnet fork http://127.0.0.1:8731 (fork block 107326963 of chain 4663, served as chain id 4663)
 == Installed the real robinhood-testnet MockKeystoneForwarder bytecode at 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885 on the Robinhood fork
    typeAndVersion "MockKeystoneForwarder 1.0.0", isForwarder(self) true
    code hash fork 0x6cecd5d0cb6c0faf7d8408bc32ac1163722b7a00c25464b5555331166030f69c = testnet 0x6cecd5d0cb6c0faf7d8408bc32ac1163722b7a00c25464b5555331166030f69c
 == Arc USDC at 0x3600000000000000000000000000000000000000 replaced by the fork-only ForkUSDC shim; minted 10,000 to the pool funder, 200 to the borrower
-== NorenCreditLine on Arc fork at 0x459b5fa897d97cB096f8Eb508dEe494683bA90F4 (forwarder 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1), pool 10000000000 USDC6
-== NorenCredit (real contract, origin/tsuke-credit) on Robinhood fork at 0x13dD90D4cd81E4d9283C242cc8D9b3043f17218f, forwarder 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885
-   attestation tx 0x4eb74612d7d58e0bc31e62e3da4e96c7d34f90573b2c62c33db3080841322c47; creditTerms (tier, limitUsdg, ratioBps, available): 2 5000000000 12000 5000000000 
+== NorenCreditLine on Arc fork at 0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe (forwarder 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1), pool 10000000000 USDC6
+== NorenCredit (real contract, origin/tsuke-credit) on Robinhood fork at 0x34Bf621a2de465D58Bea0eA8a277211B6459da97, forwarder 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885
+   attestation tx 0x67ed281eb7a1f376fa8a79807471a017a895a3a236b99037bb439fade36f596c; creditTerms (tier, limitUsdg, ratioBps, available): 2 5000000000 12000 5000000000 
    10 NVDA: Chainlink NVDA/USD 18556019809 (8 dp), oracle risk value 185704036778 usd8 -> max line at 12000 bps = 1547533639 USDC6
-== 1. Robinhood fork: CreditLineOpened tx 0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea (log 2), line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25, limit 1547533639 USDC6, expiry 1796533186
+== 1. Robinhood fork: CreditLineOpened tx 0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1 (log 2), line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa, limit 1547533639 USDC6, expiry 1796534102
 == 2a. cre workflow simulate handler 0, no --broadcast (dry run: nothing is sent)
-   | 2026-11-06T10:30:39Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea log 2 block 107318246): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796533186 collateral $1857.04
-   | 2026-11-06T10:30:39Z [USER LOG] Report: open 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8: limit 1547.533639 USDC until 1796533186
-   | 2026-11-06T10:30:39Z [USER LOG] Report signed for NorenCreditLine; not broadcast, nothing sent
+   | 2026-11-06T10:45:53Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1 log 2 block 107326971): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796534102 collateral $1857.04
+   | 2026-11-06T10:45:53Z [USER LOG] Report: open 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8: limit 1547.533639 USDC until 1796534102
+   | 2026-11-06T10:45:53Z [USER LOG] Report signed for NorenCreditLine; not broadcast, nothing sent
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"not-broadcast\",\"receiver\":\"0x459b5fa897d97cB096f8Eb508dEe494683bA90F4\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c89e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25000000000000000000000000000000000000000000000000000000005c3d7d47000000000000000000000000000000000000000000000000000000006b14ebc2\"}"
+   | "{\"status\":\"not-broadcast\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8b9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa000000000000000000000000000000000000000000000000000000005c3d7d47000000000000000000000000000000000000000000000000000000006b14ef56\"}"
    Arc line still empty after the dry run
 == 2b. cre workflow simulate handler 0 --broadcast: Robinhood CreditLineOpened -> Arc NorenCreditLine.onReport
-   | 2026-11-06T10:30:43Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea log 2 block 107318246): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796533186 collateral $1857.04
-   | 2026-11-06T10:30:43Z [USER LOG] Report: open 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8: limit 1547.533639 USDC until 1796533186
-   | 2026-11-06T10:30:44Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b
+   | 2026-11-06T10:45:57Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1 log 2 block 107326971): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796534102 collateral $1857.04
+   | 2026-11-06T10:45:57Z [USER LOG] Report: open 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8: limit 1547.533639 USDC until 1796534102
+   | 2026-11-06T10:45:58Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0x79fc2d970b7746cd469d019774d07c2a56044b7d235a02718f2f664e814722be
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"written\",\"receiver\":\"0x459b5fa897d97cB096f8Eb508dEe494683bA90F4\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c89e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25000000000000000000000000000000000000000000000000000000005c3d7d47000000000000000000000000000000000000000000000000000000006b14ebc2\",\"txHash\":\"0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b\"}"
-   forwarder tx 0xaac65edf0ce507c78635c55e2aea8aa51744ab06c47d93dba07a7f3d337c550b: status true, to 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1, block 70975944, gas 140655
+   | "{\"status\":\"written\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8b9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa000000000000000000000000000000000000000000000000000000005c3d7d47000000000000000000000000000000000000000000000000000000006b14ef56\",\"txHash\":\"0x79fc2d970b7746cd469d019774d07c2a56044b7d235a02718f2f664e814722be\"}"
+   forwarder tx 0x79fc2d970b7746cd469d019774d07c2a56044b7d235a02718f2f664e814722be: status true, to 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1, block 70977747, gas 140643
    Arc line available: 1547533639 USDC6
 == 2c. same event again: the workflow sees the line already synced and skips
-   | 2026-11-06T10:30:47Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea log 2 block 107318246): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796533186 collateral $1857.04
-   | 2026-11-06T10:30:47Z [USER LOG] No write: line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 already synced to Arc
+   | 2026-11-06T10:46:02Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1 log 2 block 107326971): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796534102 collateral $1857.04
+   | 2026-11-06T10:46:02Z [USER LOG] No write: line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa already synced to Arc
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"skipped\",\"reason\":\"line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 already synced to Arc\"}"
-== 3. Arc fork: payInvoice 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, Drawn tx 0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b (merchant now holds 120000000 USDC6)
-   | 2026-11-06T10:30:51Z [USER LOG] Drawn on arc-testnet (tx 0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b log 1 block 70975945): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0xb0e06b5889ae78f0abece90ada708c3805c24bd7d9f1a22b6e060d655e80c877
-   | 2026-11-06T10:30:51Z [USER LOG] Optional read utilisation(bytes32) unavailable: [2]Unknown: execution reverted
-   | 2026-11-06T10:30:51Z [USER LOG] NorenCredit line: status Open, drawn 0 repaid 0 asOf 0
-   | 2026-11-06T10:30:51Z [USER LOG] Report: utilisation 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25: drawn 120 repaid 0 asOf 1793941247
-   | 2026-11-06T10:30:52Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8
+   | "{\"status\":\"skipped\",\"reason\":\"line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa already synced to Arc\"}"
+== 3. Arc fork: payInvoice 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, Drawn tx 0x8d55261bcaff66309838e33287e529aa15aa678a044bb62c1ee81b850bf5b42a (merchant now holds 120000000 USDC6)
+   | 2026-11-06T10:46:07Z [USER LOG] Drawn on arc-testnet (tx 0x8d55261bcaff66309838e33287e529aa15aa678a044bb62c1ee81b850bf5b42a log 1 block 70977748): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0x5d66ceddfc6d76671a7bbfd2dc62ada60d50ddb206708c95a230175fa3ac5f92
+   | 2026-11-06T10:46:07Z [USER LOG] Robinhood utilisation: drawn 0 repaid 0 asOf 0
+   | 2026-11-06T10:46:07Z [USER LOG] Report: utilisation 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa: drawn 120 repaid 0 asOf 1793942162
+   | 2026-11-06T10:46:08Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x095357e3a6038422bcde7dd35b29380128f0664b4e2862d995db16c7c6d14772
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"written\",\"receiver\":\"0x13dD90D4cd81E4d9283C242cc8D9b3043f17218f\",\"report\":\"0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba250000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006aed5eff\",\"txHash\":\"0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8\"}"
-   forwarder tx 0xa87a2ce74f84f5525864e0ed3775161478a08470d880869ec13329147c7351c8: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107318247, gas 107464
-   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796533186 [1.796e9], 1793941247 [1.793e9], 0, 1, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 0)
-== 4. Arc fork: repay 50 USDC, Repaid tx 0xb5d92857fcf77628726cc4056326ba5218047bb69b9b1ff3548e2a762b7950ca; handler 2 --broadcast
-   | 2026-11-06T10:30:57Z [USER LOG] Repaid on arc-testnet (tx 0xb5d92857fcf77628726cc4056326ba5218047bb69b9b1ff3548e2a762b7950ca log 1 block 70975947): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 50 USDC
-   | 2026-11-06T10:30:57Z [USER LOG] Optional read utilisation(bytes32) unavailable: [2]Unknown: execution reverted
-   | 2026-11-06T10:30:57Z [USER LOG] NorenCredit line: status Open, drawn 120 repaid 0 asOf 1793941247
-   | 2026-11-06T10:30:57Z [USER LOG] Report: utilisation 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25: drawn 120 repaid 50 asOf 1793941252
-   | 2026-11-06T10:30:58Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa0000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006aed6292\",\"txHash\":\"0x095357e3a6038422bcde7dd35b29380128f0664b4e2862d995db16c7c6d14772\"}"
+   forwarder tx 0x095357e3a6038422bcde7dd35b29380128f0664b4e2862d995db16c7c6d14772: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107326972, gas 107549
+   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796534102 [1.796e9], 1793942162 [1.793e9], 0, 1, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 0)
+== 4. Arc fork: repay 50 USDC, Repaid tx 0x23079857ae0be6b7fb167626d05db4f3557aef74805f86d4abd14bb5e31a8364; handler 2 --broadcast
+   | 2026-11-06T10:46:12Z [USER LOG] Repaid on arc-testnet (tx 0x23079857ae0be6b7fb167626d05db4f3557aef74805f86d4abd14bb5e31a8364 log 1 block 70977750): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa 50 USDC
+   | 2026-11-06T10:46:12Z [USER LOG] Robinhood utilisation: drawn 120 repaid 0 asOf 1793942162
+   | 2026-11-06T10:46:12Z [USER LOG] Report: utilisation 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa: drawn 120 repaid 50 asOf 1793942168
+   | 2026-11-06T10:46:13Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0xd1250dd824d0788c1662c055b61295340890c481f4fb3dcf8de58974b16932af
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"written\",\"receiver\":\"0x13dD90D4cd81E4d9283C242cc8D9b3043f17218f\",\"report\":\"0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba250000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000002faf080000000000000000000000000000000000000000000000000000000006aed5f04\",\"txHash\":\"0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34\"}"
-   forwarder tx 0x19ad25a50b9534f84f1cf2a6f548fc52a5381106cdc414a9ce00403438056b34: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107318248, gas 107536
-   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796533186 [1.796e9], 1793941252 [1.793e9], 0, 1, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 50000000 [5e7])
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa0000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000002faf080000000000000000000000000000000000000000000000000000000006aed6298\",\"txHash\":\"0xd1250dd824d0788c1662c055b61295340890c481f4fb3dcf8de58974b16932af\"}"
+   forwarder tx 0xd1250dd824d0788c1662c055b61295340890c481f4fb3dcf8de58974b16932af: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107326973, gas 107573
+   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796534102 [1.796e9], 1793942168 [1.793e9], 0, 1, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 50000000 [5e7])
 == 4b. replay the Drawn event: Robinhood already has a newer asOf, the workflow skips
-   | 2026-11-06T10:31:02Z [USER LOG] Drawn on arc-testnet (tx 0x6e55b446cdb9626293fc6c62ef8955b41f39e705169a9a9b34229244dee17e1b log 1 block 70975945): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0xb0e06b5889ae78f0abece90ada708c3805c24bd7d9f1a22b6e060d655e80c877
-   | 2026-11-06T10:31:02Z [USER LOG] Optional read utilisation(bytes32) unavailable: [2]Unknown: execution reverted
-   | 2026-11-06T10:31:02Z [USER LOG] NorenCredit line: status Open, drawn 120 repaid 50 asOf 1793941252
-   | 2026-11-06T10:31:02Z [USER LOG] No write: Robinhood already has asOf 1793941252 >= 1793941247 for 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25
+   | 2026-11-06T10:46:17Z [USER LOG] Drawn on arc-testnet (tx 0x8d55261bcaff66309838e33287e529aa15aa678a044bb62c1ee81b850bf5b42a log 1 block 70977748): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa 120 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0x5d66ceddfc6d76671a7bbfd2dc62ada60d50ddb206708c95a230175fa3ac5f92
+   | 2026-11-06T10:46:17Z [USER LOG] Robinhood utilisation: drawn 120 repaid 50 asOf 1793942168
+   | 2026-11-06T10:46:17Z [USER LOG] No write: Robinhood already has asOf 1793942168 >= 1793942162 for 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"skipped\",\"reason\":\"Robinhood already has asOf 1793941252 \u003e= 1793941247 for 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25\"}"
-== 5. Robinhood fork: close requested, CreditLineClosed tx 0x751d07d5b2514de773e61fe1e2d5f43fe6547eb4f7584779c4b3aab48b98c531; handler 1 --broadcast
-   | 2026-11-06T10:31:05Z [USER LOG] CreditLineClosed on robinhood-testnet (tx 0x751d07d5b2514de773e61fe1e2d5f43fe6547eb4f7584779c4b3aab48b98c531 log 0 block 107318249): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25
-   | 2026-11-06T10:31:05Z [USER LOG] Report: freeze 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 on Arc
-   | 2026-11-06T10:31:06Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f
+   | "{\"status\":\"skipped\",\"reason\":\"Robinhood already has asOf 1793942168 \u003e= 1793942162 for 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa\"}"
+== 5. Robinhood fork: close requested, CreditLineClosed tx 0x40f9ed42f315f96226b48af93b72599f87ce4dd1b166b63042e87bc013f40a9b; handler 1 --broadcast
+   (fork clock alignment: Arc clock 1793942168 is not after the Robinhood close at 1793942175; next Arc block set to 1793942176)
+   | 2026-11-06T10:46:21Z [USER LOG] CreditLineClosed on robinhood-testnet (tx 0x40f9ed42f315f96226b48af93b72599f87ce4dd1b166b63042e87bc013f40a9b log 0 block 107326974): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa
+   | 2026-11-06T10:46:21Z [USER LOG] Report: freeze 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa on Arc
+   | 2026-11-06T10:46:22Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"written\",\"receiver\":\"0x459b5fa897d97cB096f8Eb508dEe494683bA90F4\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c89e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba250000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b14ebc2\",\"txHash\":\"0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f\"}"
-   forwarder tx 0x8cc332616f96443f515f30c6eba854cf3a52a22e83433804750ce90c40f2601f: status true, to 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1, block 70975948, gas 82868
-   Arc line (borrower, expiry, asOf, closed, limit, drawn, repaid, unsecured): (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 1796533186 [1.796e9], 1793941264 [1.793e9], true, 0, 120000000 [1.2e8], 50000000 [5e7], false)
+   | "{\"status\":\"written\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8b9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b14ef56\",\"txHash\":\"0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce\"}"
+   forwarder tx 0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce: status true, to 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1, block 70977751, gas 82868
+   Arc line (borrower, expiry, asOf, closed, limit, drawn, repaid, unsecured): (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 1796534102 [1.796e9], 1793942176 [1.793e9], true, 0, 120000000 [1.2e8], 50000000 [5e7], false)
    payInvoice after close reverted: LineClosed
-== 5b. replay the opened event after close: the workflow sees the frozen line and skips
-   | 2026-11-06T10:31:10Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xd158fba5da094562cea572263eb2eb6bf46ffe3b234474396113a8ec5873c5ea log 2 block 107318246): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796533186 collateral $1857.04
-   | 2026-11-06T10:31:10Z [USER LOG] No write: line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 is frozen on Arc
+== 5b. handler 2 on the freeze (CreditLineFrozen): fresh utilisation back to Robinhood (70 still owed, so no settlement yet)
+   | 2026-11-06T10:46:26Z [USER LOG] CreditLineFrozen on arc-testnet (tx 0x2d0fde1e0331d628e81a195ef247f6f72a5787fd2e1eaefd1ace831605fd85ce log 0 block 70977751): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa
+   | 2026-11-06T10:46:26Z [USER LOG] Robinhood utilisation: drawn 120 repaid 50 asOf 1793942168
+   | 2026-11-06T10:46:26Z [USER LOG] Report: utilisation 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa: drawn 120 repaid 50 asOf 1793942176
+   | 2026-11-06T10:46:27Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x4f369435c008422359c53c31efae04cfb0e46098b11ed940d3cb15f20283457a
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"skipped\",\"reason\":\"line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 is frozen on Arc\"}"
-== 6. Arc fork: repay the remaining 70 USDC, Repaid tx 0x32573d7d4279d8ba8dd406fd3ecfa4606f781d4dabca7238bd2de19bfce294e4; handler 2 --broadcast
-   | 2026-11-06T10:31:14Z [USER LOG] Repaid on arc-testnet (tx 0x32573d7d4279d8ba8dd406fd3ecfa4606f781d4dabca7238bd2de19bfce294e4 log 1 block 70975949): line 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25 70 USDC
-   | 2026-11-06T10:31:14Z [USER LOG] Optional read utilisation(bytes32) unavailable: [2]Unknown: execution reverted
-   | 2026-11-06T10:31:14Z [USER LOG] NorenCredit line: status Closing, drawn 120 repaid 50 asOf 1793941252
-   | 2026-11-06T10:31:14Z [USER LOG] Report: utilisation 0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba25: drawn 120 repaid 120 asOf 1793941269
-   | 2026-11-06T10:31:15Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa0000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000002faf080000000000000000000000000000000000000000000000000000000006aed62a0\",\"txHash\":\"0x4f369435c008422359c53c31efae04cfb0e46098b11ed940d3cb15f20283457a\"}"
+   forwarder tx 0x4f369435c008422359c53c31efae04cfb0e46098b11ed940d3cb15f20283457a: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107326975, gas 87740
+   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796534102 [1.796e9], 1793942176 [1.793e9], 1793942175 [1.793e9], 2, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 50000000 [5e7])
+== 5c. replay the opened event after close: the workflow sees the frozen line and skips
+   | 2026-11-06T10:46:30Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xdb4beb089f09c61e8dbecbf336d250fb447dc3543dcc4bf90ac205dbb2d3cfa1 log 2 block 107326971): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 1547.533639 USDC expiry 1796534102 collateral $1857.04
+   | 2026-11-06T10:46:30Z [USER LOG] No write: line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa is frozen on Arc
    | ✓ Workflow Simulation Result:
-   | "{\"status\":\"written\",\"receiver\":\"0x13dD90D4cd81E4d9283C242cc8D9b3043f17218f\",\"report\":\"0x9e0ffcc7ff525893f222dd3e5cf7629af7e25b2ee72f1677f00537e8e9acba250000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000007270e00000000000000000000000000000000000000000000000000000000006aed5f15\",\"txHash\":\"0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878\"}"
-   forwarder tx 0x1aa16eea0dba8bb8f329668c0aa0fe59b2ed9134c6cd8d61341f1f64fb789878: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107318250, gas 177447
-   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796533186 [1.796e9], 1793941269 [1.793e9], 1793941260 [1.793e9], 3, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 120000000 [1.2e8])
+   | "{\"status\":\"skipped\",\"reason\":\"line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa is frozen on Arc\"}"
+== 6. Arc fork: repay the remaining 70 USDC, Repaid tx 0x3b2ed2a8c38732fe73697913da6777b49af8384e6a4e17da00bbdd66a72e5625; handler 2 --broadcast
+   | 2026-11-06T10:46:34Z [USER LOG] Repaid on arc-testnet (tx 0x3b2ed2a8c38732fe73697913da6777b49af8384e6a4e17da00bbdd66a72e5625 log 1 block 70977752): line 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa 70 USDC
+   | 2026-11-06T10:46:34Z [USER LOG] Robinhood utilisation: drawn 120 repaid 50 asOf 1793942176
+   | 2026-11-06T10:46:34Z [USER LOG] Report: utilisation 0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa: drawn 120 repaid 120 asOf 1793942186
+   | 2026-11-06T10:46:35Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0xaad75626e9d56bdcf5d5dd9b95956c46eec574fbe374f18a07aac3dabf837009
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0xb9fe081bfd1544561493adb13fdc7de7c2c17106674b32d0908c9bdc1a7ee2fa0000000000000000000000000000000000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000007270e00000000000000000000000000000000000000000000000000000000006aed62aa\",\"txHash\":\"0xaad75626e9d56bdcf5d5dd9b95956c46eec574fbe374f18a07aac3dabf837009\"}"
+   forwarder tx 0xaad75626e9d56bdcf5d5dd9b95956c46eec574fbe374f18a07aac3dabf837009: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107326976, gas 177520
+   Robinhood NorenCredit line: (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC, 1796534102 [1.796e9], 1793942186 [1.793e9], 1793942175 [1.793e9], 3, 10000000000000000000 [1e19], 1547533639 [1.547e9], 120000000 [1.2e8], 120000000 [1.2e8])
    NorenCredit settled the line (status 3 = Closed); borrower NVDA balance back to 10000000000000000000
 == 7. direct onReport from a non-forwarder reverted on both forks
+== 8. World ID starter: cre workflow simulate handler 3 (HTTP trigger) --broadcast, payload {"kind":"noren.human-starter.v1","borrower":"0x90F79bf6EB2c4f870365E785982E1f101E93b906","nullifierHash":"0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054","lineId":"0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8","limitUsdc6":"25000000","expiry":1796534186}
+   | 2026-11-06T10:46:39Z [USER LOG] World ID starter request: borrower 0x90F79bf6EB2c4f870365E785982E1f101E93b906 nullifier 0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054 limit 25 USDC expiry 1796534186 line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8
+   | 2026-11-06T10:46:39Z [USER LOG] Report: human starter for 0x90F79bf6EB2c4f870365E785982E1f101E93b906: +25 USDC (line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8, nullifier 0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054)
+   | 2026-11-06T10:46:40Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0x453fa3bab671ecd0cf75227a6c7cbc6e92765b0f98c5707c508a7c11eab5c7d6
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000090f79bf6eb2c4f870365e785982e1f101e93b9069151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa6705400000000000000000000000000000000000000000000000000000000017d7840000000000000000000000000000000000000000000000000000000006b14efaa\",\"txHash\":\"0x453fa3bab671ecd0cf75227a6c7cbc6e92765b0f98c5707c508a7c11eab5c7d6\"}"
+   forwarder tx 0x453fa3bab671ecd0cf75227a6c7cbc6e92765b0f98c5707c508a7c11eab5c7d6: status true, to 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1, block 70977753, gas 189169
+   starter line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8: (0x90F79bf6EB2c4f870365E785982E1f101E93b906, 1796534186 [1.796e9], 1793942194 [1.793e9], false, 25000000 [2.5e7], 0, 0, true)
+== 8b. same nullifier again: the workflow sees it spent and skips
+   | 2026-11-06T10:46:44Z [USER LOG] World ID starter request: borrower 0x90F79bf6EB2c4f870365E785982E1f101E93b906 nullifier 0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054 limit 25 USDC expiry 1796534186 line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8
+   | 2026-11-06T10:46:44Z [USER LOG] No write: nullifier 0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054 already used by 0x90F79bf6EB2c4f870365E785982E1f101E93b906
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"skipped\",\"reason\":\"nullifier 0x9151f89f8f7228d842724adb0aa00af9ef83bf8e4174b1f18e3896a94aa67054 already used by 0x90F79bf6EB2c4f870365E785982E1f101E93b906\"}"
+== 8c. the human spends 10 USDC from the starter line; handler 2 must not report it to Robinhood
+   | 2026-11-06T10:46:48Z [USER LOG] Drawn on arc-testnet (tx 0x9342b0d20aee774de9473182e90da3e5f8d7112b8b23da772ab8759bb0630c94 log 1 block 70977754): line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8 10 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0x71bd3146a244a9bd8373fbc604dbf9cb2ba5cffae1d9dd6cca8be890f6278cd7
+   | 2026-11-06T10:46:48Z [USER LOG] No write: line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8 is a World ID starter line (unsecured, Arc only); nothing to report to Robinhood
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"skipped\",\"reason\":\"line 0x0d2df107121d3869739c339c56fa2615dce42e9b9f80ffce5c2b960be241f8d8 is a World ID starter line (unsecured, Arc only); nothing to report to Robinhood\"}"
+   Drawn tx 0x9342b0d20aee774de9473182e90da3e5f8d7112b8b23da772ab8759bb0630c94 on the starter line was skipped for Robinhood (no collateral line behind it)
+== 9. second line, fully repaid before close: open -> draw 10 -> repay 10 -> close -> freeze -> settle
+   | 2026-11-06T10:46:52Z [USER LOG] CreditLineOpened on robinhood-testnet (tx 0xa19ef7e8ff3ad900061616502c35e5ad035b58a5075e8f12c8c4b0211c2f36cd log 2 block 107326978): line 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa borrower 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 limit 100 USDC expiry 1796534102 collateral $1857.04
+   | 2026-11-06T10:46:52Z [USER LOG] Report: open 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa for 0x70997970C51812dc3A010C7d01b50e0d17dc79C8: limit 100 USDC until 1796534102
+   | 2026-11-06T10:46:53Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0x1c78537fe4878f7c63c1333b18bd43df7c8f280330c0195afe754fe5dfebf27d
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c86f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa0000000000000000000000000000000000000000000000000000000005f5e100000000000000000000000000000000000000000000000000000000006b14ef56\",\"txHash\":\"0x1c78537fe4878f7c63c1333b18bd43df7c8f280330c0195afe754fe5dfebf27d\"}"
+   | 2026-11-06T10:46:57Z [USER LOG] Drawn on arc-testnet (tx 0x9432f5c5d4c291b0466abe4b1f88b49c222e6fc672ed88c8cb70b42977bb3d8e log 1 block 70977756): line 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa 10 USDC to merchant 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC invoice 0xcb415146c1083851949c4cc70c2339e2bd8372183892e0a7b338a4d796f5d79e
+   | 2026-11-06T10:46:57Z [USER LOG] Robinhood utilisation: drawn 0 repaid 0 asOf 0
+   | 2026-11-06T10:46:57Z [USER LOG] Report: utilisation 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa: drawn 10 repaid 0 asOf 1793942208
+   | 2026-11-06T10:46:58Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x8a2c6450947007780919eb0b4368e84a9812583f8ab1d60526aed1a3be8174ea
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa00000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006aed62c0\",\"txHash\":\"0x8a2c6450947007780919eb0b4368e84a9812583f8ab1d60526aed1a3be8174ea\"}"
+   | 2026-11-06T10:47:02Z [USER LOG] Repaid on arc-testnet (tx 0xa30e0cf1aff9e98190012abff04166ae153f6e4d99df59f1d6f8783ede749511 log 1 block 70977758): line 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa 10 USDC
+   | 2026-11-06T10:47:02Z [USER LOG] Robinhood utilisation: drawn 10 repaid 0 asOf 1793942208
+   | 2026-11-06T10:47:02Z [USER LOG] Report: utilisation 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa: drawn 10 repaid 10 asOf 1793942213
+   | 2026-11-06T10:47:03Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x257bb5039f2988f932facae83e02081692de882ecd23efd48e34a2b5a76a96ec
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa00000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000006aed62c5\",\"txHash\":\"0x257bb5039f2988f932facae83e02081692de882ecd23efd48e34a2b5a76a96ec\"}"
+   (fork clock alignment: Arc clock 1793942213 is not after the Robinhood close at 1793942221; next Arc block set to 1793942222)
+   | 2026-11-06T10:47:06Z [USER LOG] CreditLineClosed on robinhood-testnet (tx 0x7c2f782a5ae537802c6a05a2e7ef5b5cbe3022ccf38c7e33212d6d1fd6f0999b log 0 block 107326981): line 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa
+   | 2026-11-06T10:47:06Z [USER LOG] Report: freeze 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa on Arc
+   | 2026-11-06T10:47:07Z [USER LOG] NorenCreditLine updated on arc-testnet: tx 0xe3127c06ce6d883f4458de2053da348f187f8a817bf5aee3db69cbcd426badf7
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x536C4C4b73C3c4425f656fE0d496B923Fb261Cbe\",\"report\":\"0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c86f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b14ef56\",\"txHash\":\"0xe3127c06ce6d883f4458de2053da348f187f8a817bf5aee3db69cbcd426badf7\"}"
+   | 2026-11-06T10:47:11Z [USER LOG] CreditLineFrozen on arc-testnet (tx 0xe3127c06ce6d883f4458de2053da348f187f8a817bf5aee3db69cbcd426badf7 log 0 block 70977759): line 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa
+   | 2026-11-06T10:47:11Z [USER LOG] Robinhood utilisation: drawn 10 repaid 10 asOf 1793942213
+   | 2026-11-06T10:47:11Z [USER LOG] Report: utilisation 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa: drawn 10 repaid 10 asOf 1793942222
+   | 2026-11-06T10:47:12Z [USER LOG] NorenCredit updated on robinhood-testnet: tx 0x3c0dcf3652a637c65ad77e13e424e1bdcd3eb0b5e3fffce2ec222b41fa3caa77
+   | ✓ Workflow Simulation Result:
+   | "{\"status\":\"written\",\"receiver\":\"0x34Bf621a2de465D58Bea0eA8a277211B6459da97\",\"report\":\"0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa00000000000000000000000000000000000000000000000000000000009896800000000000000000000000000000000000000000000000000000000000989680000000000000000000000000000000000000000000000000000000006aed62ce\",\"txHash\":\"0x3c0dcf3652a637c65ad77e13e424e1bdcd3eb0b5e3fffce2ec222b41fa3caa77\"}"
+   forwarder tx 0x3c0dcf3652a637c65ad77e13e424e1bdcd3eb0b5e3fffce2ec222b41fa3caa77: status true, to 0x0b93082D9b3C7C97fAcd250082899BAcf3af3885, block 107326982, gas 157608
+   line 2 0x6f21b65fa9884cf4fcaa773d2421855efdfbf11a9697d033c257c5d2e91df1aa settled from the freeze report alone (status 3 = Closed); borrower NVDA back to 10000000000000000000
 == transcript saved to fixtures/fork-run.json
 == PASS: credit line bridged both ways through CRE on local forks (NorenCredit on Robinhood); forks stop now

@@ -3,7 +3,10 @@
 //
 //   handler 0  Robinhood  NorenCredit.CreditLineOpened  -> Arc        NorenCreditLine.onReport(borrower, lineId, limit, expiry)
 //   handler 1  Robinhood  NorenCredit.CreditLineClosed  -> Arc        NorenCreditLine.onReport(borrower, lineId, 0, expiry)
-//   handler 2  Arc        NorenCreditLine.Drawn/Repaid  -> Robinhood  NorenCredit.onReport(lineId, drawn, repaid, asOf)
+//   handler 2  Arc        NorenCreditLine.Drawn/Repaid/CreditLineFrozen
+//                                                         -> Robinhood  NorenCredit.onReport(lineId, drawn, repaid, asOf)
+//
+//   handler 3  HTTP       World ID server's starter request     -> Arc        NorenCreditLine.onReport(kind 2)
 //
 // Each write is a DON-signed report delivered through the chain's CRE forwarder; the receivers
 // accept onReport only from that forwarder.
@@ -12,7 +15,9 @@ import {
   EVMClient,
   encodeCallMsg,
   getNetwork,
+  decodeJson,
   handler,
+  HTTPCapability,
   LATEST_BLOCK_NUMBER,
   logTriggerConfig,
   prepareReportRequest,
@@ -21,12 +26,15 @@ import {
   Runner,
   TxStatus,
   type EVMLog,
+  type HTTPPayload,
   type Runtime,
 } from "@chainlink/cre-sdk";
 import { decodeFunctionResult, encodeFunctionData, zeroAddress, type Address, type Hex } from "viem";
 import {
   creditLineAbi,
   decideClose,
+  decideHumanStarter,
+  parseHumanStarterPayload,
   decideOpen,
   decideUtilisation,
   decodeArcActivity,
@@ -174,7 +182,7 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
   validateConfig(config);
   const act = decodeArcActivity(rawLog(log), config.arc.address);
   runtime.log(
-    `${act.kind} on ${config.arc.chainSelectorName} (${describeLog(log)}): line ${act.lineId} ${formatUsdc(act.amount)} USDC${act.merchant ? ` to merchant ${act.merchant} invoice ${act.invoiceId}` : ""}`,
+    `${act.kind} on ${config.arc.chainSelectorName} (${describeLog(log)}): line ${act.lineId}${act.kind === "CreditLineFrozen" ? "" : ` ${formatUsdc(act.amount)} USDC`}${act.merchant ? ` to merchant ${act.merchant} invoice ${act.invoiceId}` : ""}`,
   );
   if (!log.blockNumber) throw new Error("log has no block number; cannot read the snapshot at its block");
   const arc = evmFor(config.arc);
@@ -192,6 +200,27 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
   return deliver(runtime, robinhood, config.robinhood, decision, "NorenCredit");
 };
 
+// ---------------------------------------------------------------- handler 3: World ID starter limit (HTTP)
+
+export const onHumanStarter = (runtime: Runtime<Config>, payload: HTTPPayload): string => {
+  const config = runtime.config;
+  validateConfig(config);
+  const req = parseHumanStarterPayload(decodeJson(payload.input));
+  runtime.log(
+    `World ID starter request: borrower ${req.borrower} nullifier ${req.nullifierHash} limit ${formatUsdc(req.limitUsdc6)} USDC expiry ${req.expiry} line ${req.lineId}`,
+  );
+  const arc = evmFor(config.arc);
+  const at = LATEST_BLOCK_NUMBER;
+  const usedData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "nullifierUsedBy", args: [req.nullifierHash] }), at);
+  if (usedData === "0x") throw new Error(`NorenCreditLine not found at ${config.arc.address}`);
+  const nullifierUsedBy = decodeFunctionResult({ abi: creditLineAbi, functionName: "nullifierUsedBy", data: usedData });
+  const capData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "maxStarterLimitUsdc6" }), at);
+  const maxStarterLimitUsdc6 = decodeFunctionResult({ abi: creditLineAbi, functionName: "maxStarterLimitUsdc6", data: capData });
+  const now = BigInt(Math.floor(runtime.now().getTime() / 1000));
+  const decision = decideHumanStarter(req, { nullifierUsedBy, maxStarterLimitUsdc6, line: readArcLine(runtime, arc, req.lineId) }, now);
+  return deliver(runtime, arc, config.arc, decision, "NorenCreditLine");
+};
+
 export const initWorkflow = (config: Config) => {
   validateConfig(config);
   const robinhood = evmFor(config.robinhood);
@@ -206,8 +235,14 @@ export const initWorkflow = (config: Config) => {
       onCreditLineClosed,
     ),
     handler(
-      arc.logTrigger(logTriggerConfig({ addresses: [config.arc.address], topics: [[TOPIC.drawn, TOPIC.repaid]], confidence: config.confidence })),
+      arc.logTrigger(logTriggerConfig({ addresses: [config.arc.address], topics: [[TOPIC.drawn, TOPIC.repaid, TOPIC.creditLineFrozen]], confidence: config.confidence })),
       onArcActivity,
+    ),
+    handler(
+      new HTTPCapability().trigger({
+        authorizedKeys: (config.humanStarter?.authorizedKeys ?? []).map((publicKey) => ({ type: "KEY_TYPE_ECDSA_EVM" as const, publicKey })),
+      }),
+      onHumanStarter,
     ),
   ];
 };
