@@ -157,7 +157,7 @@ function Plans({ w }: { w: Wallet }) {
   return (
     <Card title="Pay in 3" sub="Plans on NorenCredit: stock locked at the Chainlink price, three USDG installments" pill={<span className="nk-pill">{plans.length} open</span>}>
       <div className="nk-pad">
-        {err ? <SetupCard title="NorenCredit isn't reachable" text={err} /> : !pos ? <Skel rows={2} /> : !plans.length ? <Empty title="No plans yet" text="Choose “Pay in 3” at a Noren checkout. Your stock stays locked until the third installment." /> : plans.map((p) => (
+        {err ? <SetupCard title="NorenCredit isn't reachable" text={err} /> : !pos ? <Skel rows={2} /> : !plans.length ? <Empty title="No Pay-in-3 plans on Robinhood Chain" text="A plan locks stock on NorenCredit for a Robinhood Chain merchant (SDK openPlan); when one is open, its Dutch-auction liquidation status shows here. “Pay in 3” at a Noren checkout on Arc draws on your credit line instead (Credit tab)." /> : plans.map((p) => (
           <div key={String(p.planId)} className="nk-box" style={{ marginBottom: 6 }}>
             <span className="nk-l"><span>Plan #{String(p.planId)} · {p.liquidation?.sharesText} {p.liquidation?.symbol} locked</span><span>{Number(p.plan.paid)}/3 paid</span></span>
             <div className="nk-meter"><i className={p.liquidatable.overdue || p.liquidatable.undercollateralised ? "bad" : ""} style={{ width: `${(Number(p.plan.paid) / 3) * 100}%` }} /></div>

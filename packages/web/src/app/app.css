@@ -451,3 +451,5 @@ a.nk-way:hover { border-color: var(--nk-hair-2); background: var(--nk-box); }
 @media (min-width: 721px) and (max-width: 1240px) { .nk-tabs button { padding: 0 12px; } }
 .nk-band.nk-markets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 18px; }
 .nk-band.nk-markets button { min-height: 44px; padding: 6px 8px; white-space: normal; line-height: 1.2; font-size: 13px; border-radius: 14px; }
+.nk-jobs { grid-template-columns: minmax(0, 1fr); }
+.nk-jobs li { padding: 10px 12px; align-items: start; }
