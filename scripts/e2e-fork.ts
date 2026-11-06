@@ -1,16 +1,18 @@
 import { readFileSync } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
 import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createPublicClient, decodeErrorResult, encodeAbiParameters, encodeFunctionData, http, keccak256, parseAbi, toBytes, toHex, type Address, type Hex } from 'viem';
 import { ARC_USDC, checkoutAbi, entrypointAbi, jsonBigints, localFork, poolAbi, usdcAbi } from '@noren/core';
 import { createCustomer } from '@noren/core/customer';
+import { verifyWebhook, type WebhookEvent } from '@noren/core/merchant';
 import { createMerchantServer } from '../packages/server/src/server.ts';
 import { createPostman } from '../packages/postman/src/postman.ts';
 import { deployArc } from './deploy-arc.ts';
 import { writeFoundryFixture } from './gen-fixtures.ts';
 
-const rpc = 'http://127.0.0.1:8645';
+const rpc = 'http://127.0.0.1:8700';
 const client: any = createPublicClient({ chain: localFork(rpc), transport: http(rpc), cacheTime: 0 });
 const contractDir = resolve('packages/contracts');
 const start = performance.now();
@@ -48,19 +50,30 @@ async function main() {
   await send(merchant, deployment.checkout, encodeFunctionData({ abi: checkoutAbi, functionName: 'registerMerchant', args: [merchant] }));
   await send(merchant2, deployment.checkout, encodeFunctionData({ abi: checkoutAbi, functionName: 'registerMerchant', args: [merchant2] }));
   await send(deployer, ARC_USDC, encodeFunctionData({ abi: usdcAbi, functionName: 'approve', args: [deployment.entrypoint, 25_000_000n] }));
-  const postman = createPostman({ deployment, rpcUrl: rpc, delayMs: 0, batchMs: 60_000, treeUrl: 'http://127.0.0.1:8788/asp/tree?v=1', sendRoot: (root, cid) => client.request({ method: 'eth_sendTransaction', params: [{ from: deployer, to: deployment.entrypoint, data: encodeFunctionData({ abi: entrypointAbi, functionName: 'updateRoot', args: [root, cid] }) }] }), onTx: h => log('ASP root tx', h) });
-  const aspServer = postman.serve(8788);
-  const customer = createCustomer({ deployment, rpcUrl: rpc, aspUrl: 'http://127.0.0.1:8788', deriveAt: async path => keccak256(toBytes(`noren-local-fork-only:${path}`)) });
+  const postman = createPostman({ deployment, rpcUrl: rpc, delayMs: 0, batchMs: 60_000, treeUrl: 'http://127.0.0.1:8702/asp/tree?v=1', sendRoot: (root, cid) => client.request({ method: 'eth_sendTransaction', params: [{ from: deployer, to: deployment.entrypoint, data: encodeFunctionData({ abi: entrypointAbi, functionName: 'updateRoot', args: [root, cid] }) }] }), onTx: h => log('ASP root tx', h) });
+  const aspServer = postman.serve(8702);
+  const customer = createCustomer({ deployment, rpcUrl: rpc, aspUrl: 'http://127.0.0.1:8702', deriveAt: async path => keccak256(toBytes(`noren-local-fork-only:${path}`)) });
   // Anvil exposes unlocked accounts on loopback; no private key enters this process.
-  await rm('data/e2e-invoices.json', { force: true });
+  await Promise.all(['', '.profile.json', '.webhooks.json', '.events.json'].map(suffix => rm(`data/e2e-invoices.json${suffix}`, { force: true })));
   const merchantServer = createMerchantServer({ deployment, rpcUrl: rpc, localUnlockedMerchant: merchant, refundToken: 'local-demo-token', dataFile: 'data/e2e-invoices.json' });
+  const webhookMessages: { raw: string; signature: string | null }[] = [];
+  const webhookReceiver = createHttpServer(async (req, res) => { let raw = ''; for await (const chunk of req) raw += chunk; webhookMessages.push({ raw, signature: req.headers['noren-signature'] as string ?? null }); res.writeHead(200); res.end(); });
   try {
-    await new Promise<void>(ok => merchantServer.listen(8787, '127.0.0.1', ok));
-    const base = 'http://127.0.0.1:8787';
+    await new Promise<void>(ok => webhookReceiver.listen(8703, '127.0.0.1', ok));
+    await new Promise<void>(ok => merchantServer.listen(8701, '127.0.0.1', ok));
+    const base = 'http://127.0.0.1:8701';
     const request = async (path: string, method = 'GET', value?: unknown, token?: string) => {
       const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: value === undefined ? undefined : jsonBigints(value) });
       const data = await r.json(); if (!r.ok) throw new Error(`${path}: ${data.error}`); return data;
     };
+    const webhook = await request(`/merchants/${merchant}/webhooks`, 'POST', { url: 'http://127.0.0.1:8703' }, 'local-demo-token');
+    async function waitWebhook(type: string, invoiceId: string, paymentTx?: string): Promise<WebhookEvent> {
+      for (let i = 0; i < 100; i++) {
+        for (const message of webhookMessages) { const event = await verifyWebhook(message.raw, message.signature, webhook.secret); if (event.type === type && event.data.invoiceId === invoiceId && (!paymentTx || event.data.paymentTx === paymentTx)) return event; }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      throw new Error(`Timed out waiting for verified ${type} webhook`);
+    }
     const [shieldTx] = await customer.shield(20_000_000n);
     log('shield target', shieldTx.to);
     const deposit = await send(deployer, shieldTx.to as Address, shieldTx.data as Hex);
@@ -84,7 +97,7 @@ async function main() {
     const expiry = (await client.getBlock()).timestamp + 3600n;
     const opening = customer.createReceipt();
     const receiptCommitment = opening.commitment;
-    const created = await request(`/merchants/${merchant}/invoices`, 'POST', { amount, expiry });
+    const created = await request(`/merchants/${merchant}/invoices`, 'POST', { amount, expiry }, 'local-demo-token');
     if (created.status && created.status !== 'draft') throw new Error('Invoice was not drafted');
     const bound = await request(`/invoices/${created.invoice.invoiceId}/bind`, 'POST', { refundPrecommitment: refund.nextPrecommitment, receiptCommitment });
     log('invoice', created.invoice.invoiceId);
@@ -113,17 +126,20 @@ async function main() {
     if (foundryCount !== 9) throw new Error(`Expected 9 Foundry tests, got ${foundryCount}`);
     const paid = await request(`/invoices/${invoice.invoiceId}/pay`, 'POST', fresh);
     log('payment tx', paid.paymentTx);
+    await waitWebhook('payment.succeeded', invoice.invoiceId, paid.paymentTx);
     const status = await request(`/invoices/${invoice.invoiceId}`);
     if (status.status !== 'paid') throw new Error('Invoice status is not paid');
     await expectRevert(merchant, encodeFunctionData({ abi: checkoutAbi, functionName: 'pay', args: [fresh.withdrawal, fresh.proof as any] }), 'AlreadyPaid');
     const returned = await request(`/invoices/${invoice.invoiceId}/refund`, 'POST', { amount: 2_500_000n }, 'local-demo-token');
     log('refund approval tx', returned.approvalTx); log('refund tx', returned.refundTx);
+    const refundEvent = await waitWebhook('refund.succeeded', invoice.invoiceId, paid.paymentTx);
+    if (refundEvent.data.refundTx !== returned.refundTx) throw new Error('Refund webhook transaction hash mismatch');
     const pending = await customer.refundInbox();
     if (!pending.balances.some((x: any) => x.tag === 'pending' && BigInt(x.amount) === 2_500_000n)) throw new Error('Refund is not pending in inbox');
     await postman.tick(true);
     const approved = await customer.refundInbox();
     if (!approved.balances.some((x: any) => !x.tag && BigInt(x.amount) === 2_500_000n)) throw new Error('Refund not approved');
     log('summary', jsonBigints({ foundryTests: foundryCount, status: 'refunded', refundPending: true, refundApproved: true, attackReverts: 5, totalSeconds: (performance.now() - start) / 1000 }));
-  } finally { await new Promise<void>(r => merchantServer.close(() => r())); await new Promise<void>(r => aspServer.close(() => r())); }
+  } finally { await new Promise<void>(r => merchantServer.close(() => r())); await new Promise<void>(r => aspServer.close(() => r())); await new Promise<void>(r => webhookReceiver.close(() => r())); }
 }
 main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
