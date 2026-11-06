@@ -83,7 +83,7 @@ export function SwapTab({ w }: { w: Wallet }) {
       <section className="nk-card" aria-label="Swap">
         <div className="nk-card-h"><div><b>Swap</b><p>Best price via Uniswap v4; Noren's Aqua maker fills when it beats it.</p></div>{market === "arc" ? <span className="nk-pill live"><Mark id="ARC" size={16} />Arc testnet</span> : xc ? <span className="nk-pill fork"><Mark id="ROBINHOOD" size={16} />→<Mark id="ARC" size={16} />fork demo</span> : <span className={`nk-pill ${q?.marketClosed ? "warn" : "fork"}`}>{q?.marketClosed ? "US market closed" : <><Mark id="ROBINHOOD" size={16} />Robinhood fork</>}</span>}</div>
         <div className="nk-band nk-markets" role="tablist" aria-label="Market">
-          {([["arc", "USDC → EURC · Arc"], ["rh", "Stocks · Robinhood"], ["xc", "Stock → USDC on Arc"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={market === k} aria-pressed={market === k} onClick={() => setMarket(k)}>{l}</button>)}
+          {([["arc", "USDC → EURC on Arc"], ["rh", "Stocks on Robinhood"], ["xc", "Stock → USDC on Arc"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={market === k} aria-pressed={market === k} onClick={() => setMarket(k)}>{l}</button>)}
         </div>
         {market === "arc" ? <ArcSwap /> : xc ? <XChainSwap w={w} /> : <>
         <div className="nk-box">

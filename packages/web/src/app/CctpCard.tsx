@@ -32,7 +32,7 @@ export function CctpCard({ w, from0 = "base-sepolia", lock, exclude, title = "Br
   const running = flow?.phase === "running";
   // Finish it myself only when this key can pay Arc gas (USDC is Arc's gas token); otherwise wait for the CRE relay.
   const mode: RelayMode = relay ?? (arc.b && arc.b.gas > 0n ? "self" : "cre");
-  useEffect(() => { if (flow?.phase === "done") setTick((t) => t + 1); }, [flow?.phase]);
+  useEffect(() => { if (flow?.phase === "done") { setTick((t) => t + 1); setAmount(""); } }, [flow?.phase]);
 
   const missing = !b ? null
     : b.gas === 0n ? `${src.name} gas (${src.gas}) for ${shortHex(who, 4)}`

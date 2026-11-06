@@ -53,6 +53,7 @@ export function ArcOut({ to = "robinhood-testnet" as SourceChainKey }: { to?: So
       const dstWallet = createWalletClient({ account: me, chain: chainOf(to), transport: http(d.rpcUrl) });
       const m = await mintFromArc(to, a, dstWallet);
       put({ mintTx: m.mintTxHash, step: "Minted", seconds: (Date.now() - started) / 1000 });
+      setAmount("");
     } catch (e) { put({ error: msgOf(e) }); }
     setTick((t) => t + 1);
   };

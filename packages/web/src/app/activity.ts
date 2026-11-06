@@ -56,6 +56,7 @@ export async function readActivity(w: Wallet, limit = 12): Promise<Activity[]> {
     [cfg.deployment.entrypoint.toLowerCase()]: "the privacy pool",
     [cfg.deployment.pool.toLowerCase()]: "the privacy pool",
     [cfg.merchant.toLowerCase()]: "the demo shop",
+    "0x0000000000000000000000000000000000000000": "the fork faucet",
   };
   const line = w.oc.credit?.creditLine as Address | undefined;
   if (line) known[line.toLowerCase()] = "your credit line";

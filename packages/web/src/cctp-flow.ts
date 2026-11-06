@@ -55,7 +55,7 @@ export function grossFor(net: bigint, bps: number | null, fast: boolean) {
 export function useCctpFlow() {
   const [f, setF] = useState<Flow | null>(null);
   const live = useRef(true);
-  useEffect(() => () => { live.current = false; }, []);
+  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   const run = useCallback(async (p: { from: SourceChainKey; amount: bigint; recipient: Address; action?: ArcAction; fast: boolean; relay: RelayMode }) => {
     const startedAt = Date.now();
     const base: Flow = { phase: "running", from: p.from, amount: p.amount, startedAt };

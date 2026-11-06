@@ -138,7 +138,7 @@ function RobinhoodArc({ w }: { w: Wallet }) {
         <span className={`nk-pill ${dir === "stock" ? "fork" : "live"}`}>{dir === "stock" ? "fork demo" : "testnets"}</span>
       </div>
       <div className="nk-band nk-markets" role="tablist" aria-label="Direction">
-        {([["in", "Robinhood → Arc"], ["out", "Arc → Robinhood"], ["stock", "Stocks → USDC on Arc"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={dir === k} aria-pressed={dir === k} onClick={() => setDir(k)}>{l}</button>)}
+        {([["in", "Robinhood → Arc"], ["out", "Arc → Robinhood"], ["stock", "Stocks → USDC"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={dir === k} aria-pressed={dir === k} onClick={() => setDir(k)}>{l}</button>)}
       </div>
       <PathSteps kind={dir === "stock" ? "stock" : dir === "out" ? "out" : "in"} />
       {dir === "in" ? <CctpCard w={w} from0="robinhood-testnet" lock bare /> : dir === "out" ? <ArcOut /> : <XChainSwap w={w} />}

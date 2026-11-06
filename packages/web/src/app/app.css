@@ -447,3 +447,7 @@ a.nk-way:hover { border-color: var(--nk-hair-2); background: var(--nk-box); }
   .nk-path li + li::before { content: "↓"; left: 22px; top: -13px; }
   .nk-inv-h b { font-size: 26px; }
 }
+@media (max-width: 1640px) { .nk-nets { display: none; } }
+@media (min-width: 721px) and (max-width: 1240px) { .nk-tabs button { padding: 0 12px; } }
+.nk-band.nk-markets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 18px; }
+.nk-band.nk-markets button { min-height: 44px; padding: 6px 8px; white-space: normal; line-height: 1.2; font-size: 13px; border-radius: 14px; }
