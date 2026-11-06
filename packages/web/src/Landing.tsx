@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ui";
+import "./landing.css";
 
-/* Every number on this page was measured on the local Arc testnet fork (TESTING.md). Screens are real captures of this app. */
+/* Every number on this page comes from TESTING.md (local Arc testnet fork and Robinhood Chain mainnet snapshot, Nov 6 2026).
+   Screens are real captures of this app. Art: ChatGPT (stills) and Google Gemini Veo (film), see README. */
+
+/** Honest status of each piece. Flip a value here when its branch lands. */
+type Status = "live" | "key" | "wip" | "quotes";
+const STATUS: Record<Status, string> = { live: "Live on fork", key: "Needs key", wip: "In progress", quotes: "Live quotes" };
+const Chip = ({ s }: { s: Status }) => <span className={`nx-chip ${s} mono`}><i />{STATUS[s]}</span>;
 
 const CODE: Record<string, { file: string; lines: [string, string][] }> = {
   link: { file: "server.ts", lines: [
@@ -35,28 +42,68 @@ const CODE: Record<string, { file: string; lines: [string, string][] }> = {
     ["", "const me = createCustomer({ deployment, rpcUrl, aspUrl, deriveAt });"],
     ["", "await me.shield(20_000_000n);           // once: USDC into the pool"],
     ["", "const proof = await me.proveInvoicePayment(invoice);"],
-    ["s", "// ~1–5 s in a browser (warm vs first proof). The merchant relays it and pays the gas."],
+    ["s", "// 1.09–1.13 s in a browser (measured). The merchant relays it and pays the gas."],
   ] },
 };
 
-const SPECS: [string, string][] = [
-  ["Payment links", "Create a link in the dashboard or with one SDK call. It carries the amount, a private description and an expiry. Share it anywhere."],
-  ["Hosted checkout", "The customer opens the link, binds the invoice, proves on their own device and is done in seconds. No gas, no public wallet, no extension."],
-  ["Private refunds", "Full or partial refunds go back into the customer's shielded inbox, fixed at payment time. You can't redirect it and you never learn whose it is."],
-  ["Signed webhooks", "invoice.created, invoice.bound, payment.succeeded and refund.succeeded. HMAC-SHA256 signed, retried 3 times, every delivery logged."],
-  ["Any currency, Chainlink-priced", "Price a link in EUR, GBP, JPY, CAD, AUD, MXN, BRL or KRW. Noren reads Chainlink Data Feeds, locks the USDC quote until the link expires, and stores both round IDs so anyone can re-check it."],
-  ["Compliance built in", "An ASP postman screens every deposit against USDC's own blacklist before it can pay you. Blocked funds never reach your till."],
-  ["Selective receipts", "Each payment carries a receipt commitment the customer can open later for a warranty or tax, and only if they choose to."],
+const SURFACES = [
+  { k: "merchant", name: "Noren Merchant", href: "#/dashboard", cta: "Open Noren Merchant", img: "/art/surface-merchant.jpg", w: 1200, h: 750,
+    line: "The merchant dashboard. Payments with the method used, payment links priced in 9 currencies by Chainlink, refunds, balances, signed webhooks, API keys and credit-line exposure.",
+    cap: "Home: today against yesterday, USDC balance on Arc, payment-method mix." },
+  { k: "app", name: "Noren app", href: "#/app", cta: "Open the Noren app", img: "/art/surface-app.jpg", w: 500, h: 1040,
+    line: "The customer's side. A private balance, Stock Tokens at live Chainlink prices, a credit score from on-chain history and a USDC line on Arc.",
+    cap: "At 375 px: private balance, credit limit, stock held." },
+  { k: "sdk", name: "Noren SDK", href: "#developers", cta: "Read the SDK", img: "/art/surface-checkout.jpg", w: 1200, h: 750,
+    line: "Drop-in hosted checkout and a TypeScript merchant API. Create a link, send the customer to it, verify the signed webhook.",
+    cap: "The hosted checkout the SDK links to, with all three ways to pay." },
 ];
 
-const SCREENS: [string, string, string][] = [
-  ["dash-home", "Home", "Noren Merchant: today against yesterday, the on-chain USDC balance, the payment-method mix and credit-line exposure."],
-  ["dash-payments", "Payments", "Every payment with its method: private pool, pay with stocks or pay later. Private ones have no customer."],
-  ["dash-drawer", "Payment", "A pay-later payment: the credit line, the Chainlink CRE bridge and the merchant's zero exposure."],
-  ["dash-balances", "Balances", "USDC on Arc, and USDG from stock payments with Settle to Arc and its CRE approval."],
-  ["app", "Noren app", "The customer's side: stock at Chainlink prices, a credit score, and a line bridged to Arc."],
-  ["checkout-later", "Checkout", "The hosted checkout with all three ways to pay; this one is paying later on a credit line."],
-  ["dash-events", "Events", "Every event with its JSON and each signed webhook delivery."],
+type Power = { k: string; t: string; s: Status[]; d: string; m?: string; art?: string; alt?: string; tone?: "dark" };
+const POWERS: Power[] = [
+  { k: "private", t: "Pay privately", s: ["live"], art: "/art/iso-privacy.jpg", alt: "A coin stack passes behind a noren curtain; only a receipt comes out the other side",
+    d: "Pay from a Kohaku privacy pool. Your browser makes a zero-knowledge proof for exactly this invoice, and the shop gets paid without ever learning your address.",
+    m: "Proof in the browser: 1.09–1.13 s" },
+  { k: "stocks", t: "Pay with stocks", s: ["live"],
+    d: "Spend NVDA, TSLA or other Stock Tokens. A 1inch Aqua maker buys them at the Chainlink price and the merchant receives USDG.",
+    m: "0.040798 NVDA at $184.61 → 7.50 USDG" },
+  { k: "in3", t: "Pay in 3", s: ["live"],
+    d: "Pay later on your credit line, then repay in three parts in USDC before the line expires.",
+    m: "14.02 USDC checkout → 4.67 × 3" },
+  { k: "earn", t: "Earn", s: ["live", "wip"], art: "/art/render-earn.jpg", alt: "Stock and ether tokens float into a softly glowing glass vault", tone: "dark",
+    d: "Lend USDG to the Noren vault. It keeps the 3% merchant fee on Pay in 3 and the spread when it backs an Aqua maker. The vault and its tests run on the fork; the Earn screen in the app is still being built." },
+  { k: "borrow", t: "Borrow at a Chainlink price", s: ["live"],
+    d: "Lock Stock Tokens on Robinhood Chain. NorenCredit values them with Chainlink feeds and a CRE workflow opens your USDC line on Arc.",
+    m: "2 NVDA locked = $371.41 collateral" },
+  { k: "human", t: "Credit for real humans", s: ["key"], art: "/art/render-credit.jpg", alt: "A card made of light floats in front of a glowing orb", tone: "dark",
+    d: "No stock? Verify with World ID for one small starter line per human. Noren keeps only the nullifier. A sealed second opinion on 0G Private Computer can weigh in. Both wait on API keys and say “Setup required” until then." },
+  { k: "bridge", t: "Swap and bridge", s: ["quotes", "wip"], art: "/art/iso-bridge.jpg", alt: "Two chain platforms joined by an arched bridge; one coin crosses",
+    d: "Move USDG on Robinhood Chain to USDC on Arc through Relay or Across. A Chainlink CRE workflow approves the route against the Chainlink fair value. Uniswap v4 swaps are in progress.",
+    m: "7.50 USDG: Relay 7.475568 · Across 7.491332 USDC" },
+];
+
+const BUILT: { name: string; use: string; s: Status; note?: string }[] = [
+  { name: "Kohaku privacy pools", use: "The Ethereum Foundation's Kohaku SDK on 0xbow's Privacy Pools contracts: the pool customers pay from, with Groth16 proofs made in the browser.", s: "live" },
+  { name: "Chainlink Data Feeds + CRE", use: "Fiat feeds price payment links, and stock and ETH feeds value collateral. CRE workflows bridge credit lines, write FX rates and approve settlements (CRE simulator).", s: "live" },
+  { name: "1inch Aqua + SwapVM", use: "Makers fill stock payments at a Chainlink-pegged price through a SwapVM instruction we added, NorenOraclePeg.", s: "live", note: "Powered by SwapVM — © Degensoft Ltd 2025" },
+  { name: "Uniswap v4", use: "Swaps in the Noren app through Robinhood Chain's v4 PoolManager.", s: "wip" },
+  { name: "World ID", use: "One starter credit line per verified human. Noren stores the nullifier, not the person.", s: "key", note: "Needs WORLD_APP_ID, WORLD_RP_ID, WORLD_RP_SIGNING_KEY" },
+  { name: "0G Private Computer", use: "A sealed AI second opinion on credit. It sees numeric features only, inside a TEE.", s: "key", note: "Needs ZG_PC_API_KEY" },
+  { name: "Relay / Across", use: "USDG on Robinhood Chain to USDC on Arc for merchant settlement. Quotes are live; no relayer fills a local fork.", s: "quotes" },
+];
+
+const ONBOARD: [string, string][] = [
+  ["Open Noren Merchant", "Run the stack and open the dashboard. You get a merchant key and a USDC payout address on Arc."],
+  ["Create a payment link", "Price it in USDC, or in EUR, JPY and seven more currencies. Chainlink locks the USDC quote until the link expires. One SDK call does the same."],
+  ["Get paid, then get the webhook", "USDC lands at your payout address and a signed payment.succeeded webhook arrives with the invoice, the amount and the tx. There's no payer field."],
+];
+
+const NUMBERS: { v: string; u?: string; l: string }[] = [
+  { v: "1.09–1.13", u: "s", l: "to make the payment proof in a browser" },
+  { v: "0", l: "payer addresses in the private payment tx" },
+  { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
+  { v: "5.0–7.0", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
+  { v: "8/8", l: "steps of the stocks + pay-later run, end to end" },
+  { v: "346", l: "tests passing: 99 + 112 + 18 + 47 + 22 + 31 + 8 + 9 across the suites" },
 ];
 
 function useReveal() {
@@ -70,6 +117,19 @@ function useReveal() {
     return () => io.disconnect();
   }, []);
   return ref;
+}
+
+/** Plays a muted ambient film only while it is on screen, and never under reduced motion. */
+function Film({ src, poster, label }: { src: string; poster: string; label: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current; if (!v) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }, { threshold: .25 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return <video ref={ref} src={src} poster={poster} muted loop playsInline preload="metadata" aria-label={label} />;
 }
 
 /** A field of tiny noren marks that brightens toward a horizon, with a slow shimmer. Deterministic, cheap, pauses offscreen. */
@@ -111,14 +171,14 @@ function GlyphField() {
   return <canvas ref={ref} className="lx-field" aria-hidden />;
 }
 
+const Tag = ({ children, dark }: { children: string; dark?: boolean }) => <span className={`lx-tag mono ${dark ? "dark" : ""}`}>■ {children}</span>;
+
 export function Landing() {
   const [tab, setTab] = useState<keyof typeof CODE>("link");
-  const [spec, setSpec] = useState(0);
-  const [screen, setScreen] = useState(0);
   const ref = useReveal();
   return (
     <div className="lp" ref={ref}>
-      {/* ---------------------------------------------------------------- hero */}
+      {/* ---------------------------------------------------------------- hero (unchanged) */}
       <section className="lx-hero">
         <GlyphField />
         <div className="lx-hero-in">
@@ -133,185 +193,150 @@ export function Landing() {
         <div className="lx-horizon" aria-hidden />
       </section>
 
-      {/* ---------------------------------------------------------------- statement */}
-      <section className="lx-statement">
-        <h2 data-reveal>Get paid like a card.<br /><span>Links, checkout, refunds and webhooks</span><br /><span>for any EVM chain. Private by default.</span></h2>
-        <figure className="lx-film" data-reveal>
-          <video src="/art/curtain.mp4" poster="/art/curtain-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="A noren curtain parts and light comes through" />
-          <figcaption className="mono">The curtain parts for the payment, not for the payer · film generated with Google Gemini (Veo)</figcaption>
-        </figure>
-        <div className="lx-icon" data-reveal aria-hidden><img src="/art/icon.jpg" alt="" width={320} height={320} /></div>
-        <div className="lx-beam" aria-hidden />
+      {/* ---------------------------------------------------------------- (a) what Noren is */}
+      <section className="nx-one">
+        <div className="nx-one-in">
+          <div data-reveal><Tag dark>What Noren is</Tag></div>
+          <h2 data-reveal>Noren lets shops take stablecoins <em>without</em> seeing who paid. <span>Merchants get USDC on Arc. Customers pay privately, with stock, or later.</span></h2>
+          <figure className="nx-film" data-reveal>
+            <Film src="/art/vault.mp4" poster="/art/vault-poster.jpg" label="Glossy coins drift behind a noren curtain; only a point of light reaches the vault" />
+            <figcaption className="mono">The coins go behind the curtain. Only the payment comes out. <span>Film generated with Google Gemini (Veo); Gemini's mark is kept, bottom right.</span></figcaption>
+          </figure>
+        </div>
       </section>
 
-      {/* ---------------------------------------------------------------- what */}
-      <section className="lx-what">
-        <div className="lx-what-grid">
-          <div className="lx-what-copy" data-reveal>
-            <span className="lx-tag mono">■ What Noren does</span>
-            <h2>The payments stack you know. <span>The privacy you can't get anywhere else.</span></h2>
+      {/* ---------------------------------------------------------------- (b) three surfaces */}
+      <section className="nx-sec nx-surf" id="surfaces">
+        <div className="nx-head" data-reveal>
+          <Tag>One product, three surfaces</Tag>
+          <h2>One Noren. <span>A dashboard for the shop, an app for the customer, an SDK for the developer.</span></h2>
+        </div>
+        <div className="nx-surf-grid">
+          {SURFACES.map((s, i) => (
+            <article key={s.k} className={`nx-surf-card ${s.k}`} data-reveal style={{ transitionDelay: `${i * 80}ms` }}>
+              <div className="nx-surf-copy">
+                <span className="nx-num mono">0{i + 1}</span>
+                <h3>{s.name}</h3>
+                <p>{s.line}</p>
+                <a className="nx-link mono" href={s.href}>{s.cta} <Icon.arrow /></a>
+              </div>
+              <figure className={`nx-shot ${s.k === "app" ? "phone" : "browser"}`}>
+                {s.k !== "app" && <span className="nx-dots" aria-hidden><i /><i /><i /></span>}
+                <img src={s.img} alt={`${s.name}: ${s.cap}`} width={s.w} height={s.h} loading="lazy" />
+                <figcaption className="mono">{s.cap} Real capture on the local forks.</figcaption>
+              </figure>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- (c) consumer powers */}
+      <section className="nx-sec nx-powers" id="app">
+        <div className="nx-head split" data-reveal>
+          <div>
+            <Tag>In the Noren app</Tag>
+            <h2>Everything your money can do. <span>Only one of them shows nobody who you are.</span></h2>
           </div>
-          <div className="lx-what-art" data-reveal><img className="lx-iso" src="/art/iso-pool.jpg" alt="Invoices drop into a privacy pool; a single receipt leaves for the shop, with no payer attached" width={900} height={900} loading="lazy" /><span className="lx-scroll mono">Keep scrolling <i /></span></div>
-          <ul className="lx-specs">
-            {SPECS.map(([t, d], i) => (
-              <li key={t} data-open={spec === i}>
-                <button className="mono" onClick={() => setSpec(i)} aria-expanded={spec === i}>{t}</button>
-                <p className="mono">{d}</p>
+          <p>Pay privately is the only private path. Paying with stocks, paying later and borrowing come from your public Robinhood Chain wallet, and the app says so on every screen.</p>
+        </div>
+        <div className="nx-bento">
+          {POWERS.map((p, i) => (
+            <article key={p.k} className={`nx-pw ${p.k} ${p.tone ?? ""}`} data-reveal style={{ transitionDelay: `${(i % 4) * 60}ms` }}>
+              <div className="nx-pw-top">{p.s.map((s) => <Chip key={s} s={s} />)}</div>
+              <h3>{p.t}</h3>
+              <p>{p.d}</p>
+              {p.m && <span className="nx-pw-m mono">{p.m}</span>}
+              {p.k === "in3" && <ol className="nx-in3 mono" aria-label="Three equal parts">{["First", "Part 2", "Last"].map((x) => <li key={x}><span>{x}</span><b>4.67</b></li>)}</ol>}
+              {p.art && <img className="nx-pw-art" src={p.art} alt={p.alt} width={900} height={900} loading="lazy" />}
+            </article>
+          ))}
+        </div>
+        <p className="nx-legend mono"><Chip s="live" /> runs end to end on local Anvil forks of Arc testnet and Robinhood Chain mainnet, against the real contracts. <Chip s="quotes" /> real third-party quotes, not filled on a fork. <Chip s="key" /> code ready, waiting for an API key. <Chip s="wip" /> being built now.</p>
+      </section>
+
+      {/* ---------------------------------------------------------------- (d) built with */}
+      <section className="nx-built" id="built-with">
+        <div className="nx-built-in">
+          <div className="nx-head" data-reveal>
+            <Tag dark>Built with</Tag>
+            <h2>Seven protocols. <span>Each one labelled with what actually runs today.</span></h2>
+          </div>
+          <ul className="nx-built-list">
+            {BUILT.map((b, i) => (
+              <li key={b.name} data-reveal style={{ transitionDelay: `${i * 50}ms` }}>
+                <b>{b.name}</b>
+                <p>{b.use}{b.note && <small className="mono">{b.note}</small>}</p>
+                <Chip s={b.s} />
               </li>
             ))}
           </ul>
+          <p className="nx-built-foot mono">Runs on Arc (USDC checkout and credit lines) and Robinhood Chain (Stock Tokens, USDG). No endorsement by any of these projects is implied.</p>
         </div>
       </section>
 
-      {/* ---------------------------------------------------------------- product */}
-      <section className="lx-product">
-        <div className="lx-product-head" data-reveal>
-          <h2>Know every payment. <span>Know none of your customers.</span></h2>
-          <div className="lx-big"><b>0</b><span>payer addresses in the merchant's records. On-chain, the payment comes from the pool, not a person.</span></div>
-        </div>
-        <div className="lx-frame" data-reveal>
-          <div className="lx-frame-bar">
-            <div className="lx-frame-tabs" role="tablist">{SCREENS.map(([k, t], i) => <button key={k} role="tab" aria-selected={screen === i} onClick={() => setScreen(i)} className="mono">{t}</button>)}</div>
-            <a className="lx-btn dark sm" href="#/dashboard">Open it</a>
+      {/* ---------------------------------------------------------------- (e) merchant onboarding */}
+      <section className="nx-sec nx-onb" id="merchants">
+        <figure className="nx-onb-art" data-reveal><img src="/art/iso-merchant.jpg" alt="A laptop shows a merchant dashboard next to a card terminal printing a receipt" width={900} height={900} loading="lazy" /></figure>
+        <div>
+          <div className="nx-head" data-reveal>
+            <Tag>For merchants</Tag>
+            <h2>Start taking private payments <em>in three steps.</em></h2>
           </div>
-          <div className="lx-frame-shot"><img key={SCREENS[screen][0]} src={`/shots/${SCREENS[screen][0]}.jpg`} alt={`${SCREENS[screen][1]}: ${SCREENS[screen][2]}`} loading="lazy" width={1440} height={900} /></div>
-          <p className="lx-frame-cap mono">{SCREENS[screen][2]} Real capture on the local forks.</p>
+          <ol className="nx-steps">
+            {ONBOARD.map(([t, d], i) => (
+              <li key={t} data-reveal style={{ transitionDelay: `${i * 80}ms` }}><span className="mono">0{i + 1}</span><div><b>{t}</b><p>{d}</p></div></li>
+            ))}
+          </ol>
+          <a className="lx-btn dark" href="#/dashboard">Open Noren Merchant</a>
         </div>
       </section>
 
-      {/* ---------------------------------------------------------------- problem */}
-      <section className="lp-sec split">
-        <div className="lp-head" data-reveal>
-          <span className="lx-tag mono">■ The problem with crypto checkout</span>
-          <h2>Paying with a wallet hands over <em>your whole wallet.</em></h2>
-          <p>Send USDC to a shop and the shop, its analytics vendor and anyone on a block explorer can see your balance, your salary and every shop you've paid. Card networks never worked like that. Noren puts the curtain back.</p>
-        </div>
-        <img className="lp-head-art" data-reveal src="/art/iso-shop.jpg" alt="A coffee stand with a noren curtain and a card terminal; the payment goes to a safe, not to a public wallet" width={900} height={900} loading="lazy" />
-        <div className="lp-compare">
-          <div className="lp-cmp bad" data-reveal>
-            <span className="lx-tag mono">A plain USDC transfer</span>
-            <h3>What the merchant learns</h3>
-            <ul>
-              <li><Icon.x /> The payer's address, forever</li>
-              <li><Icon.x /> Their full balance, right now</li>
-              <li><Icon.x /> Every other payment they've made</li>
-              <li><Icon.x /> Refunds go back to the same public wallet</li>
-            </ul>
-            <div className="lp-trace mono"><span>0x9f2c…41aa</span><Icon.arrow /><span>Takumi Coffee</span><em>visible to anyone</em></div>
-          </div>
-          <div className="lp-cmp good" data-reveal>
-            <span className="lx-tag mono">A Noren payment</span>
-            <h3>What the merchant learns</h3>
-            <ul>
-              <li><Icon.check /> The invoice was paid, in full, on time</li>
-              <li><Icon.check /> The money came from screened funds</li>
-              <li><Icon.check /> A receipt the customer can open later, if they choose</li>
-              <li><Icon.check /> Refunds land in a private inbox only the customer sees</li>
-            </ul>
-            <div className="lp-trace mono"><span>privacy pool</span><Icon.arrow /><span>Takumi Coffee</span><em>payer: unknown</em></div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------- developers */}
-      <section className="lp-dev" id="developers">
-        <div className="lp-dev-in">
-          <div className="lp-dev-copy" data-reveal>
-            <span className="lx-tag mono dark">■ For developers</span>
+      {/* ---------------------------------------------------------------- (f) SDK */}
+      <section className="nx-dev" id="developers">
+        <div className="nx-dev-in">
+          <div className="nx-dev-copy" data-reveal>
+            <Tag dark>Noren SDK</Tag>
             <h2>Get paid in <em>about ten lines.</em></h2>
-            <p>A REST API, a TypeScript SDK and webhooks that feel familiar. Plain Solidity on 0xbow's Privacy Pools contracts, so it ports to any EVM chain with USDC. We start on Arc.</p>
-            <ul className="lp-endpoints mono">
+            <p>A TypeScript SDK, a REST API and signed webhooks that feel familiar. Plain Solidity on 0xbow's Privacy Pools contracts, so it ports to any EVM chain with USDC. We start on Arc.</p>
+            <ul className="nx-endpoints mono">
               <li><b>POST</b> /merchants/:id/invoices</li>
-              <li><b>GET</b>  /invoices/:id</li>
+              <li><b>GET</b> /invoices/:id</li>
               <li><b>POST</b> /invoices/:id/refund</li>
               <li><b>POST</b> /merchants/:id/webhooks</li>
-              <li><b>GET</b>  /merchants/:id/events</li>
+              <li><b>GET</b> /merchants/:id/events</li>
             </ul>
           </div>
-          <div className="lp-code" data-reveal>
-            <div className="lp-code-tabs" role="tablist">
+          <div className="nx-code" data-reveal>
+            <div className="nx-code-tabs" role="tablist" aria-label="SDK examples">
               {(Object.keys(CODE) as (keyof typeof CODE)[]).map((k) => (
                 <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className="mono">{k === "link" ? "Create a link" : k === "hook" ? "Webhooks" : "Customer pays"}</button>
               ))}
             </div>
-            <div className="lp-code-file mono"><span>{CODE[tab].file}</span><span>TypeScript</span></div>
-            <pre className="mono" key={tab}>{CODE[tab].lines.map(([t, l], i) => <span key={i} className={`ln ${t}`}><i>{i + 1}</i>{l || " "}</span>)}</pre>
+            <div className="nx-code-file mono"><span>{CODE[tab].file}</span><span>TypeScript</span></div>
+            <pre className="mono" key={tab} role="tabpanel">{CODE[tab].lines.map(([t, l], i) => <span key={i} className={`ln ${t}`}><i>{i + 1}</i>{l || " "}</span>)}</pre>
           </div>
         </div>
       </section>
 
-      {/* ---------------------------------------------------------------- how */}
-      <section className="lp-sec split">
-        <div className="lp-head" data-reveal>
-          <span className="lx-tag mono">■ How a payment works</span>
-          <h2>Four steps. The customer's address <em>shows up in none.</em></h2>
-          <p>The last step fires a signed <span className="mono">payment.succeeded</span> webhook to your server, with the invoice, the amount and the transaction. There's no payer field to fill.</p>
+      {/* ---------------------------------------------------------------- (g) measured */}
+      <section className="nx-sec nx-nums" id="numbers">
+        <div className="nx-head" data-reveal>
+          <Tag>Measured, not promised</Tag>
+          <h2>The numbers from our last run. <span>Every one is in TESTING.md with the command that made it.</span></h2>
         </div>
-        <img className="lp-head-art" data-reveal src="/art/iso-dev.jpg" alt="A laptop sends a signed webhook, sealed like a letter" width={900} height={900} loading="lazy" />
-        <ol className="lp-steps">
-          {[
-            ["Shield", "The customer deposits USDC into a Kohaku privacy pool once. A compliance postman approves it in seconds."],
-            ["Bind", "Opening your link binds the invoice to their private refund inbox and a receipt commitment. It's fixed from then on."],
-            ["Prove", "Their browser makes a zero-knowledge proof for exactly this invoice. Secrets never leave the device."],
-            ["Relay", "Your server submits the proof and pays about a cent of gas. USDC lands at your payout address and your webhook fires."],
-          ].map(([t, d], i) => <li key={t} data-reveal style={{ transitionDelay: `${i * 70}ms` }}><span className="lp-step-n mono">0{i + 1}</span><b>{t}</b><p>{d}</p></li>)}
-        </ol>
+        <div className="nx-num-grid" data-reveal>
+          {NUMBERS.map((n) => <div key={n.l}><b>{n.v}{n.u && <em>{n.u}</em>}</b><span>{n.l}</span></div>)}
+        </div>
+        <p className="nx-note mono">Local Anvil fork of Arc testnet (chain 5042002) and a snapshot of Robinhood Chain mainnet, Nov 6 2026. No public transaction was sent. The public Arc testnet deploy waits on testnet USDC.</p>
       </section>
 
-      {/* ---------------------------------------------------------------- pay with stocks, pay later */}
-      <section className="lp-sec lp-credit" id="pay-later">
-        <div className="lp-head" data-reveal>
-          <span className="lx-tag mono">■ In the Noren app</span>
-          <h2>Pay with stocks. <em>Pay later.</em></h2>
-          <p>Lock Stock Tokens on Robinhood Chain, get a USDC credit line on Arc, and pay any Noren checkout with it. Repay in USDC before the line expires. Or pay with the shares themselves: a 1inch Aqua maker buys them at a Chainlink-pegged price and the merchant gets USDG. Either way the merchant is paid in full, upfront, and a Chainlink CRE workflow keeps the two chains in step.</p>
-        </div>
-        <ol className="lp-flow" data-reveal>
-          {[
-            ["Robinhood Chain", "Lock stock", "An underwriter reads your wallet's on-chain history (age, activity, stock held, past repayments) and signs an EIP-712 score. NorenCredit checks it and values your Stock Tokens with Chainlink feeds."],
-            ["Chainlink CRE", "Bridge the line", "A log trigger on CreditLineOpened runs a CRE workflow that writes your limit to Arc. Draws and repayments on Arc flow back the same way."],
-            ["Arc", "Pay any checkout", "Choose “Pay later” on the hosted checkout. NorenCreditLine pays the merchant in USDC from the credit pool, within your limit."],
-            ["Arc → Robinhood", "Repay", "Repay in USDC on Arc, in parts or at once. Each repayment flows back to Robinhood through CRE. Debt left after expiry, or a price drop, makes the line liquidatable."],
-          ].map(([chain, t, d], i) => <li key={t}><span className="mono">{String(i + 1).padStart(2, "0")} · {chain}</span><b>{t}</b><p>{d}</p></li>)}
-        </ol>
-        <div className="lp-honest" data-reveal>
-          <div>
-            <h3>Real</h3>
-            <ul>
-              <li><Icon.check /> Robinhood Chain's Stock Token and Chainlink feed contracts, with mainnet state</li>
-              <li><Icon.check /> The CRE workflow code, run by the CRE CLI, writing through Chainlink's forwarder contract</li>
-              <li><Icon.check /> Our contracts call those real contracts directly; nothing in between is mocked</li>
-            </ul>
-          </div>
-          <div>
-            <h3>Not real yet</h3>
-            <ul>
-              <li><Icon.x /> Both chains run as local Anvil forks: no real stock or money moves. Robinhood's testnet has no Chainlink feeds, so we fork mainnet.</li>
-              <li><Icon.x /> The workflow runs in the CRE simulator, not on a Chainlink DON.</li>
-              <li><Icon.x /><span>Paying with stocks or later is <b>not private</b>: it comes from your Robinhood wallet. Only “Pay privately” hides you.</span></li>
-              <li><Icon.x /><span>The World ID starter line and the 0G Private Computer credit check need their API keys; until they exist the app says “Setup required”.</span></li>
-            </ul>
-          </div>
-        </div>
-        <div className="lp-credit-cta" data-reveal><a className="lx-btn dark" href="#/app">Open the Noren app</a><span className="mono">Runs locally: pnpm dev:all</span></div>
-      </section>
-
-      {/* ---------------------------------------------------------------- proof */}
-      <section className="lp-sec">
-        <div className="lp-proof" data-reveal>
-          <div><b>1.1–4.8<em>s</em></b><span>to prove a payment in a browser (warm / first proof)</span></div>
-          <div><b>583k</b><span>gas per checkout, paid by the merchant</span></div>
-          <div><b>0</b><span>payer addresses in the merchant's records</span></div>
-          <div><b>5/5</b><span>attacks rejected on-chain: replay, tamper, squat, expiry, stale root</span></div>
-        </div>
-        <p className="lp-proof-note mono">Measured on a local fork of Arc testnet (chain 5042002), Nov 6 2026. Public Arc testnet deployment is next. See TESTING.md.</p>
-      </section>
-
-      {/* ---------------------------------------------------------------- cta */}
-      <section className="lx-cta" data-reveal>
+      {/* ---------------------------------------------------------------- (h) cta */}
+      <section className="nx-cta" data-reveal>
+        <img src="/art/icon.jpg" alt="" width={640} height={640} loading="lazy" aria-hidden />
         <h2>Open your shop's <em>curtain.</em></h2>
-        <p>Run it locally in two commands and take a private payment in under a minute.</p>
-        <pre className="mono">pnpm dev:stack{"\n"}pnpm --filter @noren/web dev</pre>
-        <div className="lx-ctas"><a className="lx-btn light" href="#/dashboard">Open dashboard</a><a className="lx-btn dark" href="https://github.com/nickthelegend/noren" target="_blank" rel="noreferrer">Source on GitHub</a></div>
+        <p>Run every chain, contract and workflow locally in one command, then take a private payment in under a minute.</p>
+        <pre className="mono">pnpm install{"\n"}pnpm dev:all{"\n"}pnpm --filter @noren/web dev</pre>
+        <div className="lx-ctas"><a className="lx-btn light" href="#/dashboard">Open Noren Merchant</a><a className="lx-btn dark" href="#/app">Open the Noren app</a></div>
       </section>
     </div>
   );
