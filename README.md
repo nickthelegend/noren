@@ -21,6 +21,15 @@ pnpm --filter @noren/web dev          # http://localhost:5190
 
 Then: **Noren Merchant** `#/dashboard` → create a link → pay it at `#/pay/<id>` with **Pay privately** (proof made in your browser, ~1.1 s). **Noren app** `#/app/bridge` → *Bring USDC to Arc* from any of 10 CCTP testnets (public testnets, your test key needs faucet USDC). `#/app/swap` → *Cross-chain* sells NVDA on Robinhood for USDC on Arc through an Aqua maker (fork demo).
 
+## What's private
+
+| | How | Live on Arc testnet |
+|---|---|---|
+| **Pay a Noren invoice** | Groth16 proof bound to the invoice, made in the browser; the merchant relays it from the Kohaku pool | [`0x1ce6858a…`](https://explorer.testnet.arc.io/tx/0x1ce6858a82a86d309d41f4639d9c958a3d50a82804ed6b2efc7d82435780776a), and paid from a cross-chain arrival [`0xc833c436…`](https://explorer.testnet.arc.io/tx/0xc833c436734b1b0425d5cab6fa6aefc0b7ecbc83a2deeb2c46d2cc14ad6589ff) |
+| **Send privately** | P2P withdrawal relayed by Noren (`Entrypoint.relay`); the recipient never sees the sender | [`0x69dc6a2d…`](https://explorer.testnet.arc.io/tx/0x69dc6a2ddc6c6e6cdb0a53813a46cca3d74c9d0d6ead85c8050709519c94ce09) |
+| **Arrive private** | CCTP burn with a SHIELD hook: the USDC lands straight in the pool (`NorenShieldSink`) | Arbitrum burn [`0xe55d5240…`](https://sepolia.arbiscan.io/tx/0xe55d52400e1fb3c7d3d5e73184c7eff64bf8947c0d8e07716ca9c447f63fe593) → pool [`0xdf7b3d45…`](https://explorer.testnet.arc.io/tx/0xdf7b3d45b4363e9e66ed866e1c7356d294a894ef074554e36d6cb1f15548815c) |
+| **Not private** | Swaps, bridges, deposits, amounts; the testnet pool's crowd is small | [docs/PRIVACY.md](docs/PRIVACY.md) |
+
 ## Live on public testnets
 
 | What | Transactions |
@@ -35,7 +44,7 @@ Then: **Noren Merchant** `#/dashboard` → create a link → pay it at `#/pay/<i
 | **1inch Aqua on Arc**: official Aqua v1.0.0 (unmodified) at [`0x550C…895B`](https://explorer.testnet.arc.io/address/0x550CD499f1E2da71527f14d6469364461966895B), a Chainlink-pegged USDC→EURC maker; CCTP burns from Arbitrum and Ethereum Sepolia with an AQUA_ORDER hook, filled on Arc by CRE | swap [`0xc7dfd911…`](https://explorer.testnet.arc.io/tx/0xc7dfd9119afe91a1f77cb253d1ae9f75420ccd65e61fcba55dbe10ac21d96cd8) · Arbitrum fill [`0xe6dab620…`](https://explorer.testnet.arc.io/tx/0xe6dab62029db1e6924cb6ff6e229248e7bbb29d6863c2157fdb0a9dd01568dd7) · Ethereum fill [`0x243cc90e…`](https://explorer.testnet.arc.io/tx/0x243cc90eed57c6273fc790d91e73ec5af25bd29a0c3d38c20c0bbd26f955dd93) ([docs/AQUA-LIVE.md](docs/AQUA-LIVE.md)) |
 | **CCIP into Arc**: 7 messages, all delivered (message IDs on ccip.chain.link) | Base Sepolia → Arc, CREDIT_LINE [`0xc54e5cf9…`](https://ccip.chain.link/msg/0xc54e5cf92c21ef23e7784dd1148e48a91b75eb9a0ff2bc52ab6d4de80664d504) · Ethereum Sepolia → Arc, PAY_ON_CREDIT [`0x3414a5d3…`](https://ccip.chain.link/msg/0x3414a5d397f5c4222aa8a30bc75c085b53127533b62376dc132923b6ec2df1a4) (merchant paid on Arc [`0x78d3a38f…`](https://explorer.testnet.arc.io/tx/0x78d3a38fd41c1c2b9bee066a94ad2c83837203cd5b00b9e0bd001155edc7d7ec)) · Robinhood → Base hub → Arc: [`0x8bf11c20…`](https://ccip.chain.link/msg/0x8bf11c2010e50817e88d2c61a896dbcffde95af5352cda9b0c342f073bac477d), [`0x5b04344b…`](https://ccip.chain.link/msg/0x5b04344b6baea78121553f912df5dc3e959e320df7712ca4d82a5763559df93d) · Arc → hub → Robinhood line report [`0x56603748…`](https://ccip.chain.link/msg/0x56603748215991241c874b9dc17bc44e0dce534ed0f0fb7746e79922b4541009) |
 
-Arc Studio app: https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b. Full records: [docs/LIVE.md](docs/LIVE.md), [docs/CCTP.md](docs/CCTP.md), [docs/CCIP.md](docs/CCIP.md), [docs/AQUA-LIVE.md](docs/AQUA-LIVE.md).
+Arc Studio app: https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b. Full records: [docs/LIVE.md](docs/LIVE.md), [docs/PRIVACY.md](docs/PRIVACY.md), [docs/CCTP.md](docs/CCTP.md), [docs/CCIP.md](docs/CCIP.md), [docs/AQUA-LIVE.md](docs/AQUA-LIVE.md).
 
 ## What's simulated
 
@@ -45,6 +54,7 @@ Arc Studio app: https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b. 
 - **Live prices go stale between CRE runs.** `NorenRateOracle` refuses quotes once its Chainlink round is older than 25 h; the app shows "price stale" until `scripts/live/cre-live.ts` runs again.
 - **CRE in the simulator.** Every CRE run is `cre workflow simulate --broadcast` through Chainlink's `MockKeystoneForwarder` (which doesn't check DON signatures), not a deployed DON. The public-testnet writes above are real transactions made that way.
 - **CCIP is slow on testnets.** Robinhood → Arc goes through a Base Sepolia hub and took ~38 min (two finality waits); Base → Arc ~20 min.
+- **Privacy gaps.** SHIELD over CCIP isn't live (no CCIP lane carries USDC into Arc). The ASP postman still checks only the on-chain depositor; for a cross-chain arrival, the source-sender screen ran in the live script, not in the postman.
 - **Unaudited.** Every Noren contract is hackathon code.
 
 ## Architecture
