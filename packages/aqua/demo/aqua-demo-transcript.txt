@@ -1,35 +1,35 @@
 Noren x 1inch Aqua + SwapVM on a local fork of Robinhood Chain mainnet (chain 4663)
-forked from block 107362438 | RPC http://127.0.0.1:8760 | every hash below is a transaction on this fork, not on mainnet
+forked from block 107370002 | RPC http://127.0.0.1:8760 | every hash below is a transaction on this fork, not on mainnet
 
 === 1. Official 1inch contracts on the fork (real addresses, real bytecode)
   Aqua registry          0x1111113CCf1426A8E30e2bfF5E005d929bF6a90a  (5619 bytes)
   SwapVM router (1inch)  0x111111338c5091E8440b67B168bAe16a668AC0De  "1inch SwapVM v1.0" 1.0.2
   Noren SwapVM router    0xC22F854Ec6B39CEF96cc738850BD7CDcAee4bA18  AquaSwapVMRouter v1.0.2 + NorenOraclePeg (opcode 34), redeployed on the fork
   NorenLiquidity         0xF19E8291e051c543690e5A7B8B3A4A1b41e9f992
-  fork tx  0x8e5bbe153c60f08b561936c74a1fa4b62fe2e9245ba68b5d9db11c874fa7441f  CREATE2 NorenAssetOracle 0xd3e71a144110123e0f5bd8406cf00e26a9872256
-  fork tx  0xcea3cad36acac40fd63dfb16b38a706aec55171c2e1520e1967680b2f910ceef  CREATE2 NorenVault 0xbf698359b801ac26d0b5c6c374daf0035aec77e0
-  fork tx  0xb6b519896696cd343fc7e5169f4d02709f823bc69b2502ae345817ee4da3ad44  CREATE2 NorenGateway 0x4441d0579774492fd3cc55dfa881f3ed3af437ab
-  fork tx  0x03395842822a10ff6b05649f1c367e14f329c3aa720647e61c772aa7f5e83887  CREATE2 NorenCredit 0x811514fc8dc60d9cf01d4cecd22329babdc78227
-  fork tx  0x1bfd21147d372427f702a7437c493257dc523c5bf1978ead7865412b1214d7e6  CREATE2 NorenAquaSwapVMRouter (swapvm-ext artifact) 0xc22f854ec6b39cef96cc738850bd7cdcaee4ba18
-  fork tx  0x4c421171bb31f88f202e8069b0ad9032aae78b6323c280c4b6e86e13ea17a131  CREATE2 NorenLiquidity 0xf19e8291e051c543690e5a7b8b3a4a1b41e9f992
-  fork tx  0x81bfc7bb2dacdb895d0eac65766ae467318a2be3eb0160656cf98ceda4988cdc  NorenGateway.setLiquidity(address,bool)
-  fork tx  0x5f162d72a8082be404c5163ea3cb3f0ca7c81a14ba56881ec8c549ad47ee8282  NorenCredit.setLiquidity(address)
+  fork tx  0x1f82dfdef4f2d29c00c523f88cdd3a64a67b9211e0d7341a5309ce8593bea124  CREATE2 NorenAssetOracle 0xd3e71a144110123e0f5bd8406cf00e26a9872256
+  fork tx  0x1092cc02fadd888cb0af80653af30ffff025726ffcecaaeb3e1d142c6f6f1ab1  CREATE2 NorenVault 0x1a7bbcb1329b6be6599a0707353c4c810e3396fa
+  fork tx  0xfce83e02d8b7f547733ebfa8cf1e4f7d11a25d63d711426a770c912740314131  CREATE2 NorenGateway 0x96b07fdad4a997e124266915e3a08fde7154c14a
+  fork tx  0x5e48907ec49c08c51b2684c9bbc02096253c80978cfb5723693e59677f56b290  CREATE2 NorenCredit 0x8b9ade3b96136d7f1d3c642fcd13713751ed2fdb
+  fork tx  0x5a27908f7825d5a16c23dc36cef5a755e36bf10ffcbe38431c2bb0d31f3148e2  CREATE2 NorenAquaSwapVMRouter (swapvm-ext artifact) 0xc22f854ec6b39cef96cc738850bd7cdcaee4ba18
+  fork tx  0xb4e3e6b671d45272d55d947d6258602748ae38888a5dd4e5bc32d2ceb38b57a9  CREATE2 NorenLiquidity 0xf19e8291e051c543690e5a7b8b3a4a1b41e9f992
+  fork tx  0x55730268eef6bcc3b43882facb2862661d1f77a1d938ecdf128a137a9be37ecb  NorenGateway.setLiquidity(address,bool)
+  fork tx  0x91bb8d9f6e2a2ee03f127176a0166d93312f457372d6d4f4b44bbbdda699f363  NorenCredit.setLiquidity(address)
 
 === 2. Maker ships Chainlink-pegged strategies (USDG stays in the maker wallet)
-  maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906 (a merchant with idle USDG), funded by fork tx 0xe2710ef9ed71f410c9377f901c758ad79d134486cf13aeaff66d4e92f23d7575
-  fork tx  0x40a9769a2dd02921dacc45d9f3c6f2f0818c57ce6d3886a44cbe88dc4750a841  token 0x5fc5360d0400a0fd4f2af552add042d716f1d168.approve
-  fork tx  0xd9ef21ae227023be16ffcaca71503a5320ff1e59eb1e6f1eeb76e0b18761f4ff  token 0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec.approve
-  fork tx  0x000c137463a44a477c82e153a38bc5a0fbe12fffd40300a05422eb3d655908bf  Aqua.ship
-  fork tx  0x3bbe1ff6233fc119457d5820beca610e1e5b057283f4b80586a13f20ac0d6325  NorenLiquidity.register
-  fork tx  0xecbfea7f2edcce82ab0a386e20833b0e641aac59554743443e10058fc2080a60  token 0x322f0929c4625ed5bad873c95208d54e1c003b2d.approve
-  fork tx  0x20f0fc9caabd46d78a6c894b8a9875e46ec5052b334dca34665a539292db688f  Aqua.ship
-  fork tx  0x277ea6f770a08db3756a8bbc414d353866b1969019e74ad703777f5ea61dc47a  NorenLiquidity.register
-  fork tx  0x320ed029d85c6cb51ec3b7b3e139dff71ef857f806038afe8d5ebf034ad04a28  token 0xaf3d76f1834a1d425780943c99ea8a608f8a93f9.approve
-  fork tx  0x3f25d79150a4a9397fd21a112cc8e0aacba19d119fdb9164d766337f8562551d  Aqua.ship
-  fork tx  0x255b0b3350c8d21d025c17f2f21ab1735b74f04e3f3505c12fda29a1fac75c57  NorenLiquidity.register
-  fork tx  0x276fa17fd76c05eb1b7aef24aa7f0609c99a4dad6f45e44686a7243194c074b3  token 0x0bd7d308f8e1639fab988df18a8011f41eacad73.approve
-  fork tx  0xbaaebf3b0c14f18d2f597fdac74f75d15674f7c20cc6fa8e87b7ffab89aa952b  Aqua.ship
-  fork tx  0xdcea0b01ecf28d203765b4c57c6b55a9606ab318b79a4ce9d8fa12f4c4221b70  NorenLiquidity.register
+  maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906 (a merchant with idle USDG), funded by fork tx 0xbc23496d9ca3ff842faf745a9c2fa6de91c4b136a6e3e50e25ec833f7d369bdb
+  fork tx  0xaece36a2b55fafb049c8aa1db3ad8807be6bd9e97090cd1452b46d29f0d68c80  token 0x5fc5360d0400a0fd4f2af552add042d716f1d168.approve
+  fork tx  0x69a2e058c145e3ad9dcd3d79f1a9be498c7b4d4df0cb7024d0d929cfcdf229a1  token 0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec.approve
+  fork tx  0x8d14b67e4e88bd7125b0bd2dab82b422b50c0a72d7c99b567b780d0692d0c760  Aqua.ship
+  fork tx  0x670763f5837a80aee229c4ccf6b661c3674ab84516366cde319bddb3bc54b2d9  NorenLiquidity.register
+  fork tx  0xc8c16dca2b534572df1add36db32af1ad80070c091627e75aac62fe3d606f748  token 0x322f0929c4625ed5bad873c95208d54e1c003b2d.approve
+  fork tx  0xe77c3f486f4ece07252284a1bebcb05fdf26b68a45c3a9187039f932bd0fa4ae  Aqua.ship
+  fork tx  0x81c7c3dedbb61476ea0e3a5347baf5313b0581aa2990b34d5f04256c24d9ea62  NorenLiquidity.register
+  fork tx  0x70c27d8484579362dc803c47bb4f4bee4eadbe07fa23874f6f226985a49769c0  token 0xaf3d76f1834a1d425780943c99ea8a608f8a93f9.approve
+  fork tx  0xfcb4e632c58220b07eba13038030052b169b28ad4f4dcac6e6b9466cb3da4d66  Aqua.ship
+  fork tx  0x57fcc7b415c8f88583b205fd4a6679be18a210775bbab3359ab082235a4e4c69  NorenLiquidity.register
+  fork tx  0x506d665d59b555ffa78e4ee935c772b8f3bff15fdcd9ce6fe4bb197ac9e95e64  token 0x0bd7d308f8e1639fab988df18a8011f41eacad73.approve
+  fork tx  0x6d1d72c883e1eaa0d6e072afeaf07cf600b74d45129e9ac325a22f2cbad89e6c  Aqua.ship
+  fork tx  0x704e45d1d4aee1ec78e985b1137c247d49dd5568296c8da8ab4685c15d411be6  NorenLiquidity.register
   wallet 50000 USDG; Aqua virtual balances per strategy:
     NVDA  bid 50 bps / ask 80 bps  10000 USDG  0x213076bed4093bd427cefcce1f48c585fdf68f19e0dd94e5374dfbc62d200100
     TSLA  bid 50 bps / ask 80 bps  10000 USDG  0xe2f0eb4ce2e0f1b7c84d4c473bc4a28218d75103438a3b174e085cd67e105404
@@ -37,9 +37,9 @@ forked from block 107362438 | RPC http://127.0.0.1:8760 | every hash below is a 
     ETH   bid 30 bps / ask 50 bps  10000 USDG  0x8cd8ab2aa391cede39bc7386451d7338144e9a90d70e48623431fa5ce153d37b
 
 === 3. Pay with stocks: a 250 USDG invoice paid in NVDA, converted by the maker through SwapVM
-  fork tx  0x63b804c77e3502f9017ebef6d22f97bc4b79e77b9e998318ddb447c3c068b18b  merchant createInvoice 250 USDG
+  fork tx  0xffdd37519aa885c16d8c1861d5cf4a4b7a492f47a66094785d0e75c24a9f14bb  merchant createInvoice 250 USDG
   quote: 1.359921 NVDA at Chainlink $184.61/share, route aqua-maker 0x213076bed4093bd427cefcce1f48c585fdf68f19e0dd94e5374dfbc62d200100
-  fork tx  0x79aa99347c3be9d5f1545c27f712adccee79ee693c7af32074c22872f83f4b6a  customer pay (permit) -> NorenGateway -> NorenLiquidity -> SwapVM.swap -> Aqua.pull/push
+  fork tx  0x4c8e15d885b210ea22c6c9a29e99cf290752c71a6e58f2bfcad73146f52e3e5d  customer pay (permit) -> NorenGateway -> NorenLiquidity -> SwapVM.swap -> Aqua.pull/push
   customer  -1.359921 NVDA
   merchant  +250 USDG
   maker     -250 USDG
@@ -47,8 +47,8 @@ forked from block 107362438 | RPC http://127.0.0.1:8760 | every hash below is a 
   maker fee booked at Chainlink: 1.25 USDG (oracle value of the NVDA minus the USDG it paid)
 
 === 4. Pay with ETH: 100 USDG invoice, native ETH wrapped and sold to the WETH maker
-  fork tx  0x4d59097041eec6b33a6f050bf2d2923e0e526a1c9fb08e975c489a3cb20d8c18  merchant createInvoice 100 USDG
-  fork tx  0x639213118693689634ff19e3e031b7e78976e3ad787026909963f54e134b7487  customer pay 0.045187 ETH (route aqua-maker)
+  fork tx  0xf707743914509cbd91a195e98d2aacd653e2798178b661953bb8048fefa880eb  merchant createInvoice 100 USDG
+  fork tx  0xc975c112c078306569a5a8d79cf8dc0e17f864f5fe1f2a951c80a11dbc928e13  customer pay 0.045187 ETH (route aqua-maker)
   merchant  +100 USDG
   maker     -100 USDG
   maker     +0.045187 WETH
@@ -59,24 +59,24 @@ forked from block 107362438 | RPC http://127.0.0.1:8760 | every hash below is a 
   Noren routes conversions to Aqua makers only (Uniswap is quoted, never traded): the maker price is Chainlink - spread at any size, the pool price moves with size.
 
 === 6. Pay later becomes Pay in 3: 300 USDG against 3 NVDA
-  fork tx  0x77d29d7b4e5ee99cf4feb68ffa684fc4464c4e3deca44e681f12778b22ecf343  applyAttestation (EIP-712, tier 3, signer anvil-dev-key (fork only))
-  fork tx  0xfbdb5dfb27475f5e2ef0e50836c2274242343da8366f9830309c58d50d1fab82  merchant createInvoice 300 USDG
-  fork tx  0xd5ebde46769daf6f9409a9fc21c6546e30a359cae0748ebdd6573c076a00aaa0  openPlan #1: vault pays the merchant upfront minus the 3% merchant fee
+  fork tx  0x495ca8a72eac0249c49cbdf8d512dc91bc00ba9247a25ebcbc4b8351713ac9f3  applyAttestation (EIP-712, tier 3, signer anvil-dev-key (fork only))
+  fork tx  0x5eac5fafbe48ab5dc73c77285831504a042f9ccd5ae1e05cf1a8f707f00ebbef  merchant createInvoice 300 USDG
+  fork tx  0xaf3a46655cbe04716c5c2fde80c169880b52d515a359478301046b39a3a837c8  openPlan #1: vault pays the merchant upfront minus the 3% merchant fee
   customer  -3 NVDA
   merchant  +291 USDG
   vault     -291 USDG
-  installment 1: 100 USDG due 2026-11-06T06:33:06.000Z
-  installment 2: 100 USDG due 2026-11-06T06:48:06.000Z
-  installment 3: 100 USDG due 2026-11-06T07:03:06.000Z
+  installment 1: 100 USDG due 2026-11-06T06:46:25.000Z
+  installment 2: 100 USDG due 2026-11-06T07:01:25.000Z
+  installment 3: 100 USDG due 2026-11-06T07:16:25.000Z
   app: "Your 3.0023 NVDA liquidates if NVDA < $109.91 or if you miss two payments"  (NVDA now $184.61, buffer 40.5%)
-  fork tx  0x841e7862c31c7ec09344a614012948984d594d2d7ad60373975f22e87787c24a  repay installment 1 (100 USDG, permit)
+  fork tx  0xa66a0f57356f2e7d6d9e539309decc51c598ac65eae4c335b7ed7dfe1d014eba  repay installment 1 (100 USDG, permit)
   app: "Your 3.0023 NVDA liquidates if NVDA < $73.27 or if you miss two payments"
 
 === 7. The customer misses installments 2 and 3 (fork time travel past the grace period)
   missed payments: 2, liquidatable: overdue=true undercollateralised=false
 
 === 8. Keeper liquidates through SwapVM: collateral sold to the maker, vault repaid, remainder returned
-  fork tx  0x7ff1e8539ad0ef05c5d34846d2d5428e7d476b716c2d636ba9518609fd92781a  liquidatePlanViaAqua (keeper pays nothing)
+  fork tx  0xb7c254aa0ceef96251b4790256f3b9d7613bdc350c074170b43f6839a0daea34  liquidatePlanViaAqua (keeper pays nothing)
   customer  +1.857938 NVDA
   maker     -200 USDG
   maker     +1.087936 NVDA
@@ -86,9 +86,9 @@ forked from block 107362438 | RPC http://127.0.0.1:8760 | every hash below is a 
   MakerFill: maker 0x90F79bf6EB2c4f870365E785982E1f101E93b906 bought 1.087936 NVDA for 200 USDG, fee 1 USDG
 
 === 9. No maker liquidity: clear fallback and error
-  fork tx  0xdb00e0fd55d4213e62aead1bb99e95cbdf6e2d2cbad9292552f6250c4a011a9d  merchant createInvoice 50 USDG
+  fork tx  0x765feed57478425c6e0e96edb42ab3654ee4f4749c2b411a0ff522b3506384e1  merchant createInvoice 50 USDG
   SPY has no maker strategy: route vault (vault buys it at Chainlink + spread), 0.068147 SPY
-  fork tx  0x51df6cb4e420f2747367a1337fcc937850aef784e947e5860ec5b7e3bdc54d5c  owner setLiquidity(vaultFallback = false)
+  fork tx  0x30274e14574a770d76005b58ea74046038bfbb519ba21185fbab38e134bbc8ef  owner setLiquidity(vaultFallback = false)
   quote reverts: Error: NoMakerLiquidity(address asset, uint256 amountUsdg)
 
 === 10. Final maker position and fees

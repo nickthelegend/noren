@@ -159,14 +159,15 @@ The attacks covered:
 sh packages/aqua/scripts/aqua-demo.sh     # port 8760, ~2 min, stops its anvil on exit
 ```
 
-The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). Highlights from it (all hashes are **fork** transactions, block 107361653, not mainnet):
+The script forks mainnet, deploys Noren, seeds the maker (demo account #3) and runs ten steps. Each step prints its fork transaction hashes and the real ERC-20 deltas. A recorded run is in [`packages/aqua/demo/aqua-demo-transcript.txt`](../packages/aqua/demo/aqua-demo-transcript.txt). Highlights from it (all hashes are **fork** transactions, block 107370002, not mainnet):
 
-- Maker ships 4 strategies, e.g. `Aqua.ship` `0x000c1374…908bf` and `NorenLiquidity.register` `0x3bbe1ff6…c6325`.
-- A 250 USDG invoice paid with 1.359921 NVDA (`0x79aa9934…cb20d8c18`): merchant +250 USDG, maker −250 USDG and +1.359921 NVDA, maker fee 1.25 USDG.
-- A 100 USDG invoice paid with 0.045187 ETH through the WETH maker (`0x63921311…cb7487`).
-- Pay in 3: `openPlan` `0xd5ebde46…aaa0`, repay `0x841e7862…c24a`, then two missed payments.
-- `liquidatePlanViaAqua` `0x7ff1e853…2781a`: maker bought 1.087936 NVDA for 200 USDG → vault +200 USDG, keeper +0.054124 NVDA, borrower +1.857938 NVDA back, bad debt 0.
+- Maker ships 4 strategies, e.g. `Aqua.ship` `0x8d14b67e…c760` and `NorenLiquidity.register` `0x670763f5…b2d9`.
+- A 250 USDG invoice paid with 1.359921 NVDA (`0x4c8e15d8…3e5d`): merchant +250 USDG, maker −250 USDG and +1.359921 NVDA, maker fee 1.25 USDG.
+- A 100 USDG invoice paid with 0.045187 ETH through the WETH maker (`0xc975c112…8e13`).
+- Pay in 3: `openPlan` `0xaf3a4665…37c8`, repay `0xa66a0f57…4eba`, then two missed payments.
+- `liquidatePlanViaAqua` `0xb7c254aa…ea34`: maker bought 1.087936 NVDA for 200 USDG → vault +200 USDG, keeper +0.054124 NVDA, borrower +1.857938 NVDA back, bad debt 0.
 - SPY (no maker) routes to the vault. With the fallback off, the quote reverts `NoMakerLiquidity`.
+- Final maker position: 2.56 USDG of spread fees over 3 fills (550 USDG volume).
 
 ## SDK (for the Noren app and web agent)
 
