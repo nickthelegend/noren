@@ -1,0 +1,46 @@
+{
+  "network": "PUBLIC TESTNETS: Arbitrum Sepolia (421614, CCTP domain 3) -> Arc Testnet (5042002, domain 26)",
+  "relayedBy": "Chainlink CRE workflow packages/cctp/cre/cctp-relay, cre workflow simulate --broadcast (CRE CLI v1.39), arc-testnet MockKeystoneForwarder",
+  "kind": "plain",
+  "fromChain": "arbitrum-sepolia",
+  "amount": "2000000",
+  "recipient": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+  "hookData": null,
+  "maxFee": "390",
+  "minFinalityThreshold": 1000,
+  "relay": "cre",
+  "burnTxHash": "0xf4cf3e42f57a4097b406c587fe6f19a7e85e1d73f02937bb76f5d15d0847b53c",
+  "burnUrl": "https://sepolia.arbiscan.io/tx/0xf4cf3e42f57a4097b406c587fe6f19a7e85e1d73f02937bb76f5d15d0847b53c",
+  "burnEventIndex": 3,
+  "irisUrl": "https://iris-api-sandbox.circle.com/v2/messages/3?transactionHash=0xf4cf3e42f57a4097b406c587fe6f19a7e85e1d73f02937bb76f5d15d0847b53c",
+  "message": "0x00000001000000030000001aca0fc214b493679ce98561692832af137948c096f065341815f438cdd7e855380000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008fe6b999dc680ccfdd5bf7eb0974218be2542daa0000000000000000000000008845ae4b87d706c31606182d5a9529b67ee6b20d000003e8000003e80000000100000000000000000000000075faf114eafb1bdbe2f0316df893fd58ce46aa4d0000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f8000000000000000000000000000000000000000000000000000000000001e84800000000000000000000000004b2acf80bc6e07bbf5690f0710e25c528cb63f800000000000000000000000000000000000000000000000000000000000000186000000000000000000000000000000000000000000000000000000000000010400000000000000000000000000000000000000000000000000000000043e5c87",
+  "attestation": "0x0ad4264311c06568e013028e27260874f5e4b7450e767405fd4f51e757148f9b70ddc2ba4d2a19714e1cb651cc8dcea0b28b5611eb3ca87566a8239f3e46f9771b2f10110c4d69f082421250f20580e2d1b296e0be3062f11aa738403d919cf60e05e4f419420182884e8238d03dbc7e2a31b9c59d9cf8fa83f787dd3882c4c94f1c",
+  "creTriggerIndex": 1,
+  "creLog": [
+    "2026-11-06T17:10:22Z [USER LOG] Noren burn on arbitrum-sepolia (domain 3) tx 0xf4cf3e42f57a4097b406c587fe6f19a7e85e1d73f02937bb76f5d15d0847b53c: 2000000 USDC6 to Arc, maxFee 390, minFinality 1000, hookData 0 bytes",
+    "2026-11-06T17:10:22Z [USER LOG] Circle attestation ready: nonce 0xca0fc214b493679ce98561692832af137948c096f065341815f438cdd7e85538, finality executed 1000, fee 260, 2 signature(s)",
+    "2026-11-06T17:10:24Z [USER LOG] USDC minted on Arc through NorenArcHook: tx 0xb72b97ea2d1a6d6aabbf532a947e7bfa1acf4b4d18c4bd6127929742e4bdbee6",
+    "✓ Workflow Simulation Result:"
+  ],
+  "creResult": "\"{\\\"status\\\":\\\"minted\\\",\\\"source\\\":\\\"arbitrum-sepolia\\\",\\\"burnTx\\\":\\\"0xf4cf3e42f57a4097b406c587fe6f19a7e85e1d73f02937bb76f5d15d0847b53c\\\",\\\"nonce\\\":\\\"0xca0fc214b493679ce98561692832af137948c096f065341815f438cdd7e85538\\\",\\\"amount\\\":\\\"2000000\\\",\\\"feeExecuted\\\":\\\"260\\\",\\\"minted\\\":\\\"1999740\\\",\\\"finalityThresholdExecuted\\\":1000,\\\"arcTx\\\":\\\"0xb72b97ea2d1a6d6aabbf532a947e7bfa1acf4b4d18c4bd6127929742e4bdbee6\\\"}\"",
+  "arcTxHash": "0xb72b97ea2d1a6d6aabbf532a947e7bfa1acf4b4d18c4bd6127929742e4bdbee6",
+  "arcTxUrl": "https://explorer.testnet.arc.io/tx/0xb72b97ea2d1a6d6aabbf532a947e7bfa1acf4b4d18c4bd6127929742e4bdbee6",
+  "arcForwarder": "0x6e9ee680ef59ef64aa8c7371279c27e496b5edc1",
+  "arcEvents": [
+    {
+      "contract": "NorenArcHook",
+      "event": "Bridged",
+      "args": {
+        "nonce": "0xca0fc214b493679ce98561692832af137948c096f065341815f438cdd7e85538",
+        "sourceDomain": 3,
+        "recipient": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "minted": "1999740",
+        "feeExecuted": "260",
+        "depositor": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+        "finalityThresholdExecuted": 1000,
+        "viaCre": true
+      }
+    }
+  ],
+  "completedAt": "2026-11-06T11:40:25.259Z"
+}

@@ -1,0 +1,21 @@
+{
+  "5042002": {
+    "NorenArcHook": "0x8845ae4B87D706c31606182D5A9529b67ee6B20d",
+    "deployTx": "0xc23b3a48d619c40faec3a7c6744c47cde45327c095188a00a28b9fd5dd7cef4a",
+    "deployBlock": 71022696,
+    "forwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1",
+    "owner": "0x4B2ACf80Bc6E07bbF5690f0710e25C528cb63F80",
+    "messageTransmitter": "0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275",
+    "usdc": "0x3600000000000000000000000000000000000000",
+    "previous": [
+      {
+        "NorenArcHook": "0xc0347F3f66C0867F385679a8E0ceF3DB4A3bcb45",
+        "deployTx": "0x8afeaf7c1fef568ae5e99d4e668072de912e9016938d3b0ac04c66658637e942",
+        "deployBlock": 71020589
+      }
+    ],
+    "router": "0x3D2ddF0C08ed3574c25f07E5113CaaB5Db6FA7A4",
+    "setRouterTx": "0x3d145608994b366f0238c08b324c3078e0a80607a017a7437ce3f75e556770a8",
+    "setRailTx": "0x548f444bbbbc9f749f1a2617a41c35e6232c271b2fb23ed75b3b059f45228af7"
+  }
+}

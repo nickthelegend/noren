@@ -112,6 +112,28 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@24.10.1)
 
+  packages/cctp:
+    dependencies:
+      viem:
+        specifier: 2.51.3
+        version: 2.51.3(typescript@5.9.3)
+    devDependencies:
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      forge-std:
+        specifier: github:foundry-rs/forge-std#v1.9.7
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/77041d2ce690e692d6e03cc812b57d1ddaa4d505
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@24.10.1)
+
   packages/contracts:
     dependencies:
       '@openzeppelin/contracts':
