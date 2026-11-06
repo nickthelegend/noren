@@ -18,7 +18,7 @@ const dev = (i: number) => mnemonicToAccount(MNEMONIC, { addressIndex: i });
 export const FORWARDER = { arc: '0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1' as Address, robinhood: '0x0b93082D9b3C7C97fAcd250082899BAcf3af3885' as Address };
 const POOL_MANAGER: Address = '0x8366a39CC670B4001A1121B8F6A443A643e40951'; // Uniswap v4 PoolManager: a real USDG holder
 
-export type RobinhoodDeployment = { reputation?: Address; borrow?: Address; depositVaults?: { asset: Address; vault: Address }[]; worldIdSigner?: Address; liquidity?: Address; aqua?: Address; swapRouter?: Address; oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex; forkedFromBlock?: number };
+export type RobinhoodDeployment = { reputation?: Address; borrow?: Address; depositVaults?: { asset: Address; vault: Address }[]; worldIdSigner?: Address; liquidity?: Address; dutchAuction?: Address; aqua?: Address; swapRouter?: Address; oracle: Address; vault: Address; gateway: Address; credit: Address; deployBlock: bigint; owner: Address; underwriter: Address; forwarder: Address; vaultSeedTx: Hex; forkedFromBlock?: number };
 
 async function rpc(url: string, method: string, params: unknown[] = []) {
   const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -82,5 +82,5 @@ export async function adoptSnapshotDeployment(robinhoodRpc: string, file: string
     const h = await rpc(robinhoodRpc, 'eth_sendTransaction', [{ from: d.owner, to: d.credit, data: encodeFunctionData({ abi, functionName: 'setForwarder', args: [forwarder] }) }]) as Hex;
     if ((await c.waitForTransactionReceipt({ hash: h })).status !== 'success') throw new Error(`NorenCredit.setForwarder reverted: ${h}`);
   }
-  return { reputation: d.reputation, borrow: d.borrow, depositVaults: d.depositVaults, worldIdSigner: d.worldIdSigner, liquidity: d.liquidity, aqua: d.aqua, swapRouter: d.swapRouter, oracle: d.oracle, vault: d.vault, gateway: d.gateway, credit: d.credit, deployBlock: BigInt(d.deployBlock), owner: d.owner, underwriter: d.underwriter, forwarder, vaultSeedTx: d.seedTxs?.lpDeposit, forkedFromBlock: d.forkedFromBlock };
+  return { reputation: d.reputation, borrow: d.borrow, depositVaults: d.depositVaults, worldIdSigner: d.worldIdSigner, liquidity: d.liquidity, dutchAuction: d.dutchAuction, aqua: d.aqua, swapRouter: d.swapRouter, oracle: d.oracle, vault: d.vault, gateway: d.gateway, credit: d.credit, deployBlock: BigInt(d.deployBlock), owner: d.owner, underwriter: d.underwriter, forwarder, vaultSeedTx: d.seedTxs?.lpDeposit, forkedFromBlock: d.forkedFromBlock };
 }
