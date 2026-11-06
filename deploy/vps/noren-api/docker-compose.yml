@@ -14,7 +14,7 @@ services:
       - path: .env
         required: true
     environment:
-      NOREN_RPC_URL: https://rpc.testnet.arc.io
+      NOREN_RPC_URL: https://noren-arc-rpc.201-18-198-162.sslip.io
       NOREN_DATA_DIR: /data
       NOREN_ASP_URL: https://noren-asp.201-18-198-162.sslip.io
       NOREN_RH_SNAPSHOT_RPC: http://noren-rh-anvil-1:8545
@@ -22,6 +22,8 @@ services:
       NOREN_RH_DEPLOYMENT: /app/robinhood/deployment.json
       NOREN_RATE_ORACLE: "0xdb828bdcf33ef0a5a32861e4831ff3dd87be831c"
       NOREN_MAX_STORES: "25"
+      # Sign-in with Ethereum: the hosted frontends' domains.
+      NOREN_SIWE_DOMAINS: noren-merchant.vercel.app,noren-app-beta.vercel.app
       PORT: "8790"
     volumes:
       - noren-api-data:/data
@@ -55,7 +57,7 @@ services:
       - path: .env.postman
         required: true
     environment:
-      NOREN_RPC_URL: https://rpc.testnet.arc.io
+      NOREN_RPC_URL: http://noren-api-arc-rpc-1:8547
       NOREN_TREE_URL: https://noren-asp.201-18-198-162.sslip.io/asp/tree?v=1
       NOREN_POSTMAN_HOST: 0.0.0.0
       NOREN_POSTMAN_PORT: "8788"
@@ -108,6 +110,29 @@ services:
       - traefik.http.routers.hk-noren-shop.tls=true
       - traefik.http.routers.hk-noren-shop.tls.certresolver=letsencrypt
       - traefik.http.services.hk-noren-shop.loadbalancer.server.port=8780
+  arc-rpc:
+    image: node:24-alpine
+    restart: unless-stopped
+    mem_limit: 160m
+    command: ["node", "/srv/arc-rpc-proxy.mjs"]
+    environment:
+      PORT: "8547"
+    volumes:
+      - ./deploy/vps/noren-api/arc-rpc-proxy.mjs:/srv/arc-rpc-proxy.mjs:ro
+    networks: [coolify]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8547/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-noren-arc-rpc.rule=Host(`noren-arc-rpc.201-18-198-162.sslip.io`)
+      - traefik.http.routers.hk-noren-arc-rpc.entrypoints=https
+      - traefik.http.routers.hk-noren-arc-rpc.tls=true
+      - traefik.http.routers.hk-noren-arc-rpc.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-noren-arc-rpc.loadbalancer.server.port=8547
 volumes:
   noren-api-data:
   noren-shop-data:
