@@ -30,7 +30,7 @@ Then open:
 - **Swap** (`#/app/swap`). USDC → EURC on Arc testnet: Uniswap v4 first, Noren's Aqua maker when it quotes better.
 
 ```sh
-pnpm test                 # 142 offline tests
+pnpm test                 # 142 unit tests (no fork; one file reads Arc mainnet Chainlink feeds)
 pnpm e2e                  # private payment + 5 on-chain attacks + refund on a fresh Arc testnet fork
 pnpm e2e:credit           # pay with stocks + pay later, against a running dev:all (NOREN_MERCHANT_TOKEN=<printed key>)
 ```
@@ -114,7 +114,7 @@ Limits: the testnet pool has few depositors, so timing can link a deposit to a p
 
 | Suite | Command | Passed |
 |---|---|---|
-| Offline (core, server, World ID, 0G policy, CCTP/CCIP SDKs, Privy) | `pnpm test` | 142 |
+| Unit, no fork (core, server, World ID, 0G policy, CCTP/CCIP SDKs, Privy) | `pnpm test` | 142 |
 | Private payment e2e on an Arc testnet fork | `pnpm e2e` | 9 Foundry + 5/5 attacks reverted |
 | Robinhood contracts (credit, gateway, Aqua liquidity, Dutch, Earn, self-repay) on a mainnet fork | `sh packages/robinhood/scripts/test-fork.sh` | 158 |
 | SwapVM opcodes + router | `sh packages/aqua/scripts/test-swapvm.sh` | 27 + 1 weekend-only skip |
