@@ -3,7 +3,7 @@ import { api, secs, short, usdc, SERVER, type Config, type InvoiceView, type Nor
 import { Copy, Icon, Logo, Setup, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
-import { STOCKS, creditLineAbi, creditOf } from "./onchain";
+import { STOCKS, assetSym, creditLineAbi, creditOf } from "./onchain";
 import { TxLink } from "./tx";
 import { Mark } from "./logos";
 import { LiveArc, NetSwitch } from "./LiveArc";
@@ -32,7 +32,7 @@ const fiatStr = (q?: Quote, cur?: Currency) => { if (!q) return null; const d = 
 
 type Method = "usdc" | "private" | "credit" | "stocks";
 const methodOf = (r: Row): Method | null => (settled(r) ? (r.method ?? "private") : null);
-const stockSym = (asset?: string) => STOCKS.find((s) => s.token.toLowerCase() === asset?.toLowerCase())?.sym;
+const stockSym = (asset?: string) => assetSym(asset);
 /** Payment methods with their real logos: USDC, the Kohaku pool, the Stock Token paid (Robinhood Chain when unknown). Pay later is a concept, so it keeps an icon. */
 const METHOD: Record<Method, [string, string, (r?: Row) => JSX.Element]> = {
   usdc: ["USDC", "A direct USDC transfer from the customer's Arc wallet, verified on-chain", () => <Mark id="USDC" size={16} />],
@@ -100,7 +100,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const firstRun = !!baseCfg && !err && (tab === "onboard" || (!devToken && !session && tab === "home") || (!!session && stores !== null && stores.length === 0 && tab === "home"));
   if (firstRun && baseCfg) return (
     <div className="ob-page">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
       <Onboard cfg={baseCfg} session={session} onSession={setSession} onStore={(st) => { setStores((l) => [...(l ?? []), st]); setStoreId(st.id); }} onDone={() => go("#/dashboard")} />
       <Toasts />
     </div>
@@ -110,7 +110,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
 
   return (
     <div className="sd">
-      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on an Arc testnet fork and a Robinhood Chain mainnet snapshot. No real funds.</div>
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
@@ -140,7 +140,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
         </header>
 
         <main className="sd-main">
-          {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the local fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
+          {net === "live" ? <><PageHead title="Arc testnet (live)" sub="The public deployment and the payments recorded on it. Stores, links and the dashboard below run on the Arc testnet fork." /><div style={{ maxWidth: 760 }}><LiveArc context="merchant" /></div></> : err ? <Setup err={err} /> : !cfg ? <div className="sd-loading"><span className="spin" /> Connecting to {SERVER}…</div> : (
             <>
               {!token && tab !== "developers" && <div className="sd-callout"><Icon.lock /><span><b>Add your secret key</b> to create links, refund payments and manage webhooks. <code>pnpm dev:stack</code> prints one.</span><a className="sd-btn sm" href="#/dashboard/developers">Add key</a></div>}
               {tab === "home" && <Home rows={rows} shop={shop} cfg={cfg} onCreate={() => setCreating(true)} token={token} />}
@@ -282,7 +282,7 @@ function Methods({ rows, cfg }: { rows: Row[] | null; cfg: Config }) {
       </div>
       <div className="sd-exposure">
         <div className="sd-section-h tight"><h2>Credit-line exposure</h2></div>
-        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood fork, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
+        {!credit?.creditLine ? <p className="sd-muted">Setup required: the credit line isn't connected. <code>pnpm dev:all</code> starts the Robinhood Chain mainnet snapshot, NorenCredit, NorenCreditLine and the CRE bridge.</p> : expErr ? <p className="sd-err-t">{expErr}</p> : (
           <>
             <dl className="sd-dl">
               <dt>Lines that paid you</dt><dd className="num">{lineIds.length}</dd>
@@ -400,7 +400,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
             <label className="sd-settle-amt"><span>Amount</span><input className="sd-input" inputMode="decimal" placeholder={fmt(usdg)} value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USDG to settle" /></label>
             <button className="sd-btn primary" disabled={busy || usdg <= 0 || !d.relay} onClick={settle}>{busy ? "Requesting…" : "Settle to Arc"}</button>
           </div>
-          <p className="sd-muted sm">A Chainlink CRE workflow compares live Relay and Across quotes with Chainlink USDG/USD and USDC/USD before approving; a keeper then deposits into Relay. On a local fork no real relayer fills the Arc side, so the fill stays pending.</p>
+          <p className="sd-muted sm">A Chainlink CRE workflow compares live Relay and Across quotes with Chainlink USDG/USD and USDC/USD before approving; a keeper then deposits into Relay. On the snapshot no real relayer fills the Arc side, so the fill stays pending.</p>
           {d.settlements.length > 0 && (
             <ul className="sd-settle-list">{d.settlements.map((x) => (
               <li key={x.id}>
@@ -588,7 +588,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
               <dl className="sd-dl">
                 <dt>Type</dt><dd>Stock Tokens, sold {r.stock.route === "aqua-maker" ? "to a 1inch Aqua maker" : r.stock.route === "vault" ? "to Noren's stock vault" : "at the Chainlink price"}</dd>
                 {r.stock.route === "aqua-maker" && <><dt>Maker</dt><dd className="mono lg-row"><Mark id="1INCH" size={16} />{short(r.stock.maker, 4)} · fee {(Number(r.stock.makerFeeUsdg ?? 0) / 1e6).toFixed(4)} USDG</dd><dt>Strategy</dt><dd className="mono">{short(r.stock.strategyHash, 6)} (SwapVM, Chainlink-pegged)</dd><dt>Engine</dt><dd className="sd-muted">Powered by SwapVM — © Degensoft Ltd 2025</dd></>}
-                <dt>Shares</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
+                <dt>Paid with</dt><dd className="num lg-row"><Mark id={stockSym(r.stock.asset) ?? "ROBINHOOD"} size={16} />{(Number(r.stock.assetIn) / 1e18).toLocaleString("en-US", { maximumFractionDigits: 6 })} {stockSym(r.stock.asset) ?? ""} · <span className="mono">{short(r.stock.asset, 4)}</span></dd>
                 <dt>Chainlink price</dt><dd>${(Number(r.stock.priceUsd8) / 1e8).toFixed(2)} per share</dd>
                 <dt>You received</dt><dd className="lg-row"><Mark id="USDG" size={16} />{usdc(r.stock.usdgOut)} USDG on Robinhood Chain</dd>
                 <dt>Network</dt><dd>Robinhood Chain {r.stock.chainId} (local fork)</dd>

@@ -112,6 +112,19 @@ export async function robinhoodFaucet(rpcUrl: string, to: Address, amounts = { n
       out[symbol] = hash;
     } finally { await client.request({ method: 'anvil_stopImpersonatingAccount', params: [holder] }); }
   }
+  // A little of every other Stock Token, from the snapshot's demo customer (Anvil's published account #1, seeded from the
+  // Uniswap v4 PoolManager by deploy-fork.sh), so each one can pay at checkout. Skips a token the demo account lacks.
+  const demo = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as Address;
+  await client.request({ method: 'anvil_impersonateAccount', params: [demo] });
+  try {
+    for (const sym of ['TSLA', 'AAPL', 'SPY', 'MSFT', 'AMZN', 'GOOGL', 'META']) {
+      const token = ROBINHOOD.stocks[sym], value = parseUnits(sym === 'SPY' || sym === 'META' || sym === 'MSFT' ? '0.5' : '1', 18);
+      const have: bigint = await client.readContract({ address: token, abi: erc20Abi, functionName: 'balanceOf', args: [demo] });
+      if (have < value) continue;
+      const hash = await client.request({ method: 'eth_sendTransaction', params: [{ from: demo, to: token, data: encodeFunctionData({ abi: erc20Abi, functionName: 'transfer', args: [to, value] }) }] }) as Hex;
+      if ((await client.waitForTransactionReceipt({ hash })).status === 'success') out[sym] = hash;
+    }
+  } finally { await client.request({ method: 'anvil_stopImpersonatingAccount', params: [demo] }); }
   return out;
 }
 

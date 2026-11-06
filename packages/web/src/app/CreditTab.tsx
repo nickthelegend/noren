@@ -101,7 +101,7 @@ function Ladder({ w, nonce }: { w: Wallet; nonce: number }) {
             ))}
           </ul>
         )}
-        <p className="nk-fine">Without World ID the limit stops at 70%. On this fork a loan counts as a repaid-loan milestone after 15 minutes (production: a day).</p>
+        <p className="nk-fine">Without World ID the limit stops at 70%. On this snapshot a loan counts as a repaid-loan milestone after 15 minutes (production: a day).</p>
       </div>
     </Card>
   );

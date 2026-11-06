@@ -82,7 +82,7 @@ export function RaiseLimit({ w, u, nonce, onVerified }: { w: Wallet; u: Underwri
     return () => { on = false; };
   }, [w.tick, nonce, repAddr, borrow]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!repAddr || !borrow) return <section className="nk-card" aria-label="Raise your limit"><div className="nk-card-h"><div><b>Raise your limit</b><p>Tasks that each raise your credit limit</p></div></div><div className="nk-pad"><SetupCard title="NorenReputation isn't deployed on this stack" text="The tasks read NorenReputation and NorenBorrow on the Robinhood fork. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></section>;
+  if (!repAddr || !borrow) return <section className="nk-card" aria-label="Raise your limit"><div className="nk-card-h"><div><b>Raise your limit</b><p>Tasks that each raise your credit limit</p></div></div><div className="nk-pad"><SetupCard title="NorenReputation isn't deployed on this stack" text="The tasks read NorenReputation and NorenBorrow on the Robinhood Chain mainnet snapshot. Start everything with pnpm dev:all." code="pnpm dev:all" /></div></section>;
 
   // World ID: a private attestation (kind 0, +25 points) that also makes the wallet a verified human.
   const human = r ? (() => { const pts = r.points + (r.human ? 0n : POINTS_KIND); const t = tierFor(r, pts, true, r.milestones | M_HUMAN); return { done: r.human, after: limitAt(r, t, true), tier: t }; })() : null;

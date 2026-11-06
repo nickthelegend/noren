@@ -56,7 +56,7 @@ export function XChainSwap({ w }: { w: Wallet }) {
     return () => clearInterval(t);
   }, [o, x, clients, w]);
 
-  if (!x) return <div className="nk-pad"><SetupCard title="Cross-chain Aqua isn't deployed on this stack" text="pnpm dev:all deploys the escrow on the Robinhood fork and the settler with an Aqua maker on the Arc fork, then relays orders through the Chainlink CRE simulator. It was skipped or failed; its log line says why." code="pnpm dev:all" /></div>;
+  if (!x) return <div className="nk-pad"><SetupCard title="Cross-chain Aqua isn't deployed on this stack" text="pnpm dev:all deploys the escrow on the Robinhood Chain mainnet snapshot and the settler with an Aqua maker on the Arc fork, then relays orders through the Chainlink CRE simulator. It was skipped or failed; its log line says why." code="pnpm dev:all" /></div>;
 
   const insufficient = !!amountIn && have !== undefined && amountIn > have;
   const blocked = q && (!q.fresh || !q.makerCanPay);
@@ -124,7 +124,7 @@ function XOrder({ o }: { o: Order }) {
   const releaseTx = mine.find((r) => r.chain === "arc" && r.written)?.written;
   const done = s?.next === "done";
   return (
-    <Result tone={o.error ? "bad" : done ? "good" : ""} tag="Cross-chain · fork demo" link={o.openTx ? <TxLink chain="robinhood" hash={o.openTx} n={6} /> : undefined}
+    <Result tone={o.error ? "bad" : done ? "good" : ""} tag="Cross-chain · mainnet snapshot" link={o.openTx ? <TxLink chain="robinhood" hash={o.openTx} n={6} /> : undefined}
       title={o.error ? "Order did not open" : done ? `Received ${fmtUnits(s!.fill?.amountOut ?? o.quoted, 6, 2)} USDC on Arc` : s?.arc === "Filled" ? "Filled on Arc. Releasing NVDA to the maker…" : "Locked on Robinhood. Waiting for the Arc maker…"}
       body={o.error ?? (s?.next === "expire-on-arc" ? "The fill deadline passed: the order can be expired on Arc and refunded on Robinhood." : undefined)}
       kv={[["Quoted", `${fmtUnits(o.quoted, 6, 2)} USDC`], ["Paid on Arc", s?.fill ? `${fmtUnits(s.fill.amountOut, 6, 2)} USDC` : "…"], ["Escrow", s?.escrow ?? "…"]]}>

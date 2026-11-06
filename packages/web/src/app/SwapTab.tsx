@@ -120,7 +120,7 @@ export function SwapTab({ w }: { w: Wallet }) {
         <button className="nk-cta" disabled={busy || !amountIn || !best || insufficient || stale} onClick={swap}>
           {busy ? <><Spin /> {done?.step ?? "Swapping…"}</> : !amountIn ? "Enter an amount" : insufficient ? `Not enough ${tin.sym}` : loading && !q ? "Finding the best price…" : !best ? "No route can fill this" : stale ? "Refreshing the quote…" : `Swap on ${best.id === "aqua" ? "1inch Aqua" : "Uniswap v4"}`}
         </button>
-        {insufficient && <p className="nk-fine">Short on {tin.sym}? Your wallet menu (top right) has a fork faucet for NVDA and USDG; ETH comes with it for gas.</p>}
+        {insufficient && <p className="nk-fine">Short on {tin.sym}? Your wallet menu (top right) has a test faucet for NVDA and USDG; ETH comes with it for gas.</p>}
         </>}
       </section>
 

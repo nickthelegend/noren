@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, short, usdc, type Config, type InvoiceView } from "./api";
 import { Icon, msgOf } from "./ui";
+import { useSigner } from "./signer";
 import { payoutOf } from "./kit";
 import type { Line, Onchain } from "./onchain";
 import type { ReactNode } from "react";
@@ -22,7 +23,9 @@ export function CreditPay({ cfg, view, shop, onPaid }: { cfg: Config; view: Invo
   const [n, setN] = useState<number | null>(null);
   useEffect(() => { if (tk) import("./credit-actions").then((m) => m.creditActions(cfg, tk).installments()).then(setN).catch(() => setN(null)); }, [tk, cfg]);
 
-  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg]);
+  // Re-created when the active wallet changes (an injected browser wallet restores after the first render).
+  const signer = useSigner();
+  useEffect(() => { import("./onchain").then((m) => setTk(m.makeOnchain(cfg))).catch((e) => setErr(msgOf(e))); }, [cfg, signer.signerKey]);
   const load = useCallback(async () => {
     if (!tk) return;
     try { setLines(await tk.lines()); setErr(null); } catch (e) { setErr(msgOf(e)); }

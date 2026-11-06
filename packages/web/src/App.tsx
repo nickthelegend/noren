@@ -41,7 +41,7 @@ function Site() {
       <footer className="site-foot">
         <div className="site-brand"><Logo /><span>Noren</span></div>
         <p>Private payments for EVM. Built on the Ethereum Foundation's Kohaku and 0xbow's Privacy Pools. MIT licensed.</p>
-        <p className="faint">Test networks only. Running on a local Arc testnet fork until the public deployment is funded.</p>
+        <p className="faint">Test networks only. Running on an Arc testnet fork until the public deployment is funded.</p>
       </footer>
     </div>
   );

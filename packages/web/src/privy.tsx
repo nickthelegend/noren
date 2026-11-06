@@ -13,7 +13,7 @@ import { PRIVY_APP_ID, registerPrivyActions, setPrivy, type Eip1193, type PrivyA
 
 const robinhoodTestnet = defineChain({ id: 46630, name: "Robinhood Chain Testnet", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: ["https://rpc.testnet.chain.robinhood.com"] } }, blockExplorers: { default: { name: "Explorer", url: "https://explorer.testnet.chain.robinhood.com" } }, testnet: true });
 // The local Robinhood Chain fork (pnpm dev:all, port 8646) keeps mainnet's chain ID 4663. Arc's fork keeps 5042002.
-const robinhoodFork = defineChain({ id: 4663, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: ["http://127.0.0.1:8646"] } }, testnet: true });
+const robinhoodFork = defineChain({ id: 4663, name: "Robinhood Chain · mainnet snapshot", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: ["http://127.0.0.1:8646"] } }, testnet: true });
 const cctpSources = Object.values(CCTP_CHAINS).filter((c) => c.chainId !== arcTestnet.id && c.chainId !== robinhoodTestnet.id)
   .map((c) => defineChain({ id: c.chainId, name: c.name, nativeCurrency: { name: c.gas, symbol: c.gas, decimals: 18 }, rpcUrls: { default: { http: [c.rpcUrl] } }, blockExplorers: { default: { name: "Explorer", url: c.explorer } }, testnet: true }));
 

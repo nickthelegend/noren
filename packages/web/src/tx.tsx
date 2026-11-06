@@ -164,7 +164,7 @@ export function TxPage({ chain, hash }: { chain: string; hash: string }) {
     load(chain as "arc" | "robinhood", hash as Hex).then((d) => on && setData(d)).catch((e) => on && setErr(msgOf(e)));
     return () => { on = false; };
   }, [chain, hash, ok]);
-  useEffect(() => { document.title = `Local fork transaction ${short(hash, 6)} · Noren`; }, [hash]);
+  useEffect(() => { document.title = `Test transaction ${short(hash, 6)} · Noren`; }, [hash]);
   const chainName = chain === "arc" ? "Arc testnet fork" : "Robinhood Chain fork";
   const fee = useMemo(() => (data ? data.gasUsed * data.price : 0n), [data]);
 
@@ -175,7 +175,7 @@ export function TxPage({ chain, hash }: { chain: string; hash: string }) {
         <span className="tx-chain"><Mark id={chain === "arc" ? "ARC" : "ROBINHOOD"} size={20} />{chainName}</span>
       </header>
       <main className="tx-main">
-        <span className="eyebrow">Local fork transaction</span>
+        <span className="eyebrow">{chain === "robinhood" ? "Robinhood Chain · mainnet snapshot transaction" : "Arc testnet fork transaction"}</span>
         <h1 className="tx-h">{data ? (data.status === "success" ? "Succeeded" : "Reverted") : err ? "Can't show this transaction" : ok ? "Reading the receipt…" : "Not a transaction link"}</h1>
         <div className="tx-hash"><span className="mono">{hash}</span>{ok && <Copy text={hash} label="Copy hash" />}</div>
         <p className="tx-note">A local Anvil fork has no public explorer, so Noren reads this receipt straight from the fork's RPC{data ? <> (<span className="mono">{data.rpc}</span>, chain {data.chainId})</> : null}. Nothing here exists on a public network.</p>

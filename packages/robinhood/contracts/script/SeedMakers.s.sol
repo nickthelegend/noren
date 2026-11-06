@@ -16,9 +16,10 @@ contract SeedMakers is Script {
     NorenLiquidity liquidity = NorenLiquidity(vm.envAddress('NOREN_RH_LIQUIDITY'));
     uint256 perStrategy = vm.envOr('NOREN_AQUA_MAKER_USDG', uint256(10_000e6));
     address router = address(liquidity.router());
-    address[4] memory assets = [RH.NVDA, RH.TSLA, RH.AAPL, RH.WETH];
-    uint16[4] memory bids = [uint16(50), 50, 50, 30];
-    uint16[4] memory asks = [uint16(80), 80, 80, 50];
+    // Every Stock Token with a Chainlink feed in NorenAssetOracle, plus WETH: each payable through its own maker.
+    address[9] memory assets = [RH.NVDA, RH.TSLA, RH.AAPL, RH.SPY, RH.MSFT, RH.AMZN, RH.GOOGL, RH.META, RH.WETH];
+    uint16[9] memory bids = [uint16(50), 50, 50, 50, 50, 50, 50, 50, 30];
+    uint16[9] memory asks = [uint16(80), 80, 80, 80, 80, 80, 80, 80, 50];
 
     vm.startBroadcast();
     IERC20(RH.USDG).approve(RH.AQUA, type(uint256).max);
