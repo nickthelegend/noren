@@ -115,8 +115,8 @@ function AiDecision({ actions }: { actions: ReturnType<typeof creditActions> }) 
         <dt>Decision</dt><dd className={r.status === "approved" ? "ok" : "bad"}>{r.status === "approved" ? `Approved · tier ${r.tier}` : "Declined"}</dd>
         {r.status === "approved" && <><dt>Limit · collateral</dt><dd>{r.limitUsdg} USDG · {(r.collateralRatioBps ?? 0) / 100}%</dd></>}
         <dt>Why</dt><dd>{r.rationale}</dd>
-        <dt>0G request</dt><dd className="nk-mono">{short(r.requestId, 8)}</dd>
-        <dt>TEE verified</dt><dd>{r.teeVerified === true ? "yes" : r.teeVerified === false ? "no" : "not checked"}</dd>
+        <dt>0G request</dt><dd className="nk-mono" title={r.requestId}>{r.requestId}</dd>
+        <dt>Sealed (TEE)</dt><dd className={r.independent === "verified" || r.teeVerified === true ? "ok" : ""}>{r.independent === "verified" ? `verified independently (${r.verifiability ?? "TeeML"})` : r.teeVerified === true ? "verified by the 0G Router" : r.teeVerified === false ? "not verified" : "not checked"}</dd>
         {r.model && <><dt>Model</dt><dd className="nk-mono">{r.model}</dd></>}
       </dl>
       {r.cached && <p className="nk-fine">Stored decision{r.at ? ` from ${new Date(Number(r.at) * (Number(r.at) < 1e12 ? 1000 : 1)).toLocaleString()}` : ""}; not a new 0G call.</p>}

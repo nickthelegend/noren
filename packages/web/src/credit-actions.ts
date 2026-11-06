@@ -12,7 +12,7 @@ import type { Holding, Line, Onchain } from "./onchain";
 
 export type Factor = { label: string; value: string; note?: string; points?: number; max?: number; missing?: boolean };
 export type Underwriting = { score: number; tier: string; tierIndex: number; tiers: { name: string }[]; ltvBps: number; limitUsdg: bigint; factors: Factor[]; signer: string; onchainTier?: number; expires?: number };
-export type AiCheck = { status: "approved" | "declined" | "refused"; tier?: number; limitUsdg?: number; collateralRatioBps?: number; rationale?: string; riskFlags?: string[]; requestId?: string; teeVerified?: boolean | null; provider?: string; model?: string; reason?: string; setupRequired?: boolean };
+export type AiCheck = { status: "approved" | "declined" | "refused"; tier?: number; limitUsdg?: number; collateralRatioBps?: number; rationale?: string; riskFlags?: string[]; requestId?: string; teeVerified?: boolean | null; independent?: string; verifiability?: string; provider?: string; model?: string; reason?: string; setupRequired?: boolean };
 export type Quote = { collateral8: bigint; ltvBps: number; limitUsdc6: bigint; termDays: number; liquidation8?: bigint; tier: number; needsAttestation: boolean };
 export type Position = { live: boolean; closed: boolean; limit: bigint; expiry: number; drawn: bigint; repaid: bigint; updatedAt: number; available: bigint };
 
@@ -59,7 +59,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       const r = await getJson(`${c.aiUnderwriterUrl}/v1/credit-check/wallet`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: oc.address }) });
       if (r.error) throw new Error(r.error);
       const e = r.evidence ?? {};
-      return { status: r.status, tier: r.decision?.tier, limitUsdg: r.decision?.limitUsdg, collateralRatioBps: r.decision?.collateralRatioBps, rationale: r.decision?.rationale, riskFlags: r.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, provider: e.provider, model: e.model, reason: r.reason, setupRequired: r.setupRequired };
+      return { status: r.status, tier: r.decision?.tier, limitUsdg: r.decision?.limitUsdg, collateralRatioBps: r.decision?.collateralRatioBps, rationale: r.decision?.rationale, riskFlags: r.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, independent: e.independent?.status, verifiability: e.independent?.service?.verifiability, provider: e.provider, model: e.model, reason: r.reason, setupRequired: r.setupRequired };
     },
     /** The last stored 0G decision for this wallet (the server keeps every result; no new 0G call). */
     async lastAiDecision(): Promise<(AiCheck & { at?: number }) | null> {
@@ -68,7 +68,7 @@ export function creditActions(_cfg: Config, oc: Onchain) {
       const d = (r.decisions ?? []).find((x: any) => typeof x.subject === "string" && x.subject.toLowerCase() === oc.address.toLowerCase() && (x.status === "approved" || x.status === "declined"));
       if (!d) return null;
       const e = d.evidence ?? {};
-      return { status: d.status, tier: d.decision?.tier, limitUsdg: d.decision?.limitUsdg, collateralRatioBps: d.decision?.collateralRatioBps, rationale: d.decision?.rationale, riskFlags: d.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, provider: e.provider, model: e.model, at: d.decidedAt ?? d.at };
+      return { status: d.status, tier: d.decision?.tier, limitUsdg: d.decision?.limitUsdg, collateralRatioBps: d.decision?.collateralRatioBps, rationale: d.decision?.rationale, riskFlags: d.decision?.riskFlags, requestId: e.requestId, teeVerified: e.teeVerified, independent: e.independent?.status, verifiability: e.independent?.service?.verifiability, provider: e.provider, model: e.model, at: d.decidedAt ?? d.at };
     },
     /** What locking `amount` of a Stock Token would give, from NorenCredit's own terms and NorenAssetOracle's risk value. */
     async quote(s: Holding, amount: string): Promise<Quote> {
