@@ -153,7 +153,7 @@ Ethereum Sepolia currently charges about 22.5M gas to create the 14.5 KB gateway
 
 ## Live runs
 
-All of these ran on public testnets on Nov 6 2026. Every hop is tracked in the CCIP explorer, and each one ended in a state change in a Noren contract.
+All of these ran on public testnets on Nov 6 2026: 7 runs, 10 CCIP messages (runs 4, 5 and 6 take two hops through the Base Sepolia hub). Every message shows SUCCESS in the CCIP explorer (rechecked against `api.ccip.chain.link/v2/messages` on Nov 6, 22:00 IST). Runs 2 to 7 each ended in a state change in a Noren contract. Run 1 was a probe to the deployer's own address, so no Noren contract was called.
 
 | # | Route | Noren action | Hops (CCIP explorer) | Result |
 |---|---|---|---|---|
