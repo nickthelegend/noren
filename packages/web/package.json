@@ -19,6 +19,7 @@
     "@noren/robinhood": "workspace:*",
     "@noren/world-id": "workspace:*",
     "@noren/xchain-aqua": "workspace:*",
+    "@privy-io/react-auth": "3.50.0",
     "assert": "2.1.0",
     "motion": "14.6.0",
     "qrcode-generator": "1.4.4",
