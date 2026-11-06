@@ -19,5 +19,8 @@
   "finalityThresholdExecuted": 2000,
   "irisUrl": "https://iris-api-sandbox.circle.com/v2/messages/26?transactionHash=0x433c334a242ccf2203eb4e1cdc3cc795c606cf3b7877647b0fc1bf6eb193f7fe",
   "attestedAt": "2026-11-06T11:31:02.932Z",
-  "mint": "PENDING: needs Robinhood Chain Testnet ETH at the recipient for receiveMessage gas"
+  "mint": "done",
+  "mintTxHash": "0xc74ce4d19f01cb573df7d3c3af0e30d06ef043d6a0832cf87b6380755d1a56b5",
+  "mintUrl": "https://explorer.testnet.chain.robinhood.com/tx/0xc74ce4d19f01cb573df7d3c3af0e30d06ef043d6a0832cf87b6380755d1a56b5",
+  "mintedAt": "2026-11-06T11:38:33.099Z"
 }

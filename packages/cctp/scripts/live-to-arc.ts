@@ -5,12 +5,12 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { createPublicClient, decodeEventLog, http, keccak256, toHex, type Address, type Hex } from "viem";
+import { createPublicClient, http, keccak256, toHex, type Address, type Hex } from "viem";
 import { norenArcHookAbi } from "../sdk/abi";
 import { toBytes32, type ArcAction } from "../sdk/actions";
 import { bridgeToArc, waitForAttestation } from "../sdk/bridge";
 import { ARC, CCTP_CHAINS, NOREN_ARC_HOOK, txUrl, type SourceChainKey } from "../sdk/chains";
-import { json, loadKey, walletFor, withArcLock } from "./lib";
+import { decodeArcEvents, json, loadKey, walletFor, withArcLock } from "./lib";
 
 const [from, amount = "0.5", kind = "plain", label = `${Date.now()}`] = process.argv.slice(2) as [SourceChainKey, string?, string?, string?];
 const src = CCTP_CHAINS[from];
@@ -75,10 +75,8 @@ if (!arcTx) throw new Error(`the CRE relay did not write on Arc:\n${userLines.jo
 
 const arc = createPublicClient({ transport: http(ARC.rpcUrl) });
 const r = await arc.waitForTransactionReceipt({ hash: arcTx });
-const events = r.logs.filter((l) => l.address.toLowerCase() === NOREN_ARC_HOOK!.toLowerCase()).map((l) => {
-  const d = decodeEventLog({ abi: norenArcHookAbi, data: l.data, topics: l.topics });
-  return { event: d.eventName, args: d.args };
-});
+const router = (await arc.readContract({ address: NOREN_ARC_HOOK, abi: norenArcHookAbi, functionName: "router" })) as string;
+const events = decodeArcEvents(r.logs, NOREN_ARC_HOOK, /^0x0{40}$/.test(router) ? null : router);
 const bridged = events.find((e) => e.event === "Bridged");
 if (r.status !== "success" || !bridged) throw new Error(`Arc tx ${txUrl("arc-testnet", arcTx)} has no Bridged event`);
 log(`Arc mint via CRE ${txUrl("arc-testnet", arcTx)}`);

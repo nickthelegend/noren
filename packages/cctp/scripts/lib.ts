@@ -1,6 +1,7 @@
 // Shared helpers for the live scripts. The key is read from a gitignored env file and never printed.
 import { mkdirSync, readFileSync, rmdirSync, statSync } from "node:fs";
-import { createWalletClient, defineChain, http, type Hex, type WalletClient } from "viem";
+import { createWalletClient, decodeEventLog, defineChain, http, type Hex, type Log, type WalletClient } from "viem";
+import { norenArcActionRouterAbi, norenArcHookAbi } from "../sdk/abi";
 import { privateKeyToAccount } from "viem/accounts";
 import { CCTP_CHAINS, type CctpChainKey } from "../sdk/chains";
 
@@ -56,3 +57,17 @@ export const withArcLock = async <T>(fn: () => Promise<T>): Promise<T> => {
 };
 
 export const json = (v: unknown): string => JSON.stringify(v, (_k, x) => (typeof x === "bigint" ? x.toString() : x), 2);
+
+/** Decodes NorenArcHook and NorenArcActionRouter events from an Arc receipt. */
+export const decodeArcEvents = (logs: Log[], hook: string, router: string | null) =>
+  logs.flatMap((l) => {
+    const a = l.address.toLowerCase();
+    const abi = a === hook.toLowerCase() ? norenArcHookAbi : router && a === router.toLowerCase() ? norenArcActionRouterAbi : null;
+    if (!abi) return [];
+    try {
+      const d = decodeEventLog({ abi, data: l.data, topics: l.topics });
+      return [{ contract: abi === norenArcHookAbi ? "NorenArcHook" : "NorenArcActionRouter", event: d.eventName, args: d.args }];
+    } catch {
+      return [];
+    }
+  });

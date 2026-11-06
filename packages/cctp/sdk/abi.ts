@@ -33,3 +33,16 @@ export const norenArcHookAbi = parseAbi([
   "event HookExecuted(bytes32 indexed nonce, uint8 indexed kind, address indexed beneficiary, uint256 amount, bool routed, bool ok)",
   "event HookRejected(bytes32 indexed nonce, address indexed refundTo, uint256 amount, string reason)",
 ]);
+
+/** Events of Noren's shared NorenArcActionRouter (packages/ccip) that a CCTP hook transfer can emit. */
+export const norenArcActionRouterAbi = parseAbi([
+  "event ActionExecuted(bytes32 indexed rail, bytes32 indexed msgId, uint8 indexed kind, address beneficiary, bytes32 ref, address token, uint256 amount, bool ok)",
+  "event ActionFailed(bytes32 indexed rail, bytes32 indexed msgId, address creditedTo, address token, uint256 amount, bytes reason)",
+  "event DuplicateIgnored(bytes32 indexed rail, bytes32 indexed msgId)",
+  "event InvoicePaid(bytes32 indexed invoiceId, address indexed merchant, address indexed payer, uint256 amount, bytes32 rail, uint64 source, bool onCredit)",
+  "event EarnDeposited(address indexed vault, address indexed beneficiary, uint256 assets, uint256 shares)",
+  "event AquaOrderOpened(bytes32 indexed ref, address indexed beneficiary, address token, uint256 amount, bytes32 rail, uint64 source, bytes params)",
+  "event CreditLineUpdated(bytes32 indexed lineId, address indexed borrower, uint256 limit, uint64 expiry, uint64 asOf, uint64 source)",
+  "event Drawn(bytes32 indexed lineId, uint256 amount, bytes32 invoiceId, address merchant)",
+  "function claimable(address account, address token) view returns (uint256)",
+]);
