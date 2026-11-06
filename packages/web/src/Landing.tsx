@@ -124,8 +124,8 @@ const NUMBERS: { v: string; u?: string; l: string }[] = [
   { v: "0", l: "payer addresses in the private payment tx" },
   { v: "5/5", l: "attacks reverted on-chain: stale root, tamper, outsider relay, expiry, replay" },
   { v: "5.0–7.0", u: "s", l: "for CRE to carry a new credit line from Robinhood to Arc" },
-  { v: "8/8", l: "steps of the stocks + pay-later run, end to end" },
-  { v: "346", l: "tests passing: 99 + 112 + 18 + 47 + 22 + 31 + 8 + 9 across the suites" },
+  { v: "8/8", l: "steps of the stocks + pay-later run, end to end, in 30 s" },
+  { v: "543", l: "tests passing across 20 suites on the final build, forks and live testnets included" },
 ];
 
 function useReveal() {

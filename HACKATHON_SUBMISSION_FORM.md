@@ -57,14 +57,16 @@ The checkout says it plainly: "Pay privately" is the default, and it is the only
 
   | Suite | Result |
   |---|---|
-  | `pnpm test` | 99 offline tests |
-  | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 39.0 s |
-  | `pnpm e2e:credit` | 8/8 steps in 24.5 s; CRE Robinhood→Arc in 6.0 s |
-  | Robinhood contracts incl. Aqua routing and Pay in 3 | 112 Foundry tests |
-  | `NorenOraclePeg` / Aqua router (SwapVM) | 18 Foundry tests |
-  | `NorenCreditLine` | 47 tests |
-  | `NorenRateOracle` | 22 tests |
-  | CRE workflows | 31 + 8 bun tests |
+  | All suites on the final build (TESTING.md) | **543 passed**, 0 failed, 1 weekend-only skip |
+  | `pnpm test` | 136 offline tests |
+  | `pnpm e2e` | 9/9 Foundry checkout tests, 5/5 attacks reverted, 47.6 s |
+  | `pnpm e2e:credit` | 8/8 steps in 30.3 s; CRE Robinhood→Arc in 6.0 s |
+  | Robinhood contracts incl. Aqua routing and Pay in 3 | 134 Foundry tests on a fresh mainnet fork |
+  | CCTP (`NorenArcHook`) / CCIP (gateways, hub, router, `NorenShieldSink`) | 24 / 32 Foundry tests, incl. forks of the real Circle and CCIP 2.0 contracts |
+  | Cross-chain Aqua / Aqua on Arc | 31 / 8 fork tests |
+  | `NorenOraclePeg` / Aqua router (SwapVM) | 17 + 1 weekend-only |
+  | `NorenCreditLine` / `NorenRateOracle` | 47 / 22 |
+  | CRE workflows (bun) | 31 + 8 + 8 + 15 + 14 |
 
   In a browser, a private payment took a 1.13 s proof and 6.0 s from click to paid.
 - **AI usage:** Claude (Anthropic) and Codex wrote and reviewed most of the code, tests and docs, as several coordinated agents working on separate branches. We checked every on-chain claim against the forks, and the README numbers come from our own runs. ChatGPT generated the app icon and illustrations, and Google Gemini (Veo) the landing film. The 0G credit check is itself an AI model, and its decision is shown with its request ID.

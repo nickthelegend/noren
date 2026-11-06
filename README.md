@@ -103,7 +103,7 @@ Pay with stocks: Powered by SwapVM — © Degensoft Ltd 2025 (see [Third-party l
 
 | What | Result |
 |---|---|
-| `pnpm test` (offline suites across the monorepo) | **99 passed**, 14 files |
+| All suites on the final build ([TESTING.md](TESTING.md)) | **543 passed**, 1 skipped (weekend-only), 0 failed; `pnpm test` alone **136 passed**, 20 files |
 | `pnpm e2e`: private payment on an Arc testnet fork, real 0xbow pool and Groth16 verifier | **9/9** Foundry checkout tests, **5/5** attacks reverted on-chain (`IncorrectASPRoot`, `ContextMismatch`, `NotMerchant`, `Expired`, `AlreadyPaid`), proof 1.28 s, re-proof 1.14 s, 39.0 s total |
 | Private payment in headless Chromium against `pnpm dev:all` | shield approved by the ASP in **6.1 s**, proof made in the browser in **1.13 s**, click to paid **6.0 s**, payer address in the tx: **none** |
 | `pnpm e2e:credit`: pay with stocks + pay later, end to end | **8/8** steps in **24.5 s**: fork faucet → EIP-712 attestation verified on-chain → 2 NVDA locked → **CRE Robinhood → Arc in 6.0 s** → invoice paid later and settled by the server → 0.040798 NVDA at $184.61 pays a 7.50 invoice, filled by a 1inch Aqua maker (fee 0.0377 USDG; merchant gets 7.50 USDG) → CRE carries `Drawn` and `Repaid` back to Robinhood |

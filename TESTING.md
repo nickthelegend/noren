@@ -1,5 +1,37 @@
 # Test results
 
+## Final integrated build (branch `final`, Nov 6 2026)
+
+`final` is `app-dex` plus `ui-polish`, `cctp-bridge`, `xchain-aqua`, `ccip`, `aqua-live`, `privacy` and `film`. Every suite below ran on its final HEAD, one at a time. Forks are local Anvil nodes; "live" suites read public testnets.
+
+**543 tests pass, 0 fail, 1 skipped** (a weekend-window SwapVM test that skips itself while US markets are open), plus the two end-to-end runs and the browser check.
+
+| Suite | Command | Result |
+|---|---|---|
+| Offline suites across the monorepo (core, server incl. private send, World ID, 0G credit check, Robinhood SDK/underwriter, settlement keeper, CCTP SDK, CCIP SDK) | `pnpm test` | **136 passed**, 20 files |
+| Demo shop (node:test) | `pnpm --dir examples/shop test` | **5 passed** |
+| Web typecheck and production build | `cd packages/web && pnpm exec tsc --noEmit -p . && pnpm exec vite build` | pass |
+| `NorenRateOracle` | `cd packages/contracts && forge test --no-match-contract NorenCheckout` | **22 passed** |
+| `NorenCreditLine` | `cd packages/arc-credit && forge test` | **47 passed** |
+| `NorenArcHook`: unit (incl. SHIELD validation) + forks of Arc and Robinhood testnets with Circle's contracts | `cd packages/cctp && forge test` | **24 passed** (17 + 7) |
+| `@noren/cctp` SDK, incl. live Iris and the deployed hook | `cd packages/cctp && pnpm exec vitest run` | **19 passed** (also inside `pnpm test`) |
+| CCIP router unit | `cd packages/ccip && forge test` | **9 passed** |
+| CCIP forks (real CCIP 2.0 Router/OnRamp/OffRamp on 4 testnet forks) + `NorenShieldSink` against the live Arc pool | `cd packages/ccip && FOUNDRY_PROFILE=fork forge test` | **23 passed** (12 + 11) |
+| `@noren/ccip` SDK / live CCIP API | `pnpm test:sdk` / `pnpm test:live` in packages/ccip | **7** / **2 passed** |
+| CRE workflows (bun) | `bun test` in each workflow | credit bridge **31**, pricing **8**, CCTP relay **8**, settlement desk **15**, cross-chain Aqua **14** |
+| `NorenOraclePeg` + Aqua router (SwapVM) | `sh packages/aqua/scripts/test-swapvm.sh` | **17 passed, 1 skipped** (weekend-only case) |
+| Robinhood contracts on a fresh mainnet fork | `sh packages/robinhood/scripts/test-fork.sh` | **134 passed** |
+| Cross-chain Aqua, Arc fork + Robinhood snapshot, then Arc fork + Base Sepolia fork | `sh packages/xchain-aqua/scripts/test-forks.sh` | **31 passed** (19 + 12) |
+| 1inch Aqua stack on an Arc testnet fork (official Aqua v1.0.0) | `sh packages/xchain-aqua/scripts/test-aqua-live.sh` | **8 passed** |
+| Private payment end to end on an Arc testnet fork | `pnpm e2e` | **9/9** Foundry checkout tests, **5/5** attacks reverted, proof 1.26 s, re-proof 1.08 s, refund approved, 47.6 s |
+| Stocks + pay later end to end against `pnpm dev:all` | `pnpm e2e:credit` | **8/8** steps in 30.3 s; CRE Robinhood → Arc in 6.0 s; 0.040803 NVDA at $184.59 filled by an Aqua maker |
+
+**Browser (headless Chromium against `pnpm dev:all`, 1440 and 375 px):** landing, Noren app Pay / Bridge / Swap (cross-chain on), checkout (Pay privately default, Pay with USDC, Pay from another chain), Noren Merchant home and payments, and the live Arc panel. No horizontal overflow on any route, no page errors.
+- **Cross-chain swap, clicked in the app (fork):** 1 NVDA locked on the Robinhood fork, filled on the Arc fork by the Aqua maker through the CRE simulator, NVDA released to the maker: 183.81 USDC received, exactly the quote.
+- **Bring USDC to Arc:** live balance and gas reads on the selected CCTP testnet and Circle's live fast-fee quote (1.3 bps Base Sepolia → Arc). The browser's test key holds no testnet funds, so the app stops at "Setup required" with the address to fund; the transfer itself was not sent from the browser. The same SDK path ran live from scripts (docs/CCTP.md, docs/PRIVACY.md).
+- **Noren Merchant, from other chains:** reads `InvoicePaid` from the live `NorenArcActionRouter`: the Base Sepolia → Arc CCTP payment (0.399948 USDC) and the Ethereum Sepolia → Arc CCIP pay-on-credit (0.10 USDC) both show with their source chain.
+- **Live oracle:** `NorenRateOracle` on Arc testnet answered €100 = 112.18 USDC with 21 h old rounds (limit 25 h); past that the panel says "price stale" instead of erroring.
+
 ## Integrated build (branch `web-integration`, Nov 6 2026)
 
 Everything ran on local nodes: an Anvil fork of Arc testnet (chain 5042002) and the Robinhood package's warmed snapshot of Robinhood Chain mainnet state (served as chain 46630 for the CRE simulator). No public transaction was sent; Arc mainnet, Robinhood mainnet, Relay, Across and World were only read.
