@@ -15,7 +15,7 @@ import { assertRobinhoodFork, ROBINHOOD } from '../packages/server/src/credit.ts
 import type { CreditOptions } from '../packages/server/src/server.ts';
 import { onStop, PORTS, run, startFork, startStack, type ArcContext } from './stack.ts';
 import { startPricing } from './dev-pricing.ts';
-import { adoptSnapshotDeployment, deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
+import { adoptSnapshotDeployment, deployCreditLine, deployRobinhood, seedLiquidityMakers, type RobinhoodDeployment } from './dev-robinhood.ts';
 import { creSimulate } from './cre.ts';
 import { deploySettlementDesk, requestSettlement, startSettlementRelay } from './dev-settlement.ts';
 import { relayDeposit, acrossDeposit } from '../packages/bridge-settlement/keeper/lib.ts';
@@ -46,6 +46,7 @@ run(async () => {
   if (existsSync(snapshot)) {
     robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, { state: snapshot }, ROBINHOOD.chainId, assertRobinhoodFork);
     robinhood = await adoptSnapshotDeployment(robinhoodRpc, resolve('packages/robinhood/.fork/deployment.json'));
+    for (const m of await seedLiquidityMakers(robinhoodRpc, resolve('packages/robinhood/.fork/deployment.json')).catch((e) => [`Setup required: couldn't seed the Aqua makers (${e.message})`])) console.log(`Aqua (fork): ${m}`);
     console.log(`Robinhood snapshot: ${robinhoodRpc} (mainnet block ${robinhood.forkedFromBlock}); NorenCredit ${robinhood.credit}, NorenGateway ${robinhood.gateway}, NorenVault ${robinhood.vault}`);
   } else {
     robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, ROBINHOOD.rpc, ROBINHOOD.chainId, assertRobinhoodFork);
