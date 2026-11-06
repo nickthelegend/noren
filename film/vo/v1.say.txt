@@ -1,1 +1,1 @@
-Noh-ren is a dex and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noh-ren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.
+Pay a shop in crypto today, and the shop sees your whole wallet. Noh-ren lets merchants accept stablecoins, stocks or credit, privately. Underneath: a payment network on Arc, lending pools that are 1inch Aqua liquidity, and U S D C from any chain.

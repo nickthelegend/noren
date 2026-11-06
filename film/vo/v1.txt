@@ -1,1 +1,1 @@
-Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.
+Pay a shop in crypto today, and the shop sees your whole wallet. Noren lets merchants accept stablecoins, stocks or credit — privately. Underneath: a payment network on Arc, lending pools that are 1inch Aqua liquidity, and USDC from any chain.

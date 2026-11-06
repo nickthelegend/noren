@@ -102,7 +102,8 @@ async function cut() {
 const until = async (fn, what, ms = 180000) => { const s = Date.now(); while (Date.now() - s < ms) { try { const v = await fn(); if (v) return v; } catch { /* keep waiting */ } await sleep(500); } throw new Error(`timed out waiting for ${what}`); };
 // ---- hands: a moving pointer, human-paced clicks and typing; every action is logged with its time in the take
 let mx = VIEW.width / 2, my = VIEW.height / 2;
-async function moveTo(x, y, steps = 22) { await p.mouse.move(x, y, { steps }); mx = x; my = y; }
+// every pointer move is logged (CSS px of the 1280x720 view) so the edit can drive a camera that follows the cursor
+async function moveTo(x, y, steps = 22) { const from = t0 ? T() : null; await p.mouse.move(x, y, { steps }); mx = x; my = y; if (t0) ev("move", "pointer", { x: Math.round(x), y: Math.round(y), from }); }
 // The apps have fixed headers (~80 px): anything under them, or near the bottom edge, is scrolled to the middle first.
 async function point(loc) {
   await loc.scrollIntoViewIfNeeded();
@@ -441,6 +442,23 @@ try {
     result("tx links", links.join(" "));
     await point(hero.locator(".nk-result, [class*=result]").first()).catch(() => {}); await sleep(5000);
     await cut(); await save();
+  }
+
+  if (take === "landing4") {
+    // The website with one slow, eased, continuous scroll (easeInOutCubic, ~2.5 viewport heights over 10 s),
+    // driven by requestAnimationFrame in the page so every painted frame is on the curve. Shown at 1.0x in the film.
+    await p.goto(`${APP}/#/`); await sleep(3000);
+    await moveTo(1180, 680, 1);
+    await rollCamera(); await sleep(1600);
+    ev("scroll", "eased 2.5 viewports / 10 s");
+    await p.evaluate(() => new Promise((done) => {
+      const y0 = scrollY, dist = innerHeight * 2.5, ms = 10000, t0 = performance.now();
+      const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+      const step = (now) => { const k = Math.min(1, (now - t0) / ms); scrollTo(0, y0 + dist * ease(k)); if (k < 1) requestAnimationFrame(step); else done(); };
+      requestAnimationFrame(step);
+    }));
+    await sleep(1800);
+    await cut();
   }
 
   if (take === "landing") {

@@ -37,12 +37,12 @@ SCENES = [
 ]
 
 APP_CARD = (1.42, 50, 30)
-OFFSET = {"intro": 4.0}
+OFFSET = {"intro": 5.0}
 # Segments: (scene, take, in, out, rate, zoom[, network label]). zoom = (scale, x%, y%) or (from, to); None = full frame.
 # A take named "@card" is a drawn card (CARDS below), "in"/"out" only give its length.
 SEGMENTS = [
     # 01 the website (re-recorded on the v3 landing)
-    ("intro", "landing", 0.3, 17.9, 1.6, None),
+    ("intro", "landing4", 0.9, 10.9, 1.0, None),
     # 02 Noren Merchant onboarding: the Privy modal (not completed), then the injected test wallet: SIWE, store, link, keys
     ("merchant", "merchant3", 2.0, 4.6, 1.0, None),
     ("merchant", "merchant3", 5.6, 33.0, 27.4 / 17.4, None),
@@ -151,7 +151,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). v4 is split at a sentence: v4 (home, pay, bridge) and v4c (stocks, the three rails).
-VO = [("v1", 0.1), ("v2", 15.3), ("v3", 35.3), ("v4", 55.2), ("v4c", 86.6), ("v4b", 100.6), ("v5a", 119.6), ("v5b", 134.6), ("v5c-verified", 149.6), ("v6", 167.2)]
+VO = [("v1", 0.0), ("v2", 15.5), ("v3", 35.3), ("v4", 55.2), ("v4c", 86.6), ("v4b", 100.6), ("v5a", 119.6), ("v5b", 134.6), ("v5c-verified", 149.6), ("v6", 167.2)]
 
 POPS = []
 
