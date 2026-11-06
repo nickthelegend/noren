@@ -14,7 +14,9 @@ export type CreditCfg = {
   creditLine: Address | null; robinhoodRpc: string | null;
   /** First block worth scanning on the Robinhood fork (the fork point), as a decimal string. */
   robinhoodFromBlock?: string; arcFromBlock?: string;
-  tsuke?: Address; underwriterUrl?: string; [k: string]: unknown;
+  tsuke?: Address; underwriterUrl?: string; gateway?: Address | null;
+  /** 4663, or 46630 when dev:all runs the mainnet fork under Robinhood testnet's id for the CRE simulator. */
+  robinhoodChainId?: number; [k: string]: unknown;
 };
 export const creditOf = (cfg: Config | null): CreditCfg | null => ((cfg as unknown as { credit?: CreditCfg | null })?.credit ?? null);
 
@@ -50,7 +52,7 @@ export const gatewayAbi = parseAbi([
   "function pay(bytes32 invoiceId, address merchant, address asset, uint256 maxAssetIn) payable returns (uint256 assetIn)",
   "function spreadBps(address asset) view returns (uint16)",
 ]);
-export const robinhoodFork = (url: string) => defineChain({ id: 4663, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
+export const robinhoodFork = (url: string, id = 4663) => defineChain({ id, name: "Robinhood Chain (local fork)", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [url] } } });
 
 /** The checkout's test key (see wallet.ts): same storage slot, so the borrower is the payer. */
 function customerKey(): Hex {
@@ -69,7 +71,8 @@ export function makeTsuke(cfg: Config) {
   const arcChain = localFork(cfg.rpcUrl);
   const arc = createPublicClient({ chain: arcChain, transport: http(cfg.rpcUrl) });
   const arcWallet = createWalletClient({ chain: arcChain, transport: http(cfg.rpcUrl), account });
-  const rh = credit?.robinhoodRpc ? createPublicClient({ chain: robinhoodFork(credit.robinhoodRpc), transport: http(credit.robinhoodRpc) }) : null;
+  const rhChain = credit?.robinhoodRpc ? robinhoodFork(credit.robinhoodRpc, credit.robinhoodChainId ?? 4663) : null;
+  const rh = rhChain ? createPublicClient({ chain: rhChain, transport: http(credit!.robinhoodRpc!) }) : null;
   const need = () => { if (!rh || !credit?.robinhoodRpc) throw new Error("Setup required: the Robinhood fork isn't running. Start everything with pnpm dev:all"); return rh; };
 
   return {
@@ -151,7 +154,7 @@ export function makeTsuke(cfg: Config) {
     },
     /** Robinhood: approve the Stock Token to the gateway, then pay. maxAssetIn allows 1% price movement. */
     async payWithStock(gateway: Address, merchant: Address, invoiceId: Hex, asset: Address, quoted: bigint) {
-      const c = need(); const chain = robinhoodFork(credit!.robinhoodRpc!);
+      const c = need(); const chain = rhChain!;
       const w = createWalletClient({ chain, transport: http(credit!.robinhoodRpc!), account });
       const max = quoted + quoted / 100n;
       const allowance = await c.readContract({ address: asset, abi: erc20Abi, functionName: "allowance", args: [account.address, gateway] });

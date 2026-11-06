@@ -56,6 +56,8 @@ export function watchCreditDraws(opts: { rpcUrl: string; creditLine: Address; fr
 /** Robinhood Chain mainnet addresses (verified by live RPC, Nov 6 2026). Holders are only impersonated on a local Anvil fork. */
 export const ROBINHOOD = {
   chainId: 4663,
+  /** Robinhood testnet's id, which CRE's robinhood-testnet forwarder and chain selector expect. */
+  creChainId: 46630,
   rpc: 'https://rpc.mainnet.chain.robinhood.com',
   explorer: 'https://robinhoodchain.blockscout.com',
   usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as Address,
@@ -78,9 +80,11 @@ export async function assertRobinhoodFork(rpcUrl: string) {
   if (!isLoopback(rpcUrl)) throw new Error('Setup required: the Robinhood faucet needs a loopback Anvil fork RPC');
   const rpc = async (method: string) => { const r = await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: [] }) }); const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result; };
   const chain = Number(BigInt(await rpc('eth_chainId')));
-  if (chain !== ROBINHOOD.chainId) throw new Error(`Setup required: Robinhood fork must report chain ${ROBINHOOD.chainId}; RPC returned ${chain}`);
+  // 46630 is accepted because the CRE simulator only knows Robinhood *testnet*: dev:all runs the mainnet fork under that id.
+  if (chain !== ROBINHOOD.chainId && chain !== ROBINHOOD.creChainId) throw new Error(`Setup required: Robinhood fork must report chain ${ROBINHOOD.chainId} or ${ROBINHOOD.creChainId}; RPC returned ${chain}`);
   const info = await rpc('anvil_nodeInfo').catch(() => null);
   if (!info?.forkConfig?.forkUrl) throw new Error('Setup required: the Robinhood RPC is not an Anvil fork');
+  if (!String(info.forkConfig.forkUrl).includes('rpc.mainnet.chain.robinhood.com')) throw new Error('Setup required: the Robinhood fork must fork Robinhood Chain mainnet (real Stock Tokens and Chainlink feeds)');
 }
 
 /** Gives `to` gas ETH, NVDA and USDG on the Robinhood fork by impersonating real mainnet holders. Returns the tx hashes. */

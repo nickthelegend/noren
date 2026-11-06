@@ -17,14 +17,16 @@ import { startPricing } from './dev-pricing.ts';
 const has = (p: string) => existsSync(resolve(p));
 
 run(async () => {
-  const robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, ROBINHOOD.rpc, ROBINHOOD.chainId, assertRobinhoodFork);
+  // Robinhood Chain *mainnet* state (real Stock Tokens + Chainlink feeds; testnet has neither), served under Robinhood
+  // testnet's chain id 46630 because that is the only Robinhood chain the CRE simulator and its forwarder know.
+  const robinhoodRpc = await startFork('Robinhood Chain', PORTS.robinhood, ROBINHOOD.rpc, ROBINHOOD.creChainId, assertRobinhoodFork);
   const rhFromBlock = String(await fetch(robinhoodRpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' }).then(r => r.json()).then(j => BigInt(j.result)));
-  console.log(`Robinhood fork RPC: ${robinhoodRpc} (chain ${ROBINHOOD.chainId}, from block ${rhFromBlock})`);
+  console.log(`Robinhood fork RPC: ${robinhoodRpc} (mainnet state, chain id ${ROBINHOOD.creChainId} for CRE, from block ${rhFromBlock})`);
   const missing: string[] = [];
 
   const stack = await startStack({
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
-      const pub: Record<string, unknown> = { robinhoodFromBlock: rhFromBlock, arcFromBlock: String(await arc.client.getBlockNumber()) };
+      const pub: Record<string, unknown> = { robinhoodChainId: ROBINHOOD.creChainId, robinhoodFromBlock: rhFromBlock, arcFromBlock: String(await arc.client.getBlockNumber()) };
       if (has('packages/cre-pricing')) {
         try { const p = await startPricing(arc); pub.rateOracle = p.oracle; pub.rateOracleTx = p.tx; pub.rateSourceBlock = p.sourceBlock; }
         catch (e: any) { missing.push(`CRE pricing run failed: ${e.message}`); }

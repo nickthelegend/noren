@@ -105,7 +105,7 @@ export function createMerchantServer(options: ServerOptions): Server {
     const row = rows.get(p.invoiceId.toLowerCase());
     if (!row || (row.status !== 'draft' && row.status !== 'open')) { console.warn(`Stock payment ${p.txHash} not applied: ${row ? `invoice is ${row.status}` : 'unknown invoice'}`); return; }
     row.status = 'paid'; row.method = 'stocks'; row.paymentTx = p.txHash; row.paidAt = p.timestamp; row.paymentBlock = p.blockNumber.toString();
-    row.stock = { asset: p.asset, assetIn: p.assetIn.toString(), usdgOut: p.usdgOut.toString(), priceUsd8: p.priceUsd8.toString(), chainId: 4663 };
+    row.stock = { asset: p.asset, assetIn: p.assetIn.toString(), usdgOut: p.usdgOut.toString(), priceUsd8: p.priceUsd8.toString(), chainId: Number(await rh.getChainId()) };
     const receipt = await rh.getTransactionReceipt({ hash: p.txHash }); row.paymentGasUsed = receipt.gasUsed.toString();
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
