@@ -57,8 +57,8 @@ abstract contract TsukeBase is Test {
   address internal underwriter;
   uint256 internal underwriterKey;
 
-  uint32 internal constant INTERVAL = 1 hours; // production deploy uses 14 days
-  uint32 internal constant GRACE = 1 hours; // production deploy uses 3 days
+  uint32 internal constant INTERVAL = 15 minutes; // production deploy uses 14 days
+  uint32 internal constant GRACE = 15 minutes; // production deploy uses 3 days
 
   function setUp() public virtual {
     require(block.chainid == 4663, 'Run against the Robinhood mainnet fork: sh scripts/test-fork.sh');
@@ -172,6 +172,16 @@ abstract contract TsukeBase is Test {
       if ((d + 4) % 7 == dow && ts > block.timestamp) return ts;
     }
     revert('no slot');
+  }
+
+  /// @dev A fork freezes every feed at the fork block, so a test that jumps days ahead cannot see
+  /// the next USDG/ETH heartbeat. Widen only the 24/7 assets' max age (an owner config call on the
+  /// real feeds) for tests that exercise the stock-market calendar.
+  function _allowFrozen247Feeds() internal {
+    vm.startPrank(owner);
+    oracle.setAsset(RH.USDG, RH.FEED_USDG, 60 days, 60 days, false, false);
+    oracle.setAsset(RH.WETH, RH.FEED_ETH, 60 days, 60 days, false, false);
+    vm.stopPrank();
   }
 
   /// @dev Keep a weekday test inside the open-market window; skip when the fork itself was cut inside the closed window.

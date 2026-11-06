@@ -76,6 +76,7 @@ contract TsukeOracle is Ownable2Step {
     if (asset == address(0) || feed == address(0) || maxAgeOpen == 0 || maxAgeClosed < maxAgeOpen) revert BadConfig();
     // Probe the feed so a wrong address fails at configuration time, not at checkout.
     IAggregatorV3(feed).decimals();
+    IAggregatorV3(feed).latestRoundData();
     if (applyUiMultiplier) IRobinhoodStockToken(asset).uiMultiplier();
     if (assetConfig[asset].feed == address(0)) _assets.push(asset);
     assetConfig[asset] = AssetConfig(feed, maxAgeOpen, maxAgeClosed, marketHours, applyUiMultiplier, true);

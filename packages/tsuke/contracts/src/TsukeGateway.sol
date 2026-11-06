@@ -221,7 +221,8 @@ contract TsukeGateway is Ownable2Step, ReentrancyGuard {
   }
 
   function _quote(address asset, uint256 amountUsdg) internal view returns (uint256 assetIn, uint256 priceUsd8, bool closed) {
-    if (asset == address(usdg)) return (amountUsdg, oracle.usdgPrice(), false);
+    // USDG settles 1:1 with no conversion, so it does not depend on a feed (priceUsd8 = 0).
+    if (asset == address(usdg)) return (amountUsdg, 0, false);
     address priced = asset == NATIVE_ETH ? address(weth) : asset;
     if (!oracle.isSupported(priced)) revert AssetNotAccepted(asset);
     uint256 usd8 = oracle.usdgToUsd8(amountUsdg, Math.Rounding.Ceil);
