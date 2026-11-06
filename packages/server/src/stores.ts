@@ -1,0 +1,16 @@
+// MIT
+import { randomBytes } from 'node:crypto';
+import { isAddress, type Address, type Hex } from 'viem';
+import { equalHash, hashSecret } from './auth.ts';
+
+export type StoreKey = { id: string; hash: string; prefix: string; createdAt: number; revokedAt?: number };
+export type Store = { id: string; owner: Address; name: string; payout: Address; merchant: Address; relayerKey: Hex; publishableKey: string; keys: StoreKey[]; createdAt: number; registerTx: Hex };
+export const validName = (value: unknown) => { if (typeof value !== 'string' || !value.trim() || value.trim().length > 48) throw new Error('name must be 1-48 characters'); return value.trim(); };
+export const validPayout = (value: unknown): Address => { if (typeof value !== 'string' || !isAddress(value) || /^0x0{40}$/i.test(value)) throw new Error('Invalid payout address'); return value as Address; };
+export const publicStore = ({ relayerKey, owner, keys, ...rest }: Store) => ({ ...rest, keys: keys.map(({ hash, ...key }) => key) });
+export function newSecretKey(now = Math.floor(Date.now() / 1000)) { const secretKey = `sk_test_${randomBytes(24).toString('hex')}`; return { secretKey, key: { id: `key_${randomBytes(6).toString('hex')}`, hash: hashSecret(secretKey), prefix: secretKey.slice(0, 14), createdAt: now } satisfies StoreKey }; }
+export function findStoreBySecret(stores: Store[], token: string) { if (!/^sk_test_[0-9a-f]{48}$/.test(token)) return undefined; const hash = hashSecret(token); return stores.find(s => s.keys.some(k => !k.revokedAt && equalHash(k.hash, hash))); }
+export type Principal = { kind: 'store'; store: Store } | { kind: 'session'; address: Address } | { kind: 'dev'; merchant: Address };
+export function mayAct(principal: Principal | undefined, merchant: string, stores: Store[]) { if (!principal) return false; const addr = merchant.toLowerCase(); return principal.kind === 'store' ? principal.store.merchant.toLowerCase() === addr : principal.kind === 'session' ? stores.some(s => s.owner.toLowerCase() === principal.address.toLowerCase() && s.merchant.toLowerCase() === addr) : principal.merchant.toLowerCase() === addr; }
+export function validateRedirect(value: unknown, label: string): string | undefined { if (value === undefined) return undefined; if (typeof value !== 'string' || value.length > 2048) throw new Error(`InvalidRedirect: ${label} must be an absolute http or https URL of at most 2048 characters`); try { const url = new URL(value); if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) throw new Error(); } catch { throw new Error(`InvalidRedirect: ${label} must be an absolute http or https URL`); } return value; }
+export function validateMetadata(value: unknown): Record<string, string> | undefined { if (value === undefined) return undefined; if (!value || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) throw new Error('InvalidMetadata: metadata must be an object'); const entries = Object.entries(value); if (entries.length > 20 || entries.some(([k, v]) => !/^[A-Za-z0-9_]{1,40}$/.test(k) || typeof v !== 'string' || v.length > 500)) throw new Error('InvalidMetadata: use at most 20 keys (letters, digits, underscore), with string values at most 500 characters'); return value as Record<string, string>; }

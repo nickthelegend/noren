@@ -2,7 +2,7 @@ export class NorenError extends Error {
   constructor(message: string, public status: number) { super(message); this.name = 'NorenError'; }
 }
 export type NorenOptions = { server: string; token?: string; merchant: string };
-export type WebhookEvent = { id: string; type: string; created: number; data: { invoiceId: string; amount: string; status: string; description: string | null; paymentTx: string | null; refundTx: string | null; refundAmount: string | null; quote?: import('./pricing.ts').UsdcQuote | null } };
+export type WebhookEvent = { id: string; type: string; created: number; data: { invoiceId: string; amount: string; status: string; description: string | null; metadata?: Record<string, string> | null; paymentTx: string | null; refundTx: string | null; refundAmount: string | null; quote?: import('./pricing.ts').UsdcQuote | null } };
 export function createNoren({ server, token, merchant }: NorenOptions) {
   const base = server.replace(/\/$/, '');
   const merchantPath = `/merchants/${merchant}`;
@@ -16,7 +16,7 @@ export function createNoren({ server, token, merchant }: NorenOptions) {
   }
   return {
     invoices: {
-      async create(input: ({ amount: bigint; currency?: never; fiatAmount?: never } | { amount?: never; currency: string; fiatAmount: bigint }) & { expiresIn: number; description?: string }) { const expiry = Math.floor(Date.now() / 1000) + input.expiresIn; const pricing = input.currency === undefined ? { amount: input.amount!.toString() } : { currency: input.currency, fiatAmount: input.fiatAmount!.toString() }; const result = await request(`${merchantPath}/invoices`, 'POST', { ...pricing, expiry: expiry.toString(), description: input.description }); return { invoice: result.invoice, ...(result.quote ? { quote: result.quote } : {}), ...(result.url ? { url: result.url } : {}) }; },
+      async create(input: ({ amount: bigint; currency?: never; fiatAmount?: never } | { amount?: never; currency: string; fiatAmount: bigint }) & { expiresIn: number; description?: string; successUrl?: string; cancelUrl?: string; metadata?: Record<string, string> }) { const expiry = Math.floor(Date.now() / 1000) + input.expiresIn; const pricing = input.currency === undefined ? { amount: input.amount!.toString() } : { currency: input.currency, fiatAmount: input.fiatAmount!.toString() }; const result = await request(`${merchantPath}/invoices`, 'POST', { ...pricing, expiry: expiry.toString(), description: input.description, successUrl: input.successUrl, cancelUrl: input.cancelUrl, metadata: input.metadata }); return { invoice: result.invoice, ...(result.quote ? { quote: result.quote } : {}), ...(result.url ? { url: result.url } : {}), ...(result.successUrl ? { successUrl: result.successUrl } : {}), ...(result.cancelUrl ? { cancelUrl: result.cancelUrl } : {}), ...(result.metadata ? { metadata: result.metadata } : {}) }; },
       list: () => request(`${merchantPath}/invoices`),
       retrieve: (id: string) => request(`/invoices/${id}`),
       refund: (id: string, amount: bigint) => request(`/invoices/${id}/refund`, 'POST', { amount: amount.toString() }),

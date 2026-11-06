@@ -124,10 +124,10 @@ export const gatewayAbi = parseAbi([
   'event InvoicePaid(address indexed merchant, bytes32 indexed invoiceId, address indexed payer, address asset, uint256 assetIn, uint256 usdgOut, uint256 priceUsd8)',
 ]);
 
-export type StockPayment = { invoiceId: Hex; payer: Address; asset: Address; assetIn: bigint; usdgOut: bigint; priceUsd8: bigint; txHash: Hex; blockNumber: bigint; timestamp: number };
+export type StockPayment = { merchant: Address; invoiceId: Hex; payer: Address; asset: Address; assetIn: bigint; usdgOut: bigint; priceUsd8: bigint; txHash: Hex; blockNumber: bigint; timestamp: number };
 
-/** Watches InvoicePaid for one merchant on the Robinhood fork. */
-export function watchStockPayments(opts: { rpcUrl: string; gateway: Address; merchant: Address; fromBlock?: bigint; intervalMs?: number; onPaid: (p: StockPayment) => Promise<void>; onError?: (e: Error) => void }) {
+/** Watches InvoicePaid for every merchant on the Robinhood fork. */
+export function watchStockPayments(opts: { rpcUrl: string; gateway: Address; fromBlock?: bigint; intervalMs?: number; onPaid: (p: StockPayment) => Promise<void>; onError?: (e: Error) => void }) {
   const client: any = createPublicClient({ transport: http(opts.rpcUrl), cacheTime: 0 });
   let next = opts.fromBlock, busy = false, stopped = false;
   const tick = async () => {
@@ -136,10 +136,10 @@ export function watchStockPayments(opts: { rpcUrl: string; gateway: Address; mer
       const head: bigint = await client.getBlockNumber();
       if (next === undefined) next = head + 1n;
       if (next > head) return;
-      const logs = await client.getLogs({ address: opts.gateway, event: gatewayAbi[4], args: { merchant: opts.merchant }, fromBlock: next, toBlock: head });
+      const logs = await client.getLogs({ address: opts.gateway, event: gatewayAbi[4], fromBlock: next, toBlock: head });
       for (const log of logs) {
         const block = await client.getBlock({ blockNumber: log.blockNumber });
-        await opts.onPaid({ invoiceId: log.args.invoiceId, payer: log.args.payer, asset: log.args.asset, assetIn: log.args.assetIn, usdgOut: log.args.usdgOut, priceUsd8: log.args.priceUsd8, txHash: log.transactionHash, blockNumber: log.blockNumber, timestamp: Number(block.timestamp) });
+        await opts.onPaid({ merchant: log.args.merchant, invoiceId: log.args.invoiceId, payer: log.args.payer, asset: log.args.asset, assetIn: log.args.assetIn, usdgOut: log.args.usdgOut, priceUsd8: log.args.priceUsd8, txHash: log.transactionHash, blockNumber: log.blockNumber, timestamp: Number(block.timestamp) });
       }
       next = head + 1n;
     } catch (e: any) { opts.onError?.(e); } finally { busy = false; }
@@ -147,4 +147,18 @@ export function watchStockPayments(opts: { rpcUrl: string; gateway: Address; mer
   const timer = setInterval(tick, opts.intervalMs ?? 1500);
   void tick();
   return { stop: () => { stopped = true; clearInterval(timer); }, tick };
+}
+
+/** The snapshot omits these two runtime codes; copy only their actual Robinhood mainnet code onto a verified fork. */
+export async function ensureUniswapOnFork(rpcUrl: string) {
+  await assertRobinhoodFork(rpcUrl);
+  const local: any = createPublicClient({ transport: http(rpcUrl), cacheTime: 0 });
+  const mainnet: any = createPublicClient({ transport: http(ROBINHOOD.rpc), cacheTime: 0 });
+  for (const address of ['0x8876789976dEcBfCbBbe364623C63652db8C0904', '0x000000000022D473030F116dDEE9F6B43aC78BA3'] as Address[]) {
+    const existing: Hex | undefined = await local.getCode({ address });
+    if (existing && existing !== '0x') continue;
+    const code: Hex | undefined = await mainnet.getCode({ address });
+    if (!code || code === '0x') throw new Error(`Setup required: no Robinhood mainnet code at ${address}`);
+    await local.request({ method: 'anvil_setCode', params: [address, code] });
+  }
 }

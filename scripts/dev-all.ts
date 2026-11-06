@@ -17,6 +17,7 @@ import { startPricing } from './dev-pricing.ts';
 import { adoptSnapshotDeployment, deployCreditLine, deployRobinhood, type RobinhoodDeployment } from './dev-robinhood.ts';
 import { creSimulate } from './cre.ts';
 import { deploySettlementDesk, requestSettlement, startSettlementRelay } from './dev-settlement.ts';
+import { relayDeposit, acrossDeposit } from '../packages/bridge-settlement/keeper/lib.ts';
 import { prepareRobinhoodForCre, startBridgeRelay, type BridgeEntry } from './dev-bridge.ts';
 
 const has = (p: string) => existsSync(resolve(p));
@@ -64,7 +65,7 @@ run(async () => {
   const stack = await startStack({
     mounts: async (arc) => {
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
-      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return []; }
+      if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
       if (existsSync('.env')) process.loadEnvFile('.env');
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
@@ -86,10 +87,11 @@ run(async () => {
       };
       if (!sink) missing.push('World ID starter line: the bridge workflow has no HTTP trigger yet; verified humans are recorded and the line opens on retry');
       const worldId = w.createWorldIdHandler(new w.WorldIdService({ config, dataFile: resolve('data/world-id-nullifiers.json'), sink, ...(creditLineAddr ? { arc: { rpcUrl: arc.rpcUrl, creditLine: creditLineAddr } } : {}) }));
-      return [worldId, ...(settle ? [settlementHandler(settle, robinhoodRpc, arc)] : [])];
+      return [worldId, settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()];
     },
     credit: async (arc: ArcContext): Promise<CreditOptions> => {
       const pub: Record<string, unknown> = { robinhoodFromBlock: String(robinhood?.deployBlock ?? (await rh.getBlockNumber())), arcFromBlock: String(await arc.client.getBlockNumber()) };
+      if (settle) pub.settlementDesk = settle.desk;
       if (has('packages/cre-pricing')) {
         try { const p = await startPricing(arc); pub.rateOracle = p.oracle; pub.rateOracleTx = p.tx; pub.rateSourceBlock = p.sourceBlock; }
         catch (e: any) { missing.push(`CRE pricing run failed: ${e.message}`); }
@@ -136,23 +138,40 @@ run(async () => {
 });
 
 /** Merchant routes for Settle to Arc (bearer token as for the rest of the merchant API). */
+function missingSettlementHandler() {
+  return async (req: any, res: any) => {
+    if (!/^\/(bridge\/|merchants\/0x[0-9a-fA-F]{40}\/settlements$)/.test(new URL(req.url ?? '/', 'http://x').pathname)) return false;
+    res.writeHead(503, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'Setup required: NorenSettlementDesk is not deployed on the Robinhood fork' })); return true;
+  };
+}
 function settlementHandler(settle: { desk: Address; relay?: ReturnType<typeof startSettlementRelay> }, robinhoodRpc: string, arc: ArcContext & { token: string }) {
   return async (req: any, res: any) => {
-    const m = /^\/merchants\/(0x[0-9a-fA-F]{40})\/settlements$/.exec(new URL(req.url ?? '/', 'http://x').pathname);
-    if (!m) return false;
+    const url = new URL(req.url ?? '/', 'http://x');
+    const m = /^\/merchants\/(0x[0-9a-fA-F]{40})\/settlements$/.exec(url.pathname);
+    const consumer = /^\/bridge\/settlements\/(0x[0-9a-fA-F]{40})$/.exec(url.pathname);
+    if (!m && !consumer && url.pathname !== '/bridge/quote') return false;
     const send = (status: number, v: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(v, (_, x) => typeof x === 'bigint' ? x.toString() : x)); return true; };
-    if (req.headers.authorization !== `Bearer ${arc.token}`) return send(401, { error: 'Merchant bearer token required' });
-    if (m[1].toLowerCase() !== arc.merchant.toLowerCase()) return send(403, { error: 'NotMerchant: this server does not own that merchant' });
+    if (consumer && req.method === 'GET') return send(200, { desk: settle.desk, settlements: (settle.relay?.list() ?? []).filter(e => e.merchant.toLowerCase() === consumer[1].toLowerCase()) });
+    if (url.pathname === '/bridge/quote' && req.method === 'GET') {
+      const amount = url.searchParams.get('amountUsdg6') ?? '', recipient = url.searchParams.get('recipient') ?? '';
+      if (!/^\d+$/.test(amount) || BigInt(amount) < 1_000_000n || BigInt(amount) > 1_000_000_000_000n || !/^0x[0-9a-fA-F]{40}$/.test(recipient)) return send(400, { error: 'Invalid quote: amountUsdg6 must be 1..1,000,000 USDG and recipient must be an address' });
+      const input = { desk: settle.desk, arcRecipient: recipient as Address, amountUsdg6: BigInt(amount), minOutUsdc6: 0n };
+      const [relay, across] = await Promise.allSettled([relayDeposit(input), acrossDeposit(input)]);
+      return send(200, { relay: relay.status === 'fulfilled' ? { outUsdc6: relay.value.quotedOutUsdc6.toString(), seconds: relay.value.seconds, feeUsd: relay.value.feeUsd ?? null } : { error: String(relay.reason?.message ?? relay.reason) }, across: across.status === 'fulfilled' ? { outUsdc6: across.value.quotedOutUsdc6.toString(), seconds: across.value.seconds } : { error: String(across.reason?.message ?? across.reason) } });
+    }
+    if (!m) return send(405, { error: 'Method not allowed' });
+    if (!req.norenAuthenticated?.()) return send(401, { error: 'Merchant bearer token required' });
+    if (!req.norenMerchantAllowed?.(m[1])) return send(403, { error: 'NotMerchant: this key does not belong to that store' });
     const rh: any = createPublicClient({ transport: http(robinhoodRpc), cacheTime: 0 });
     try {
       if (req.method === 'GET') {
-        const usdg = await rh.readContract({ address: ROBINHOOD.usdg, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [arc.merchant] });
-        return send(200, { desk: settle.desk, usdg: String(usdg), relay: !!settle.relay, settlements: settle.relay?.list() ?? [] });
+        const usdg = await rh.readContract({ address: ROBINHOOD.usdg, abi: [{ type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ type: 'address' }], outputs: [{ type: 'uint256' }] }], functionName: 'balanceOf', args: [m[1]] });
+        return send(200, { desk: settle.desk, usdg: String(usdg), relay: !!settle.relay, settlements: (settle.relay?.list() ?? []).filter(e => e.merchant.toLowerCase() === m[1].toLowerCase()) });
       }
       if (req.method === 'POST') {
         let raw = ''; for await (const c of req) raw += c;
         const amount = BigInt(JSON.parse(raw || '{}').amountUsdg6 ?? '0');
-        const tx = await requestSettlement(robinhoodRpc, settle.desk, arc.merchant, amount, arc.merchant);
+        const tx = await requestSettlement(robinhoodRpc, settle.desk, m[1] as Address, amount, m[1] as Address);
         return send(200, { requestTx: tx });
       }
       return send(405, { error: 'Method not allowed' });
