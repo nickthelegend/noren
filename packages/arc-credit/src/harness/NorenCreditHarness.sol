@@ -3,13 +3,14 @@ pragma solidity 0.8.28;
 
 import {IReceiver, IERC165} from '../interfaces/IReceiver.sol';
 
-/// @title TsukeCreditHarness (TEST HARNESS, not the product contract)
-/// @notice Stand-in for packages/tsuke TsukeCredit on Robinhood Chain, used only until that
-///         contract lands on the tsuke-credit branch. It emits the identical CreditLineOpened and
+/// @title NorenCreditHarness (TEST HARNESS, not the product contract)
+/// @notice Stand-in for packages/robinhood NorenCredit on Robinhood Chain, used by
+///         packages/cre-bridge/scripts/fork-simulate.sh with NOREN_BRIDGE_RECEIVER=harness when the
+///         real contract is not available. It emits the identical CreditLineOpened and
 ///         CreditLineClosed events from the fixed interface and accepts the identical onReport
 ///         payload with the same forwarder-only, stale and future checks. It holds no collateral,
 ///         prices nothing and must never be deployed outside a local fork.
-contract TsukeCreditHarness is IReceiver {
+contract NorenCreditHarness is IReceiver {
   struct Utilisation {
     uint256 drawn;
     uint256 repaid;
@@ -34,13 +35,13 @@ contract TsukeCreditHarness is IReceiver {
     forwarder = forwarder_;
   }
 
-  /// @notice Harness only: emit CreditLineOpened exactly as TsukeCredit.openCreditLine does.
+  /// @notice Harness only: emit CreditLineOpened exactly as NorenCredit.openCreditLine does.
   function emitOpened(bytes32 lineId, uint256 limitUsdc6, uint64 expiry, uint256 collateralValueUsd8) external {
     borrowerOf[lineId] = msg.sender;
     emit CreditLineOpened(msg.sender, lineId, limitUsdc6, expiry, collateralValueUsd8);
   }
 
-  /// @notice Harness only: emit CreditLineClosed exactly as TsukeCredit.closeCreditLine does.
+  /// @notice Harness only: emit CreditLineClosed exactly as NorenCredit.closeCreditLine does.
   function emitClosed(bytes32 lineId) external {
     if (borrowerOf[lineId] != msg.sender) revert UnknownLine(lineId);
     emit CreditLineClosed(lineId);

@@ -26,6 +26,9 @@ contract NorenCreditLineTest is Test {
   event Repaid(bytes32 indexed lineId, uint256 amount);
   event CreditLineSynced(bytes32 indexed lineId, address indexed borrower, uint256 limitUsdc6, uint64 expiry);
   event CreditLineFrozen(bytes32 indexed lineId);
+  event HumanStarterGranted(
+    bytes32 indexed lineId, address indexed borrower, bytes32 indexed nullifierHash, uint256 addedUsdc6, uint256 limitUsdc6, uint64 expiry
+  );
 
   TestUSDC usdc;
   NorenCreditLine credit;
@@ -417,6 +420,155 @@ contract NorenCreditLineTest is Test {
     credit.fund(0);
   }
 
+  // ------------------------------------------------------------ kind 2: World ID human starter limit
+
+  bytes32 constant NULLIFIER = keccak256('world-id-nullifier-1');
+
+  function _human(address b, bytes32 nullifier, uint256 limit, uint64 exp) internal pure returns (bytes memory) {
+    return abi.encode(uint8(2), b, nullifier, limit, exp);
+  }
+
+  function _grant(address b, bytes32 nullifier, uint256 limit) internal {
+    vm.prank(forwarder);
+    credit.onReport('', _human(b, nullifier, limit, expiry));
+  }
+
+  function test_human_opensUnsecuredStarterLine() public {
+    bytes32 lineId = credit.starterLineId(borrower);
+    vm.expectEmit(true, true, true, true, address(credit));
+    emit HumanStarterGranted(lineId, borrower, NULLIFIER, 25e6, 25e6, expiry);
+    _grant(borrower, NULLIFIER, 25e6);
+    NorenCreditLine.Line memory l = credit.lines(lineId);
+    assertEq(l.borrower, borrower);
+    assertTrue(l.unsecured);
+    assertEq(l.limitUsdc6, 25e6);
+    assertEq(l.expiry, expiry);
+    assertEq(credit.nullifierUsedBy(NULLIFIER), borrower);
+    assertEq(credit.maxStarterLimitUsdc6(), 25e6);
+    // Spendable at a merchant like any line.
+    vm.prank(borrower);
+    credit.payInvoice(lineId, merchant, 25e6, INV);
+    assertEq(usdc.balanceOf(merchant), 25e6);
+  }
+
+  function test_human_onlyForwarder() public {
+    vm.prank(stranger);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NotForwarder.selector, stranger));
+    credit.onReport('', _human(borrower, NULLIFIER, 10e6, expiry));
+  }
+
+  function test_human_nullifierReuseRejected_evenForAnotherBorrower() public {
+    _grant(borrower, NULLIFIER, 10e6);
+    vm.startPrank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NullifierUsed.selector, NULLIFIER, borrower));
+    credit.onReport('', _human(borrower, NULLIFIER, 10e6, expiry));
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NullifierUsed.selector, NULLIFIER, borrower));
+    credit.onReport('', _human(stranger, NULLIFIER, 10e6, expiry));
+    vm.stopPrank();
+    assertEq(credit.lines(credit.starterLineId(stranger)).borrower, address(0));
+  }
+
+  function test_human_nullifierStaysSpentAfterFreeze() public {
+    _grant(borrower, NULLIFIER, 10e6);
+    vm.prank(owner);
+    credit.freezeStarterLine(borrower);
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NullifierUsed.selector, NULLIFIER, borrower));
+    credit.onReport('', _human(stranger, NULLIFIER, 10e6, expiry));
+  }
+
+  function test_human_capEnforced() public {
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.StarterCapExceeded.selector, 25e6, 25e6 + 1));
+    credit.onReport('', _human(borrower, NULLIFIER, 25e6 + 1, expiry));
+    assertEq(credit.nullifierUsedBy(NULLIFIER), address(0));
+  }
+
+  function test_human_topUpAddsButNeverPastCap() public {
+    _grant(borrower, NULLIFIER, 15e6);
+    _grant(borrower, keccak256('world-id-nullifier-2'), 10e6);
+    assertEq(credit.lines(credit.starterLineId(borrower)).limitUsdc6, 25e6);
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.StarterCapExceeded.selector, 25e6, 26e6));
+    credit.onReport('', _human(borrower, keccak256('world-id-nullifier-3'), 1e6, expiry));
+  }
+
+  function test_human_capIsOwnerSetAndOnlyOwner() public {
+    vm.prank(stranger);
+    vm.expectRevert(NorenCreditLine.NotOwner.selector);
+    credit.setMaxStarterLimit(100e6);
+    vm.prank(owner);
+    credit.setMaxStarterLimit(5e6);
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.StarterCapExceeded.selector, 5e6, 6e6));
+    credit.onReport('', _human(borrower, NULLIFIER, 6e6, expiry));
+  }
+
+  function test_human_rejectsBadFields() public {
+    vm.startPrank(forwarder);
+    vm.expectRevert(NorenCreditLine.InvalidReport.selector);
+    credit.onReport('', _human(address(0), NULLIFIER, 1e6, expiry));
+    vm.expectRevert(NorenCreditLine.InvalidReport.selector);
+    credit.onReport('', _human(borrower, bytes32(0), 1e6, expiry));
+    vm.expectRevert(NorenCreditLine.InvalidReport.selector);
+    credit.onReport('', _human(borrower, NULLIFIER, 0, expiry));
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.ReportExpired.selector, uint64(block.timestamp)));
+    credit.onReport('', _human(borrower, NULLIFIER, 1e6, uint64(block.timestamp)));
+    uint64 far = uint64(block.timestamp) + 90 days + 1;
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.StarterExpiryTooFar.selector, far, far - 1));
+    credit.onReport('', _human(borrower, NULLIFIER, 1e6, far));
+    vm.stopPrank();
+  }
+
+  function test_human_unknownKindRejected() public {
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.UnknownReportKind.selector, 3));
+    credit.onReport('', abi.encode(uint8(3), borrower, NULLIFIER, uint256(1e6), expiry));
+  }
+
+  function test_kind1_versionedMatchesLegacy() public {
+    vm.prank(forwarder);
+    credit.onReport('', abi.encode(uint8(1), borrower, LINE, uint256(500e6), expiry));
+    NorenCreditLine.Line memory l = credit.lines(LINE);
+    assertEq(l.limitUsdc6, 500e6);
+    assertFalse(l.unsecured);
+  }
+
+  function test_kind1_cannotTouchStarterLine() public {
+    _grant(borrower, NULLIFIER, 10e6);
+    bytes32 lineId = credit.starterLineId(borrower);
+    vm.startPrank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NotCollateralLine.selector, lineId));
+    credit.onReport('', _report(borrower, lineId, 1_000e6, expiry));
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.NotCollateralLine.selector, lineId));
+    credit.onReport('', _report(borrower, lineId, 0, expiry));
+    vm.stopPrank();
+  }
+
+  function test_human_separateFromCollateralLine() public {
+    _open(500e6);
+    _grant(borrower, NULLIFIER, 25e6);
+    assertEq(credit.available(LINE), 500e6);
+    assertEq(credit.available(credit.starterLineId(borrower)), 25e6);
+  }
+
+  function test_freezeStarterLine_onlyOwnerAndOnlyStarter() public {
+    bytes32 lineId = credit.starterLineId(borrower);
+    vm.prank(owner);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.UnknownLine.selector, lineId));
+    credit.freezeStarterLine(borrower);
+    _grant(borrower, NULLIFIER, 10e6);
+    vm.prank(stranger);
+    vm.expectRevert(NorenCreditLine.NotOwner.selector);
+    credit.freezeStarterLine(borrower);
+    vm.prank(owner);
+    credit.freezeStarterLine(borrower);
+    assertEq(credit.available(lineId), 0);
+    vm.prank(forwarder);
+    vm.expectRevert(abi.encodeWithSelector(NorenCreditLine.LineClosed.selector, lineId));
+    credit.onReport('', _human(borrower, keccak256('world-id-nullifier-2'), 1e6, expiry));
+  }
+
   // ------------------------------------------------------------ fuzz
 
   /// Random draw/repay sequences never push outstanding above the limit, and the global total matches.
@@ -436,7 +588,7 @@ contract NorenCreditLineTest is Test {
       assertEq(credit.totalOutstandingUsdc6(), credit.outstanding(LINE));
       (uint256 drawn, uint256 repaid,) = credit.utilisation(LINE);
       assertEq(usdc.balanceOf(merchant), drawn);
-      assertEq(usdc.balanceOf(address(credit)), 10_000e6 - drawn + repaid);
+      assertEq(usdc.balanceOf(address(credit)), 10_000e6 + repaid - drawn);
     }
   }
 }

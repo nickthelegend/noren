@@ -1,9 +1,9 @@
-// Noren credit bridge: a Chainlink CRE workflow that carries the Tsuke credit line between
+// Noren credit bridge: a Chainlink CRE workflow that carries the Noren credit line between
 // Robinhood Chain and Arc. CRE carries messages only; no tokens cross chains.
 //
-//   handler 0  Robinhood  TsukeCredit.CreditLineOpened  -> Arc        NorenCreditLine.onReport(borrower, lineId, limit, expiry)
-//   handler 1  Robinhood  TsukeCredit.CreditLineClosed  -> Arc        NorenCreditLine.onReport(borrower, lineId, 0, expiry)
-//   handler 2  Arc        NorenCreditLine.Drawn/Repaid  -> Robinhood  TsukeCredit.onReport(lineId, drawn, repaid, asOf)
+//   handler 0  Robinhood  NorenCredit.CreditLineOpened  -> Arc        NorenCreditLine.onReport(borrower, lineId, limit, expiry)
+//   handler 1  Robinhood  NorenCredit.CreditLineClosed  -> Arc        NorenCreditLine.onReport(borrower, lineId, 0, expiry)
+//   handler 2  Arc        NorenCreditLine.Drawn/Repaid  -> Robinhood  NorenCredit.onReport(lineId, drawn, repaid, asOf)
 //
 // Each write is a DON-signed report delivered through the chain's CRE forwarder; the receivers
 // accept onReport only from that forwarder.
@@ -34,7 +34,9 @@ import {
   decodeOpened,
   formatUsdc,
   TOPIC,
-  tsukeUtilisationAbi,
+  harnessUtilisationAbi,
+  LINE_STATUS,
+  robinhoodLineAbi,
   validateConfig,
   type ArcLine,
   type BridgeConfig,
@@ -72,7 +74,7 @@ const readArcLine = (runtime: Runtime<Config>, evm: EVMClient, lineId: Hex): Arc
   const data = read(runtime, evm, address, encodeFunctionData({ abi: creditLineAbi, functionName: "lines", args: [lineId] }), LATEST_BLOCK_NUMBER);
   if (data === "0x") throw new Error(`NorenCreditLine not found at ${address} on ${runtime.config.arc.chainSelectorName}`);
   const l = decodeFunctionResult({ abi: creditLineAbi, functionName: "lines", data });
-  return { borrower: l.borrower, expiry: l.expiry, updatedAt: l.updatedAt, closed: l.closed, limitUsdc6: l.limitUsdc6 };
+  return { borrower: l.borrower, expiry: l.expiry, updatedAt: l.updatedAt, closed: l.closed, limitUsdc6: l.limitUsdc6, unsecured: l.unsecured };
 };
 
 /** Sign `decision.report` with the DON and deliver it to `target` through its CRE forwarder. */
@@ -127,6 +129,44 @@ export const onCreditLineClosed = (runtime: Runtime<Config>, log: EVMLog): strin
   return deliver(runtime, arc, config.arc, decideClose(lineId, readArcLine(runtime, arc, lineId)), "NorenCreditLine");
 };
 
+/** One optional eth_call: decoded result, or null if the call reverts, returns nothing or fails to decode. */
+const tryRead = <T,>(runtime: Runtime<Config>, what: string, fn: () => T): T | null => {
+  try {
+    return fn();
+  } catch (e) {
+    runtime.log(`Optional read ${what} unavailable: ${(e instanceof Error ? e.message : String(e)).slice(0, 160)}`);
+    return null;
+  }
+};
+
+/**
+ * The Robinhood receiver's last accepted Arc asOf, used only to skip a write it would reject as
+ * stale. Tries utilisation(bytes32) (NorenCredit's dedicated view, and the test harness), then
+ * NorenCredit.line(bytes32). Neither is required: if both are missing or revert, the workflow writes
+ * without the pre-check and the receiver's own stale check decides. Never fails the workflow.
+ */
+export const readRobinhoodAsOf = (runtime: Runtime<Config>, robinhood: EVMClient, lineId: Hex): bigint | null => {
+  const { address } = runtime.config.robinhood;
+  const viaUtilisation = tryRead(runtime, "utilisation(bytes32)", () => {
+    const data = read(runtime, robinhood, address, encodeFunctionData({ abi: harnessUtilisationAbi, functionName: "utilisation", args: [lineId] }), LATEST_BLOCK_NUMBER);
+    return decodeFunctionResult({ abi: harnessUtilisationAbi, functionName: "utilisation", data });
+  });
+  if (viaUtilisation) {
+    runtime.log(`Robinhood utilisation: drawn ${formatUsdc(viaUtilisation[0])} repaid ${formatUsdc(viaUtilisation[1])} asOf ${viaUtilisation[2]}`);
+    return viaUtilisation[2];
+  }
+  const viaLine = tryRead(runtime, "line(bytes32)", () => {
+    const data = read(runtime, robinhood, address, encodeFunctionData({ abi: robinhoodLineAbi, functionName: "line", args: [lineId] }), LATEST_BLOCK_NUMBER);
+    return decodeFunctionResult({ abi: robinhoodLineAbi, functionName: "line", data });
+  });
+  if (viaLine) {
+    runtime.log(`NorenCredit line: status ${LINE_STATUS[viaLine.status] ?? viaLine.status}, drawn ${formatUsdc(viaLine.drawn)} repaid ${formatUsdc(viaLine.repaid)} asOf ${viaLine.asOf}`);
+    return viaLine.asOf;
+  }
+  runtime.log("Robinhood receiver has no readable asOf view; writing without the pre-check (its own stale check decides)");
+  return null;
+};
+
 // ---------------------------------------------------------------- handler 2: Arc -> Robinhood (utilisation)
 
 export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => {
@@ -140,27 +180,16 @@ export const onArcActivity = (runtime: Runtime<Config>, log: EVMLog): string => 
   const arc = evmFor(config.arc);
   // Cumulative totals at the log's block: every node reads the same block, so the report is deterministic.
   const at = toBlockNumber(protoBigIntToBigint(log.blockNumber));
-  const snapData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "utilisation", args: [act.lineId] }), at);
+  const snapData = read(runtime, arc, config.arc.address, encodeFunctionData({ abi: creditLineAbi, functionName: "lines", args: [act.lineId] }), at);
   if (snapData === "0x") throw new Error(`NorenCreditLine not found at ${config.arc.address}`);
-  const [drawnUsdc6, repaidUsdc6, asOf] = decodeFunctionResult({ abi: creditLineAbi, functionName: "utilisation", data: snapData });
+  const snap = decodeFunctionResult({ abi: creditLineAbi, functionName: "lines", data: snapData });
+  const snapshot = { drawnUsdc6: snap.drawnUsdc6, repaidUsdc6: snap.repaidUsdc6, asOf: snap.updatedAt, unsecured: snap.unsecured };
+  if (snapshot.unsecured) return deliver(runtime, arc, config.arc, decideUtilisation(act.lineId, snapshot, null), "NorenCredit");
 
   const robinhood = evmFor(config.robinhood);
-  let robinhoodAsOf: bigint | null = null;
-  const rhData = read(
-    runtime,
-    robinhood,
-    config.robinhood.address,
-    encodeFunctionData({ abi: tsukeUtilisationAbi, functionName: "utilisation", args: [act.lineId] }),
-    LATEST_BLOCK_NUMBER,
-  );
-  if (rhData.length === 2 + 96 * 2) {
-    robinhoodAsOf = decodeFunctionResult({ abi: tsukeUtilisationAbi, functionName: "utilisation", data: rhData })[2];
-    runtime.log(`Robinhood receiver last asOf: ${robinhoodAsOf}`);
-  } else {
-    runtime.log("Robinhood receiver has no utilisation(bytes32) view; its own stale check decides");
-  }
-  const decision = decideUtilisation(act.lineId, { drawnUsdc6, repaidUsdc6, asOf }, robinhoodAsOf);
-  return deliver(runtime, robinhood, config.robinhood, decision, "TsukeCredit");
+  const robinhoodAsOf = readRobinhoodAsOf(runtime, robinhood, act.lineId);
+  const decision = decideUtilisation(act.lineId, snapshot, robinhoodAsOf);
+  return deliver(runtime, robinhood, config.robinhood, decision, "NorenCredit");
 };
 
 export const initWorkflow = (config: Config) => {
