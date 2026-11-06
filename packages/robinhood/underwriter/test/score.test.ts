@@ -59,7 +59,7 @@ describe('collateral-only floor', () => {
     expect(s.tier).toBe(0)
     expect(s.basis).toBe('declined')
     expect(s.limitUsdg).toBe(0n)
-    expect(s.factors.map((f) => f.id)).toEqual(['accountAge', 'txCount', 'stockHoldings', 'totalHoldings', 'repayments'])
+    expect(s.factors.map((f) => f.id)).toEqual(['accountAge', 'txCount', 'stockHoldings', 'totalHoldings', 'repayments', 'offchainProof'])
     const age = s.factors.find((f) => f.id === 'accountAge')!
     expect(age.value).toBe('unknown')
     expect(age.points).toBe(0)
@@ -78,4 +78,22 @@ describe('collateral-only floor', () => {
     const s = scoreWallet({ ...h, holdings: { status: 'unavailable', source: 'local-fork:balanceOf+Chainlink', note: 'TSLA: feed unavailable', assets: [], stockValueUsd8: 0n, totalValueUsd8: 0n } })
     expect(s.tier).toBe(0)
   })
+})
+
+describe('Reclaim off-chain proof factor', () => {
+  const mid = make({ accountAge: { ...available, days: 7 }, txCount: { ...available, count: 22 }, holdings: { ...available, assets: [], stockValueUsd8: 0n, totalValueUsd8: 0n }, repaymentHistory: { ...available, onTime: 0, late: 0, defaults: 0, completed: 0, clean: 0, events: [] } })
+  it('scores 0 and says how to prove it when no proof is stored', () => {
+    const f = scoreWallet(mid).factors.find((x) => x.id === 'offchainProof')!
+    expect(f).toMatchObject({ points: 0, maxPoints: 10, status: 'unavailable', value: 'not proved' })
+    expect(f.note).toMatch(/Raise your limit/)
+  })
+  it('adds 10 points for a verified proof and can move the tier and limit', () => {
+    const before = scoreWallet(mid), after = scoreWallet(mid, { offchain: { provider: 'Binance KYC', proofId: '0x' + '12'.repeat(32) } })
+    expect(after.score - before.score).toBe(10)
+    expect(after.factors.find((x) => x.id === 'offchainProof')).toMatchObject({ points: 10, status: 'available', value: 'Binance KYC' })
+    expect(before.tier).toBe(0)
+    expect(after.tier).toBe(1)
+    expect(after.limitUsdg).toBe(250_000_000n)
+  })
+  it('never lifts the score above 100', () => { expect(scoreWallet(make(), { offchain: { provider: 'p', proofId: '0x1' } }).score).toBe(100) })
 })

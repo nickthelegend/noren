@@ -3,6 +3,8 @@
 //   GET  /score/:address   real Robinhood mainnet history + deterministic score (no signing)
 //   POST /attest {borrower} history -> 0G credit check (or the labelled deterministic score when 0G
 //                           is not configured) -> limit x NorenReputation multiplier -> EIP-712 CreditAttestation signature
+//   Both read the Reclaim proof store (NOREN_RECLAIM_STORE, default data/reclaim-proofs.json): a verified off-chain
+//   fact adds the offchainProof factor. /score also answers what the score would be with one ("reclaim.ifVerified").
 //   POST /attest-age {account} mainnet first-activity scan -> EIP-712 AccountAge for NorenReputation
 import { createServer } from 'node:http'
 import { resolve } from 'node:path'
@@ -13,7 +15,8 @@ import { loadForkDeployment } from '../../sdk/src/node.js'
 import { reputationMultiplierBps, signAccountAge, signAttestation } from './attest.js'
 import { decideTerms } from './decide.js'
 import { readWalletHistory } from './history.js'
-import { scoreWallet } from './score.js'
+import { offchainProofOf } from './reclaim.js'
+import { OFFCHAIN_PROOF_POINTS, scoreWallet } from './score.js'
 
 const port = Number(process.env.NOREN_RH_UNDERWRITER_PORT ?? 8721)
 const decisionsLog = process.env.NOREN_RH_DECISIONS_LOG ?? resolve(fileURLToPath(new URL('../../.fork/credit-decisions.jsonl', import.meta.url)))
@@ -35,7 +38,12 @@ const server = createServer(async (req, res) => {
       const borrower = decodeURIComponent(req.url.slice(7))
       if (!isAddress(borrower)) return send(400, { error: 'Invalid borrower address' })
       const history = await readWalletHistory(borrower)
-      return send(200, { history, score: scoreWallet(history) })
+      const offchain = await offchainProofOf(borrower)
+      const score = scoreWallet(history, { offchain })
+      const ifVerified = offchain ? score : scoreWallet(history, { offchain: { provider: 'Reclaim', proofId: 'hypothetical' } })
+      // When 0G is configured it sets the signed terms (see decide.ts); the score, this factor included, decides only without it.
+      const decidedBy = process.env.ZG_PC_API_KEY ? '0g' : 'deterministic-score'
+      return send(200, { history, score, reclaim: { verified: !!offchain, ...(offchain ? { provider: offchain.provider, proofId: offchain.proofId } : {}), points: OFFCHAIN_PROOF_POINTS, decidedBy, ifVerified: { score: ifVerified.score, tier: ifVerified.tier, limitUsdg: ifVerified.limitUsdg } } })
     }
     if (req.method === 'POST' && req.url === '/attest') {
       let raw = ''
@@ -47,7 +55,7 @@ const server = createServer(async (req, res) => {
       if (!borrower || !isAddress(borrower)) return send(400, { error: 'Invalid borrower address' })
 
       const history = await readWalletHistory(borrower)
-      const decision = await decideTerms(history)
+      const decision = await decideTerms(history, { offchain: await offchainProofOf(borrower) })
       if (decision.zg.status !== 'refused' || decision.zg.evidence) await appendDecision(decisionsLog, toStoredDecision(decision.zg, borrower))
       if (decision.logEntry) console.log(serialize({ attestationLog: decision.logEntry, borrower }))
       if (decision.source === 'refused') return send(502, { error: decision.note, decision })
