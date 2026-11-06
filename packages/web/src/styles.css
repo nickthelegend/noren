@@ -1033,3 +1033,6 @@ h1, h2, h3, .kpi b, .drawer-amt b, .co-amt, .lp-co-amt, .money.big input, .co-ba
 .sd-summary b .sd-pm, .sd-summary b .sd-linked, .sd-summary b .sd-private { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .sd-exposure .sd-dl { grid-template-columns: max-content minmax(0, 1fr); column-gap: 20px; }
 .sd-summary b .sd-pm-ic { display: inline-grid; font-size: inherit; color: #7fa8ff; } .sd-summary b .sd-pm.credit .sd-pm-ic { color: #f6b27a; } .sd-summary b .sd-pm.stocks .sd-pm-ic { color: #7fdcae; } .sd-summary b span.sd-pm, .sd-summary b span.sd-linked, .sd-summary b span.sd-private { font-size: 13.5px; color: inherit; }
+.sd-ratecheck { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #f2f4f7; font-size: 12.5px; color: var(--sd-muted); }
+.sd-ratecheck.ok { background: var(--sd-ok-wash); color: var(--sd-ok); }
+.sd-ratecheck svg { flex: none; margin-top: 2px; } .sd-ratecheck b { color: inherit; }

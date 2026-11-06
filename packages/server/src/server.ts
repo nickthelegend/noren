@@ -2,14 +2,14 @@ import { createServer as createHttpServer, type Server } from 'node:http';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHmac, randomBytes } from 'node:crypto';
-import { createPublicClient, createWalletClient, http, decodeErrorResult, encodeFunctionData, toHex, type Address, type Hex } from 'viem';
+import { createPublicClient, createWalletClient, http, decodeErrorResult, encodeFunctionData, parseAbi, toHex, type Address, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { checkoutAbi, encodeInvoiceData, invoiceMatches, jsonBigints, localFork, parseInvoice, poolAbi, usdcAbi, type Deployment, type Invoice } from '@noren/core';
 import { CURRENCIES, DEFAULT_PRICE_RPC, quoteUsdc, type UsdcQuote } from '@noren/core/pricing';
 import { creditDrawProblem, gatewayAbi, robinhoodFaucet, watchCreditDraws, watchStockPayments } from './credit.ts';
 
 export type DraftInvoice = Pick<Invoice, 'invoiceId' | 'merchant' | 'amount' | 'expiry'> & Partial<Pick<Invoice, 'refundPrecommitment' | 'receiptCommitment'>>;
-export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex; stock?: { asset: Address; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number } };
+export type RecordRow = { invoice: DraftInvoice; status: 'draft' | 'open' | 'paid' | 'refunded'; quote?: UsdcQuote; paymentTx?: Hex; refundTx?: Hex; refundAmount?: bigint; createdAt?: number; boundAt?: number; paidAt?: number; refundedAt?: number; description?: string; paymentGasUsed?: string; refundGasUsed?: string; paymentBlock?: string; method?: 'private' | 'credit' | 'stocks'; creditLineId?: Hex; rateCheck?: RateCheck; stock?: { asset: Address; assetIn: string; usdgOut: string; priceUsd8: string; chainId: number } };
 type Endpoint = { id: string; merchant: string; url: string; createdAt: number; secret: string };
 type Delivery = { endpointId: string; url: string; attempt: number; status: number | null; ok: boolean; ms: number; error?: string; at: number };
 type MerchantEvent = { id: string; merchant: string; type: string; created: number; data: { invoiceId: Hex; amount: string; status: string; method: string | null; description: string | null; paymentTx: Hex | null; refundTx: Hex | null; refundAmount: string | null; quote: UsdcQuote | null }; deliveries: Delivery[] };
@@ -38,7 +38,9 @@ export type ServerOptions = { deployment: Deployment; rpcUrl: string; priceRpcUr
   /** Extra route handlers mounted before Noren's own (World ID's createWorldIdHandler). Return true when handled. */
   mounts?: ((req: any, res: any) => Promise<boolean>)[] };
 /** Pay later: NorenCreditLine on this Arc chain, plus what the web app needs to reach the Robinhood side. */
-export type CreditOptions = { bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
+/** NorenRateOracle on Arc re-checks a fiat quote at the same Chainlink rounds (rates written by the CRE pricing workflow). */
+export type RateCheck = { oracle: Address; verified: boolean; detail: string };
+export type CreditOptions = { rateOracle?: Address; bridgeLog?: () => unknown[]; creditLine?: Address; fromBlock?: bigint; robinhoodRpc?: string; gateway?: Address; robinhoodFromBlock?: bigint; public?: Record<string, unknown> };
 const loopback = (url: string) => { try { const u = new URL(url); return (u.protocol === 'http:' || u.protocol === 'https:') && ['localhost', '127.0.0.1'].includes(u.hostname); } catch { return false; } };
 export async function assertLocalFork(rpcUrl: string, expectedChain = 5042002) {
   if (!loopback(rpcUrl)) throw new Error('Setup required: dev endpoints require a loopback RPC');
@@ -112,6 +114,17 @@ export function createMerchantServer(options: ServerOptions): Server {
     await save(); emit('paid', row); publish('payment.succeeded', row, row.paidAt);
   } }) : undefined;
   /** Mirrors a Noren invoice onto NorenGateway as the merchant (USDC and USDG both have 6 decimals). Idempotent. */
+  /** verifyQuote on NorenRateOracle at the quote's own round IDs. Never blocks the invoice: the result is recorded either way. */
+  async function verifyOnArc(oracle: Address, q: UsdcQuote): Promise<RateCheck> {
+    const abi = parseAbi(['function verifyQuote(string currency, uint256 fiatAmount, uint80 fiatUsdRoundId, uint80 usdcUsdRoundId, uint256 usdcAmount) view returns (bool)', 'error UnknownRounds(bytes3 currency, uint80 fiatUsdRoundId, uint80 usdcUsdRoundId)']);
+    try {
+      const ok = await publicClient.readContract({ address: oracle, abi, functionName: 'verifyQuote', args: [q.currency, q.fiatAmount, BigInt(q.fiatUsd.roundId), BigInt(q.usdcUsd.roundId), q.usdcAmount] });
+      return { oracle, verified: !!ok, detail: ok ? `NorenRateOracle gives the same ${q.usdcAmount} USDC units at these rounds` : 'NorenRateOracle computes a different amount at these rounds' };
+    } catch (e: any) {
+      const unknown = /UnknownRounds/.test(String(e?.message ?? e));
+      return { oracle, verified: false, detail: unknown ? 'NorenRateOracle has not recorded these Chainlink rounds yet (the CRE pricing workflow writes them)' : `verifyQuote failed: ${String(e?.shortMessage ?? e?.message ?? e).slice(0, 120)}` };
+    }
+  }
   const mirroring = new Map<string, Promise<unknown>>();
   /** One mirror per invoice at a time: a second request waits for the first instead of racing it into InvoiceExists. */
   function mirrorOnce(row: RecordRow) {
@@ -207,12 +220,13 @@ export function createMerchantServer(options: ServerOptions): Server {
         if (expiry <= now || expiry > now + 30n * 24n * 3600n) throw new Error('Invalid amount or expiry');
         if (b.refundPrecommitment !== undefined || b.receiptCommitment !== undefined) throw new Error('Create a draft with amount and expiry only; customer binds commitments');
         const quote = fiat ? await quoteUsdc({ currency: b.currency, fiatAmount: BigInt(b.fiatAmount), rpcUrl: options.priceRpcUrl ?? process.env.NOREN_PRICE_RPC ?? DEFAULT_PRICE_RPC }) : undefined;
+        const rateCheck = quote && options.credit?.rateOracle ? await verifyOnArc(options.credit.rateOracle, quote) : undefined;
         const amount = quote?.usdcAmount ?? BigInt(b.amount);
         if (amount <= 0n) throw new Error('Invalid amount or expiry');
         const invoice: DraftInvoice = { invoiceId: `0x${randomBytes(32).toString('hex')}` as Hex, merchant: merchantAddress!, amount, expiry };
         const payout = await publicClient.readContract({ address: options.deployment.checkout, abi: checkoutAbi, functionName: 'merchantPayout', args: [merchantAddress!] });
         if (payout === '0x0000000000000000000000000000000000000000') throw new Error('Setup required: merchant must register a payout first');
-        const row: RecordRow = { invoice, status: 'draft', createdAt: Number(now), ...(quote ? { quote } : {}), ...(b.description === undefined ? {} : { description: b.description.trim() }) }; rows.set(invoice.invoiceId.toLowerCase(), row); await save(); emit('invoice_created', row); publish('invoice.created', row, Number(now));
+        const row: RecordRow = { invoice, status: 'draft', createdAt: Number(now), ...(quote ? { quote } : {}), ...(rateCheck ? { rateCheck } : {}), ...(b.description === undefined ? {} : { description: b.description.trim() }) }; rows.set(invoice.invoiceId.toLowerCase(), row); await save(); emit('invoice_created', row); publish('invoice.created', row, Number(now));
         return send(res, 201, { invoice, ...(quote ? { quote } : {}), paymentLinkPayload: { invoiceId: invoice.invoiceId, checkout: options.deployment.checkout } });
       }
       const match = /^\/invoices\/(0x[0-9a-fA-F]{64})(?:\/(bind|pay|refund|robinhood))?$/.exec(path);

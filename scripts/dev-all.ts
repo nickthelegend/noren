@@ -108,7 +108,7 @@ run(async () => {
       }
       if (robinhood) Object.assign(pub, { creditContract: robinhood.credit, gateway: robinhood.gateway, vault: robinhood.vault, stockOracle: robinhood.oracle, robinhoodFromBlock: String(robinhood.deployBlock) });
       pub.robinhoodChainId = Number(await rh.getChainId());
-      return { bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
+      return { rateOracle: pub.rateOracle as Address | undefined, bridgeLog: () => bridgeLog ?? [], creditLine, robinhoodRpc, gateway: robinhood?.gateway, robinhoodFromBlock: robinhood?.deployBlock, public: pub };
     },
   });
 

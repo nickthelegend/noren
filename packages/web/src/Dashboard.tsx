@@ -499,6 +499,7 @@ function PaymentPage({ id, rows, cfg, token, onDone, tick }: { id: string; rows:
                 {r.quote.usdcUsd && <><dt>USDC/USD round</dt><dd className="mono">{r.quote.usdcUsd.roundId}</dd></>}
                 <dt>Oracle</dt><dd>Chainlink Data Feeds · Arc mainnet</dd>
               </dl>
+              {r.rateCheck && (() => { const rc = r.rateCheck; return <p className={`sd-ratecheck ${rc.verified ? "ok" : ""}`}>{rc.verified ? <Icon.check /> : <Icon.clock />}<span><b>{rc.verified ? "Rate verified on-chain" : "Not verified on-chain"}</b> · {rc.detail}</span></p>; })()}
               <OnchainQuote cfg={cfg} q={r.quote} />
             </section>
           )}
