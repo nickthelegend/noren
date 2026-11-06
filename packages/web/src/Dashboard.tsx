@@ -368,7 +368,7 @@ function SettleToArc({ cfg, token }: { cfg: Config; token: string }) {
                 <ol className="sd-tl small">
                   <li data-on="true"><i /><div><b>Requested on Robinhood</b><span className="mono">{short(x.requestTx, 6)}</span></div></li>
                   <li data-on={!!x.cre?.written}><i /><div><b>Chainlink CRE approval</b><span>{x.cre?.error ? x.cre.error : x.cre ? `${x.cre.decision ?? ""}${x.cre.written ? ` · forwarder tx ${short(x.cre.written, 6)} · ${(x.cre.ms / 1000).toFixed(1)} s` : ""}` : "running the settlement workflow…"}</span>{x.quotes && <span>Relay: {x.quotes.relay ?? "–"} · Across: {x.quotes.across ?? "–"}</span>}</div></li>
-                  <li data-on={!!x.deposit}><i /><div><b>Deposited into Relay</b><span>{x.deposit ? <>tx <span className="mono">{short(x.deposit.tx, 6)}</span> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
+                  <li data-on={!!x.deposit}><i /><div><b>Deposit on the approved route</b><span>{x.deposit ? <>tx <span className="mono">{short(x.deposit.tx, 6)}</span> · quoted {fmt(Number(x.deposit.quotedOutUsdc6) / 1e6)} USDC{x.deposit.feeUsd ? ` · fee $${Number(x.deposit.feeUsd).toFixed(3)}` : ""}</> : x.error ?? "waiting for approval"}</span></div></li>
                   <li data-on="false"><i /><div><b>USDC filled on Arc</b><span>{x.deposit ? "Pending: needs a real Relay solver, which never sees a local fork" : "–"}</span></div></li>
                 </ol>
               </li>

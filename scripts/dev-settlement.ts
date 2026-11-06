@@ -104,6 +104,9 @@ export function startSettlementRelay(opts: { robinhoodRpc: string; desk: Address
     e.status = 'approved';
     const [ap] = await c.getLogs({ address: opts.desk, event: deskAbi[4], args: { id }, fromBlock: opts.fromBlock });
     if (ap) e.approved = { minOutUsdc6: String(ap.args.minOutUsdc6), quotedOutUsdc6: String(ap.args.quotedOutUsdc6), usdgUsd8: String(ap.args.usdgUsd8), usdcUsd8: String(ap.args.usdcUsd8) };
+    // The keeper must use the route the workflow approved. Only the Relay Depository is mirrored onto the snapshot node;
+    // the Across SpokePool (a proxy with much more state) is not, so an Across approval is shown but not deposited here.
+    if (Number(s.route) !== 1) { e.fill = 'not started'; e.error = 'CRE approved Across. The Across SpokePool is not on this snapshot node, so the keeper stops here; packages/bridge-settlement/scripts/fork-settle.sh runs the Across deposit on a live fork.'; return; }
     try {
       const { relayDeposit, meetsMinimum } = await import('../packages/bridge-settlement/keeper/lib.ts');
       const approved = { desk: opts.desk, arcRecipient: s.arcRecipient as Address, amountUsdg6: s.amountUsdg6 as bigint, minOutUsdc6: s.minOutUsdc6 as bigint };
