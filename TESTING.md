@@ -1,34 +1,34 @@
 # Test results
 
-## Current totals (branch `v3` at `26892ab`, Nov 6 2026)
+## Current totals (`main`, Nov 7 2026)
 
-**605 passed, 1 skipped, 0 failed, across 21 suites.** Forks are local Anvil nodes of Arc testnet or Robinhood Chain mainnet. "Live" suites read public networks. The skip is a SwapVM test that only runs while US markets are closed.
+**656 passed, 1 skipped, 0 failed, across 21 suites.** Forks are local Anvil nodes of Arc testnet or Robinhood Chain mainnet. "Live" suites read public networks. The skip is a SwapVM test that only runs while US markets are closed.
 
-Each count is the latest recorded run of that suite, from the sections below. On `26892ab` the judge re-ran `pnpm test` (142), `NorenCreditLine` (47) and `NorenRateOracle` (22). For every Foundry suite, the count matches the number of `test*` functions in its files.
+On Nov 7 (02:58–03:10 IST) the release branch (`main` plus the `v5`, `deploy-web` and `deploy` merges and the new pay-with-every-asset test) re-ran every suite marked **run** below, one at a time, all green. The three suites marked *count* were not re-run; their figure is the latest recorded run, and for the Foundry ones it equals the number of `test*` functions in their files. The web production build (`pnpm --filter @noren/web build`) also passed.
 
-| # | Suite | Command | Passed |
-|---|---|---|---|
-| 1 | Offline suites: core, server incl. Privy sign-in, World ID, 0G policy, Robinhood underwriter score, CCTP SDK, CCIP SDK, settlement keeper. `pricing.test.ts` reads Arc mainnet Chainlink feeds. | `pnpm test` | **142** (21 files) |
-| 2 | Demo shop (node:test) | `pnpm --dir examples/shop test` | 5 |
-| 3 | `NorenRateOracle` | `cd packages/contracts && forge test --no-match-contract NorenCheckout` | 22 |
-| 4 | `NorenCreditLine` unit | `cd packages/arc-credit && forge test` | 47 |
-| 5 | `NorenCreditLine.drawToPool` against the live Arc pool (fork) | `cd packages/arc-credit && FOUNDRY_PROFILE=fork forge test` | 15 |
-| 6 | `NorenArcHook`, unit + Circle-contract forks | `cd packages/cctp && forge test` | 24 |
-| 7 | CCIP router unit | `cd packages/ccip && forge test` | 9 |
-| 8 | CCIP 2.0 forks + `NorenShieldSink` | `cd packages/ccip && FOUNDRY_PROFILE=fork forge test` | 23 |
-| 9 | CCIP API status (live) | `pnpm test:live` in packages/ccip | 2 |
-| 10–14 | CRE workflows (bun): credit bridge, pricing, CCTP relay, settlement desk, cross-chain Aqua | `bun test` in each workflow | 31 + 8 + 8 + 15 + 14 |
-| 15 | `NorenOraclePeg` + `NorenDutchDecay` + Aqua SwapVM router | `sh packages/aqua/scripts/test-swapvm.sh` | 27 (+1 weekend-only skip) |
-| 16 | Robinhood contracts on a fresh mainnet fork | `sh packages/robinhood/scripts/test-fork.sh` | 158 |
-| 17 | Robinhood SDK fork tests (Aqua makers, Dutch cure, self-repay) | `pnpm exec vitest run sdk/test/{aqua,dutch,selfrepay}.fork.test.ts` against a served snapshot | 4 + 1 + 1 |
-| 18 | Cross-chain Aqua (Arc fork + Robinhood snapshot, Arc fork + Base Sepolia fork) | `sh packages/xchain-aqua/scripts/test-forks.sh` | 31 |
-| 19 | 1inch Aqua v1.0.0 stack on an Arc testnet fork | `sh packages/xchain-aqua/scripts/test-aqua-live.sh` | 8 |
-| 20 | Private payment end to end (`NorenCheckout` Foundry tests, real 0xbow pool and Groth16 verifier) | `pnpm e2e` | 9, plus **5/5** on-chain attack reverts |
-| 21 | Arc swap quotes (live, read-only) | `pnpm exec vitest run packages/web/src/app/arc-swap.live.test.ts` | 1 |
+| # | Suite | Command | Passed | Nov 7 |
+|---|---|---|---|---|
+| 1 | Offline suites: core, server incl. Privy sign-in and Reclaim, World ID (43), 0G policy, Robinhood underwriter score, CCTP SDK, CCIP SDK, settlement keeper. `pricing.test.ts` reads Arc mainnet Chainlink feeds. | `pnpm test` | **155** (22 files) | run |
+| 2 | Demo shop (node:test) | `pnpm --dir examples/shop test` | 5 | run |
+| 3 | `NorenRateOracle` | `cd packages/contracts && forge test --no-match-contract NorenCheckout` | 22 | run |
+| 4 | `NorenCreditLine` unit | `cd packages/arc-credit && forge test` | 47 | run |
+| 5 | `NorenCreditLine.drawToPool` against the live Arc pool (fork) | `cd packages/arc-credit && FOUNDRY_PROFILE=fork forge test` | 15 | run |
+| 6 | `NorenArcHook`, unit + Circle-contract forks | `cd packages/cctp && forge test` | 27 | run |
+| 7 | CCIP router unit + audit regressions | `cd packages/ccip && forge test` | 14 | run |
+| 8 | CCIP 2.0 forks + `NorenShieldSink` | `cd packages/ccip && FOUNDRY_PROFILE=fork forge test` | 23 | run |
+| 9 | CCIP API status (live) | `pnpm test:live` in packages/ccip | 2 | run |
+| 10–14 | CRE workflows (bun): credit bridge, pricing, CCTP relay, settlement desk, cross-chain Aqua | `bun test` in each workflow | 31 + 8 + 8 + 15 + 14 | run |
+| 15 | `NorenOraclePeg` + `NorenDutchDecay` + Aqua SwapVM router | `sh packages/aqua/scripts/test-swapvm.sh` | 27 (+1 weekend-only skip) | run |
+| 16 | Robinhood contracts on a fresh local fork of Robinhood Chain mainnet, incl. `NorenPayEveryAsset` (an invoice paid with each of SPY, MSFT, AMZN, GOOGL, META, TSLA, AAPL, NVDA, ETH and USDG) | `sh packages/robinhood/scripts/test-fork.sh` | **188** (185 + 3 new) | run |
+| 17 | Robinhood SDK fork tests (Aqua makers, Dutch cure, self-repay) | `pnpm exec vitest run sdk/test/{aqua,dutch,selfrepay}.fork.test.ts` against a served snapshot | 4 + 1 + 1 | *count* (Nov 6 run) |
+| 18 | Cross-chain Aqua (Arc fork + Robinhood snapshot, Arc fork + Base Sepolia fork) | `sh packages/xchain-aqua/scripts/test-forks.sh` | 31 | *count* (Nov 6 run; 18 + 13 functions) |
+| 19 | 1inch Aqua v1.0.0 stack on an Arc testnet fork | `sh packages/xchain-aqua/scripts/test-aqua-live.sh` | 8 | *count* (Nov 6 run; 8 functions) |
+| 20 | Private payment end to end (`NorenCheckout` Foundry tests, real 0xbow pool and Groth16 verifier) | `pnpm e2e` | 9, plus **5/5** on-chain attack reverts | run (41.7 s; proof 4.35 s cold, re-proof 1.05 s) |
+| 21 | Arc swap quotes (live, read-only) | `pnpm exec vitest run packages/web/src/app/arc-swap.live.test.ts` | 1 | run |
 
-End-to-end runs (not counted above): `pnpm e2e:credit` **8/8** steps (26.4–30.9 s), plus the browser runs below.
+End-to-end runs (not counted above): `pnpm e2e:credit` **8/8** steps (26.4–30.9 s, Nov 6), plus the browser runs below. The hosted demo's first private payment on public Arc testnet: [`0x38b8ce96…`](https://explorer.testnet.arc.io/tx/0x38b8ce96c9ad3a2957467def0194eeba8e2cf0d2d26f5aae9df7b7b8fa12b0f5) ([docs/DEPLOY.md](docs/DEPLOY.md#hosted-public-demo-nov-7-2026)).
 
-**Not in the total** (they exist, but no recent run is recorded): `NorenSettlementDesk` Foundry (19 test functions), `NorenQuoter` fork (5), `XChainReverse` (1), and the other Robinhood SDK and underwriter fork or live files.
+**Not in the total** (they exist, but no recent run is recorded): `NorenSettlementDesk` Foundry (22 test functions), `NorenQuoter` fork (5), `XChainReverse` (1), and the other Robinhood SDK and underwriter fork or live files.
 
 **Corrections to earlier totals.** The section headings below said 574, 589, 590 and 599. Those sums counted the 7 `@noren/ccip` SDK tests twice, since they also run inside `pnpm test`, and they predate the Privy tests (+6 in `pnpm test`). The table above is the recount.
 
