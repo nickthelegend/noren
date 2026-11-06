@@ -1,0 +1,152 @@
+[
+  {
+    "text": "Stock",
+    "start": 0.11,
+    "end": 0.506,
+    "id": "w57"
+  },
+  {
+    "text": "tokens",
+    "start": 0.506,
+    "end": 0.982,
+    "id": "w58"
+  },
+  {
+    "text": "reach",
+    "start": 0.982,
+    "end": 1.378,
+    "id": "w59"
+  },
+  {
+    "text": "ARC",
+    "start": 1.378,
+    "end": 1.616,
+    "id": "w60"
+  },
+  {
+    "text": "as",
+    "start": 1.616,
+    "end": 1.774,
+    "id": "w61"
+  },
+  {
+    "text": "USDC",
+    "start": 1.774,
+    "end": 2.091,
+    "id": "w62"
+  },
+  {
+    "text": "through",
+    "start": 2.091,
+    "end": 2.646,
+    "id": "w63"
+  },
+  {
+    "text": "a",
+    "start": 2.646,
+    "end": 2.726,
+    "id": "w64"
+  },
+  {
+    "text": "cross-chain",
+    "start": 2.726,
+    "end": 3.597,
+    "id": "w65"
+  },
+  {
+    "text": "Aqua",
+    "start": 3.597,
+    "end": 3.914,
+    "id": "w66"
+  },
+  {
+    "text": "order.",
+    "start": 3.914,
+    "end": 4.39,
+    "id": "w67"
+  },
+  {
+    "text": "So",
+    "start": 4.39,
+    "end": 4.714,
+    "id": "w68"
+  },
+  {
+    "text": "CCTP",
+    "start": 4.714,
+    "end": 5.363,
+    "id": "w69"
+  },
+  {
+    "text": "carries",
+    "start": 5.363,
+    "end": 6.499,
+    "id": "w70"
+  },
+  {
+    "text": "USDC.",
+    "start": 6.499,
+    "end": 7.31,
+    "id": "w71"
+  },
+  {
+    "text": "Aqua",
+    "start": 7.31,
+    "end": 7.635,
+    "id": "w72"
+  },
+  {
+    "text": "orders",
+    "start": 7.635,
+    "end": 8.123,
+    "id": "w73"
+  },
+  {
+    "text": "carry",
+    "start": 8.123,
+    "end": 8.53,
+    "id": "w74"
+  },
+  {
+    "text": "stocks,",
+    "start": 8.53,
+    "end": 9.099,
+    "id": "w75"
+  },
+  {
+    "text": "and",
+    "start": 9.099,
+    "end": 9.343,
+    "id": "w76"
+  },
+  {
+    "text": "Chainlink",
+    "start": 9.343,
+    "end": 10.075,
+    "id": "w77"
+  },
+  {
+    "text": "CCIP",
+    "start": 10.075,
+    "end": 10.401,
+    "id": "w78"
+  },
+  {
+    "text": "carries",
+    "start": 10.401,
+    "end": 10.97,
+    "id": "w79"
+  },
+  {
+    "text": "credit",
+    "start": 10.97,
+    "end": 11.458,
+    "id": "w80"
+  },
+  {
+    "text": "messages.",
+    "start": 11.458,
+    "end": 12.19,
+    "id": "w81"
+  }
+]

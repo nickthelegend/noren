@@ -1,212 +1,206 @@
 [
   {
-    "text": "Pay",
-    "start": 0.07,
-    "end": 0.25,
+    "text": "NoRen",
+    "start": 0,
+    "end": 0.459,
     "id": "w0"
   },
   {
-    "text": "a",
-    "start": 0.26,
-    "end": 0.33,
+    "text": "is",
+    "start": 0.459,
+    "end": 0.643,
     "id": "w1"
   },
   {
-    "text": "shop",
-    "start": 0.33,
-    "end": 0.66,
+    "text": "a",
+    "start": 0.643,
+    "end": 0.735,
     "id": "w2"
   },
   {
-    "text": "in",
-    "start": 0.66,
-    "end": 0.8,
+    "text": "DEX",
+    "start": 0.735,
+    "end": 1.01,
     "id": "w3"
   },
   {
-    "text": "crypto",
-    "start": 0.83,
-    "end": 1.32,
+    "text": "and",
+    "start": 1.01,
+    "end": 1.285,
     "id": "w4"
   },
   {
-    "text": "today,",
-    "start": 1.32,
-    "end": 1.8,
+    "text": "stablecoin",
+    "start": 1.285,
+    "end": 2.204,
     "id": "w5"
   },
   {
-    "text": "and",
-    "start": 1.83,
-    "end": 1.96,
+    "text": "payment",
+    "start": 2.204,
+    "end": 2.846,
     "id": "w6"
   },
   {
-    "text": "the",
-    "start": 1.96,
-    "end": 2.12,
+    "text": "network",
+    "start": 2.846,
+    "end": 3.489,
     "id": "w7"
   },
   {
-    "text": "shop",
-    "start": 2.12,
-    "end": 2.34,
+    "text": "on",
+    "start": 3.489,
+    "end": 3.673,
     "id": "w8"
   },
   {
-    "text": "sees",
-    "start": 2.34,
-    "end": 2.7,
+    "text": "ARK.",
+    "start": 3.673,
+    "end": 4.04,
     "id": "w9"
   },
   {
-    "text": "your",
-    "start": 2.7,
-    "end": 3.06,
+    "text": "Merchants",
+    "start": 4.04,
+    "end": 4.697,
     "id": "w10"
   },
   {
-    "text": "whole",
-    "start": 3.06,
-    "end": 3.45,
+    "text": "get",
+    "start": 4.697,
+    "end": 4.916,
     "id": "w11"
   },
   {
-    "text": "wallet.",
-    "start": 4.08,
-    "end": 4.28,
+    "text": "private",
+    "start": 4.916,
+    "end": 5.427,
     "id": "w12"
   },
   {
-    "text": "NoRen",
-    "start": 4.35,
-    "end": 4.71,
+    "text": "stablecoin",
+    "start": 5.427,
+    "end": 6.157,
     "id": "w13"
   },
   {
-    "text": "is",
-    "start": 4.71,
-    "end": 4.81,
+    "text": "settlement,",
+    "start": 6.157,
+    "end": 6.96,
     "id": "w14"
   },
   {
-    "text": "a",
-    "start": 4.88,
-    "end": 4.96,
+    "text": "customers",
+    "start": 6.96,
+    "end": 7.531,
     "id": "w15"
   },
   {
-    "text": "DEX",
-    "start": 4.96,
-    "end": 5.16,
+    "text": "get",
+    "start": 7.531,
+    "end": 7.721,
     "id": "w16"
   },
   {
-    "text": "and",
-    "start": 5.25,
-    "end": 5.45,
+    "text": "credit",
+    "start": 7.721,
+    "end": 8.102,
     "id": "w17"
   },
   {
-    "text": "stablecoin",
-    "start": 5.46,
-    "end": 6.33,
+    "text": "against",
+    "start": 8.102,
+    "end": 8.546,
     "id": "w18"
   },
   {
-    "text": "payment",
-    "start": 6.33,
-    "end": 6.94,
+    "text": "collateral",
+    "start": 8.546,
+    "end": 9.18,
     "id": "w19"
   },
   {
-    "text": "rail",
-    "start": 6.94,
-    "end": 7.29,
+    "text": "in",
+    "start": 9.18,
+    "end": 9.335,
     "id": "w20"
   },
   {
-    "text": "on",
-    "start": 7.29,
-    "end": 7.46,
+    "text": "NoRen's",
+    "start": 9.335,
+    "end": 9.875,
     "id": "w21"
   },
   {
-    "text": "ARK,",
-    "start": 7.46,
-    "end": 7.76,
+    "text": "lending",
+    "start": 9.875,
+    "end": 10.416,
     "id": "w22"
   },
   {
-    "text": "with",
-    "start": 7.76,
-    "end": 8.2,
+    "text": "pools,",
+    "start": 10.416,
+    "end": 10.88,
     "id": "w23"
   },
   {
-    "text": "credit",
-    "start": 8.39,
-    "end": 8.56,
+    "text": "and",
+    "start": 10.88,
+    "end": 11.091,
     "id": "w24"
   },
   {
-    "text": "lines",
-    "start": 8.56,
-    "end": 8.86,
+    "text": "that",
+    "start": 11.091,
+    "end": 11.372,
     "id": "w25"
   },
   {
-    "text": "and",
-    "start": 8.86,
-    "end": 9.04,
+    "text": "collateral",
+    "start": 11.372,
+    "end": 12.075,
     "id": "w26"
   },
   {
-    "text": "cross-chain",
-    "start": 9.04,
-    "end": 9.71,
+    "text": "earns",
+    "start": 12.075,
+    "end": 12.427,
     "id": "w27"
   },
   {
-    "text": "settlement,",
-    "start": 9.79,
-    "end": 10.38,
+    "text": "trading",
+    "start": 12.427,
+    "end": 12.919,
     "id": "w28"
   },
   {
-    "text": "and",
-    "start": 10.38,
-    "end": 10.52,
+    "text": "fees",
+    "start": 12.919,
+    "end": 13.2,
     "id": "w29"
   },
   {
-    "text": "payments",
-    "start": 10.55,
-    "end": 10.98,
+    "text": "as",
+    "start": 13.2,
+    "end": 13.348,
     "id": "w30"
   },
   {
-    "text": "are",
-    "start": 10.98,
-    "end": 11.14,
+    "text": "one-inch",
+    "start": 13.348,
+    "end": 13.942,
     "id": "w31"
   },
   {
-    "text": "private",
-    "start": 11.14,
-    "end": 11.24,
+    "text": "aqua",
+    "start": 13.942,
+    "end": 14.238,
     "id": "w32"
   },
   {
-    "text": "by",
-    "start": 11.55,
-    "end": 11.64,
+    "text": "liquidity.",
+    "start": 14.238,
+    "end": 14.98,
     "id": "w33"
-  },
-  {
-    "text": "default.",
-    "start": 11.64,
-    "end": 12.24,
-    "id": "w34"
   }
 ]

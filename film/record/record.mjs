@@ -118,6 +118,193 @@ const result = (label, value) => { ev("result", label, { value }); log(label, va
 async function save() { await ctx.storageState({ path: STATE }); }
 
 try {
+  // ---------------------------------------------------------------- v3 takes (one browser profile, state/state.json)
+  if (take === "setup3") {
+    // Off camera, nothing recorded: a store with a 12.50 link (Noren Merchant), then the same browser as the customer
+    // with the fork faucets. Prints the test key's public address (for scripts/live/fund-test-key.ts).
+    await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3000);
+    await p.getByRole("button", { name: /Use a test wallet/ }).click();
+    await until(() => p.getByText("What's your business called?").isVisible(), "signed in");
+    await p.locator(".ob-field input").first().fill("Juhu Chai House");
+    await p.getByRole("button", { name: /Continue/ }).click(); await sleep(1000);
+    await p.getByRole("radio", { name: /USDC on Arc to my wallet/ }).click();
+    await p.getByRole("button", { name: /Create store/ }).click();
+    await until(() => p.getByText("Create your first payment link").isVisible(), "store created", 60000);
+    await p.locator(".ob-field input").nth(1).fill("Masala chai for the team");
+    await p.getByRole("button", { name: /Create link/ }).click();
+    await until(() => p.locator(".ob-link").isVisible(), "link", 60000);
+    const link = await p.locator(".ob-url").innerText(); log("link", link);
+    writeFileSync(`${HERE}state/link-home.txt`, link); await save();
+    await p.goto(`${APP}/#/app`); await sleep(6000);
+    await p.locator(".nk-chip").click(); await sleep(1500);
+    log("address", (await p.locator(".nk-menu-row span").first().innerText()).trim());
+    await p.getByRole("button", { name: /Get test stock and USDG/ }).click();
+    await until(async () => /faucet:/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 120000);
+    await p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ }).click();
+    await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000);
+    log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 400));
+    await save();
+  }
+
+  if (take === "home3") {
+    // The Noren app at full width: Home (balance, actions, activity), then Pay: paste a Noren link, pay privately.
+    const link = (await import("node:fs")).readFileSync(`${HERE}state/link-home.txt`, "utf8").trim();
+    // Off camera: shield 20 of this key's fork USDC from the hosted checkout (the faucet was already used in setup3)
+    if (!process.env.NO_SHIELD) {
+      await p.goto(link.replace(/^.*#/, `${APP}/#`)); await sleep(5000);
+      await p.getByRole("button", { name: /Shield 20 USDC/ }).click();
+      await until(async () => /Pay 12.50 USDC/.test(await p.locator(".btn.ink.full").innerText()) && !(await p.locator(".btn.ink.full").isDisabled()), "ASP approval", 180000);
+      log("shielded", await p.locator(".co-bal").innerText()); await save();
+    }
+    await p.goto(`${APP}/#/app`); await sleep(7000);
+    await moveTo(700, 200, 1);
+    await rollCamera(); await sleep(2500);
+    result("home", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 500));
+    await moveTo(300, 250, 25); await sleep(800); await moveTo(560, 300, 25); await sleep(800);
+    await point(p.locator(".nk-actions")); await sleep(1500);
+    await click(p.locator(".nk-actions button").first(), "pay action"); await sleep(1500);
+    await click(p.locator("#nk-paylink"), "focus link");
+    ev("type", "paste invoice link", { text: link }); await p.locator("#nk-paylink").fill(link); await sleep(2500);
+    const top = p.getByRole("button", { name: /Add 20 test USDC privately/ });
+    if (await top.count() && await top.first().isVisible()) {
+      await click(top.first(), "add 20 test USDC privately");
+      await until(async () => !(await p.locator(".nk-paycard .nk-cta").isDisabled()), "private balance ready", 180000); await sleep(1200);
+    }
+    result("pay panel", (await p.locator(".nk-paycard").innerText()).replace(/\n+/g, " | ").slice(0, 400));
+    await click(p.locator(".nk-paycard .nk-cta"), "pay privately");
+    await until(async () => /Paid privately/.test(await p.locator(".nk-paycard").innerText()), "paid privately", 180000); await sleep(1500);
+    result("private paid", (await p.locator(".nk-paycard").innerText()).replace(/\n+/g, " | ").slice(0, 400)); await sleep(3500);
+    await scrollBy(500, 1200); await sleep(3000);
+    await cut(); await save();
+  }
+
+  if (take === "shop3") {
+    // Aubelle: a dress into the bag, the hosted checkout with the four ways to pay, then Pay with stocks
+    await p.goto(`${SHOP}/#/`); await sleep(3500);
+    await moveTo(640, 360, 1);
+    await rollCamera(); await sleep(2000);
+    await scrollBy(700, 1400); await sleep(800);
+    await click(p.getByRole("link", { name: "Dresses" }).first(), "dresses"); await sleep(1800);
+    await scrollBy(380, 900); await sleep(1000);
+    await click(p.locator('a.card[href="#/p/amelie-gingham"]'), "Amélie Gingham"); await sleep(2000);
+    await click(p.getByRole("button", { name: "S", exact: true }), "size S"); await sleep(600);
+    await click(p.getByRole("button", { name: /Add to bag/ }), "add to bag"); await sleep(2000);
+    await click(p.locator(".drawer").getByRole("link", { name: "View bag" }), "view bag"); await sleep(1800);
+    await click(p.getByRole("button", { name: /Checkout with/ }), "checkout with Noren");
+    await p.waitForURL(/localhost:5190\/#\/pay\//, { timeout: 30000 }); result("checkout", p.url()); await sleep(4000);
+    const tabs = p.locator("[role=tablist][aria-label='Payment method'] [role=tab]");
+    result("methods", (await tabs.allInnerTexts()).map((t) => t.replace(/\n+/g, " ")).join(" || "));
+    for (let i = 0; i < Math.min(await tabs.count(), 6); i++) { await point(tabs.nth(i)); await sleep(900); }
+    await click(p.getByRole("tab", { name: /Pay with stocks/ }), "pay with stocks");
+    await until(async () => /Pay with [\d.]+ NVDA/.test(await p.locator("body").innerText()), "stock quote", 90000); await sleep(2000);
+    result("stock panel", (await p.locator("body").innerText()).match(/You pay[\s\S]{0,600}/)?.[0]?.replace(/\n+/g, " | "));
+    const pay = p.getByRole("button", { name: /Pay with [\d.]+ NVDA/ }).first();
+    await point(pay); await sleep(1500);
+    await click(pay, "pay with stock");
+    await until(async () => /Paid with/.test(await p.locator("body").innerText()), "stock payment", 180000); await sleep(2500);
+    result("stock paid", (await p.locator("body").innerText()).match(/Paid with[\s\S]{0,600}/)?.[0]?.replace(/\n+/g, " | "));
+    await sleep(3000);
+    await p.waitForURL(/8780\/#\/order\//, { timeout: 40000 }).catch(() => {});
+    await until(async () => /Paid/.test(await p.locator(".status").innerText()), "order paid", 60000).catch(() => {});
+    result("order", (await p.locator("body").innerText()).slice(0, 400).replace(/\n+/g, " | ")); await sleep(4500);
+    await cut(); await save();
+  }
+
+  if (take === "earn3") {
+    // Earn = Aqua liquidity: the nNVDA vault is an Aqua maker (fees from the stock payment's fill), a deposit, then Borrow.
+    await p.goto(`${APP}/#/app/earn`); await sleep(8000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(2000);
+    const nv = p.getByRole("radio", { name: /nNVDA/ });
+    if (await nv.count()) { await click(nv.first(), "nNVDA vault"); await sleep(2000); }
+    result("vaults", (await p.locator("[aria-label=Vault]").innerText()).replace(/\n+/g, " | "));
+    await typeIn(p.locator("#nk-earn"), "1", "deposit amount"); await sleep(1200);
+    await click(p.locator(".nk-cta").first(), "deposit");
+    await until(async () => /Deposited|reverted|rror/.test(await status()), "deposit", 120000); result("deposit", await status()); await sleep(2000);
+    await point(p.locator(".nk-aqua").first()); await sleep(2000);
+    result("aqua maker", (await p.locator(".nk-aqua").first().innerText()).replace(/\n+/g, " | ").slice(0, 800));
+    await scrollBy(420, 1400); await sleep(3000);
+    await scrollBy(420, 1400); await sleep(3000);
+    await click(p.getByRole("tab", { name: "Borrow" }), "borrow tab"); await sleep(5000);
+    const row = p.locator(".nk-items li", { hasText: "nNVDA" }).first();
+    if (await row.count()) {
+      await typeIn(row.locator("input"), "1.5", "lock amount");
+      await click(row.getByRole("button", { name: "Lock", exact: true }), "lock");
+      await until(async () => /Locked|reverted|rror/.test(await status()), "lock", 120000); result("lock", await status());
+      await scrollBy(-600, 600); await sleep(4000);
+    }
+    await typeIn(p.locator("#nk-borrow"), "25", "borrow amount"); await sleep(1500);
+    await click(p.locator(".nk-cta").first(), "borrow");
+    await until(async () => /Borrowed|reverted|rror/.test(await status()), "borrow", 120000); result("borrow", await status()); await sleep(2500);
+    const lp = p.locator(".nk-aqua", { hasText: "lender pool" }).first();
+    await point(lp); await sleep(1500);
+    result("lender pool", (await lp.innerText()).replace(/\n+/g, " | ").slice(0, 900));
+    await scrollBy(300, 1200); await sleep(4000);
+    await cut(); await save();
+  }
+
+  if (take === "swap3") {
+    await p.goto(`${APP}/#/app/swap`); await sleep(7000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(2000);
+    const inp = p.locator("#nk-in");
+    if (await inp.count()) { await typeIn(inp, "100", "swap amount"); await sleep(5000); }
+    result("swap", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 900));
+    const r = p.locator(".nk-routes").first(); if (await r.count()) await point(r); await sleep(3500);
+    await cut(); await save();
+  }
+
+  if (take === "repay3") {
+    // Repay in the Noren app (public: the line is tied to the borrower's wallet)
+    await p.goto(`${APP}/#/app/credit`); await sleep(7000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(1500);
+    await point(p.locator(".nk-card").first()); await sleep(1800);
+    const repay = p.getByRole("button", { name: /Repay [\d.]+ USDC/ }).first();
+    result("before", (await p.locator(".nk-card").first().innerText()).replace(/\n+/g, " | ").slice(0, 600));
+    await click(repay, "repay");
+    await until(async () => /Repaid [\d.]+ USDC|reverted|rror/.test(await p.locator(".nk-col").innerText()), "repayment", 120000);
+    result("repaid", (await p.locator(".nk-col").innerText()).match(/Repaid [^\n]*/)?.[0]); await sleep(4500);
+    await cut(); await save();
+  }
+
+  if (take === "stocks3") {
+    // The Bridge tab's "Stocks → USDC": the cross-chain Aqua order (fork demo), its three steps
+    await p.goto(`${APP}/#/app/bridge`); await sleep(8000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(1500);
+    const hero = p.locator(".nk-rharc");
+    await click(hero.getByRole("tab", { name: "Stocks → USDC" }), "Stocks to USDC"); await sleep(2500);
+    const steps = hero.locator(".nk-path li");
+    for (let i = 0; i < await steps.count(); i++) { await point(steps.nth(i)); await sleep(1400); }
+    result("stocks", (await hero.innerText()).replace(/\n+/g, " | ").slice(0, 900));
+    await scrollBy(300, 1200); await sleep(3000);
+    await cut();
+  }
+
+  if (take === "arcout3" || take === "bridge3") {
+    // LIVE on public testnets from the app: Arc -> Robinhood (arcout3), then Robinhood -> Arc (bridge3)
+    await p.goto(`${APP}/#/app/bridge`); await sleep(8000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(2500);
+    const hero = p.locator(".nk-rharc");
+    if (take === "arcout3") { await click(hero.getByRole("tab", { name: "Arc → Robinhood" }), "Arc to Robinhood"); await sleep(2500); }
+    const steps = hero.locator(".nk-path li");
+    for (let i = 0; i < await steps.count(); i++) { await point(steps.nth(i)); await sleep(1600); }
+    const amountBox = hero.locator(take === "arcout3" ? "input[aria-label='USDC to send from Arc']" : "input[aria-label='USDC to bring to Arc']");
+    await typeIn(amountBox, process.env.AMOUNT ?? "0.5", "amount"); await sleep(2500);
+    result("before", (await hero.innerText()).replace(/\n+/g, " | ").slice(0, 900));
+    const cta = hero.locator(".nk-cta").first();
+    await click(cta, take === "arcout3" ? "send to Robinhood" : "bring to Arc");
+    await until(async () => /USDC landed on (Arc|Robinhood)|landed on|Transfer stopped/.test(await hero.innerText()), "mint", 480000);
+    await sleep(3000);
+    result("after", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 1500));
+    const links = await p.evaluate(() => [...document.querySelectorAll(".nk-rharc a[href], main a[href]")].map((a) => a.href).filter((h) => /\/tx\//.test(h)).slice(0, 12));
+    result("tx links", links.join(" "));
+    await point(hero.locator(".nk-result, [class*=result]").first()).catch(() => {}); await sleep(5000);
+    await cut(); await save();
+  }
+
   if (take === "landing") {
     await p.goto(`${APP}/#/`); await sleep(2500);
     await rollCamera(); await sleep(3500);

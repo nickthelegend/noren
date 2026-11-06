@@ -1,1 +1,1 @@
-Live on public testnets: Arc, CCTP, CCIP, 1inch Aqua, Kohaku, World ID, 0G and Chainlink CRE. Noren. Open source, on GitHub.
+Live on public testnets: Arc, CCTP, CCIP and CRE, 1inch Aqua, Uniswap v4, Kohaku, World ID and 0G. Noren. Open source, on GitHub.

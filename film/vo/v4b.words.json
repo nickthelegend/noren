@@ -1,0 +1,350 @@
+[
+  {
+    "text": "Earn",
+    "start": 0,
+    "end": 0.314,
+    "id": "w0"
+  },
+  {
+    "text": "turns",
+    "start": 0.314,
+    "end": 0.707,
+    "id": "w1"
+  },
+  {
+    "text": "deposits",
+    "start": 0.707,
+    "end": 1.336,
+    "id": "w2"
+  },
+  {
+    "text": "into",
+    "start": 1.336,
+    "end": 1.651,
+    "id": "w3"
+  },
+  {
+    "text": "one-inch",
+    "start": 1.651,
+    "end": 2.28,
+    "id": "w4"
+  },
+  {
+    "text": "aqua",
+    "start": 2.28,
+    "end": 2.594,
+    "id": "w5"
+  },
+  {
+    "text": "liquidity.",
+    "start": 2.594,
+    "end": 3.38,
+    "id": "w6"
+  },
+  {
+    "text": "The",
+    "start": 3.38,
+    "end": 3.584,
+    "id": "w7"
+  },
+  {
+    "text": "same",
+    "start": 3.584,
+    "end": 3.856,
+    "id": "w8"
+  },
+  {
+    "text": "balance",
+    "start": 3.856,
+    "end": 4.331,
+    "id": "w9"
+  },
+  {
+    "text": "backs",
+    "start": 4.331,
+    "end": 4.671,
+    "id": "w10"
+  },
+  {
+    "text": "loans,",
+    "start": 4.671,
+    "end": 5.079,
+    "id": "w11"
+  },
+  {
+    "text": "earns",
+    "start": 5.079,
+    "end": 5.418,
+    "id": "w12"
+  },
+  {
+    "text": "trading",
+    "start": 5.418,
+    "end": 5.894,
+    "id": "w13"
+  },
+  {
+    "text": "fees",
+    "start": 5.894,
+    "end": 6.166,
+    "id": "w14"
+  },
+  {
+    "text": "and",
+    "start": 6.166,
+    "end": 6.37,
+    "id": "w15"
+  },
+  {
+    "text": "runs",
+    "start": 6.37,
+    "end": 6.641,
+    "id": "w16"
+  },
+  {
+    "text": "liquidations,",
+    "start": 6.641,
+    "end": 7.525,
+    "id": "w17"
+  },
+  {
+    "text": "and",
+    "start": 7.525,
+    "end": 7.728,
+    "id": "w18"
+  },
+  {
+    "text": "the",
+    "start": 7.728,
+    "end": 7.932,
+    "id": "w19"
+  },
+  {
+    "text": "lender",
+    "start": 7.932,
+    "end": 8.34,
+    "id": "w20"
+  },
+  {
+    "text": "pool",
+    "start": 8.34,
+    "end": 8.678,
+    "id": "w21"
+  },
+  {
+    "text": "already",
+    "start": 8.678,
+    "end": 9.27,
+    "id": "w22"
+  },
+  {
+    "text": "earned",
+    "start": 9.27,
+    "end": 9.777,
+    "id": "w23"
+  },
+  {
+    "text": "a",
+    "start": 9.777,
+    "end": 9.861,
+    "id": "w24"
+  },
+  {
+    "text": "fee",
+    "start": 9.861,
+    "end": 10.115,
+    "id": "w25"
+  },
+  {
+    "text": "from",
+    "start": 10.115,
+    "end": 10.453,
+    "id": "w26"
+  },
+  {
+    "text": "a",
+    "start": 10.453,
+    "end": 10.537,
+    "id": "w27"
+  },
+  {
+    "text": "real",
+    "start": 10.537,
+    "end": 10.875,
+    "id": "w28"
+  },
+  {
+    "text": "stock",
+    "start": 10.875,
+    "end": 11.298,
+    "id": "w29"
+  },
+  {
+    "text": "fill.",
+    "start": 11.298,
+    "end": 11.72,
+    "id": "w30"
+  },
+  {
+    "text": "Borrow",
+    "start": 11.72,
+    "end": 12.226,
+    "id": "w31"
+  },
+  {
+    "text": "against",
+    "start": 12.226,
+    "end": 12.816,
+    "id": "w32"
+  },
+  {
+    "text": "it,",
+    "start": 12.816,
+    "end": 13.069,
+    "id": "w33"
+  },
+  {
+    "text": "open",
+    "start": 13.069,
+    "end": 13.406,
+    "id": "w34"
+  },
+  {
+    "text": "a",
+    "start": 13.406,
+    "end": 13.49,
+    "id": "w35"
+  },
+  {
+    "text": "credit",
+    "start": 13.49,
+    "end": 13.996,
+    "id": "w36"
+  },
+  {
+    "text": "line",
+    "start": 13.996,
+    "end": 14.334,
+    "id": "w37"
+  },
+  {
+    "text": "from",
+    "start": 14.334,
+    "end": 14.671,
+    "id": "w38"
+  },
+  {
+    "text": "stock,",
+    "start": 14.671,
+    "end": 15.177,
+    "id": "w39"
+  },
+  {
+    "text": "and",
+    "start": 15.177,
+    "end": 15.43,
+    "id": "w40"
+  },
+  {
+    "text": "World",
+    "start": 15.43,
+    "end": 15.851,
+    "id": "w41"
+  },
+  {
+    "text": "ID",
+    "start": 15.851,
+    "end": 16.02,
+    "id": "w42"
+  },
+  {
+    "text": "lifts",
+    "start": 16.02,
+    "end": 16.441,
+    "id": "w43"
+  },
+  {
+    "text": "the",
+    "start": 16.441,
+    "end": 16.694,
+    "id": "w44"
+  },
+  {
+    "text": "limit.",
+    "start": 16.694,
+    "end": 17.2,
+    "id": "w45"
+  },
+  {
+    "text": "Swap",
+    "start": 17.2,
+    "end": 17.526,
+    "id": "w46"
+  },
+  {
+    "text": "uses",
+    "start": 17.526,
+    "end": 17.851,
+    "id": "w47"
+  },
+  {
+    "text": "Uniswap",
+    "start": 17.851,
+    "end": 18.421,
+    "id": "w48"
+  },
+  {
+    "text": "V4,",
+    "start": 18.421,
+    "end": 18.665,
+    "id": "w49"
+  },
+  {
+    "text": "and",
+    "start": 18.665,
+    "end": 18.909,
+    "id": "w50"
+  },
+  {
+    "text": "no-ren's",
+    "start": 18.909,
+    "end": 19.56,
+    "id": "w51"
+  },
+  {
+    "text": "aqua",
+    "start": 19.56,
+    "end": 19.886,
+    "id": "w52"
+  },
+  {
+    "text": "maker",
+    "start": 19.886,
+    "end": 20.292,
+    "id": "w53"
+  },
+  {
+    "text": "fills",
+    "start": 20.292,
+    "end": 20.699,
+    "id": "w54"
+  },
+  {
+    "text": "when",
+    "start": 20.699,
+    "end": 21.025,
+    "id": "w55"
+  },
+  {
+    "text": "it's",
+    "start": 21.025,
+    "end": 21.35,
+    "id": "w56"
+  },
+  {
+    "text": "better.",
+    "start": 21.35,
+    "end": 21.92,
+    "id": "w57"
+  }
+]

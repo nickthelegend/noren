@@ -1,0 +1,1 @@
+Earn turns deposits into 1inch Aqua liquidity. The same balance backs loans, earns trading fees and runs liquidations, and the lender pool already earned a fee from a real stock fill. Borrow against it, open a credit line from stock, and World ID lifts the limit. Swap uses Uniswap v4, and Noren's Aqua maker fills when it's better.

@@ -1,296 +1,284 @@
 [
   {
-    "text": "Obell",
-    "start": 0.04,
-    "end": 0.36,
+    "text": "Obel,",
+    "start": 0,
+    "end": 0.5,
     "id": "w0"
   },
   {
-    "text": "is",
-    "start": 0.36,
-    "end": 0.49,
+    "text": "a",
+    "start": 0.5,
+    "end": 0.6,
     "id": "w1"
   },
   {
-    "text": "a",
-    "start": 0.49,
-    "end": 0.55,
+    "text": "demo",
+    "start": 0.6,
+    "end": 1,
     "id": "w2"
   },
   {
-    "text": "demo",
-    "start": 0.59,
-    "end": 0.86,
+    "text": "boutique,",
+    "start": 1,
+    "end": 1.9,
     "id": "w3"
   },
   {
-    "text": "boutique",
-    "start": 0.86,
-    "end": 1.37,
+    "text": "added",
+    "start": 1.9,
+    "end": 2.4,
     "id": "w4"
   },
   {
-    "text": "that",
-    "start": 1.53,
-    "end": 1.76,
+    "text": "NoRen",
+    "start": 2.4,
+    "end": 2.9,
     "id": "w5"
   },
   {
-    "text": "added",
-    "start": 1.76,
-    "end": 2.11,
+    "text": "with",
+    "start": 2.9,
+    "end": 3.3,
     "id": "w6"
   },
   {
-    "text": "NoRen",
-    "start": 2.11,
-    "end": 2.48,
+    "text": "the",
+    "start": 3.3,
+    "end": 3.6,
     "id": "w7"
   },
   {
-    "text": "the",
-    "start": 2.48,
-    "end": 2.67,
+    "text": "SDK.",
+    "start": 3.6,
+    "end": 4,
     "id": "w8"
   },
   {
-    "text": "way",
-    "start": 2.67,
-    "end": 2.86,
+    "text": "One",
+    "start": 4,
+    "end": 4.197,
     "id": "w9"
   },
   {
-    "text": "any",
-    "start": 2.86,
-    "end": 3.05,
+    "text": "file",
+    "start": 4.197,
+    "end": 4.459,
     "id": "w10"
   },
   {
-    "text": "shop",
-    "start": 3.05,
-    "end": 3.22,
+    "text": "creates",
+    "start": 4.459,
+    "end": 4.918,
     "id": "w11"
   },
   {
-    "text": "would.",
-    "start": 3.34,
-    "end": 4.12,
+    "text": "the",
+    "start": 4.918,
+    "end": 5.115,
     "id": "w12"
   },
   {
-    "text": "Pick",
-    "start": 4.16,
-    "end": 4.44,
+    "text": "invoice,",
+    "start": 5.115,
+    "end": 5.64,
     "id": "w13"
   },
   {
-    "text": "a",
-    "start": 4.44,
-    "end": 4.52,
+    "text": "sends",
+    "start": 5.64,
+    "end": 5.968,
     "id": "w14"
   },
   {
-    "text": "dress,",
-    "start": 4.52,
-    "end": 5.09,
+    "text": "the",
+    "start": 5.968,
+    "end": 6.165,
     "id": "w15"
   },
   {
-    "text": "size",
-    "start": 5.09,
-    "end": 5.36,
+    "text": "shopper",
+    "start": 6.165,
+    "end": 6.624,
     "id": "w16"
   },
   {
-    "text": "small,",
-    "start": 5.4,
-    "end": 5.98,
+    "text": "to",
+    "start": 6.624,
+    "end": 6.755,
     "id": "w17"
   },
   {
-    "text": "into",
-    "start": 5.98,
-    "end": 6.3,
+    "text": "NoRen's",
+    "start": 6.755,
+    "end": 7.214,
     "id": "w18"
   },
   {
-    "text": "the",
-    "start": 6.3,
-    "end": 6.54,
+    "text": "checkout,",
+    "start": 7.214,
+    "end": 7.805,
     "id": "w19"
   },
   {
-    "text": "bag.",
-    "start": 6.54,
-    "end": 7.07,
+    "text": "and",
+    "start": 7.805,
+    "end": 8.002,
     "id": "w20"
   },
   {
-    "text": "Here's",
-    "start": 7.12,
-    "end": 7.44,
+    "text": "trusts",
+    "start": 8.002,
+    "end": 8.395,
     "id": "w21"
   },
   {
     "text": "the",
-    "start": 7.44,
-    "end": 7.62,
+    "start": 8.395,
+    "end": 8.592,
     "id": "w22"
   },
   {
-    "text": "whole",
-    "start": 7.62,
-    "end": 7.92,
+    "text": "order",
+    "start": 8.592,
+    "end": 8.92,
     "id": "w23"
   },
   {
-    "text": "integration,",
-    "start": 7.92,
-    "end": 8.66,
+    "text": "only",
+    "start": 8.92,
+    "end": 9.293,
     "id": "w24"
   },
   {
-    "text": "one",
-    "start": 8.74,
-    "end": 9.06,
+    "text": "after",
+    "start": 9.293,
+    "end": 9.76,
     "id": "w25"
   },
   {
-    "text": "file,",
-    "start": 9.06,
-    "end": 9.76,
+    "text": "a",
+    "start": 9.76,
+    "end": 9.853,
     "id": "w26"
   },
   {
-    "text": "create",
-    "start": 9.76,
-    "end": 10.14,
+    "text": "signed",
+    "start": 9.853,
+    "end": 10.413,
     "id": "w27"
   },
   {
-    "text": "an",
-    "start": 10.16,
-    "end": 10.29,
+    "text": "webhook.",
+    "start": 10.413,
+    "end": 11.16,
     "id": "w28"
   },
   {
-    "text": "invoice,",
-    "start": 10.29,
-    "end": 10.92,
+    "text": "The",
+    "start": 11.16,
+    "end": 11.417,
     "id": "w29"
   },
   {
-    "text": "send",
-    "start": 10.96,
-    "end": 11.18,
+    "text": "checkout",
+    "start": 11.417,
+    "end": 12.103,
     "id": "w30"
   },
   {
-    "text": "the",
-    "start": 11.18,
-    "end": 11.37,
+    "text": "offers",
+    "start": 12.103,
+    "end": 12.617,
     "id": "w31"
   },
   {
-    "text": "shopper",
-    "start": 11.37,
-    "end": 11.84,
+    "text": "four",
+    "start": 12.617,
+    "end": 12.96,
     "id": "w32"
   },
   {
-    "text": "to",
-    "start": 11.84,
-    "end": 11.93,
+    "text": "ways",
+    "start": 12.96,
+    "end": 13.303,
     "id": "w33"
   },
   {
-    "text": "NoRen's",
-    "start": 12,
-    "end": 12.37,
+    "text": "to",
+    "start": 13.303,
+    "end": 13.474,
     "id": "w34"
   },
   {
-    "text": "checkout,",
-    "start": 12.45,
-    "end": 13.04,
+    "text": "pay,",
+    "start": 13.474,
+    "end": 13.817,
     "id": "w35"
   },
   {
-    "text": "and",
-    "start": 13.04,
-    "end": 13.12,
+    "text": "privately,",
+    "start": 13.817,
+    "end": 14.674,
     "id": "w36"
   },
   {
-    "text": "trust",
-    "start": 13.12,
-    "end": 13.44,
+    "text": "with",
+    "start": 14.674,
+    "end": 15.017,
     "id": "w37"
   },
   {
-    "text": "the",
-    "start": 13.44,
-    "end": 13.62,
+    "text": "USDC,",
+    "start": 15.017,
+    "end": 15.446,
     "id": "w38"
   },
   {
-    "text": "order",
-    "start": 13.62,
-    "end": 13.92,
+    "text": "with",
+    "start": 15.446,
+    "end": 15.789,
     "id": "w39"
   },
   {
-    "text": "only",
-    "start": 13.92,
-    "end": 14.14,
+    "text": "stocks,",
+    "start": 15.789,
+    "end": 16.389,
     "id": "w40"
   },
   {
-    "text": "after",
-    "start": 14.26,
-    "end": 14.51,
+    "text": "or",
+    "start": 16.389,
+    "end": 16.56,
     "id": "w41"
   },
   {
-    "text": "a",
-    "start": 14.51,
-    "end": 15.06,
+    "text": "later",
+    "start": 16.56,
+    "end": 16.989,
     "id": "w42"
   },
   {
-    "text": "signed",
-    "start": 15.06,
-    "end": 15.08,
+    "text": "on",
+    "start": 16.989,
+    "end": 17.16,
     "id": "w43"
   },
   {
-    "text": "webhook.",
-    "start": 15.09,
-    "end": 16.16,
+    "text": "credit,",
+    "start": 17.16,
+    "end": 17.76,
     "id": "w44"
   },
   {
-    "text": "Check",
-    "start": 16.2,
-    "end": 16.53,
+    "text": "still",
+    "start": 17.76,
+    "end": 18.083,
     "id": "w45"
   },
   {
-    "text": "out",
-    "start": 16.53,
-    "end": 16.71,
+    "text": "private.",
+    "start": 18.083,
+    "end": 18.6,
     "id": "w46"
-  },
-  {
-    "text": "with",
-    "start": 16.75,
-    "end": 17.05,
-    "id": "w47"
-  },
-  {
-    "text": "NoRen.",
-    "start": 17.05,
-    "end": 17.44,
-    "id": "w48"
   }
 ]

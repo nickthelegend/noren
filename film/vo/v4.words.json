@@ -2,583 +2,343 @@
   {
     "text": "Now",
     "start": 0,
-    "end": 0.232,
+    "end": 0.245,
     "id": "w0"
   },
   {
     "text": "the",
-    "start": 0.232,
-    "end": 0.465,
+    "start": 0.245,
+    "end": 0.491,
     "id": "w1"
   },
   {
-    "text": "shopper's",
-    "start": 0.465,
-    "end": 1.163,
+    "text": "customer's",
+    "start": 0.491,
+    "end": 1.309,
     "id": "w2"
   },
   {
     "text": "side,",
-    "start": 1.163,
-    "end": 1.55,
+    "start": 1.309,
+    "end": 1.718,
     "id": "w3"
   },
   {
     "text": "the",
-    "start": 1.55,
-    "end": 1.783,
+    "start": 1.718,
+    "end": 1.964,
     "id": "w4"
   },
   {
     "text": "NoRen",
-    "start": 1.783,
-    "end": 2.17,
+    "start": 1.964,
+    "end": 2.373,
     "id": "w5"
   },
   {
     "text": "app.",
-    "start": 2.17,
-    "end": 2.48,
+    "start": 2.373,
+    "end": 2.7,
     "id": "w6"
   },
   {
-    "text": "Deposit",
-    "start": 2.48,
-    "end": 2.997,
+    "text": "Home",
+    "start": 2.7,
+    "end": 2.981,
     "id": "w7"
   },
   {
-    "text": "half",
-    "start": 2.997,
-    "end": 3.292,
+    "text": "shows",
+    "start": 2.981,
+    "end": 3.333,
     "id": "w8"
   },
   {
-    "text": "an",
-    "start": 3.292,
-    "end": 3.44,
+    "text": "every",
+    "start": 3.333,
+    "end": 3.685,
     "id": "w9"
   },
   {
-    "text": "ETH",
-    "start": 3.44,
-    "end": 3.662,
+    "text": "balance,",
+    "start": 3.685,
+    "end": 4.247,
     "id": "w10"
   },
   {
-    "text": "into",
-    "start": 3.662,
-    "end": 3.957,
+    "text": "private",
+    "start": 4.247,
+    "end": 4.74,
     "id": "w11"
   },
   {
-    "text": "a",
-    "start": 3.957,
-    "end": 4.031,
+    "text": "on",
+    "start": 4.74,
+    "end": 4.88,
     "id": "w12"
   },
   {
-    "text": "vault",
-    "start": 4.031,
-    "end": 4.4,
+    "text": "ARC",
+    "start": 4.88,
+    "end": 5.091,
     "id": "w13"
   },
   {
-    "text": "that",
-    "start": 4.4,
-    "end": 4.675,
+    "text": "on",
+    "start": 5.091,
+    "end": 5.232,
     "id": "w14"
   },
   {
-    "text": "runs",
-    "start": 4.675,
-    "end": 4.95,
+    "text": "Robinhood",
+    "start": 5.232,
+    "end": 5.865,
     "id": "w15"
   },
   {
-    "text": "its",
-    "start": 4.95,
-    "end": 5.156,
+    "text": "chain",
+    "start": 5.865,
+    "end": 6.217,
     "id": "w16"
   },
   {
-    "text": "own",
-    "start": 5.156,
-    "end": 5.363,
+    "text": "and",
+    "start": 6.217,
+    "end": 6.428,
     "id": "w17"
   },
   {
-    "text": "one-inch",
-    "start": 5.363,
-    "end": 5.913,
+    "text": "credit.",
+    "start": 6.428,
+    "end": 6.92,
     "id": "w18"
   },
   {
-    "text": "AquaMaker.",
-    "start": 5.913,
-    "end": 6.6,
+    "text": "Paste",
+    "start": 6.92,
+    "end": 7.291,
     "id": "w19"
   },
   {
-    "text": "A",
-    "start": 6.6,
-    "end": 6.687,
+    "text": "a",
+    "start": 7.291,
+    "end": 7.365,
     "id": "w20"
   },
   {
-    "text": "swap",
-    "start": 6.687,
-    "end": 7.037,
+    "text": "NoRen",
+    "start": 7.365,
+    "end": 7.736,
     "id": "w21"
   },
   {
-    "text": "buys",
-    "start": 7.037,
-    "end": 7.387,
+    "text": "link",
+    "start": 7.736,
+    "end": 8.032,
     "id": "w22"
   },
   {
-    "text": "ETH,",
-    "start": 7.387,
-    "end": 7.737,
+    "text": "and",
+    "start": 8.032,
+    "end": 8.255,
     "id": "w23"
   },
   {
-    "text": "the",
-    "start": 7.737,
-    "end": 7.999,
+    "text": "pay",
+    "start": 8.255,
+    "end": 8.477,
     "id": "w24"
   },
   {
-    "text": "vault's",
-    "start": 7.999,
-    "end": 8.611,
+    "text": "privately,",
+    "start": 8.477,
+    "end": 9.219,
     "id": "w25"
   },
   {
-    "text": "maker",
-    "start": 8.611,
-    "end": 9.048,
+    "text": "right",
+    "start": 9.219,
+    "end": 9.589,
     "id": "w26"
   },
   {
-    "text": "beats",
-    "start": 9.048,
-    "end": 9.486,
+    "text": "here.",
+    "start": 9.589,
+    "end": 9.96,
     "id": "w27"
   },
   {
-    "text": "Uniswap",
-    "start": 9.486,
-    "end": 10.098,
+    "text": "The",
+    "start": 9.96,
+    "end": 10.201,
     "id": "w28"
   },
   {
-    "text": "V4,",
-    "start": 10.098,
-    "end": 10.36,
+    "text": "bridge",
+    "start": 10.201,
+    "end": 10.683,
     "id": "w29"
   },
   {
-    "text": "and",
-    "start": 10.36,
-    "end": 10.582,
+    "text": "moves",
+    "start": 10.683,
+    "end": 11.084,
     "id": "w30"
   },
   {
-    "text": "the",
-    "start": 10.582,
-    "end": 10.803,
+    "text": "USDC",
+    "start": 11.084,
+    "end": 11.405,
     "id": "w31"
   },
   {
-    "text": "vault",
-    "start": 10.803,
-    "end": 11.173,
+    "text": "between",
+    "start": 11.405,
+    "end": 11.967,
     "id": "w32"
   },
   {
-    "text": "books",
-    "start": 11.173,
-    "end": 11.542,
+    "text": "Robinhood",
+    "start": 11.967,
+    "end": 12.69,
     "id": "w33"
   },
   {
-    "text": "a",
-    "start": 11.542,
-    "end": 11.616,
+    "text": "chain",
+    "start": 12.69,
+    "end": 13.092,
     "id": "w34"
   },
   {
-    "text": "real",
-    "start": 11.616,
-    "end": 11.912,
+    "text": "and",
+    "start": 13.092,
+    "end": 13.333,
     "id": "w35"
   },
   {
-    "text": "fee",
-    "start": 11.912,
-    "end": 12.133,
+    "text": "ARC,",
+    "start": 13.333,
+    "end": 13.654,
     "id": "w36"
   },
   {
-    "text": "from",
-    "start": 12.133,
-    "end": 12.429,
+    "text": "live",
+    "start": 13.654,
+    "end": 13.975,
     "id": "w37"
   },
   {
-    "text": "one",
-    "start": 12.429,
-    "end": 12.651,
+    "text": "on",
+    "start": 13.975,
+    "end": 14.136,
     "id": "w38"
   },
   {
-    "text": "fill.",
-    "start": 12.651,
-    "end": 13.02,
+    "text": "public",
+    "start": 14.136,
+    "end": 14.617,
     "id": "w39"
   },
   {
-    "text": "No",
-    "start": 13.02,
-    "end": 13.269,
+    "text": "test",
+    "start": 14.617,
+    "end": 14.939,
     "id": "w40"
   },
   {
-    "text": "promised",
-    "start": 13.269,
-    "end": 14.263,
+    "text": "nets.",
+    "start": 14.939,
+    "end": 15.34,
     "id": "w41"
   },
   {
-    "text": "APY.",
-    "start": 14.263,
-    "end": 14.76,
+    "text": "Circle",
+    "start": 15.34,
+    "end": 15.856,
     "id": "w42"
   },
   {
-    "text": "Lock",
-    "start": 14.76,
-    "end": 15.083,
+    "text": "CCTP",
+    "start": 15.856,
+    "end": 16.2,
     "id": "w43"
   },
   {
-    "text": "the",
-    "start": 15.083,
-    "end": 15.326,
+    "text": "burns",
+    "start": 16.2,
+    "end": 16.63,
     "id": "w44"
   },
   {
-    "text": "receipt",
-    "start": 15.326,
-    "end": 15.892,
+    "text": "it",
+    "start": 16.63,
+    "end": 16.802,
     "id": "w45"
   },
   {
-    "text": "and",
-    "start": 15.892,
-    "end": 16.134,
+    "text": "on",
+    "start": 16.802,
+    "end": 16.974,
     "id": "w46"
   },
   {
-    "text": "borrow",
-    "start": 16.134,
-    "end": 16.62,
+    "text": "Robinhood,",
+    "start": 16.974,
+    "end": 17.834,
     "id": "w47"
   },
   {
-    "text": "USDG",
-    "start": 16.62,
-    "end": 16.943,
+    "text": "Circle",
+    "start": 17.834,
+    "end": 18.35,
     "id": "w48"
   },
   {
-    "text": "at",
-    "start": 16.943,
-    "end": 17.105,
+    "text": "attests,",
+    "start": 18.35,
+    "end": 19.038,
     "id": "w49"
   },
   {
-    "text": "the",
-    "start": 17.105,
-    "end": 17.347,
+    "text": "and",
+    "start": 19.038,
+    "end": 19.296,
     "id": "w50"
   },
   {
-    "text": "chain",
-    "start": 17.347,
-    "end": 17.751,
+    "text": "NoRen's",
+    "start": 19.296,
+    "end": 19.898,
     "id": "w51"
   },
   {
-    "text": "link",
-    "start": 17.751,
-    "end": 18.075,
+    "text": "hook",
+    "start": 19.898,
+    "end": 20.242,
     "id": "w52"
   },
   {
-    "text": "price.",
-    "start": 18.075,
-    "end": 18.56,
+    "text": "mints",
+    "start": 20.242,
+    "end": 20.672,
     "id": "w53"
   },
   {
-    "text": "Bridge",
-    "start": 18.56,
-    "end": 19.021,
+    "text": "it",
+    "start": 20.672,
+    "end": 20.844,
     "id": "w54"
   },
   {
-    "text": "to",
-    "start": 19.021,
-    "end": 19.174,
+    "text": "on",
+    "start": 20.844,
+    "end": 21.016,
     "id": "w55"
   },
   {
-    "text": "ARC,",
-    "start": 19.174,
-    "end": 19.481,
+    "text": "ARC.",
+    "start": 21.016,
+    "end": 21.36,
     "id": "w56"
-  },
-  {
-    "text": "live",
-    "start": 19.481,
-    "end": 19.788,
-    "id": "w57"
-  },
-  {
-    "text": "relay",
-    "start": 19.788,
-    "end": 20.172,
-    "id": "w58"
-  },
-  {
-    "text": "and",
-    "start": 20.172,
-    "end": 20.402,
-    "id": "w59"
-  },
-  {
-    "text": "across",
-    "start": 20.402,
-    "end": 20.863,
-    "id": "w60"
-  },
-  {
-    "text": "quotes,",
-    "start": 20.863,
-    "end": 21.4,
-    "id": "w61"
-  },
-  {
-    "text": "approved",
-    "start": 21.4,
-    "end": 22.15,
-    "id": "w62"
-  },
-  {
-    "text": "by",
-    "start": 22.15,
-    "end": 22.338,
-    "id": "w63"
-  },
-  {
-    "text": "a",
-    "start": 22.338,
-    "end": 22.431,
-    "id": "w64"
-  },
-  {
-    "text": "chain",
-    "start": 22.431,
-    "end": 22.9,
-    "id": "w65"
-  },
-  {
-    "text": "link",
-    "start": 22.9,
-    "end": 23.275,
-    "id": "w66"
-  },
-  {
-    "text": "CRE",
-    "start": 23.275,
-    "end": 23.556,
-    "id": "w67"
-  },
-  {
-    "text": "workflow.",
-    "start": 23.556,
-    "end": 24.4,
-    "id": "w68"
-  },
-  {
-    "text": "Then",
-    "start": 24.4,
-    "end": 24.692,
-    "id": "w69"
-  },
-  {
-    "text": "lock",
-    "start": 24.692,
-    "end": 24.984,
-    "id": "w70"
-  },
-  {
-    "text": "one",
-    "start": 24.984,
-    "end": 25.203,
-    "id": "w71"
-  },
-  {
-    "text": "Nvidia",
-    "start": 25.203,
-    "end": 25.642,
-    "id": "w72"
-  },
-  {
-    "text": "share.",
-    "start": 25.642,
-    "end": 26.08,
-    "id": "w73"
-  },
-  {
-    "text": "An",
-    "start": 26.08,
-    "end": 26.254,
-    "id": "w74"
-  },
-  {
-    "text": "underwriter",
-    "start": 26.254,
-    "end": 27.209,
-    "id": "w75"
-  },
-  {
-    "text": "and",
-    "start": 27.209,
-    "end": 27.469,
-    "id": "w76"
-  },
-  {
-    "text": "a",
-    "start": 27.469,
-    "end": 27.556,
-    "id": "w77"
-  },
-  {
-    "text": "sealed",
-    "start": 27.556,
-    "end": 28.077,
-    "id": "w78"
-  },
-  {
-    "text": "model",
-    "start": 28.077,
-    "end": 28.511,
-    "id": "w79"
-  },
-  {
-    "text": "on",
-    "start": 28.511,
-    "end": 28.684,
-    "id": "w80"
-  },
-  {
-    "text": "zero",
-    "start": 28.684,
-    "end": 29.031,
-    "id": "w81"
-  },
-  {
-    "text": "G",
-    "start": 29.031,
-    "end": 29.118,
-    "id": "w82"
-  },
-  {
-    "text": "set",
-    "start": 29.118,
-    "end": 29.379,
-    "id": "w83"
-  },
-  {
-    "text": "the",
-    "start": 29.379,
-    "end": 29.639,
-    "id": "w84"
-  },
-  {
-    "text": "terms,",
-    "start": 29.639,
-    "end": 30.16,
-    "id": "w85"
-  },
-  {
-    "text": "and",
-    "start": 30.16,
-    "end": 30.41,
-    "id": "w86"
-  },
-  {
-    "text": "CRE",
-    "start": 30.41,
-    "end": 30.661,
-    "id": "w87"
-  },
-  {
-    "text": "carries",
-    "start": 30.661,
-    "end": 31.245,
-    "id": "w88"
-  },
-  {
-    "text": "the",
-    "start": 31.245,
-    "end": 31.496,
-    "id": "w89"
-  },
-  {
-    "text": "credit",
-    "start": 31.496,
-    "end": 31.997,
-    "id": "w90"
-  },
-  {
-    "text": "line",
-    "start": 31.997,
-    "end": 32.33,
-    "id": "w91"
-  },
-  {
-    "text": "to",
-    "start": 32.33,
-    "end": 32.497,
-    "id": "w92"
-  },
-  {
-    "text": "ARC",
-    "start": 32.497,
-    "end": 32.748,
-    "id": "w93"
-  },
-  {
-    "text": "in",
-    "start": 32.748,
-    "end": 32.915,
-    "id": "w94"
-  },
-  {
-    "text": "seven",
-    "start": 32.915,
-    "end": 33.332,
-    "id": "w95"
-  },
-  {
-    "text": "seconds.",
-    "start": 33.332,
-    "end": 34,
-    "id": "w96"
   }
 ]

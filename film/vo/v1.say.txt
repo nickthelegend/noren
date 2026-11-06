@@ -1,1 +1,1 @@
-Pay a shop in crypto today, and the shop sees your whole wallet. Noh-ren is a DEX and stablecoin payment rail on Arc, with credit lines and cross-chain settlement, and payments are private by default.
+Noh-ren is a dex and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noh-ren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.

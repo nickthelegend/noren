@@ -1,1 +1,1 @@
-Aubelle is a demo boutique that added Noren the way any shop would. Pick a dress, size small, into the bag. Here is the whole integration, one file: create an invoice, send the shopper to Noren's checkout, and trust the order only after a signed webhook. Checkout with Noren.
+Aubelle, a demo boutique, added Noren with the SDK. One file creates the invoice, sends the shopper to Noren's checkout, and trusts the order only after a signed webhook. The checkout offers four ways to pay: privately, with USDC, with stocks, or later on credit, still private.

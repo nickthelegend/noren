@@ -29,60 +29,66 @@
     .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
     .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
     .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .cap img.tk { display: inline-block; width: 38px; height: 38px; vertical-align: -8px; margin: 0 4px 0 2px; border-radius: 50%; }
+    .dia { position: absolute; inset: 0; background: #101a3c; color: #efe8db; padding: 56px 90px; }
+    .dia h3 { font: italic 400 62px/1 "Instrument Serif", serif; text-align: center; margin-bottom: 34px; }
+    .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
+    .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
+    .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
+    .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
+    .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
+    .dia .lane .lg img { width: 50px; height: 50px; object-fit: contain; }
+    .dia .lane .lg img.tok { position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+    .dia .lane b { display: block; font: 600 34px/1.1 "Geist", sans-serif; }
+    .dia .lane small { display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }
+    .dia .lane .st { justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }
+    .dia .lane .st.live { color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }
+    .dia .arrow { position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, #e8643c, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }
+    .dia p { position: absolute; left: 90px; bottom: 34px; font: 500 24px/1 "Geist Mono", monospace; color: #8f96b2; }
     .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
     .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
 
   </style>
   <div id="root" data-composition-id="later" data-width="1920" data-height="1080">
     <div class="win" id="later-win">
-      <div class="cam" id="later-cam0"><video id="later-v0" class="clip" data-start="0.000" data-duration="2.000" data-track-index="1" src="assets/footage/later-0.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam1"><video id="later-v1" class="clip" data-start="2.000" data-duration="4.000" data-track-index="1" src="assets/footage/later-1.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam2"><video id="later-v2" class="clip" data-start="6.000" data-duration="6.000" data-track-index="1" src="assets/footage/later-2.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam3"><video id="later-v3" class="clip" data-start="12.000" data-duration="3.500" data-track-index="1" src="assets/footage/later-3.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam4"><video id="later-v4" class="clip" data-start="15.500" data-duration="2.500" data-track-index="1" src="assets/footage/later-4.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam5"><video id="later-v5" class="clip" data-start="18.000" data-duration="2.000" data-track-index="1" src="assets/footage/later-5.mp4" muted playsinline></video></div>
-      <div class="cam" id="later-cam6"><video id="later-v6" class="clip" data-start="20.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-6.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam0"><video id="later-v0" class="clip" data-start="0.000" data-duration="6.000" data-track-index="1" src="assets/footage/later-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam1"><video id="later-v1" class="clip" data-start="6.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam2"><video id="later-v2" class="clip" data-start="9.000" data-duration="3.000" data-track-index="1" src="assets/footage/later-2.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam3"><video id="later-v3" class="clip" data-start="12.000" data-duration="2.500" data-track-index="1" src="assets/footage/later-3.mp4" muted playsinline></video></div>
+      <div class="cam" id="later-cam4"><video id="later-v4" class="clip" data-start="14.500" data-duration="3.000" data-track-index="1" src="assets/footage/later-4.mp4" muted playsinline></video></div>
       
-      <div id="later-s0" class="spd clip" data-start="0.000" data-duration="2.000" data-track-index="4"><span class="in">▸▸ 4.0×</span></div>
-      <div id="later-wl1" class="clip" data-start="2.000" data-duration="4.000" data-track-index="4" style="position:absolute;left:18px;top:18px"><div class="wid">World ID · production · World App</div></div>
-      <div id="later-s2" class="spd clip" data-start="6.000" data-duration="6.000" data-track-index="4"><span class="in">▸▸ 1.7×</span></div>
-      <div id="later-s3" class="spd clip" data-start="12.000" data-duration="3.500" data-track-index="4"><span class="in">▸▸ 2.3×</span></div>
-      <div id="later-s5" class="spd clip" data-start="18.000" data-duration="2.000" data-track-index="4"><span class="in">▸▸ 4.0×</span></div>
+      <div id="later-s0" class="spd clip" data-start="0.000" data-duration="6.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
+      <div id="later-s1" class="spd clip" data-start="6.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.7×</span></div>
+      <div id="later-s2" class="spd clip" data-start="9.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
     </div>
     <div class="bar">
-      <div class="tag" id="later-tag"><i></i>05c · Pay later · credit + repay</div>
-      <div id="later-c0" class="cap clip" data-start="0.050" data-duration="1.900" data-track-index="3"><span class="in">Credit limit by reputation: $732.62 → $888.02</span></div>
-      <div id="later-c1" class="cap clip" data-start="2.050" data-duration="3.900" data-track-index="3"><span class="in">World ID verified in World App (Orb) · +50 points</span></div>
-      <div id="later-c2" class="cap clip" data-start="6.050" data-duration="5.900" data-track-index="3"><span class="in">Pay later, privately: your lender knows you, Noren Merchant doesn't</span></div>
-      <div id="later-c3" class="cap clip" data-start="12.050" data-duration="3.400" data-track-index="3"><span class="in">Noren Merchant: 12.50 USDC paid · Customer: <em>Private</em></span></div>
-      <div id="later-c4" class="cap clip" data-start="15.550" data-duration="2.400" data-track-index="3"><span class="in">Live on Arc: 0.40 USDC paid · no borrower, no line in the tx</span></div>
-      <div id="later-c5" class="cap clip" data-start="18.050" data-duration="1.900" data-track-index="3"><span class="in">Repay 8.00 USDC · repayments are public</span></div>
-      <div id="later-c6" class="cap clip" data-start="20.050" data-duration="2.900" data-track-index="3"><span class="in">Live over CCIP: Robinhood testnet → Base hub → Arc</span></div>
-      <div id="later-net0" class="clip" data-start="0.000" data-duration="15.500" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net1" class="clip" data-start="15.500" data-duration="2.500" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="later-net2" class="clip" data-start="18.000" data-duration="2.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net3" class="clip" data-start="20.000" data-duration="3.000" data-track-index="6"><div class="net live"><b></b>CCIP · live · Robinhood testnet → Base → Arc</div></div>
+      <div class="tag" id="later-tag"><i></i>05c · Pay later, privately · repay</div>
+      <div id="later-c0" class="cap clip" data-start="0.100" data-duration="5.900" data-track-index="3"><span class="in">Pay later, privately: your lender knows you, Noren Merchant doesn't</span></div>
+      <div id="later-c1" class="cap clip" data-start="6.100" data-duration="2.900" data-track-index="3"><span class="in">Noren Merchant: 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> paid · Customer: <em>Private</em></span></div>
+      <div id="later-c2" class="cap clip" data-start="9.100" data-duration="2.900" data-track-index="3"><span class="in">Repay 4.17 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> in the Noren app · repayments are public</span></div>
+      <div id="later-c3" class="cap clip" data-start="12.100" data-duration="2.400" data-track-index="3"><span class="in">Live on Arc: 0.40 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> paid · no borrower, no line in the tx</span></div>
+      <div id="later-c4" class="cap clip" data-start="14.600" data-duration="2.850" data-track-index="3"><span class="in">Live over CCIP: Robinhood testnet → Base hub → Arc</span></div>
+      <div id="later-net0" class="clip" data-start="0.000" data-duration="6.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net1" class="clip" data-start="6.000" data-duration="3.000" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="later-net2" class="clip" data-start="9.000" data-duration="3.000" data-track-index="6"><div class="net">Local forks · Arc testnet + Robinhood Chain</div></div><div id="later-net3" class="clip" data-start="12.000" data-duration="2.500" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="later-net4" class="clip" data-start="14.500" data-duration="3.000" data-track-index="6"><div class="net live"><b></b>CCIP · live · Robinhood testnet → Base → Arc</div></div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#later-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#later-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
-    tl.set("#later-cam0", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
-    tl.set("#later-cam4", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.set("#later-cam5", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
-    tl.set("#later-cam6", { transformOrigin: "50% 10%", scale: 1.2 }, 0);
-    tl.fromTo("#later-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.070);
-    tl.to("#later-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 1.650);
-    tl.fromTo("#later-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 2.070);
-    tl.to("#later-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.650);
-    tl.fromTo("#later-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.070);
-    tl.to("#later-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.650);
-    tl.fromTo("#later-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.070);
-    tl.to("#later-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.150);
-    tl.fromTo("#later-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 15.570);
-    tl.to("#later-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.650);
-    tl.fromTo("#later-c5 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 18.070);
-    tl.to("#later-c5 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 19.650);
-    tl.fromTo("#later-c6 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 20.070);
-    tl.to("#later-c6 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 22.650);
+    tl.set("#later-cam2", { transformOrigin: "50% 30%", scale: 1.42 }, 0);
+    tl.set("#later-cam3", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
+    tl.set("#later-cam4", { transformOrigin: "50% 10%", scale: 1.2 }, 0);
+    tl.fromTo("#later-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
+    tl.to("#later-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.700);
+    tl.fromTo("#later-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.120);
+    tl.to("#later-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 8.700);
+    tl.fromTo("#later-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.120);
+    tl.to("#later-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.700);
+    tl.fromTo("#later-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.120);
+    tl.to("#later-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.200);
+    tl.fromTo("#later-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 14.620);
+    tl.to("#later-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.150);
     window.__timelines["later"] = tl;
   </script>
 </template>

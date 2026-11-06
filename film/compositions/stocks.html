@@ -29,22 +29,38 @@
     .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
     .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
     .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .cap img.tk { display: inline-block; width: 38px; height: 38px; vertical-align: -8px; margin: 0 4px 0 2px; border-radius: 50%; }
+    .dia { position: absolute; inset: 0; background: #101a3c; color: #efe8db; padding: 56px 90px; }
+    .dia h3 { font: italic 400 62px/1 "Instrument Serif", serif; text-align: center; margin-bottom: 34px; }
+    .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
+    .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
+    .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
+    .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
+    .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
+    .dia .lane .lg img { width: 50px; height: 50px; object-fit: contain; }
+    .dia .lane .lg img.tok { position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+    .dia .lane b { display: block; font: 600 34px/1.1 "Geist", sans-serif; }
+    .dia .lane small { display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }
+    .dia .lane .st { justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }
+    .dia .lane .st.live { color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }
+    .dia .arrow { position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, #e8643c, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }
+    .dia p { position: absolute; left: 90px; bottom: 34px; font: 500 24px/1 "Geist Mono", monospace; color: #8f96b2; }
     .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
     .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
 
   </style>
   <div id="root" data-composition-id="stocks" data-width="1920" data-height="1080">
     <div class="win" id="stocks-win">
-      <div class="cam" id="stocks-cam0"><video id="stocks-v0" class="clip" data-start="0.000" data-duration="12.000" data-track-index="1" src="assets/footage/stocks-0.mp4" muted playsinline></video></div>
-      <div class="cam" id="stocks-cam1"><video id="stocks-v1" class="clip" data-start="12.000" data-duration="3.000" data-track-index="1" src="assets/footage/stocks-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="stocks-cam0"><video id="stocks-v0" class="clip" data-start="0.000" data-duration="8.125" data-track-index="1" src="assets/footage/stocks-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="stocks-cam1"><video id="stocks-v1" class="clip" data-start="8.125" data-duration="6.875" data-track-index="1" src="assets/footage/stocks-1.mp4" muted playsinline></video></div>
       
-      <div id="stocks-s0" class="spd clip" data-start="0.000" data-duration="12.000" data-track-index="4"><span class="in">▸▸ 1.8×</span></div>
+      <div id="stocks-s0" class="spd clip" data-start="0.000" data-duration="8.125" data-track-index="4"><span class="in">▸▸ 1.6×</span></div>
     </div>
     <div class="bar">
       <div class="tag" id="stocks-tag"><i></i>05b · Pay with stocks</div>
-      <div id="stocks-c0" class="cap clip" data-start="0.200" data-duration="4.200" data-track-index="3"><span class="in">Pay $148 with 0.805179 NVDA at $184.59</span></div>
-      <div id="stocks-c1" class="cap clip" data-start="4.500" data-duration="5.900" data-track-index="3"><span class="in">Filled by a 1inch Aqua maker · Aubelle gets 148 USDG</span></div>
-      <div id="stocks-c2" class="cap clip" data-start="10.500" data-duration="4.400" data-track-index="3"><span class="in">Order paid · signed Noren webhook verified</span></div>
+      <div id="stocks-c0" class="cap clip" data-start="0.100" data-duration="7.900" data-track-index="3"><span class="in">Pay $148 with 0.788045 <img class="tk" src="assets/logos/nvda.svg" alt="NVDA" /> NVDA at $188.41</span></div>
+      <div id="stocks-c1" class="cap clip" data-start="8.100" data-duration="6.800" data-track-index="3"><span class="in">Filled by the lender pool's Aqua maker · order paid</span></div>
       <div id="stocks-net" class="net">Local fork · Robinhood Chain snapshot</div>
     </div>
   </div>
@@ -52,13 +68,10 @@
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#stocks-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#stocks-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
-    tl.set("#stocks-cam1", { transformOrigin: "50% 40%", scale: 1.15 }, 0);
-    tl.fromTo("#stocks-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.220);
-    tl.to("#stocks-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 4.100);
-    tl.fromTo("#stocks-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.520);
-    tl.to("#stocks-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 10.100);
-    tl.fromTo("#stocks-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 10.520);
-    tl.to("#stocks-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.600);
+    tl.fromTo("#stocks-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
+    tl.to("#stocks-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 7.700);
+    tl.fromTo("#stocks-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 8.120);
+    tl.to("#stocks-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.600);
     window.__timelines["stocks"] = tl;
   </script>
 </template>

@@ -2,457 +2,205 @@
   {
     "text": "Three",
     "start": 0,
-    "end": 0.48,
+    "end": 0.507,
     "id": "w0"
   },
   {
     "text": "ways",
-    "start": 0.48,
-    "end": 0.864,
+    "start": 0.507,
+    "end": 0.912,
     "id": "w1"
   },
   {
     "text": "to",
-    "start": 0.864,
-    "end": 1.056,
+    "start": 0.912,
+    "end": 1.115,
     "id": "w2"
   },
   {
     "text": "pay.",
-    "start": 1.056,
-    "end": 1.44,
+    "start": 1.115,
+    "end": 1.52,
     "id": "w3"
   },
   {
     "text": "First,",
-    "start": 1.44,
-    "end": 2.085,
+    "start": 1.52,
+    "end": 2.196,
     "id": "w4"
   },
   {
     "text": "USDC",
-    "start": 2.085,
-    "end": 2.515,
+    "start": 2.196,
+    "end": 2.647,
     "id": "w5"
   },
   {
     "text": "on",
-    "start": 2.515,
-    "end": 2.73,
+    "start": 2.647,
+    "end": 2.873,
     "id": "w6"
   },
   {
-    "text": "ARC",
-    "start": 2.73,
-    "end": 3.053,
+    "text": "ARC,",
+    "start": 2.873,
+    "end": 3.324,
     "id": "w7"
   },
   {
     "text": "private",
-    "start": 3.053,
-    "end": 3.805,
+    "start": 3.324,
+    "end": 4.113,
     "id": "w8"
   },
   {
     "text": "by",
-    "start": 3.805,
-    "end": 4.02,
+    "start": 4.113,
+    "end": 4.338,
     "id": "w9"
   },
   {
     "text": "default.",
-    "start": 4.02,
-    "end": 4.88,
+    "start": 4.338,
+    "end": 5.24,
     "id": "w10"
   },
   {
-    "text": "Get",
-    "start": 4.88,
-    "end": 5.148,
+    "text": "The",
+    "start": 5.24,
+    "end": 5.458,
     "id": "w11"
   },
   {
-    "text": "test",
-    "start": 5.148,
-    "end": 5.505,
+    "text": "shop",
+    "start": 5.458,
+    "end": 5.749,
     "id": "w12"
   },
   {
-    "text": "USDC,",
-    "start": 5.505,
-    "end": 5.952,
+    "text": "is",
+    "start": 5.749,
+    "end": 5.894,
     "id": "w13"
   },
   {
-    "text": "shield",
-    "start": 5.952,
-    "end": 6.487,
+    "text": "paid",
+    "start": 5.894,
+    "end": 6.185,
     "id": "w14"
   },
   {
-    "text": "it",
-    "start": 6.487,
-    "end": 6.666,
+    "text": "from",
+    "start": 6.185,
+    "end": 6.475,
     "id": "w15"
   },
   {
-    "text": "into",
-    "start": 6.666,
-    "end": 7.023,
+    "text": "the",
+    "start": 6.475,
+    "end": 6.693,
     "id": "w16"
   },
   {
-    "text": "a",
-    "start": 7.023,
-    "end": 7.113,
+    "text": "Kohaku",
+    "start": 6.693,
+    "end": 7.129,
     "id": "w17"
   },
   {
-    "text": "Kohaku",
-    "start": 7.113,
-    "end": 7.648,
+    "text": "pool",
+    "start": 7.129,
+    "end": 7.42,
     "id": "w18"
   },
   {
-    "text": "privacy",
-    "start": 7.648,
-    "end": 8.273,
+    "text": "and",
+    "start": 7.42,
+    "end": 7.694,
     "id": "w19"
   },
   {
-    "text": "pool,",
-    "start": 8.273,
-    "end": 8.72,
+    "text": "NoRen",
+    "start": 7.694,
+    "end": 8.151,
     "id": "w20"
   },
   {
-    "text": "and",
-    "start": 8.72,
-    "end": 8.923,
+    "text": "merchant",
+    "start": 8.151,
+    "end": 8.882,
     "id": "w21"
   },
   {
-    "text": "the",
-    "start": 8.923,
-    "end": 9.126,
+    "text": "fees,",
+    "start": 8.882,
+    "end": 9.338,
     "id": "w22"
   },
   {
-    "text": "browser",
-    "start": 9.126,
-    "end": 9.6,
+    "text": "customer",
+    "start": 9.338,
+    "end": 10.069,
     "id": "w23"
   },
   {
-    "text": "proves",
-    "start": 9.6,
-    "end": 10.007,
+    "text": "private.",
+    "start": 10.069,
+    "end": 10.8,
     "id": "w24"
   },
   {
-    "text": "the",
-    "start": 10.007,
-    "end": 10.21,
+    "text": "It",
+    "start": 10.8,
+    "end": 10.996,
     "id": "w25"
   },
   {
-    "text": "payment",
-    "start": 10.21,
-    "end": 10.684,
+    "text": "also",
+    "start": 10.996,
+    "end": 11.387,
     "id": "w26"
   },
   {
-    "text": "in",
-    "start": 10.684,
-    "end": 10.82,
+    "text": "ran",
+    "start": 11.387,
+    "end": 11.681,
     "id": "w27"
   },
   {
-    "text": "about",
-    "start": 10.82,
-    "end": 11.158,
+    "text": "live",
+    "start": 11.681,
+    "end": 12.073,
     "id": "w28"
   },
   {
-    "text": "a",
-    "start": 11.158,
-    "end": 11.226,
+    "text": "from",
+    "start": 12.073,
+    "end": 12.464,
     "id": "w29"
   },
   {
-    "text": "second.",
-    "start": 11.226,
-    "end": 11.7,
+    "text": "USDC",
+    "start": 12.464,
+    "end": 12.856,
     "id": "w30"
   },
   {
-    "text": "Noren",
-    "start": 11.7,
-    "end": 12.065,
+    "text": "burned",
+    "start": 12.856,
+    "end": 13.443,
     "id": "w31"
   },
   {
-    "text": "merchant",
-    "start": 12.065,
-    "end": 12.65,
+    "text": "on",
+    "start": 13.443,
+    "end": 13.639,
     "id": "w32"
   },
   {
-    "text": "sees",
-    "start": 12.65,
-    "end": 12.942,
+    "text": "Arbitrum.",
+    "start": 13.639,
+    "end": 14.52,
     "id": "w33"
-  },
-  {
-    "text": "the",
-    "start": 12.942,
-    "end": 13.162,
-    "id": "w34"
-  },
-  {
-    "text": "money.",
-    "start": 13.162,
-    "end": 13.6,
-    "id": "w35"
-  },
-  {
-    "text": "The",
-    "start": 13.6,
-    "end": 13.874,
-    "id": "w36"
-  },
-  {
-    "text": "customer",
-    "start": 13.874,
-    "end": 14.603,
-    "id": "w37"
-  },
-  {
-    "text": "is",
-    "start": 14.603,
-    "end": 14.786,
-    "id": "w38"
-  },
-  {
-    "text": "just",
-    "start": 14.786,
-    "end": 15.15,
-    "id": "w39"
-  },
-  {
-    "text": "private.",
-    "start": 15.15,
-    "end": 15.88,
-    "id": "w40"
-  },
-  {
-    "text": "Across",
-    "start": 15.88,
-    "end": 16.374,
-    "id": "w41"
-  },
-  {
-    "text": "chains,",
-    "start": 16.374,
-    "end": 16.951,
-    "id": "w42"
-  },
-  {
-    "text": "live",
-    "start": 16.951,
-    "end": 17.28,
-    "id": "w43"
-  },
-  {
-    "text": "on",
-    "start": 17.28,
-    "end": 17.445,
-    "id": "w44"
-  },
-  {
-    "text": "public",
-    "start": 17.445,
-    "end": 17.939,
-    "id": "w45"
-  },
-  {
-    "text": "test",
-    "start": 17.939,
-    "end": 18.268,
-    "id": "w46"
-  },
-  {
-    "text": "nets.",
-    "start": 18.268,
-    "end": 18.68,
-    "id": "w47"
-  },
-  {
-    "text": "USDC",
-    "start": 18.68,
-    "end": 19.098,
-    "id": "w48"
-  },
-  {
-    "text": "burned",
-    "start": 19.098,
-    "end": 19.724,
-    "id": "w49"
-  },
-  {
-    "text": "on",
-    "start": 19.724,
-    "end": 19.933,
-    "id": "w50"
-  },
-  {
-    "text": "arbitrum,",
-    "start": 19.933,
-    "end": 20.873,
-    "id": "w51"
-  },
-  {
-    "text": "arrives",
-    "start": 20.873,
-    "end": 21.604,
-    "id": "w52"
-  },
-  {
-    "text": "over",
-    "start": 21.604,
-    "end": 22.022,
-    "id": "w53"
-  },
-  {
-    "text": "CCTP",
-    "start": 22.022,
-    "end": 22.44,
-    "id": "w54"
-  },
-  {
-    "text": "straight",
-    "start": 22.44,
-    "end": 22.92,
-    "id": "w55"
-  },
-  {
-    "text": "into",
-    "start": 22.92,
-    "end": 23.16,
-    "id": "w56"
-  },
-  {
-    "text": "the",
-    "start": 23.16,
-    "end": 23.34,
-    "id": "w57"
-  },
-  {
-    "text": "pool,",
-    "start": 23.34,
-    "end": 23.64,
-    "id": "w58"
-  },
-  {
-    "text": "and",
-    "start": 23.64,
-    "end": 23.82,
-    "id": "w59"
-  },
-  {
-    "text": "pays",
-    "start": 23.82,
-    "end": 24.06,
-    "id": "w60"
-  },
-  {
-    "text": "an",
-    "start": 24.06,
-    "end": 24.18,
-    "id": "w61"
-  },
-  {
-    "text": "invoice",
-    "start": 24.18,
-    "end": 24.6,
-    "id": "w62"
-  },
-  {
-    "text": "privately.",
-    "start": 24.6,
-    "end": 25.2,
-    "id": "w63"
-  },
-  {
-    "text": "And",
-    "start": 25.2,
-    "end": 25.41,
-    "id": "w64"
-  },
-  {
-    "text": "a",
-    "start": 25.41,
-    "end": 25.48,
-    "id": "w65"
-  },
-  {
-    "text": "one-inch",
-    "start": 25.48,
-    "end": 26.04,
-    "id": "w66"
-  },
-  {
-    "text": "aqua",
-    "start": 26.04,
-    "end": 26.32,
-    "id": "w67"
-  },
-  {
-    "text": "maker",
-    "start": 26.32,
-    "end": 26.67,
-    "id": "w68"
-  },
-  {
-    "text": "on",
-    "start": 26.67,
-    "end": 26.81,
-    "id": "w69"
-  },
-  {
-    "text": "ARC",
-    "start": 26.81,
-    "end": 27.02,
-    "id": "w70"
-  },
-  {
-    "text": "fills,",
-    "start": 27.02,
-    "end": 27.44,
-    "id": "w71"
-  },
-  {
-    "text": "orders",
-    "start": 27.44,
-    "end": 27.833,
-    "id": "w72"
-  },
-  {
-    "text": "from",
-    "start": 27.833,
-    "end": 28.095,
-    "id": "w73"
-  },
-  {
-    "text": "other",
-    "start": 28.095,
-    "end": 28.422,
-    "id": "w74"
-  },
-  {
-    "text": "chains.",
-    "start": 28.422,
-    "end": 28.88,
-    "id": "w75"
   }
 ]

@@ -1,0 +1,1 @@
+Stock Tokens reach Arc as U S D C through a cross-chain Aqua order. So C C T P carries U S D C, Aqua orders carry stocks, and Chainlink C C I P carries credit messages.

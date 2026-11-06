@@ -6,15 +6,18 @@
     @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); font-style: italic; }
     #root { position: absolute; inset: 0; background: #101a3c; overflow: hidden; font-family: "Geist", sans-serif; color: #efe8db; }
     .glow { position: absolute; left: 50%; top: 50%; width: 1700px; height: 1000px; margin: -500px 0 0 -850px; border-radius: 50%; background: radial-gradient(closest-side, rgba(232,100,60,.16), rgba(16,26,60,0)); }
-    .head { position: absolute; left: 190px; top: 112px; font: italic 400 96px/1 "Instrument Serif", serif; color: #efe8db; }
+    .head { position: absolute; left: 150px; top: 112px; font: italic 400 96px/1 "Instrument Serif", serif; color: #efe8db; }
     .head small { display: block; margin-top: 18px; font: 500 28px/1 "Geist Mono", monospace; font-style: normal; letter-spacing: .06em; color: #aab0c8; }
-    .grid { position: absolute; left: 190px; right: 150px; top: 310px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 70px; row-gap: 40px; }
-    .row { display: flex; align-items: baseline; gap: 22px; padding-bottom: 16px; border-bottom: 1px solid rgba(239,232,219,.14); }
+    .grid { position: absolute; left: 150px; right: 150px; top: 300px; display: grid; grid-template-columns: 1fr 1fr 1fr; column-gap: 48px; row-gap: 40px; }
+    .row { display: flex; align-items: flex-start; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid rgba(239,232,219,.14); }
     .row div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .row b { font: 600 40px/1.05 "Geist", sans-serif; color: #efe8db; white-space: nowrap; }
-    .row span { font: 400 28px/1.15 "Geist", sans-serif; color: #aab0c8; }
+    .row .lg { flex: none; width: 64px; height: 64px; border-radius: 18px; background: #efe8db; display: grid; place-items: center; }
+    .row .lg.dark { background: #000; }
+    .row .lg img { width: 42px; height: 42px; object-fit: contain; }
+    .row b { font: 600 34px/1.05 "Geist", sans-serif; color: #efe8db; }
+    .row div > span { font: 400 25px/1.2 "Geist", sans-serif; color: #aab0c8; }
     .row i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e8643c; transform: translateY(-6px); flex: none; }
-    .attrib { position: absolute; left: 190px; top: 925px; font: 500 26px/1.5 "Geist Mono", monospace; color: #aab0c8; }
+    .attrib { position: absolute; left: 150px; top: 925px; font: 500 26px/1.5 "Geist Mono", monospace; color: #aab0c8; }
     .end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .end img { width: 300px; height: 300px; border-radius: 64px; }
     .end h2 { margin-top: 30px; font: 400 150px/1 "Instrument Serif", serif; color: #efe8db; letter-spacing: -.01em; }
@@ -25,21 +28,22 @@
   </style>
   <div id="root" data-composition-id="tech" data-width="1920" data-height="1080">
     <div class="glow" id="tc-glow"></div>
-    <div id="tc-list" class="clip" data-start="0" data-duration="8.6" data-track-index="1" style="position:absolute;inset:0">
+    <div id="tc-list" class="clip" data-start="0" data-duration="9.6" data-track-index="1" style="position:absolute;inset:0">
       <div class="head" id="tc-head">Live on public testnets<small>06 · ARC TESTNET AND 10 CCTP TESTNETS · DOCS/LIVE.MD</small></div>
       <div class="grid">
-        <div class="row" id="tc-r0"><i></i><div><b>Arc</b><span>checkout, privacy pool, oracle, credit line</span></div></div>
-        <div class="row" id="tc-r1"><i></i><div><b>CCTP from 10 chains</b><span>relay on 10 testnets · live runs from 4</span></div></div>
-        <div class="row" id="tc-r2"><i></i><div><b>CCIP · 7 messages</b><span>Robinhood → Base hub → Arc, all delivered</span></div></div>
-        <div class="row" id="tc-r3"><i></i><div><b>1inch Aqua official v1.0.0</b><span>unmodified code, redeployed on Arc testnet</span></div></div>
-        <div class="row" id="tc-r4"><i></i><div><b>Kohaku private payments</b><span>pay, refund, SHIELD from Arbitrum<br />Private pay-later: credit line → Kohaku pool → merchant</span></div></div>
-        <div class="row" id="tc-r5"><i></i><div><b>World ID Orb</b><span>a real verification in World App (production)</span></div></div>
-        <div class="row" id="tc-r6"><i></i><div><b>0G sealed credit</b><span>TeeML decision, independently verified</span></div></div>
-        <div class="row" id="tc-r7"><i></i><div><b>Chainlink CRE</b><span>pricing, credit and relays · simulate --broadcast</span></div></div>
+        <div class="row" id="tc-r0"><span class="lg"><img src="assets/logos/arc.svg" alt="" /></span><div><b>Arc</b><span>checkout, privacy pool, oracle, credit line</span></div></div>
+        <div class="row" id="tc-r1"><span class="lg"><img src="assets/logos/circle.svg" alt="" /></span><div><b>CCTP from 10 chains</b><span>relay on 10 testnets · live from 4, both ways with Robinhood</span></div></div>
+        <div class="row" id="tc-r2"><span class="lg"><img src="assets/logos/chainlink.svg" alt="" /></span><div><b>CCIP · 7 messages</b><span>Robinhood → Base hub → Arc, all delivered</span></div></div>
+        <div class="row" id="tc-r3"><span class="lg"><img src="assets/logos/1inch.svg" alt="" /></span><div><b>1inch Aqua official v1.0.0</b><span>unmodified code, redeployed on Arc testnet</span></div></div>
+        <div class="row" id="tc-r4"><span class="lg"><img src="assets/logos/uniswap.svg" alt="" /></span><div><b>Uniswap v4 on Arc testnet</b><span>live swap 0x5998…5b31 · at the addresses Uniswap lists for Arc mainnet</span></div></div>
+        <div class="row" id="tc-r5"><span class="lg"><img src="assets/logos/kohaku.png" alt="" /></span><div><b>Kohaku private payments</b><span>pay, refund, SHIELD · private pay-later: credit line → pool → merchant</span></div></div>
+        <div class="row" id="tc-r6"><span class="lg"><img src="assets/logos/world.svg" alt="" /></span><div><b>World ID Orb</b><span>a real verification in World App (production)</span></div></div>
+        <div class="row" id="tc-r7"><span class="lg dark"><img src="assets/logos/0g.svg" alt="" /></span><div><b>0G sealed credit</b><span>TeeML decision, independently verified</span></div></div>
+        <div class="row" id="tc-r8"><span class="lg"><img src="assets/logos/chainlink.svg" alt="" /></span><div><b>Chainlink CRE</b><span>pricing, credit and relays · simulate --broadcast</span></div></div>
       </div>
       <div class="attrib" id="tc-attrib">Powered by SwapVM — © Degensoft Ltd 2025<br /><span style="color:#8f96b2">Local forks: stocks, Earn, Borrow (Robinhood Chain mainnet snapshot) and the browser checkout (Arc)</span></div>
     </div>
-    <div id="tc-end" class="clip" data-start="8.6" data-duration="4.4" data-track-index="2" style="position:absolute;inset:0">
+    <div id="tc-end" class="clip" data-start="9.6" data-duration="3.4" data-track-index="2" style="position:absolute;inset:0">
       <div class="end">
         <img id="tc-icon" src="assets/icon.jpg" alt="Noren" />
         <h2 id="tc-name">Noren</h2>
@@ -53,14 +57,14 @@
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#tc-glow", { scale: 0.85, opacity: 0.5 }, { scale: 1.1, opacity: 1, duration: 13, ease: "sine.inOut" }, 0);
     tl.fromTo("#tc-head", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.1);
-    for (let i = 0; i < 8; i++) tl.fromTo(`#tc-r${i}`, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.4 + i * 0.4);
+    for (let i = 0; i < 9; i++) tl.fromTo(`#tc-r${i}`, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.35 + i * 0.32);
     tl.fromTo("#tc-attrib", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 2.6);
-    tl.to("#tc-list .grid, #tc-head, #tc-attrib", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 8.2);
-    tl.fromTo("#tc-icon", { scale: 0.6, opacity: 0, rotation: -6 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.7, ease: "back.out(1.6)" }, 8.65);
-    tl.fromTo("#tc-name", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 9.0);
-    tl.fromTo("#tc-line", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 9.3);
-    tl.fromTo("#tc-url", { y: 20, opacity: 0, scale: 0.96 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 9.65);
-    tl.fromTo("#tc-fine", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 10.0);
+    tl.to("#tc-list .grid, #tc-head, #tc-attrib", { opacity: 0, y: -20, duration: 0.35, ease: "power2.in" }, 9.2);
+    tl.fromTo("#tc-icon", { scale: 0.6, opacity: 0, rotation: -6 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.7, ease: "back.out(1.6)" }, 9.65);
+    tl.fromTo("#tc-name", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, 9.95);
+    tl.fromTo("#tc-line", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 10.2);
+    tl.fromTo("#tc-url", { y: 20, opacity: 0, scale: 0.96 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 10.45);
+    tl.fromTo("#tc-fine", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 10.7);
     window.__timelines["tech"] = tl;
   </script>
 </template>

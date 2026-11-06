@@ -29,66 +29,61 @@
     .crow strong { font: 600 40px/1 "Geist", sans-serif; color: #e8643c; }
     .crow code { font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }
     .card p { position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }
+    .cap img.tk { display: inline-block; width: 38px; height: 38px; vertical-align: -8px; margin: 0 4px 0 2px; border-radius: 50%; }
+    .dia { position: absolute; inset: 0; background: #101a3c; color: #efe8db; padding: 56px 90px; }
+    .dia h3 { font: italic 400 62px/1 "Instrument Serif", serif; text-align: center; margin-bottom: 34px; }
+    .dia .ends { position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }
+    .dia .end { width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }
+    .dia .end img { display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: #efe8db; padding: 12px; object-fit: contain; }
+    .dia .lanes { position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }
+    .dia .lane { display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }
+    .dia .lane .lg { position: relative; width: 76px; height: 76px; border-radius: 50%; background: #efe8db; display: grid; place-items: center; }
+    .dia .lane .lg img { width: 50px; height: 50px; object-fit: contain; }
+    .dia .lane .lg img.tok { position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+    .dia .lane b { display: block; font: 600 34px/1.1 "Geist", sans-serif; }
+    .dia .lane small { display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }
+    .dia .lane .st { justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }
+    .dia .lane .st.live { color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }
+    .dia .arrow { position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, #e8643c, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }
+    .dia p { position: absolute; left: 90px; bottom: 34px; font: 500 24px/1 "Geist Mono", monospace; color: #8f96b2; }
     .redact { position: absolute; background: #101a3c; border: 3px solid #e8643c; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
     .redact span { font: 600 28px/1 "Geist Mono", monospace; color: #efe8db; letter-spacing: .02em; }
 
   </style>
   <div id="root" data-composition-id="private" data-width="1920" data-height="1080">
     <div class="win" id="private-win">
-      <div class="cam" id="private-cam0"><video id="private-v0" class="clip" data-start="0.000" data-duration="12.500" data-track-index="1" src="assets/footage/private-0.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam1"><video id="private-v1" class="clip" data-start="12.500" data-duration="5.000" data-track-index="1" src="assets/footage/private-1.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam2"><video id="private-v2" class="clip" data-start="17.500" data-duration="2.500" data-track-index="1" src="assets/footage/private-2.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam3"><video id="private-v3" class="clip" data-start="20.000" data-duration="2.000" data-track-index="1" src="assets/footage/private-3.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam4"><video id="private-v4" class="clip" data-start="22.000" data-duration="2.000" data-track-index="1" src="assets/footage/private-4.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam5"><video id="private-v5" class="clip" data-start="24.000" data-duration="2.000" data-track-index="1" src="assets/footage/private-5.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam6"><video id="private-v6" class="clip" data-start="26.000" data-duration="2.000" data-track-index="1" src="assets/footage/private-6.mp4" muted playsinline></video></div>
-      <div class="cam" id="private-cam7"><video id="private-v7" class="clip" data-start="28.000" data-duration="3.000" data-track-index="1" src="assets/footage/private-7.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam0"><video id="private-v0" class="clip" data-start="0.000" data-duration="9.091" data-track-index="1" src="assets/footage/private-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam1"><video id="private-v1" class="clip" data-start="9.091" data-duration="3.000" data-track-index="1" src="assets/footage/private-1.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam2"><video id="private-v2" class="clip" data-start="12.091" data-duration="1.500" data-track-index="1" src="assets/footage/private-2.mp4" muted playsinline></video></div>
+      <div class="cam" id="private-cam3"><video id="private-v3" class="clip" data-start="13.591" data-duration="1.410" data-track-index="1" src="assets/footage/private-3.mp4" muted playsinline></video></div>
       
-      <div id="private-s0" class="spd clip" data-start="0.000" data-duration="12.500" data-track-index="4"><span class="in">▸▸ 1.6×</span></div>
-      <div id="private-s1" class="spd clip" data-start="12.500" data-duration="5.000" data-track-index="4"><span class="in">▸▸ 1.8×</span></div>
-      <div id="private-s2" class="spd clip" data-start="17.500" data-duration="2.500" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
-      <div id="private-s7" class="spd clip" data-start="28.000" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 4.0×</span></div>
+      <div id="private-s0" class="spd clip" data-start="0.000" data-duration="9.091" data-track-index="4"><span class="in">▸▸ 2.2×</span></div>
+      <div id="private-s1" class="spd clip" data-start="9.091" data-duration="3.000" data-track-index="4"><span class="in">▸▸ 2.0×</span></div>
     </div>
     <div class="bar">
       <div class="tag" id="private-tag"><i></i>05a · USDC on Arc · private by default</div>
-      <div id="private-c0" class="cap clip" data-start="0.200" data-duration="2.400" data-track-index="3"><span class="in">Checkout opens on <em>Pay privately</em>, the default</span></div>
-      <div id="private-c1" class="cap clip" data-start="2.700" data-duration="3.600" data-track-index="3"><span class="in">Fork faucet: test USDC · shield 20 USDC into the Kohaku pool</span></div>
-      <div id="private-c2" class="cap clip" data-start="6.400" data-duration="3.100" data-track-index="3"><span class="in">The ASP screens the deposit, then: pay 12.50 USDC</span></div>
-      <div id="private-c3" class="cap clip" data-start="9.600" data-duration="2.950" data-track-index="3"><span class="in">Proof in the browser: 1.27 s · payer in the tx: <em>none</em></span></div>
-      <div id="private-c4" class="cap clip" data-start="12.600" data-duration="4.800" data-track-index="3"><span class="in">Noren Merchant: 12.50 USDC paid · Customer: <em>Private</em></span></div>
-      <div id="private-c5" class="cap clip" data-start="17.600" data-duration="2.350" data-track-index="3"><span class="in">Bridge tab: CCTP from 10 testnets</span></div>
-      <div id="private-c6" class="cap clip" data-start="20.050" data-duration="3.900" data-track-index="3"><span class="in">Live: 2 USDC burned on Arbitrum lands in Arc's private pool</span></div>
-      <div id="private-c7" class="cap clip" data-start="24.050" data-duration="3.900" data-track-index="3"><span class="in">Live on Arc: a 0.75 USDC invoice paid privately · an Aqua fill</span></div>
-      <div id="private-c8" class="cap clip" data-start="28.050" data-duration="2.900" data-track-index="3"><span class="in">Noren Merchant · live: payments from other chains</span></div>
-      <div id="private-net0" class="clip" data-start="0.000" data-duration="17.500" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="private-net1" class="clip" data-start="17.500" data-duration="2.500" data-track-index="6"><div class="net">Noren app · records from public testnets</div></div><div id="private-net2" class="clip" data-start="20.000" data-duration="2.000" data-track-index="6"><div class="net live"><b></b>Arbitrum Sepolia · live · public explorer</div></div><div id="private-net3" class="clip" data-start="22.000" data-duration="6.000" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div><div id="private-net4" class="clip" data-start="28.000" data-duration="3.000" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · Noren Merchant</div></div>
+      <div id="private-c0" class="cap clip" data-start="0.100" data-duration="3.800" data-track-index="3"><span class="in">Checkout opens on <em>Pay privately</em>, the default</span></div>
+      <div id="private-c1" class="cap clip" data-start="4.000" data-duration="5.000" data-track-index="3"><span class="in">Shield 20 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> · proof in the browser · payer in the tx: <em>none</em></span></div>
+      <div id="private-c2" class="cap clip" data-start="9.100" data-duration="3.000" data-track-index="3"><span class="in">Noren Merchant: Customer: <em>Private</em></span></div>
+      <div id="private-c3" class="cap clip" data-start="12.100" data-duration="2.850" data-track-index="3"><span class="in">Live: Arbitrum burn with SHIELD hook → private invoice on Arc</span></div>
+      <div id="private-net0" class="clip" data-start="0.000" data-duration="12.091" data-track-index="6"><div class="net">Local fork · Arc testnet</div></div><div id="private-net1" class="clip" data-start="12.091" data-duration="1.500" data-track-index="6"><div class="net live"><b></b>Arbitrum Sepolia · live · public explorer</div></div><div id="private-net2" class="clip" data-start="13.591" data-duration="1.409" data-track-index="6"><div class="net live"><b></b>Arc testnet · live · public explorer</div></div>
     </div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#private-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#private-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
+    tl.set("#private-cam1", { transformOrigin: "40% 8%", scale: 1.9 }, 0);
+    tl.set("#private-cam2", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
     tl.set("#private-cam3", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.set("#private-cam4", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.set("#private-cam5", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.set("#private-cam6", { transformOrigin: "30% 30%", scale: 1.12 }, 0);
-    tl.fromTo("#private-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.220);
-    tl.to("#private-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 2.300);
-    tl.fromTo("#private-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 2.720);
-    tl.to("#private-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 6.000);
-    tl.fromTo("#private-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 6.420);
-    tl.to("#private-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 9.200);
-    tl.fromTo("#private-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.620);
-    tl.to("#private-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 12.250);
-    tl.fromTo("#private-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.620);
-    tl.to("#private-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 17.100);
-    tl.fromTo("#private-c5 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 17.620);
-    tl.to("#private-c5 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 19.650);
-    tl.fromTo("#private-c6 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 20.070);
-    tl.to("#private-c6 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 23.650);
-    tl.fromTo("#private-c7 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 24.070);
-    tl.to("#private-c7 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 27.650);
-    tl.fromTo("#private-c8 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 28.070);
-    tl.to("#private-c8 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 30.650);
+    tl.fromTo("#private-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
+    tl.to("#private-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 3.600);
+    tl.fromTo("#private-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 4.020);
+    tl.to("#private-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 8.700);
+    tl.fromTo("#private-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.120);
+    tl.to("#private-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.800);
+    tl.fromTo("#private-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 12.120);
+    tl.to("#private-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.650);
     window.__timelines["private"] = tl;
   </script>
 </template>

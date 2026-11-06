@@ -92,11 +92,35 @@ def base_css(dark=False):
     .crow strong {{ font: 600 40px/1 "Geist", sans-serif; color: {PERSIMMON}; }}
     .crow code {{ font: 500 28px/1 "Geist Mono", monospace; color: #aab0c8; text-align: right; }}
     .card p {{ position: absolute; left: 110px; bottom: 56px; font: 500 28px/1 "Geist Mono", monospace; color: #8f96b2; }}
+    .cap img.tk {{ display: inline-block; width: 38px; height: 38px; vertical-align: -8px; margin: 0 4px 0 2px; border-radius: 50%; }}
+    .dia {{ position: absolute; inset: 0; background: {NAVY}; color: {LINEN}; padding: 56px 90px; }}
+    .dia h3 {{ font: italic 400 62px/1 "Instrument Serif", serif; text-align: center; margin-bottom: 34px; }}
+    .dia .ends {{ position: absolute; top: 150px; left: 90px; right: 90px; display: flex; justify-content: space-between; }}
+    .dia .end {{ width: 280px; text-align: center; font: 600 28px/1.2 "Geist", sans-serif; white-space: nowrap; }}
+    .dia .end img {{ display: block; width: 96px; height: 96px; margin: 0 auto 12px; border-radius: 24px; background: {LINEN}; padding: 12px; object-fit: contain; }}
+    .dia .lanes {{ position: absolute; top: 340px; left: 90px; right: 90px; display: grid; row-gap: 26px; }}
+    .dia .lane {{ display: grid; grid-template-columns: 76px 1fr 220px; align-items: center; column-gap: 26px; padding: 22px 28px; border-radius: 18px; background: rgba(239,232,219,.07); border: 1px solid rgba(239,232,219,.16); }}
+    .dia .lane .lg {{ position: relative; width: 76px; height: 76px; border-radius: 50%; background: {LINEN}; display: grid; place-items: center; }}
+    .dia .lane .lg img {{ width: 50px; height: 50px; object-fit: contain; }}
+    .dia .lane .lg img.tok {{ position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }}
+    .dia .lane b {{ display: block; font: 600 34px/1.1 "Geist", sans-serif; }}
+    .dia .lane small {{ display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }}
+    .dia .lane .st {{ justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }}
+    .dia .lane .st.live {{ color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }}
+    .dia .arrow {{ position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, {PERSIMMON}, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }}
+    .dia p {{ position: absolute; left: 90px; bottom: 34px; font: 500 24px/1 "Geist Mono", monospace; color: #8f96b2; }}
     .redact {{ position: absolute; background: {NAVY}; border: 3px solid {PERSIMMON}; border-radius: 6px; display: flex; align-items: center; justify-content: center; }}
     .redact span {{ font: 600 28px/1 "Geist Mono", monospace; color: {LINEN}; letter-spacing: .02em; }}
 """
 
+import re as _re
+def icons(text):
+    """{usdc} -> the token's real logo next to the amount (assets/logos, from packages/web/public/logos)."""
+    files = {"usdc": "usdc.svg", "usdg": "usdg.svg", "nvda": "nvda.svg", "eth": "eth.svg", "eurc": "eurc.svg"}
+    return _re.sub(r"\{(usdc|usdg|nvda|eth|eurc)\}", lambda m: f'<img class="tk" src="assets/logos/{files[m.group(1)]}" alt="{m.group(1).upper()}" />', text)
+
 def cap_div(sid, i, local, d, text):
+    text = icons(text)
     return f'<div id="{sid}-c{i}" class="cap clip" data-start="{local:.3f}" data-duration="{d:.3f}" data-track-index="3"><span class="in">{text}</span></div>'
 
 def zoom_of(z):
@@ -109,6 +133,23 @@ def scene_html(s):
     vids, tl, extra = [], [], []
     for seg in segs:
         cid, vid = f"{sid}-cam{seg['n']}", f"{sid}-v{seg['n']}"
+        if seg["take"].startswith("@") and edl.CARDS[seg["take"][1:]].get("kind") == "diagram":
+            c = edl.CARDS[seg["take"][1:]]; k = f'{sid}-k{seg["n"]}'
+            (lf, ln), (rf, rn) = c["left"], c["right"]
+            lanes = "".join(
+                f'<div class="lane" id="{k}l{j}"><span class="lg"><img src="assets/logos/{lg}" alt="" />{f"<img class=\"tok\" src=\"assets/logos/{tk}\" alt=\"\" />" if tk else ""}</span>'
+                f'<div><b>{html.escape(t)}</b><small>{html.escape(d)}</small></div><span class="st{" live" if st.startswith("live") else ""}">{html.escape(st)}</span></div>'
+                for j, (lg, tk, t, d, st) in enumerate(c["lanes"]))
+            vids.append(f'<div id="{k}" class="clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="1" style="position:absolute;inset:0"><div class="dia">'
+                        f'<h3>{html.escape(c["title"])}</h3><div class="arrow" id="{k}a"></div><div class="ends"><div class="end" id="{k}e0"><img src="assets/logos/{lf}" alt="" />{html.escape(ln)}</div>'
+                        f'<div class="end" id="{k}e1"><img src="assets/logos/{rf}" alt="" />{html.escape(rn)}</div></div><div class="lanes">{lanes}</div><p>{html.escape(c["source"])}</p></div></div>')
+            t0 = seg["at"]
+            tl.append(f'tl.fromTo("#{k}e0", {{ x: -30, opacity: 0 }}, {{ x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }}, {t0 + 0.1:.3f});')
+            tl.append(f'tl.fromTo("#{k}e1", {{ x: 30, opacity: 0 }}, {{ x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }}, {t0 + 0.25:.3f});')
+            tl.append(f'tl.fromTo("#{k}a", {{ scaleX: 0 }}, {{ scaleX: 1, duration: 0.7, ease: "power2.inOut" }}, {t0 + 0.45:.3f});')
+            for j in range(len(c["lanes"])):
+                tl.append(f'tl.fromTo("#{k}l{j}", {{ y: 24, opacity: 0 }}, {{ y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }}, {t0 + 0.9 + j * 1.6:.3f});')
+            continue
         if seg["take"].startswith("@"):
             c = edl.CARDS[seg["take"][1:]]
             rows = "".join(f'<div class="crow" id="{sid}-k{seg["n"]}r{j}"><b>{html.escape(a)}</b><span>{html.escape(b)}</span><strong>{html.escape(cc)}</strong><code>{html.escape(d)}</code></div>' for j, (a, b, cc, d) in enumerate(c["rows"]))

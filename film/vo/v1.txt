@@ -1,1 +1,1 @@
-Pay a shop in crypto today, and the shop sees your whole wallet. Noren is a DEX and stablecoin payment rail on Arc, with credit lines and cross-chain settlement, and payments are private by default.
+Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.
