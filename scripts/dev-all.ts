@@ -8,6 +8,7 @@
  * A missing package is reported as "Setup required" and the rest still starts; nothing is faked in its place.
  */
 import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { createPublicClient, http, type Address } from 'viem';
 import { assertRobinhoodFork, ROBINHOOD } from '../packages/server/src/credit.ts';
@@ -66,7 +67,8 @@ run(async () => {
     mounts: async (arc) => {
       // World ID: one unsecured starter credit line per verified human; Noren keeps only the nullifier.
       if (!has('packages/world-id/src/server.ts')) { missing.push('packages/world-id: merge the world-id branch'); return [settle ? settlementHandler(settle, robinhoodRpc, arc) : missingSettlementHandler()]; }
-      if (existsSync('.env')) process.loadEnvFile('.env');
+      // The worktree's .env first, then the main checkout's (where Nick keeps the World ID keys). Values are never printed.
+      for (const f of ['.env', mainCheckoutEnv()]) if (f && existsSync(f)) { process.loadEnvFile(f); break; }
       const w = await import('../packages/world-id/src/server.ts');
       const config = w.loadWorldIdConfig(process.env);
       const gaps = w.missingSettings(config);
@@ -136,6 +138,11 @@ run(async () => {
   console.log(`Web: pnpm --filter @noren/web dev  →  http://localhost:${PORTS.web}/#/credit`);
   return stack;
 });
+
+/** <main checkout>/.env when this is a git worktree (git rev-parse --git-common-dir), else null. */
+function mainCheckoutEnv(): string | null {
+  try { const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' }).trim(); return resolve(common, '..', '.env'); } catch { return null; }
+}
 
 /** Merchant routes for Settle to Arc (bearer token as for the rest of the merchant API). */
 function missingSettlementHandler() {

@@ -4,8 +4,9 @@ import { Copy, Icon, Logo, Setup, TxRef, isFork, msgOf } from "./ui";
 import { LineChart, Menu, Modal, QR, Toasts, downloadCsv, erc20Balance, payoutOf, toast } from "./kit";
 import { createPublicClient, http, parseAbi } from "viem";
 import { creditLineAbi, creditOf } from "./onchain";
+import { Onboard, listStores, readSession, readStoreId, saveSession, saveStoreId, type Session, type StoreView } from "./Onboard";
 
-export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings";
+export type Tab = "home" | "balances" | "payments" | "links" | "developers" | "settings" | "onboard";
 type Quote = { currency: string; fiatAmount: string; usdcAmount: string; rate?: string; quotedAt?: number | string; fiatUsd?: Feed; usdcUsd?: Feed };
 type Feed = { feed: string; answer: string; decimals: number; roundId: string; updatedAt: number | string };
 type Row = InvoiceView & { quote?: Quote };
@@ -31,11 +32,19 @@ const Who = ({ r }: { r: Row }) => r.method === "usdc" ? <span className="sd-lin
 
 /* ================================================================== shell */
 export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
-  const [cfg, setCfg] = useState<Config | null>(null);
+  const [baseCfg, setCfg] = useState<Config | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [name, setName] = useState<string | null>(null);
-  const [token, setTokenState] = useState(readToken);
+  const [devToken, setTokenState] = useState(readToken);
+  // A signed-in owner (SIWE session) acts on its own store; the legacy dev token acts on the dev merchant.
+  const [session, setSession] = useState<Session | null>(readSession);
+  const [stores, setStores] = useState<StoreView[] | null>(null);
+  const [storeId, setStoreId] = useState<string | null>(readStoreId);
+  useEffect(() => { if (!session) { setStores(null); return; } listStores(session.session).then(setStores).catch((e) => { if (/Session required/.test(msgOf(e))) { saveSession(null); setSession(null); } else setStores([]); }); }, [session, tab]);
+  const store = stores?.find((x) => x.id === storeId) ?? stores?.[0] ?? null;
+  const cfg = useMemo(() => (baseCfg && store ? { ...baseCfg, merchant: store.merchant } : baseCfg), [baseCfg, store]);
+  const token = store && session ? session.session : devToken;
   const [tick, setTick] = useState(0);
   const [menu, setMenu] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -43,6 +52,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
   const setToken = (t: string) => { setTokenState(t); try { localStorage.setItem(TOKEN_KEY, t); } catch { /* private mode */ } };
 
   useEffect(() => { api.config().then(setCfg).catch((e) => setErr(msgOf(e))); }, []);
+  const signOut = () => { if (session) fetch(`${SERVER}/auth/logout`, { method: "POST", headers: { authorization: `Bearer ${session.session}` } }).catch(() => {}); saveSession(null); setSession(null); setStores(null); go("#/dashboard"); };
   const refresh = useCallback(async () => {
     if (!cfg) return;
     try { setRows(await api.listInvoices(cfg.merchant) as Row[]); } catch (e) { setErr(msgOf(e)); }
@@ -65,6 +75,14 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
     addEventListener("keydown", k); return () => removeEventListener("keydown", k);
   }, []);
 
+  const firstRun = !!baseCfg && !err && (tab === "onboard" || (!devToken && !session && tab === "home") || (!!session && stores !== null && stores.length === 0 && tab === "home"));
+  if (firstRun && baseCfg) return (
+    <div className="ob-page">
+      <div className="sd-testbar">Noren Merchant · Test mode: payments settle on local forks of Arc testnet and Robinhood Chain. No real funds.</div>
+      <Onboard cfg={baseCfg} session={session} onSession={setSession} onStore={(st) => { setStores((l) => [...(l ?? []), st]); setStoreId(st.id); }} onDone={() => go("#/dashboard")} />
+      <Toasts />
+    </div>
+  );
   const shop = name ?? "Your shop";
   const nav: [Tab, string, () => JSX.Element, number?][] = [["home", "Home", Icon.home], ["balances", "Balances", Icon.receipt], ["payments", "Payments", Icon.card, rows?.length], ["links", "Payment links", Icon.link]];
 
@@ -74,7 +92,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
       <aside className={`sd-side ${menu ? "open" : ""}`}>
         <Menu align="left" trigger={(o) => (
           <button className="sd-acct" onClick={o}><span className="sd-avatar">{shop.slice(0, 1).toUpperCase()}</span><span className="sd-acct-t"><b>{shop}</b><small className="mono">{cfg ? short(cfg.merchant, 6) : "…"}</small></span><span className="sd-chev">⌄</span></button>
-        )} items={[["Business settings", () => go("#/dashboard/settings")], ["Copy merchant ID", () => { if (cfg) { navigator.clipboard?.writeText(cfg.merchant); toast("Merchant ID copied"); } }], "sep", ["View landing page", () => go("#/")]]} />
+        )} items={[["Business settings", () => go("#/dashboard/settings")], ["Copy merchant ID", () => { if (cfg) { navigator.clipboard?.writeText(cfg.merchant); toast("Merchant ID copied"); } }], ...(stores && stores.length > 1 ? stores.filter((x) => x.id !== store?.id).map((x) => [`Switch to ${x.name}`, () => { saveStoreId(x.id); setStoreId(x.id); }] as [string, () => void]) : []), "sep", ["Set up a new store", () => go("#/dashboard/onboard")], ...(session ? [["Sign out", signOut] as [string, () => void]] : []), ["View landing page", () => go("#/")]]} />
         <nav className="sd-nav">
           {nav.map(([k, t, I, c]) => <a key={k} href={`#/dashboard${k === "home" ? "" : `/${k}`}`} aria-current={tab === k ? "page" : undefined}><I /><span>{t}</span>{!!c && <em>{c}</em>}</a>)}
           <span className="sd-nav-h">Developers</span>
@@ -107,7 +125,7 @@ export function Dashboard({ tab, sub }: { tab: Tab; sub?: string }) {
               {tab === "balances" && <Balances rows={rows} cfg={cfg} token={token} />}
               {tab === "payments" && (sub ? <PaymentPage id={sub} rows={rows} cfg={cfg} token={token} onDone={refresh} tick={tick} /> : <Payments rows={rows} />)}
               {tab === "links" && <Links rows={rows} onCreate={() => setCreating(true)} token={token} />}
-              {tab === "developers" && <Developers cfg={cfg} token={token} setToken={setToken} sub={sub} tick={tick} />}
+              {tab === "developers" && <Developers cfg={cfg} token={token} setToken={setToken} sub={sub} tick={tick} store={store} session={session} onStores={() => session && listStores(session.session).then(setStores).catch(() => {})} />}
               {tab === "settings" && <Settings cfg={cfg} token={token} name={name} onSaved={setName} />}
             </>
           )}
@@ -697,14 +715,44 @@ function CreateLink({ cfg, token, shop, onClose, onDone }: { cfg: Config; token:
 }
 
 /* ================================================================== developers */
-function Developers({ cfg, token, setToken, sub, tick }: { cfg: Config; token: string; setToken: (t: string) => void; sub?: string; tick: number }) {
+function Developers({ cfg, token, setToken, sub, tick, store, session, onStores }: { cfg: Config; token: string; setToken: (t: string) => void; sub?: string; tick: number; store: StoreView | null; session: Session | null; onStores: () => void }) {
   const t = sub === "webhooks" || sub === "events" ? sub : "keys";
   return (
     <>
       <PageHead title={t === "keys" ? "API keys" : t === "webhooks" ? "Webhooks" : "Events"} sub={t === "keys" ? "Authenticate requests to your Noren server." : t === "webhooks" ? "Get a signed POST when payments settle." : "Everything that happened, with each webhook delivery."} />
-      {t === "keys" && <Keys cfg={cfg} token={token} setToken={setToken} />}
+      {t === "keys" && (store && session ? <StoreKeys store={store} session={session} onChange={onStores} /> : <Keys cfg={cfg} token={token} setToken={setToken} />)}
       {t === "webhooks" && <Hooks cfg={cfg} token={token} tick={tick} />}
       {t === "events" && <Events cfg={cfg} token={token} tick={tick} />}
+    </>
+  );
+}
+
+/** A signed-in store's keys: publishable key, secret keys by prefix (the server keeps only hashes), roll and revoke. */
+function StoreKeys({ store, session, onChange }: { store: StoreView; session: Session; onChange: () => void }) {
+  const [fresh, setFresh] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const call = async (path: string, method: string) => { const r = await fetch(`${SERVER}${path}`, { method, headers: { authorization: `Bearer ${session.session}` } }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`); return j; };
+  const act = async (k: string, f: () => Promise<void>) => { setBusy(k); try { await f(); onChange(); } catch (e) { toast(msgOf(e), "err"); } finally { setBusy(null); } };
+  return (
+    <>
+      <div className="sd-table-wrap">
+        <table className="sd-table static">
+          <thead><tr><th>Name</th><th>Token</th><th className="hide-s">Created</th><th /></tr></thead>
+          <tbody>
+            <tr><td><b>Publishable key</b><small className="sd-sub">safe in a browser</small></td><td className="mono">{store.publishableKey}</td><td className="hide-s sd-muted">{dt(store.createdAt)}</td><td className="r"><Copy text={store.publishableKey} /></td></tr>
+            <tr><td><b>Merchant ID</b><small className="sd-sub">on-chain, registered on Arc</small></td><td className="mono">{short(store.merchant, 10)}</td><td className="hide-s sd-muted mono">{short(store.registerTx, 6)}</td><td className="r"><Copy text={store.merchant} /></td></tr>
+            {store.keys.map((k) => (
+              <tr key={k.id}><td><b>Secret key</b><small className="sd-sub">{k.revokedAt ? `revoked ${dt(k.revokedAt)}` : "test mode"}</small></td><td className="mono">{k.prefix}{"•".repeat(16)}</td><td className="hide-s sd-muted">{dt(k.createdAt)}</td><td className="r">{!k.revokedAt && <button className="sd-btn xs" disabled={!!busy} onClick={() => { if (confirm("Revoke this secret key? Requests using it fail immediately.")) act(k.id, async () => { await call(`/stores/${store.id}/keys/${k.id}`, "DELETE"); toast("Secret key revoked"); }); }}>{busy === k.id ? "Revoking…" : "Revoke"}</button>}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <section className="sd-panel narrow">
+        <h2>Secret keys</h2>
+        <p className="sd-muted">Noren stores only a hash of each secret key, so a key is shown once, when you create it.</p>
+        {fresh && <div className="sd-secret"><code className="mono">{fresh}</code><Copy text={fresh} /></div>}
+        <div className="sd-row"><button className="sd-btn primary" disabled={!!busy} onClick={() => act("new", async () => { const r = await call(`/stores/${store.id}/keys`, "POST"); setFresh(r.secretKey); toast("New secret key created"); })}>{busy === "new" ? "Creating…" : "Create secret key"}</button></div>
+      </section>
     </>
   );
 }
