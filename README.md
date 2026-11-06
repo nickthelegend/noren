@@ -1,6 +1,8 @@
 # Noren (暖簾)
 
-> **Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.**
+> **Noren lets merchants accept stablecoins, stocks or credit — privately.**
+>
+> A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.
 
 **What's new**
 - **Lending pools that are 1inch Aqua makers.** The lender pool and the Earn vaults ship Chainlink-pegged SwapVM strategies, and their balances never leave the vault. The same capital backs loans, earns the spread on fills (stock payments, cross-chain orders, swaps where it beats Uniswap) and buys liquidated collateral in partial Dutch auctions. `harvestToRepay` lets those fees pay a loan down. We added two SwapVM opcodes: `NorenOraclePeg` (34) and `NorenDutchDecay` (35).

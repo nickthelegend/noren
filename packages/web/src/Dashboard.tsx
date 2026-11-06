@@ -204,7 +204,7 @@ function Home({ rows, shop, cfg, onCreate, token }: { rows: Row[] | null; shop: 
   ];
   return (
     <>
-      <PageHead title="Today" sub={<>Welcome back, {shop}. Everything here is read from your server and the chain; nothing here identifies a customer.</>}>
+      <PageHead title="Today" sub={<>Noren lets merchants accept stablecoins, stocks or credit — privately. Welcome back, {shop}: everything here is read from your server and the chain, and nothing here identifies a customer.</>}>
         <button className="sd-btn primary" disabled={!token} onClick={onCreate}><Icon.plus /> Create payment link</button>
       </PageHead>
 

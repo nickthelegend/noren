@@ -206,7 +206,7 @@ export function Landing() {
         <div className="lx-hero-in">
           <span className="lx-pill mono"><i />Live on Arc, CCTP and CCIP testnets</span>
           <h1>Stablecoin Payments That <em>Never See</em><br /><em>Who</em> Paid You</h1>
-          <p>Noren is a DEX and stablecoin payment network on Arc. Merchants get private stablecoin settlement; customers get credit against collateral in Noren's lending pools, and that collateral earns trading fees as 1inch Aqua liquidity.</p>
+          <p>Noren lets merchants accept stablecoins, stocks or credit — privately. A DEX and stablecoin payment network on Arc: private settlement for merchants, credit from lending pools that are 1inch Aqua liquidity, and USDC from any chain.</p>
           <div className="lx-ctas">
             <a className="lx-btn light" href="#/dashboard">Open dashboard</a>
             <a className="lx-btn dark" href="#developers">Read the API</a>
