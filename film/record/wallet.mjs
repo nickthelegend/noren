@@ -20,7 +20,8 @@ import { createWalletClient, http, hexToString, isHex, defineChain } from "viem"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const KEY_FILE = `${HERE}state/wallet-key.json`;
+// WALLET_KEY=customer keeps a second persona (the shopper) apart from the merchant's key
+const KEY_FILE = `${HERE}state/wallet-key${process.env.WALLET_KEY ? "-" + process.env.WALLET_KEY.replace(/[^a-z0-9-]/gi, "") : ""}.json`;
 
 /** chainId -> RPC. "fork": the local stack from `pnpm dev:all`; "live": the public testnets. */
 export const NETS = {
@@ -108,7 +109,8 @@ export async function installWallet(ctx, { net = "fork", chainId = 5042002, rpcs
         }
         case "wallet_addEthereumChain": {
           const p = params[0] ?? {}, next = Number(p.chainId);
-          if (!rpc[next] && p.rpcUrls?.[0]) rpc[next] = p.rpcUrls[0];
+          // the dapp's RPC for this chain wins (the app hands the wallet its fork or testnet RPC here)
+          if (p.rpcUrls?.[0]) { if (rpc[next] !== p.rpcUrls[0]) log(`wallet: chain ${next} via ${p.rpcUrls[0]}`); rpc[next] = p.rpcUrls[0]; }
           if (!rpc[next]) return { error: { code: 4902, message: `No RPC for chain ${next}` } };
           return { chainId: hex(next) };
         }

@@ -1,242 +1,260 @@
 [
   {
     "text": "A",
-    "start": 0.03,
-    "end": 0.09,
+    "start": 0,
+    "end": 0.085,
     "id": "w0"
   },
   {
     "text": "merchant",
-    "start": 0.09,
-    "end": 0.81,
+    "start": 0.085,
+    "end": 0.767,
     "id": "w1"
   },
   {
     "text": "signs",
-    "start": 0.81,
-    "end": 1.26,
+    "start": 0.767,
+    "end": 1.193,
     "id": "w2"
   },
   {
     "text": "in",
-    "start": 1.26,
-    "end": 1.38,
+    "start": 1.193,
+    "end": 1.364,
     "id": "w3"
   },
   {
     "text": "with",
-    "start": 1.44,
-    "end": 1.8,
+    "start": 1.364,
+    "end": 1.705,
     "id": "w4"
   },
   {
-    "text": "a",
-    "start": 1.8,
-    "end": 1.87,
+    "text": "Privy",
+    "start": 1.705,
+    "end": 2.131,
     "id": "w5"
   },
   {
-    "text": "wallet.",
-    "start": 1.88,
-    "end": 2.48,
+    "text": "or",
+    "start": 2.131,
+    "end": 2.301,
     "id": "w6"
   },
   {
-    "text": "No",
-    "start": 2.51,
-    "end": 2.64,
+    "text": "a",
+    "start": 2.301,
+    "end": 2.387,
     "id": "w7"
   },
   {
-    "text": "password,",
-    "start": 2.64,
-    "end": 3.46,
+    "text": "browser",
+    "start": 2.387,
+    "end": 2.983,
     "id": "w8"
   },
   {
-    "text": "no",
-    "start": 3.46,
-    "end": 3.62,
+    "text": "wallet.",
+    "start": 2.983,
+    "end": 3.58,
     "id": "w9"
   },
   {
-    "text": "transaction.",
-    "start": 3.62,
-    "end": 4.8,
+    "text": "No",
+    "start": 3.58,
+    "end": 3.762,
     "id": "w10"
   },
   {
-    "text": "Name",
-    "start": 4.83,
-    "end": 5.06,
+    "text": "password,",
+    "start": 3.762,
+    "end": 4.583,
     "id": "w11"
   },
   {
-    "text": "the",
-    "start": 5.06,
-    "end": 5.25,
+    "text": "no",
+    "start": 4.583,
+    "end": 4.766,
     "id": "w12"
   },
   {
-    "text": "store,",
-    "start": 5.25,
-    "end": 5.72,
+    "text": "transaction.",
+    "start": 4.766,
+    "end": 5.86,
     "id": "w13"
   },
   {
-    "text": "choose",
-    "start": 5.72,
-    "end": 6.04,
+    "text": "Name",
+    "start": 5.86,
+    "end": 6.201,
     "id": "w14"
   },
   {
-    "text": "where",
-    "start": 6.04,
-    "end": 6.32,
+    "text": "the",
+    "start": 6.201,
+    "end": 6.457,
     "id": "w15"
   },
   {
-    "text": "USDC",
-    "start": 6.32,
-    "end": 7.28,
+    "text": "store,",
+    "start": 6.457,
+    "end": 6.969,
     "id": "w16"
   },
   {
-    "text": "payouts",
-    "start": 7.31,
-    "end": 7.75,
+    "text": "choose",
+    "start": 6.969,
+    "end": 7.481,
     "id": "w17"
   },
   {
-    "text": "land",
-    "start": 7.81,
-    "end": 8.07,
+    "text": "where",
+    "start": 7.481,
+    "end": 7.908,
     "id": "w18"
   },
   {
-    "text": "on",
-    "start": 8.11,
-    "end": 8.3,
+    "text": "USDC",
+    "start": 7.908,
+    "end": 8.249,
     "id": "w19"
   },
   {
-    "text": "ARC,",
-    "start": 8.3,
-    "end": 8.64,
+    "text": "payouts",
+    "start": 8.249,
+    "end": 8.847,
     "id": "w20"
   },
   {
-    "text": "and",
-    "start": 8.67,
-    "end": 8.89,
+    "text": "land",
+    "start": 8.847,
+    "end": 9.188,
     "id": "w21"
   },
   {
-    "text": "NoRen",
-    "start": 8.89,
-    "end": 9.19,
+    "text": "on",
+    "start": 9.188,
+    "end": 9.359,
     "id": "w22"
   },
   {
-    "text": "registers",
-    "start": 9.36,
-    "end": 10.02,
+    "text": "ARC,",
+    "start": 9.359,
+    "end": 9.7,
     "id": "w23"
   },
   {
-    "text": "it",
-    "start": 10.08,
-    "end": 10.21,
+    "text": "and",
+    "start": 9.7,
+    "end": 9.971,
     "id": "w24"
   },
   {
-    "text": "on",
-    "start": 10.21,
-    "end": 10.37,
+    "text": "NoRen",
+    "start": 9.971,
+    "end": 10.423,
     "id": "w25"
   },
   {
-    "text": "chain.",
-    "start": 10.37,
-    "end": 11.08,
+    "text": "registers",
+    "start": 10.423,
+    "end": 11.236,
     "id": "w26"
   },
   {
-    "text": "Then",
-    "start": 11.11,
-    "end": 11.46,
+    "text": "it",
+    "start": 11.236,
+    "end": 11.417,
     "id": "w27"
   },
   {
-    "text": "a",
-    "start": 11.46,
-    "end": 11.55,
+    "text": "on",
+    "start": 11.417,
+    "end": 11.598,
     "id": "w28"
   },
   {
-    "text": "first",
-    "start": 11.55,
-    "end": 12.03,
+    "text": "chain.",
+    "start": 11.598,
+    "end": 12.14,
     "id": "w29"
   },
   {
-    "text": "payment",
-    "start": 12.03,
-    "end": 12.7,
+    "text": "Then",
+    "start": 12.14,
+    "end": 12.555,
     "id": "w30"
   },
   {
-    "text": "link",
-    "start": 12.7,
-    "end": 13.05,
+    "text": "a",
+    "start": 12.555,
+    "end": 12.659,
     "id": "w31"
   },
   {
-    "text": "and",
-    "start": 13.05,
-    "end": 13.09,
+    "text": "first",
+    "start": 12.659,
+    "end": 13.178,
     "id": "w32"
   },
   {
-    "text": "API",
-    "start": 13.59,
-    "end": 13.64,
+    "text": "payment",
+    "start": 13.178,
+    "end": 13.904,
     "id": "w33"
   },
   {
-    "text": "keys.",
-    "start": 13.64,
-    "end": 14.35,
+    "text": "link",
+    "start": 13.904,
+    "end": 14.319,
     "id": "w34"
   },
   {
-    "text": "The",
-    "start": 14.39,
-    "end": 14.56,
+    "text": "and",
+    "start": 14.319,
+    "end": 14.63,
     "id": "w35"
   },
   {
-    "text": "secret",
-    "start": 14.56,
-    "end": 14.91,
+    "text": "API",
+    "start": 14.63,
+    "end": 14.941,
     "id": "w36"
   },
   {
-    "text": "is",
-    "start": 15.07,
-    "end": 15.1,
+    "text": "keys.",
+    "start": 14.941,
+    "end": 15.46,
     "id": "w37"
   },
   {
-    "text": "shown",
-    "start": 15.1,
-    "end": 15.38,
+    "text": "The",
+    "start": 15.46,
+    "end": 15.683,
     "id": "w38"
   },
   {
-    "text": "once.",
-    "start": 15.44,
-    "end": 15.96,
+    "text": "secret",
+    "start": 15.683,
+    "end": 16.129,
     "id": "w39"
+  },
+  {
+    "text": "is",
+    "start": 16.129,
+    "end": 16.277,
+    "id": "w40"
+  },
+  {
+    "text": "shown",
+    "start": 16.277,
+    "end": 16.649,
+    "id": "w41"
+  },
+  {
+    "text": "once.",
+    "start": 16.649,
+    "end": 17.02,
+    "id": "w42"
   }
 ]

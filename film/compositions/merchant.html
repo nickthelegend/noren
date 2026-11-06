@@ -42,6 +42,8 @@
     .dia .lane .lg img.tok { position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }
     .dia .lane b { display: block; font: 600 34px/1.1 "Geist", sans-serif; }
     .dia .lane small { display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }
+    .dia .lane b .chs { display: inline-flex; gap: 8px; margin-left: 18px; vertical-align: -6px; }
+    .dia .lane b .chs img { width: 34px; height: 34px; border-radius: 9px; background: #efe8db; padding: 4px; object-fit: contain; }
     .dia .lane .st { justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }
     .dia .lane .st.live { color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }
     .dia .arrow { position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, #e8643c, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }
@@ -52,17 +54,20 @@
   </style>
   <div id="root" data-composition-id="merchant" data-width="1920" data-height="1080">
     <div class="win" id="merchant-win">
-      <div class="cam" id="merchant-cam0"><video id="merchant-v0" class="clip" data-start="0.000" data-duration="20.000" data-track-index="1" src="assets/footage/merchant-0.mp4" muted playsinline></video></div>
-      <div id="merchant-r00" class="clip" data-start="11.088" data-duration="8.912" data-track-index="5" style="position:absolute;left:0;top:0;width:1600px;height:900px" data-layout-allow-overlap data-layout-allow-occlusion><div class="redact" id="merchant-r00b" style="left:825.0px;top:353.3px;width:454.2px;height:53.3px"><span>secret key · redacted</span></div></div>
-      <div id="merchant-r01" class="clip" data-start="11.088" data-duration="8.912" data-track-index="5" style="position:absolute;left:0;top:0;width:1600px;height:900px" data-layout-allow-overlap data-layout-allow-occlusion><div class="redact" id="merchant-r01b" style="left:993.3px;top:661.7px;width:241.7px;height:30.0px"></div></div>
-      <div id="merchant-s0" class="spd clip" data-start="0.000" data-duration="20.000" data-track-index="4"><span class="in">▸▸ 1.7×</span></div>
+      <div class="cam" id="merchant-cam0"><video id="merchant-v0" class="clip" data-start="0.000" data-duration="2.600" data-track-index="1" src="assets/footage/merchant-0.mp4" muted playsinline></video></div>
+      <div class="cam" id="merchant-cam1"><video id="merchant-v1" class="clip" data-start="2.600" data-duration="17.400" data-track-index="1" src="assets/footage/merchant-1.mp4" muted playsinline></video></div>
+      <div id="merchant-r10" class="clip" data-start="14.983" data-duration="5.017" data-track-index="5" style="position:absolute;left:0;top:0;width:1600px;height:900px" data-layout-allow-overlap data-layout-allow-occlusion><div class="redact" id="merchant-r10b" style="left:820.0px;top:351.7px;width:454.2px;height:58.3px"><span>secret key · redacted</span></div></div>
+      <div id="merchant-r11" class="clip" data-start="14.983" data-duration="5.017" data-track-index="5" style="position:absolute;left:0;top:0;width:1600px;height:900px" data-layout-allow-overlap data-layout-allow-occlusion><div class="redact" id="merchant-r11b" style="left:1070.0px;top:658.3px;width:163.3px;height:31.7px"></div></div>
+      <div id="merchant-s1" class="spd clip" data-start="2.600" data-duration="17.400" data-track-index="4"><span class="in">▸▸ 1.6×</span></div>
     </div>
     <div class="bar">
       <div class="tag" id="merchant-tag"><i></i>02 · Noren Merchant</div>
-      <div id="merchant-c0" class="cap clip" data-start="0.300" data-duration="5.000" data-track-index="3"><span class="in">Sign in with Ethereum (EIP-4361): a signature, no transaction</span></div>
-      <div id="merchant-c1" class="cap clip" data-start="5.600" data-duration="4.600" data-track-index="3"><span class="in">Store registered on Arc: <em>NorenCheckout.registerMerchant</em></span></div>
-      <div id="merchant-c2" class="cap clip" data-start="10.600" data-duration="4.800" data-track-index="3"><span class="in">First payment link: 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC</span></div>
-      <div id="merchant-c3" class="cap clip" data-start="15.600" data-duration="4.200" data-track-index="3"><span class="in">API keys; the secret is shown once <em>(redacted here)</em></span></div>
+      <div id="merchant-c0" class="cap clip" data-start="0.100" data-duration="2.500" data-track-index="3"><span class="in">Privy sign-in (email or wallet)</span></div>
+      <div id="merchant-c1" class="cap clip" data-start="2.700" data-duration="2.900" data-track-index="3"><span class="in">demo continues with an injected test wallet on local forks</span></div>
+      <div id="merchant-c2" class="cap clip" data-start="5.700" data-duration="3.200" data-track-index="3"><span class="in">Signed in with SIWE (EIP-4361): a signature, no transaction</span></div>
+      <div id="merchant-c3" class="cap clip" data-start="9.000" data-duration="4.000" data-track-index="3"><span class="in">Store registered on Arc: <em>NorenCheckout.registerMerchant</em></span></div>
+      <div id="merchant-c4" class="cap clip" data-start="13.100" data-duration="1.900" data-track-index="3"><span class="in">First payment link: 12.50 <img class="tk" src="assets/logos/usdc.svg" alt="USDC" /> USDC</span></div>
+      <div id="merchant-c5" class="cap clip" data-start="15.100" data-duration="4.700" data-track-index="3"><span class="in">API keys; the secret is shown once <em>(redacted here)</em></span></div>
       <div id="merchant-net" class="net">Local fork · Arc testnet</div>
     </div>
   </div>
@@ -70,26 +75,76 @@
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#merchant-tag", { x: -16, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 0.05);
     tl.fromTo("#merchant-win", { y: 24, opacity: 0.0 }, { y: 0, opacity: 1, duration: 0.45, ease: "power3.out" }, 0.000);
-    tl.set("#merchant-r00b", { y: 0.0 }, 14.059);
-    tl.fromTo("#merchant-r00b", { y: 0.0 }, { y: -30.0, duration: 0.118, ease: "none" }, 14.059);
-    tl.fromTo("#merchant-r00b", { y: -30.0 }, { y: -90.0, duration: 0.176, ease: "none" }, 14.176);
-    tl.fromTo("#merchant-r00b", { y: -90.0 }, { y: -160.0, duration: 0.176, ease: "none" }, 14.353);
-    tl.fromTo("#merchant-r00b", { y: -160.0 }, { y: -240.0, duration: 0.176, ease: "none" }, 14.529);
-    tl.fromTo("#merchant-r00b", { y: -240.0 }, { y: -276.7, duration: 0.176, ease: "none" }, 14.706);
-    tl.set("#merchant-r01b", { y: 0.0 }, 14.059);
-    tl.fromTo("#merchant-r01b", { y: 0.0 }, { y: -30.0, duration: 0.118, ease: "none" }, 14.059);
-    tl.fromTo("#merchant-r01b", { y: -30.0 }, { y: -90.0, duration: 0.176, ease: "none" }, 14.176);
-    tl.fromTo("#merchant-r01b", { y: -90.0 }, { y: -160.0, duration: 0.176, ease: "none" }, 14.353);
-    tl.fromTo("#merchant-r01b", { y: -160.0 }, { y: -240.0, duration: 0.176, ease: "none" }, 14.529);
-    tl.fromTo("#merchant-r01b", { y: -240.0 }, { y: -276.7, duration: 0.176, ease: "none" }, 14.706);
-    tl.fromTo("#merchant-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.320);
-    tl.to("#merchant-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.000);
-    tl.fromTo("#merchant-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 5.620);
-    tl.to("#merchant-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 9.900);
-    tl.fromTo("#merchant-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 10.620);
-    tl.to("#merchant-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.100);
-    tl.fromTo("#merchant-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 15.620);
-    tl.to("#merchant-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 19.500);
+    tl.set("#merchant-r10b", { y: 0.0 }, 0);
+    tl.fromTo("#merchant-r10b", { y: 0.0 }, { y: -10.0, duration: 0.106, ease: "none", immediateRender: false }, 17.650);
+    tl.fromTo("#merchant-r10b", { y: -10.0 }, { y: -20.0, duration: 0.042, ease: "none", immediateRender: false }, 17.756);
+    tl.fromTo("#merchant-r10b", { y: -20.0 }, { y: -30.0, duration: 0.022, ease: "none", immediateRender: false }, 17.798);
+    tl.fromTo("#merchant-r10b", { y: -30.0 }, { y: -40.0, duration: 0.021, ease: "none", immediateRender: false }, 17.820);
+    tl.fromTo("#merchant-r10b", { y: -40.0 }, { y: -50.0, duration: 0.021, ease: "none", immediateRender: false }, 17.841);
+    tl.fromTo("#merchant-r10b", { y: -50.0 }, { y: -60.0, duration: 0.022, ease: "none", immediateRender: false }, 17.862);
+    tl.fromTo("#merchant-r10b", { y: -60.0 }, { y: -70.0, duration: 0.042, ease: "none", immediateRender: false }, 17.883);
+    tl.fromTo("#merchant-r10b", { y: -70.0 }, { y: -90.0, duration: 0.022, ease: "none", immediateRender: false }, 17.925);
+    tl.fromTo("#merchant-r10b", { y: -90.0 }, { y: -100.0, duration: 0.021, ease: "none", immediateRender: false }, 17.947);
+    tl.fromTo("#merchant-r10b", { y: -100.0 }, { y: -110.0, duration: 0.021, ease: "none", immediateRender: false }, 17.968);
+    tl.fromTo("#merchant-r10b", { y: -110.0 }, { y: -120.0, duration: 0.022, ease: "none", immediateRender: false }, 17.989);
+    tl.fromTo("#merchant-r10b", { y: -120.0 }, { y: -130.0, duration: 0.042, ease: "none", immediateRender: false }, 18.010);
+    tl.fromTo("#merchant-r10b", { y: -130.0 }, { y: -140.0, duration: 0.022, ease: "none", immediateRender: false }, 18.052);
+    tl.fromTo("#merchant-r10b", { y: -140.0 }, { y: -150.0, duration: 0.021, ease: "none", immediateRender: false }, 18.074);
+    tl.fromTo("#merchant-r10b", { y: -150.0 }, { y: -160.0, duration: 0.021, ease: "none", immediateRender: false }, 18.095);
+    tl.fromTo("#merchant-r10b", { y: -160.0 }, { y: -170.0, duration: 0.022, ease: "none", immediateRender: false }, 18.116);
+    tl.fromTo("#merchant-r10b", { y: -170.0 }, { y: -180.0, duration: 0.042, ease: "none", immediateRender: false }, 18.137);
+    tl.fromTo("#merchant-r10b", { y: -180.0 }, { y: -200.0, duration: 0.022, ease: "none", immediateRender: false }, 18.179);
+    tl.fromTo("#merchant-r10b", { y: -200.0 }, { y: -210.0, duration: 0.042, ease: "none", immediateRender: false }, 18.201);
+    tl.fromTo("#merchant-r10b", { y: -210.0 }, { y: -220.0, duration: 0.022, ease: "none", immediateRender: false }, 18.243);
+    tl.fromTo("#merchant-r10b", { y: -220.0 }, { y: -230.0, duration: 0.042, ease: "none", immediateRender: false }, 18.264);
+    tl.fromTo("#merchant-r10b", { y: -230.0 }, { y: -250.0, duration: 0.022, ease: "none", immediateRender: false }, 18.306);
+    tl.fromTo("#merchant-r10b", { y: -250.0 }, { y: -260.0, duration: 0.042, ease: "none", immediateRender: false }, 18.328);
+    tl.fromTo("#merchant-r10b", { y: -260.0 }, { y: -275.0, duration: 0.022, ease: "none", immediateRender: false }, 18.370);
+    tl.fromTo("#merchant-r10b", { y: -275.0 }, { y: -275.8, duration: 0.042, ease: "none", immediateRender: false }, 18.391);
+    tl.fromTo("#merchant-r10b", { y: -275.8 }, { y: -276.7, duration: 0.022, ease: "none", immediateRender: false }, 18.433);
+    tl.fromTo("#merchant-r10b", { y: -276.7 }, { y: -275.8, duration: 0.064, ease: "none", immediateRender: false }, 18.455);
+    tl.fromTo("#merchant-r10b", { y: -275.8 }, { y: -276.7, duration: 0.084, ease: "none", immediateRender: false }, 18.518);
+    tl.set("#merchant-r11b", { y: 0.0 }, 0);
+    tl.fromTo("#merchant-r11b", { y: 0.0 }, { y: -10.0, duration: 0.106, ease: "none", immediateRender: false }, 17.650);
+    tl.fromTo("#merchant-r11b", { y: -10.0 }, { y: -20.0, duration: 0.042, ease: "none", immediateRender: false }, 17.756);
+    tl.fromTo("#merchant-r11b", { y: -20.0 }, { y: -30.0, duration: 0.022, ease: "none", immediateRender: false }, 17.798);
+    tl.fromTo("#merchant-r11b", { y: -30.0 }, { y: -40.0, duration: 0.021, ease: "none", immediateRender: false }, 17.820);
+    tl.fromTo("#merchant-r11b", { y: -40.0 }, { y: -50.0, duration: 0.021, ease: "none", immediateRender: false }, 17.841);
+    tl.fromTo("#merchant-r11b", { y: -50.0 }, { y: -60.0, duration: 0.022, ease: "none", immediateRender: false }, 17.862);
+    tl.fromTo("#merchant-r11b", { y: -60.0 }, { y: -70.0, duration: 0.042, ease: "none", immediateRender: false }, 17.883);
+    tl.fromTo("#merchant-r11b", { y: -70.0 }, { y: -90.0, duration: 0.022, ease: "none", immediateRender: false }, 17.925);
+    tl.fromTo("#merchant-r11b", { y: -90.0 }, { y: -100.0, duration: 0.021, ease: "none", immediateRender: false }, 17.947);
+    tl.fromTo("#merchant-r11b", { y: -100.0 }, { y: -110.0, duration: 0.021, ease: "none", immediateRender: false }, 17.968);
+    tl.fromTo("#merchant-r11b", { y: -110.0 }, { y: -120.0, duration: 0.022, ease: "none", immediateRender: false }, 17.989);
+    tl.fromTo("#merchant-r11b", { y: -120.0 }, { y: -130.0, duration: 0.042, ease: "none", immediateRender: false }, 18.010);
+    tl.fromTo("#merchant-r11b", { y: -130.0 }, { y: -140.0, duration: 0.022, ease: "none", immediateRender: false }, 18.052);
+    tl.fromTo("#merchant-r11b", { y: -140.0 }, { y: -150.0, duration: 0.021, ease: "none", immediateRender: false }, 18.074);
+    tl.fromTo("#merchant-r11b", { y: -150.0 }, { y: -160.0, duration: 0.021, ease: "none", immediateRender: false }, 18.095);
+    tl.fromTo("#merchant-r11b", { y: -160.0 }, { y: -170.0, duration: 0.022, ease: "none", immediateRender: false }, 18.116);
+    tl.fromTo("#merchant-r11b", { y: -170.0 }, { y: -180.0, duration: 0.042, ease: "none", immediateRender: false }, 18.137);
+    tl.fromTo("#merchant-r11b", { y: -180.0 }, { y: -200.0, duration: 0.022, ease: "none", immediateRender: false }, 18.179);
+    tl.fromTo("#merchant-r11b", { y: -200.0 }, { y: -210.0, duration: 0.042, ease: "none", immediateRender: false }, 18.201);
+    tl.fromTo("#merchant-r11b", { y: -210.0 }, { y: -220.0, duration: 0.022, ease: "none", immediateRender: false }, 18.243);
+    tl.fromTo("#merchant-r11b", { y: -220.0 }, { y: -230.0, duration: 0.042, ease: "none", immediateRender: false }, 18.264);
+    tl.fromTo("#merchant-r11b", { y: -230.0 }, { y: -250.0, duration: 0.022, ease: "none", immediateRender: false }, 18.306);
+    tl.fromTo("#merchant-r11b", { y: -250.0 }, { y: -260.0, duration: 0.042, ease: "none", immediateRender: false }, 18.328);
+    tl.fromTo("#merchant-r11b", { y: -260.0 }, { y: -275.0, duration: 0.022, ease: "none", immediateRender: false }, 18.370);
+    tl.fromTo("#merchant-r11b", { y: -275.0 }, { y: -275.8, duration: 0.042, ease: "none", immediateRender: false }, 18.391);
+    tl.fromTo("#merchant-r11b", { y: -275.8 }, { y: -276.7, duration: 0.022, ease: "none", immediateRender: false }, 18.433);
+    tl.fromTo("#merchant-r11b", { y: -276.7 }, { y: -275.8, duration: 0.064, ease: "none", immediateRender: false }, 18.455);
+    tl.fromTo("#merchant-r11b", { y: -275.8 }, { y: -276.7, duration: 0.084, ease: "none", immediateRender: false }, 18.518);
+    tl.fromTo("#merchant-c0 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 0.120);
+    tl.to("#merchant-c0 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 2.300);
+    tl.fromTo("#merchant-c1 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 2.720);
+    tl.to("#merchant-c1 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.300);
+    tl.fromTo("#merchant-c2 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 5.720);
+    tl.to("#merchant-c2 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 8.600);
+    tl.fromTo("#merchant-c3 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 9.020);
+    tl.to("#merchant-c3 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 12.700);
+    tl.fromTo("#merchant-c4 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 13.120);
+    tl.to("#merchant-c4 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.700);
+    tl.fromTo("#merchant-c5 .in", { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power3.out" }, 15.120);
+    tl.to("#merchant-c5 .in", { opacity: 0, duration: 0.25, ease: "power2.in" }, 19.500);
     window.__timelines["merchant"] = tl;
   </script>
 </template>

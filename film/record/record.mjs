@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 
 const take = process.argv[2];
 const HERE = fileURLToPath(new URL(".", import.meta.url));
-const TAKES = `${HERE}takes/`, STATE = `${HERE}state/state.json`;
+const TAKES = `${HERE}takes/`, STATE = `${HERE}state/state${process.env.WALLET_KEY ? "-" + process.env.WALLET_KEY.replace(/[^a-z0-9-]/gi, "") : ""}.json`;
 mkdirSync(TAKES, { recursive: true }); mkdirSync(`${HERE}state`, { recursive: true });
 const APP = "http://localhost:5190", SHOP = "http://127.0.0.1:8780", SERVER = "http://127.0.0.1:8790";
 const ARC_EXPLORER = "https://explorer.testnet.arc.io";
@@ -120,6 +120,17 @@ const status = (scope = ".nk-col") => p.locator(`${scope} [role=status]`).first(
 const result = (label, value) => { ev("result", label, { value }); log(label, value); };
 async function save() { await ctx.storageState({ path: STATE }); }
 
+// Privy is a third-party sign-in that only Nick completes: open its modal, hold it on camera, close it, never log in.
+async function privyGlimpse(button, hold = 2200) {
+  await click(button, "sign in with Privy");
+  const modal = p.getByText("Sign in to Noren", { exact: true });
+  await until(() => modal.isVisible(), "Privy modal", 30000);
+  ev("privy-modal", "Privy modal open"); await sleep(hold);
+  ev("privy-close", "Privy modal closed (not signed in)");
+  await p.keyboard.press("Escape"); await sleep(900);
+  if (await modal.isVisible().catch(() => false)) { const x = p.locator("[aria-label*='close' i]").first(); if (await x.count()) await x.click().catch(() => {}); await sleep(900); }
+}
+
 try {
   // ---------------------------------------------------------------- v3 takes (one browser profile, state/state.json)
   if (take === "merchant3") {
@@ -129,7 +140,9 @@ try {
     await p.goto(`${APP}/#/dashboard/onboard`); await sleep(3500);
     await moveTo(900, 420, 1);
     await rollCamera(); await sleep(1500);
-    const bw = p.getByRole("button", { name: /Browser wallet/ });
+    await privyGlimpse(p.getByRole("button", { name: /Sign in with Privy/ }));
+    const bw = p.getByRole("button", { name: /Test wallet \(injected\)/ });
+    await until(() => bw.isVisible(), "the injected wallet in the EIP-6963 list", 20000);
     result("browser wallet option", (await bw.innerText()).replace(/\n+/g, " | "));
     await click(bw, "browser wallet");
     await until(() => p.getByText("What's your business called?").isVisible(), "signed in with the injected wallet", 60000);
@@ -149,6 +162,98 @@ try {
     await click(p.getByRole("button", { name: /^Continue/ }), "continue to keys"); await sleep(1200);
     await point(p.locator(".ob-keys")); await sleep(2500);
     await scrollBy(320, 1200); await sleep(2000);
+    await cut(); await save();
+  }
+
+  if (take === "applogin3") {
+    // The Noren app signed out: Privy shown, then "Use a browser wallet" -> the injected test wallet -> Home
+    await p.goto(`${APP}/#/app`); await sleep(6000);
+    await moveTo(640, 360, 1);
+    await rollCamera(); await sleep(1500);
+    result("signin", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 300));
+    await privyGlimpse(p.locator(".nk-signin .nk-cta").first());
+    await click(p.getByRole("button", { name: /Use a browser wallet/ }), "use a browser wallet"); await sleep(1500);
+    await click(p.getByRole("button", { name: /Connect Test wallet \(injected\)/ }), "connect the injected wallet");
+    await until(async () => /TOTAL BALANCE|Total balance/i.test(await p.locator("main").innerText()), "home", 60000); await sleep(3500);
+    result("home", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 400));
+    await cut(); await save();
+  }
+
+  if (take === "appsetup3") {
+    // Off camera: connect the injected wallet if signed out, then fork faucets to its address (Robinhood stock/ETH/USDG, Arc USDC)
+    await p.goto(`${APP}/#/app`); await sleep(7000);
+    if (await p.getByRole("button", { name: /Use a browser wallet/ }).isVisible().catch(() => false)) {
+      await p.getByRole("button", { name: /Use a browser wallet/ }).click(); await sleep(1500);
+      await p.getByRole("button", { name: /Connect Test wallet \(injected\)/ }).click();
+      await until(async () => /TOTAL BALANCE/i.test(await p.locator("main").innerText()), "home", 60000); await sleep(2000);
+    }
+    await p.locator(".nk-chip").click(); await sleep(1500);
+    await p.getByRole("button", { name: /Get test stock and USDG/ }).click();
+    await until(async () => /faucet:/i.test(await p.locator(".nk-menu [role=status]").innerText()), "robinhood faucet", 120000);
+    await p.getByRole("button", { name: /Get test USDC \(Arc fork\)/ }).click();
+    await until(async () => /Arc fork faucet/.test(await p.locator(".nk-menu [role=status]").innerText()), "arc faucet", 60000);
+    log("faucets", (await p.locator(".nk-menu").innerText()).replace(/\n+/g, " | ").slice(0, 300)); await save();
+  }
+
+  if (take === "apphome3") {
+    // Home at full width, then Pay: paste the merchant's link, pay privately (shielding from the wallet if needed)
+    const link = (await import("node:fs")).readFileSync(`${HERE}state/link-merchant3.txt`, "utf8").trim();
+    await p.goto(`${APP}/#/app`); await sleep(8000);
+    await moveTo(700, 200, 1);
+    await rollCamera(); await sleep(2500);
+    result("home", (await p.locator("main").innerText()).replace(/\n+/g, " | ").slice(0, 500));
+    await moveTo(300, 250, 25); await sleep(700); await moveTo(560, 300, 25); await sleep(700);
+    await scrollBy(420, 1300); await sleep(1800); await scrollBy(-420, 900); await sleep(600);
+    await click(p.locator(".nk-actions button").first(), "pay action"); await sleep(1500);
+    await click(p.locator("#nk-paylink"), "focus link");
+    ev("type", "paste invoice link", { text: link }); await p.locator("#nk-paylink").fill(link); await sleep(2500);
+    const top = p.getByRole("button", { name: /Shield 20 USDC from your wallet|Add 20 test USDC privately/ });
+    if (await top.count() && await top.first().isVisible()) {
+      await click(top.first(), "shield 20 USDC");
+      await until(async () => !(await p.locator(".nk-paycard .nk-cta").isDisabled()), "private balance ready", 240000); await sleep(1200);
+    }
+    result("pay panel", (await p.locator(".nk-paycard").innerText()).replace(/\n+/g, " | ").slice(0, 400));
+    await click(p.locator(".nk-paycard .nk-cta"), "pay privately");
+    await until(async () => /Paid privately/.test(await p.locator(".nk-paycard").innerText()), "paid privately", 240000); await sleep(1500);
+    result("private paid", (await p.locator(".nk-paycard").innerText()).replace(/\n+/g, " | ").slice(0, 400)); await sleep(4000);
+    await cut(); await save();
+  }
+
+  if (take === "selfrepay3") {
+    // Loans that pay themselves down (fork): deposit 1 ETH (Aqua liquidity), lock it, borrow 500 USDG, the demo
+    // trader's real Aqua fills earn fees, "Use earnings to pay down loan" lowers the debt.
+    await p.goto(`${APP}/#/app/earn`); await sleep(8000);
+    await moveTo(640, 300, 1);
+    await rollCamera(); await sleep(1800);
+    const ne = p.getByRole("radio", { name: /nETH/ });
+    if (await ne.count()) { await click(ne.first(), "nETH vault"); await sleep(1500); }
+    await typeIn(p.locator("#nk-earn"), "0.9", "deposit amount"); await sleep(1000);
+    await click(p.locator(".nk-cta").first(), "deposit");
+    await until(async () => /Deposited|reverted|rror/.test(await status()), "deposit", 180000); result("deposit", await status()); await sleep(1500);
+    await point(p.locator(".nk-aqua").first()); await sleep(2500);
+    result("aqua maker", (await p.locator(".nk-aqua").first().innerText()).replace(/\n+/g, " | ").slice(0, 600));
+    await click(p.getByRole("tab", { name: "Borrow" }), "borrow tab"); await sleep(5000);
+    const row = p.locator(".nk-items li", { hasText: "nETH" }).first();
+    await typeIn(row.locator("input"), "0.9", "lock amount");
+    await click(row.getByRole("button", { name: "Lock", exact: true }), "lock");
+    await until(async () => /Locked|reverted|rror/.test(await status()), "lock", 180000); result("lock", await status());
+    await scrollBy(-600, 600); await sleep(2500);
+    await typeIn(p.locator("#nk-borrow"), "500", "borrow amount"); await sleep(1200);
+    await click(p.locator(".nk-cta").first(), "borrow");
+    await until(async () => /Borrowed|reverted|rror/.test(await status()), "borrow", 180000); result("borrow", await status()); await sleep(2000);
+    const card = p.locator("section, .nk-card", { hasText: "Your collateral keeps earning" }).last();
+    await point(card); await sleep(1000);
+    await until(async () => /from [3-9] Aqua fills|from \d{2} Aqua fills/.test(await card.innerText()), "three demo fills", 180000).catch(() => log("fewer than 3 fills shown"));
+    await sleep(2000);
+    result("earning", (await card.innerText()).replace(/\n+/g, " | ").slice(0, 600));
+    const use = card.getByRole("button", { name: /Use earnings to pay down loan/ });
+    await point(use); await sleep(1200);
+    await click(use, "use earnings to pay down loan");
+    await until(async () => /Paid [\d.]+ USDG from \d+ Aqua fill|reverted|rror/.test(await card.innerText()), "pay down", 120000); await sleep(2000);
+    result("paid down", (await card.innerText()).replace(/\n+/g, " | ").slice(0, 700));
+    await scrollBy(-500, 1000); await sleep(2500);
+    result("position", (await p.locator("main").innerText()).match(/Health[\s\S]{0,200}/i)?.[0]?.replace(/\n+/g, " | "));
+    await sleep(2000);
     await cut(); await save();
   }
 

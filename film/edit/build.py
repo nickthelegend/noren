@@ -105,6 +105,8 @@ def base_css(dark=False):
     .dia .lane .lg img.tok {{ position: absolute; right: -8px; bottom: -8px; width: 34px; height: 34px; border-radius: 50%; background: #fff; }}
     .dia .lane b {{ display: block; font: 600 34px/1.1 "Geist", sans-serif; }}
     .dia .lane small {{ display: block; margin-top: 8px; font: 400 26px/1.25 "Geist", sans-serif; color: #c9cde0; }}
+    .dia .lane b .chs {{ display: inline-flex; gap: 8px; margin-left: 18px; vertical-align: -6px; }}
+    .dia .lane b .chs img {{ width: 34px; height: 34px; border-radius: 9px; background: {LINEN}; padding: 4px; object-fit: contain; }}
     .dia .lane .st {{ justify-self: end; font: 600 22px/1 "Geist Mono", monospace; padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(239,232,219,.3); color: #c9cde0; white-space: nowrap; }}
     .dia .lane .st.live {{ color: #7fe0a8; border-color: rgba(31,164,99,.7); background: rgba(31,164,99,.12); }}
     .dia .arrow {{ position: absolute; top: 198px; left: 400px; right: 400px; height: 4px; background: linear-gradient(90deg, {PERSIMMON}, #e8a33c); border-radius: 2px; transform-origin: 0 50%; }}
@@ -138,8 +140,8 @@ def scene_html(s):
             (lf, ln), (rf, rn) = c["left"], c["right"]
             lanes = "".join(
                 f'<div class="lane" id="{k}l{j}"><span class="lg"><img src="assets/logos/{lg}" alt="" />{f"<img class=\"tok\" src=\"assets/logos/{tk}\" alt=\"\" />" if tk else ""}</span>'
-                f'<div><b>{html.escape(t)}</b><small>{html.escape(d)}</small></div><span class="st{" live" if st.startswith("live") else ""}">{html.escape(st)}</span></div>'
-                for j, (lg, tk, t, d, st) in enumerate(c["lanes"]))
+                f'<div><b>{html.escape(t)}<span class="chs">{"".join(f"<img src=\"assets/logos/{ch}\" alt=\"\" />" for ch in chs)}</span></b><small>{html.escape(d)}</small></div><span class="st{" live" if st.startswith("live") else ""}">{html.escape(st)}</span></div>'
+                for j, (lg, tk, t, d, st, chs) in enumerate(c["lanes"]))
             vids.append(f'<div id="{k}" class="clip" data-start="{seg["at"]:.3f}" data-duration="{seg["dur"]:.3f}" data-track-index="1" style="position:absolute;inset:0"><div class="dia">'
                         f'<h3>{html.escape(c["title"])}</h3><div class="arrow" id="{k}a"></div><div class="ends"><div class="end" id="{k}e0"><img src="assets/logos/{lf}" alt="" />{html.escape(ln)}</div>'
                         f'<div class="end" id="{k}e1"><img src="assets/logos/{rf}" alt="" />{html.escape(rn)}</div></div><div class="lanes">{lanes}</div><p>{html.escape(c["source"])}</p></div></div>')
@@ -183,10 +185,10 @@ def scene_html(s):
             for (tt, dy) in R["shift"]:
                 lt = (tt - seg["tin"]) / seg["rate"] + seg["at"]
                 if prev is None:
-                    tl.append(f'tl.set("#{rid}b", {{ y: {dy*K:.1f} }}, {max(t_from, lt):.3f});')
+                    tl.append(f'tl.set("#{rid}b", {{ y: {dy*K:.1f} }}, 0);')
                 else:
                     pt, pdy = prev
-                    tl.append(f'tl.fromTo("#{rid}b", {{ y: {pdy*K:.1f} }}, {{ y: {dy*K:.1f}, duration: {lt - pt:.3f}, ease: "none" }}, {pt:.3f});')
+                    tl.append(f'tl.fromTo("#{rid}b", {{ y: {pdy*K:.1f} }}, {{ y: {dy*K:.1f}, duration: {lt - pt:.3f}, ease: "none", immediateRender: false }}, {pt:.3f});')
                 prev = (lt, dy)
     caps = []
     for i, (a, d, text) in enumerate(c for c in edl.CAPTIONS if s["start"] <= c[0] < s["start"] + s["dur"]):
