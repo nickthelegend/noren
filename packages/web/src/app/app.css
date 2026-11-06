@@ -462,3 +462,21 @@ a.nk-way:hover { border-color: var(--nk-hair-2); background: var(--nk-box); }
   .nk-actions b .lg { display: none; } .nk-actions b .sm { display: inline; }
 }
 @media (max-width: 720px) { .nk-path li { column-gap: 16px; } }
+
+/* Sign in (Privy) and wallet switch */
+.nk-signin { display: flex; flex-direction: column; gap: 12px; max-width: 460px; margin: 4vh auto 0; padding: 32px 28px 26px; border-radius: 28px; background: var(--nk-card); border: 1px solid var(--nk-hair); box-shadow: 0 1px 2px rgba(23, 32, 63, .04), 0 30px 70px -44px rgba(23, 32, 63, .45); }
+.nk-signin-mark { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px; background: var(--nk-ai-wash); }
+.nk-signin h1 { margin: 8px 0 0; font: 700 30px/1.1 var(--nk-sans); letter-spacing: -.02em; color: var(--nk-ink); text-wrap: balance; }
+.nk-signin > p { margin: 0 0 6px; font: 500 15.5px/1.5 var(--nk-sans); color: var(--nk-dim); text-wrap: pretty; }
+.nk-signin .nk-cta { margin-top: 0; }
+.nk-signin-notes { list-style: none; margin: 6px 0 0; padding: 14px 0 0; border-top: 1px solid var(--nk-hair); display: grid; gap: 10px; }
+.nk-signin-notes li { display: flex; align-items: flex-start; gap: 10px; font: 500 13px/1.45 var(--nk-sans); color: var(--nk-faint); }
+.nk-signin-notes li > :first-child { flex: none; margin-top: 1px; }
+.nk-wmode { display: grid; gap: 8px; padding-right: 40px; margin-bottom: 14px; }
+.nk-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--nk-box); }
+.nk-seg button { appearance: none; min-height: 38px; border: 0; border-radius: 10px; background: transparent; color: var(--nk-dim); font: 600 13.5px/1 var(--nk-sans); cursor: pointer; }
+.nk-seg button[aria-checked="true"] { background: var(--nk-card); color: var(--nk-ink); box-shadow: 0 1px 2px rgba(23, 32, 63, .12); }
+.nk-wmode-who { font: 500 12px/1.4 var(--nk-sans); color: var(--nk-faint); overflow-wrap: anywhere; }
+.nk-wmode .nk-btn { justify-self: start; width: auto; margin-top: 0; min-height: 36px; padding: 0 10px; }
+.nk-tag-k { font: 500 12.5px/1.4 var(--nk-sans); color: var(--nk-kaki-ink); }
+@media (max-width: 720px) { .nk-signin { margin-top: 0; padding: 24px 18px 20px; border-radius: 24px; } .nk-signin h1 { font-size: 26px; } }
