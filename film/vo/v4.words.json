@@ -1,188 +1,188 @@
 [
   {
     "text": "Now",
-    "start": 0,
-    "end": 0.236,
+    "start": 0.05,
+    "end": 0.23,
     "id": "w0"
   },
   {
     "text": "the",
-    "start": 0.236,
-    "end": 0.473,
+    "start": 0.23,
+    "end": 0.46,
     "id": "w1"
   },
   {
-    "text": "customer's",
-    "start": 0.473,
-    "end": 1.261,
+    "text": "customer",
+    "start": 0.46,
+    "end": 1.08,
     "id": "w2"
   },
   {
     "text": "side,",
-    "start": 1.261,
-    "end": 1.655,
+    "start": 1.08,
+    "end": 1.58,
     "id": "w3"
   },
   {
     "text": "the",
-    "start": 1.655,
-    "end": 1.891,
+    "start": 1.58,
+    "end": 1.85,
     "id": "w4"
   },
   {
-    "text": "NoRen",
-    "start": 1.891,
-    "end": 2.285,
+    "text": "Norin",
+    "start": 1.85,
+    "end": 2.27,
     "id": "w5"
   },
   {
-    "text": "app.",
-    "start": 2.285,
-    "end": 2.6,
+    "text": "app,",
+    "start": 2.39,
+    "end": 2.75,
     "id": "w6"
   },
   {
-    "text": "Sign",
-    "start": 2.6,
-    "end": 2.91,
+    "text": "sign",
+    "start": 2.76,
+    "end": 3.05,
     "id": "w7"
   },
   {
     "text": "in",
-    "start": 2.91,
-    "end": 3.065,
+    "start": 3.05,
+    "end": 3.2,
     "id": "w8"
   },
   {
     "text": "with",
-    "start": 3.065,
-    "end": 3.374,
+    "start": 3.2,
+    "end": 3.5,
     "id": "w9"
   },
   {
     "text": "Privy",
-    "start": 3.374,
-    "end": 3.762,
+    "start": 3.5,
+    "end": 3.78,
     "id": "w10"
   },
   {
     "text": "or",
-    "start": 3.762,
-    "end": 3.916,
+    "start": 3.98,
+    "end": 4.01,
     "id": "w11"
   },
   {
     "text": "connect",
-    "start": 3.916,
-    "end": 4.458,
+    "start": 4.01,
+    "end": 4.39,
     "id": "w12"
   },
   {
     "text": "a",
-    "start": 4.458,
-    "end": 4.536,
+    "start": 4.39,
+    "end": 4.48,
     "id": "w13"
   },
   {
     "text": "browser",
-    "start": 4.536,
-    "end": 5.078,
+    "start": 4.48,
+    "end": 4.9,
     "id": "w14"
   },
   {
     "text": "wallet.",
-    "start": 5.078,
-    "end": 5.62,
+    "start": 4.9,
+    "end": 5.64,
     "id": "w15"
   },
   {
     "text": "Home",
-    "start": 5.62,
-    "end": 5.856,
+    "start": 5.69,
+    "end": 5.88,
     "id": "w16"
   },
   {
     "text": "shows",
-    "start": 5.856,
-    "end": 6.151,
+    "start": 5.88,
+    "end": 6.16,
     "id": "w17"
   },
   {
     "text": "every",
-    "start": 6.151,
-    "end": 6.446,
+    "start": 6.21,
+    "end": 6.5,
     "id": "w18"
   },
   {
     "text": "balance",
-    "start": 6.446,
-    "end": 6.859,
+    "start": 6.5,
+    "end": 6.87,
     "id": "w19"
   },
   {
     "text": "and",
-    "start": 6.859,
-    "end": 7.036,
+    "start": 7.06,
+    "end": 7.11,
     "id": "w20"
   },
   {
     "text": "you",
-    "start": 7.036,
-    "end": 7.213,
+    "start": 7.12,
+    "end": 7.29,
     "id": "w21"
   },
   {
     "text": "can",
-    "start": 7.213,
-    "end": 7.39,
+    "start": 7.29,
+    "end": 7.47,
     "id": "w22"
   },
   {
     "text": "paste",
-    "start": 7.39,
-    "end": 7.685,
+    "start": 7.47,
+    "end": 7.77,
     "id": "w23"
   },
   {
     "text": "a",
-    "start": 7.685,
-    "end": 7.744,
+    "start": 7.77,
+    "end": 7.84,
     "id": "w24"
   },
   {
     "text": "link",
-    "start": 7.744,
-    "end": 7.98,
+    "start": 7.84,
+    "end": 8.04,
     "id": "w25"
   },
   {
     "text": "and",
-    "start": 7.98,
-    "end": 8.22,
+    "start": 8.04,
+    "end": 8.29,
     "id": "w26"
   },
   {
     "text": "pay",
-    "start": 8.22,
-    "end": 8.46,
+    "start": 8.29,
+    "end": 8.44,
     "id": "w27"
   },
   {
     "text": "privately,",
-    "start": 8.46,
-    "end": 9.26,
+    "start": 8.44,
+    "end": 9.18,
     "id": "w28"
   },
   {
     "text": "right",
-    "start": 9.26,
-    "end": 9.66,
+    "start": 9.18,
+    "end": 9.42,
     "id": "w29"
   },
   {
     "text": "here.",
-    "start": 9.66,
-    "end": 10.06,
+    "start": 9.62,
+    "end": 9.72,
     "id": "w30"
   }
 ]

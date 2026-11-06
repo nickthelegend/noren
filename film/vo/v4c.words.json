@@ -1,152 +1,152 @@
 [
   {
     "text": "Stock",
-    "start": 0.11,
-    "end": 0.506,
-    "id": "w57"
+    "start": 0.04,
+    "end": 0.45,
+    "id": "w0"
   },
   {
     "text": "tokens",
-    "start": 0.506,
-    "end": 0.982,
-    "id": "w58"
+    "start": 0.45,
+    "end": 0.99,
+    "id": "w1"
   },
   {
     "text": "reach",
-    "start": 0.982,
-    "end": 1.378,
-    "id": "w59"
+    "start": 0.99,
+    "end": 1.44,
+    "id": "w2"
   },
   {
-    "text": "ARC",
-    "start": 1.378,
-    "end": 1.616,
-    "id": "w60"
+    "text": "ARK",
+    "start": 1.44,
+    "end": 1.67,
+    "id": "w3"
   },
   {
     "text": "as",
-    "start": 1.616,
-    "end": 1.774,
-    "id": "w61"
+    "start": 1.8,
+    "end": 1.89,
+    "id": "w4"
   },
   {
     "text": "USDC",
-    "start": 1.774,
-    "end": 2.091,
-    "id": "w62"
+    "start": 1.89,
+    "end": 2.25,
+    "id": "w5"
   },
   {
     "text": "through",
-    "start": 2.091,
-    "end": 2.646,
-    "id": "w63"
+    "start": 2.25,
+    "end": 2.88,
+    "id": "w6"
   },
   {
     "text": "a",
-    "start": 2.646,
-    "end": 2.726,
-    "id": "w64"
+    "start": 2.88,
+    "end": 2.97,
+    "id": "w7"
   },
   {
     "text": "cross-chain",
-    "start": 2.726,
-    "end": 3.597,
-    "id": "w65"
+    "start": 2.97,
+    "end": 3.96,
+    "id": "w8"
   },
   {
-    "text": "Aqua",
-    "start": 3.597,
-    "end": 3.914,
-    "id": "w66"
+    "text": "AQUA",
+    "start": 3.96,
+    "end": 4.32,
+    "id": "w9"
   },
   {
-    "text": "order.",
-    "start": 3.914,
-    "end": 4.39,
-    "id": "w67"
+    "text": "order,",
+    "start": 4.32,
+    "end": 4.94,
+    "id": "w10"
   },
   {
-    "text": "So",
-    "start": 4.39,
-    "end": 4.714,
-    "id": "w68"
+    "text": "so",
+    "start": 4.94,
+    "end": 5.06,
+    "id": "w11"
   },
   {
     "text": "CCTP",
-    "start": 4.714,
-    "end": 5.363,
-    "id": "w69"
+    "start": 5.06,
+    "end": 5.41,
+    "id": "w12"
   },
   {
     "text": "carries",
-    "start": 5.363,
-    "end": 6.499,
-    "id": "w70"
+    "start": 5.46,
+    "end": 6.16,
+    "id": "w13"
   },
   {
-    "text": "USDC.",
-    "start": 6.499,
-    "end": 7.31,
-    "id": "w71"
+    "text": "USDC,",
+    "start": 6.16,
+    "end": 7.32,
+    "id": "w14"
   },
   {
-    "text": "Aqua",
-    "start": 7.31,
-    "end": 7.635,
-    "id": "w72"
+    "text": "AQUA",
+    "start": 7.32,
+    "end": 7.84,
+    "id": "w15"
   },
   {
     "text": "orders",
-    "start": 7.635,
-    "end": 8.123,
-    "id": "w73"
+    "start": 7.84,
+    "end": 7.92,
+    "id": "w16"
   },
   {
     "text": "carry",
-    "start": 8.123,
-    "end": 8.53,
-    "id": "w74"
+    "start": 7.96,
+    "end": 8.34,
+    "id": "w17"
   },
   {
     "text": "stocks,",
-    "start": 8.53,
-    "end": 9.099,
-    "id": "w75"
+    "start": 8.34,
+    "end": 8.94,
+    "id": "w18"
   },
   {
     "text": "and",
-    "start": 9.099,
-    "end": 9.343,
-    "id": "w76"
+    "start": 9,
+    "end": 9.06,
+    "id": "w19"
   },
   {
     "text": "Chainlink",
-    "start": 9.343,
-    "end": 10.075,
-    "id": "w77"
+    "start": 9.25,
+    "end": 10,
+    "id": "w20"
   },
   {
     "text": "CCIP",
-    "start": 10.075,
-    "end": 10.401,
-    "id": "w78"
+    "start": 10,
+    "end": 10.32,
+    "id": "w21"
   },
   {
     "text": "carries",
-    "start": 10.401,
-    "end": 10.97,
-    "id": "w79"
+    "start": 10.32,
+    "end": 10.9,
+    "id": "w22"
   },
   {
     "text": "credit",
-    "start": 10.97,
-    "end": 11.458,
-    "id": "w80"
+    "start": 10.9,
+    "end": 11.38,
+    "id": "w23"
   },
   {
     "text": "messages.",
-    "start": 11.458,
-    "end": 12.19,
-    "id": "w81"
+    "start": 11.39,
+    "end": 12.16,
+    "id": "w24"
   }
 ]

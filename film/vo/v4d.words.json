@@ -1,110 +1,110 @@
 [
   {
     "text": "Open",
-    "start": 0.1,
-    "end": 0.361,
-    "id": "w46"
+    "start": 0.03,
+    "end": 0.3,
+    "id": "w0"
   },
   {
     "text": "a",
-    "start": 0.361,
-    "end": 0.426,
-    "id": "w47"
+    "start": 0.3,
+    "end": 0.37,
+    "id": "w1"
   },
   {
     "text": "credit",
-    "start": 0.426,
-    "end": 0.818,
-    "id": "w48"
+    "start": 0.37,
+    "end": 0.83,
+    "id": "w2"
   },
   {
     "text": "line,",
-    "start": 0.818,
-    "end": 1.144,
-    "id": "w49"
+    "start": 0.83,
+    "end": 1.3,
+    "id": "w3"
   },
   {
     "text": "pay",
-    "start": 1.144,
-    "end": 1.34,
-    "id": "w50"
+    "start": 1.3,
+    "end": 1.51,
+    "id": "w4"
   },
   {
     "text": "later",
-    "start": 1.34,
-    "end": 1.666,
-    "id": "w51"
+    "start": 1.51,
+    "end": 1.86,
+    "id": "w5"
   },
   {
     "text": "at",
-    "start": 1.666,
-    "end": 1.797,
-    "id": "w52"
+    "start": 1.86,
+    "end": 1.98,
+    "id": "w6"
   },
   {
     "text": "any",
-    "start": 1.797,
-    "end": 1.993,
-    "id": "w53"
+    "start": 2,
+    "end": 2.21,
+    "id": "w7"
   },
   {
-    "text": "checkout,",
-    "start": 1.993,
-    "end": 2.58,
-    "id": "w54"
+    "text": "checkout",
+    "start": 2.21,
+    "end": 2.73,
+    "id": "w8"
   },
   {
     "text": "and",
-    "start": 2.58,
-    "end": 2.808,
-    "id": "w55"
+    "start": 2.86,
+    "end": 2.95,
+    "id": "w9"
   },
   {
     "text": "the",
-    "start": 2.808,
-    "end": 3.036,
-    "id": "w56"
+    "start": 2.95,
+    "end": 3.04,
+    "id": "w10"
   },
   {
     "text": "fees",
-    "start": 3.036,
-    "end": 3.34,
-    "id": "w57"
+    "start": 3.14,
+    "end": 3.3,
+    "id": "w11"
   },
   {
     "text": "your",
-    "start": 3.34,
-    "end": 3.644,
-    "id": "w58"
+    "start": 3.3,
+    "end": 3.52,
+    "id": "w12"
   },
   {
     "text": "Nvidia",
-    "start": 3.644,
-    "end": 4.1,
-    "id": "w59"
+    "start": 3.52,
+    "end": 3.89,
+    "id": "w13"
   },
   {
     "text": "earns",
-    "start": 4.1,
-    "end": 4.48,
-    "id": "w60"
+    "start": 3.89,
+    "end": 4.2,
+    "id": "w14"
   },
   {
     "text": "pay",
-    "start": 4.48,
-    "end": 4.708,
-    "id": "w61"
+    "start": 4.2,
+    "end": 4.51,
+    "id": "w15"
   },
   {
     "text": "it",
-    "start": 4.708,
-    "end": 4.86,
-    "id": "w62"
+    "start": 4.51,
+    "end": 4.72,
+    "id": "w16"
   },
   {
     "text": "back.",
-    "start": 4.86,
-    "end": 5.24,
-    "id": "w63"
+    "start": 4.72,
+    "end": 5.2,
+    "id": "w17"
   }
 ]

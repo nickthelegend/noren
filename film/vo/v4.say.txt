@@ -1,1 +1,0 @@
-Now the customer's side: the Noh-ren app. Sign in with Privy, or connect a browser wallet. Home shows every balance, and you can paste a link and pay privately, right here.

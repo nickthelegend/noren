@@ -1,110 +1,86 @@
 [
   {
     "text": "Third,",
-    "start": 0,
-    "end": 0.437,
+    "start": 0.09,
+    "end": 0.48,
     "id": "w0"
   },
   {
     "text": "pay",
-    "start": 0.437,
-    "end": 0.655,
+    "start": 0.76,
+    "end": 0.9,
     "id": "w1"
   },
   {
     "text": "later,",
-    "start": 0.655,
-    "end": 1.092,
+    "start": 0.9,
+    "end": 1.39,
     "id": "w2"
   },
   {
     "text": "privately.",
-    "start": 1.092,
-    "end": 1.82,
+    "start": 1.71,
+    "end": 2.62,
     "id": "w3"
   },
   {
-    "text": "The",
-    "start": 1.82,
-    "end": 2.038,
+    "text": "It",
+    "start": 2.73,
+    "end": 2.75,
     "id": "w4"
   },
   {
-    "text": "merchant",
-    "start": 2.038,
-    "end": 2.619,
+    "text": "also",
+    "start": 2.75,
+    "end": 3.01,
     "id": "w5"
   },
   {
-    "text": "sees",
-    "start": 2.619,
-    "end": 2.909,
+    "text": "ran",
+    "start": 3.01,
+    "end": 3.09,
     "id": "w6"
   },
   {
-    "text": "only",
-    "start": 2.909,
-    "end": 3.199,
+    "text": "live",
+    "start": 3.38,
+    "end": 3.47,
     "id": "w7"
   },
   {
-    "text": "private.",
-    "start": 3.199,
-    "end": 3.78,
+    "text": "on",
+    "start": 3.47,
+    "end": 3.6,
     "id": "w8"
   },
   {
-    "text": "It",
-    "start": 3.78,
-    "end": 3.957,
+    "text": "ArcTestNet",
+    "start": 3.6,
+    "end": 4.3,
     "id": "w9"
   },
   {
-    "text": "ran",
-    "start": 3.957,
-    "end": 4.223,
+    "text": "and",
+    "start": 4.33,
+    "end": 4.53,
     "id": "w10"
   },
   {
-    "text": "live",
-    "start": 4.223,
-    "end": 4.577,
+    "text": "over",
+    "start": 4.53,
+    "end": 4.79,
     "id": "w11"
   },
   {
-    "text": "on",
-    "start": 4.577,
-    "end": 4.754,
+    "text": "Chainlink",
+    "start": 5.23,
+    "end": 5.54,
     "id": "w12"
   },
   {
-    "text": "ArcTestNet",
-    "start": 4.754,
-    "end": 5.64,
-    "id": "w13"
-  },
-  {
-    "text": "and",
-    "start": 5.64,
-    "end": 5.906,
-    "id": "w14"
-  },
-  {
-    "text": "over",
-    "start": 5.906,
-    "end": 6.26,
-    "id": "w15"
-  },
-  {
-    "text": "Chainlink",
-    "start": 6.26,
-    "end": 7.057,
-    "id": "w16"
-  },
-  {
     "text": "CCIP.",
-    "start": 7.057,
-    "end": 7.5,
-    "id": "w17"
+    "start": 5.54,
+    "end": 5.94,
+    "id": "w13"
   }
 ]

@@ -1,236 +1,224 @@
 [
   {
-    "text": "Obel,",
-    "start": 0,
-    "end": 0.493,
+    "text": "Obel",
+    "start": 0.05,
+    "end": 0.36,
     "id": "w0"
   },
   {
-    "text": "a",
-    "start": 0.493,
-    "end": 0.591,
+    "text": "Ademobutik",
+    "start": 0.36,
+    "end": 1.22,
     "id": "w1"
   },
   {
-    "text": "demo",
-    "start": 0.591,
-    "end": 0.985,
+    "text": "added",
+    "start": 1.33,
+    "end": 1.71,
     "id": "w2"
   },
   {
-    "text": "boutique,",
-    "start": 0.985,
-    "end": 1.872,
+    "text": "Norin",
+    "start": 1.71,
+    "end": 2.14,
     "id": "w3"
   },
   {
-    "text": "added",
-    "start": 1.872,
-    "end": 2.364,
+    "text": "with",
+    "start": 2.17,
+    "end": 2.52,
     "id": "w4"
   },
   {
-    "text": "NoRen",
-    "start": 2.364,
-    "end": 2.857,
+    "text": "the",
+    "start": 2.52,
+    "end": 2.79,
     "id": "w5"
   },
   {
-    "text": "with",
-    "start": 2.857,
-    "end": 3.251,
+    "text": "SDK.",
+    "start": 2.79,
+    "end": 3.16,
     "id": "w6"
   },
   {
-    "text": "the",
-    "start": 3.251,
-    "end": 3.546,
+    "text": "Pick",
+    "start": 3.22,
+    "end": 3.5,
     "id": "w7"
   },
   {
-    "text": "SDK.",
-    "start": 3.546,
-    "end": 3.94,
+    "text": "a",
+    "start": 3.5,
+    "end": 3.58,
     "id": "w8"
   },
   {
-    "text": "Pick",
-    "start": 3.94,
-    "end": 4.26,
+    "text": "dress",
+    "start": 3.58,
+    "end": 4.01,
     "id": "w9"
   },
   {
-    "text": "a",
-    "start": 4.26,
-    "end": 4.34,
+    "text": "size",
+    "start": 4.01,
+    "end": 4.35,
     "id": "w10"
   },
   {
-    "text": "dress,",
-    "start": 4.34,
-    "end": 4.82,
+    "text": "small",
+    "start": 4.35,
+    "end": 4.79,
     "id": "w11"
   },
   {
-    "text": "size",
-    "start": 4.82,
-    "end": 5.14,
+    "text": "into",
+    "start": 4.86,
+    "end": 5.08,
     "id": "w12"
   },
   {
-    "text": "small",
-    "start": 5.14,
-    "end": 5.54,
+    "text": "the",
+    "start": 5.08,
+    "end": 5.29,
     "id": "w13"
   },
   {
-    "text": "into",
-    "start": 5.54,
-    "end": 5.86,
+    "text": "bag",
+    "start": 5.29,
+    "end": 5.5,
     "id": "w14"
   },
   {
-    "text": "the",
-    "start": 5.86,
-    "end": 6.1,
+    "text": "and",
+    "start": 5.56,
+    "end": 5.68,
     "id": "w15"
   },
   {
-    "text": "bag,",
-    "start": 6.1,
-    "end": 6.42,
+    "text": "check",
+    "start": 5.68,
+    "end": 5.87,
     "id": "w16"
   },
   {
-    "text": "and",
-    "start": 6.42,
-    "end": 6.677,
+    "text": "out",
+    "start": 5.93,
+    "end": 6.13,
     "id": "w17"
   },
   {
-    "text": "check",
-    "start": 6.677,
-    "end": 7.106,
+    "text": "with",
+    "start": 6.13,
+    "end": 6.46,
     "id": "w18"
   },
   {
-    "text": "out",
-    "start": 7.106,
-    "end": 7.363,
+    "text": "Norin",
+    "start": 6.47,
+    "end": 6.84,
     "id": "w19"
   },
   {
-    "text": "with",
-    "start": 7.363,
-    "end": 7.706,
+    "text": "4",
+    "start": 6.9,
+    "end": 7.1,
     "id": "w20"
   },
   {
-    "text": "NoRen,",
-    "start": 7.706,
-    "end": 8.22,
+    "text": "ways",
+    "start": 7.21,
+    "end": 7.48,
     "id": "w21"
   },
   {
-    "text": "four",
-    "start": 8.22,
-    "end": 8.563,
+    "text": "to",
+    "start": 7.48,
+    "end": 7.65,
     "id": "w22"
   },
   {
-    "text": "ways",
-    "start": 8.563,
-    "end": 8.906,
+    "text": "pay.",
+    "start": 7.65,
+    "end": 8.2,
     "id": "w23"
   },
   {
-    "text": "to",
-    "start": 8.906,
-    "end": 9.077,
+    "text": "Privately",
+    "start": 8.2,
+    "end": 8.71,
     "id": "w24"
   },
   {
-    "text": "pay.",
-    "start": 9.077,
-    "end": 9.42,
+    "text": "with",
+    "start": 9.09,
+    "end": 9.3,
     "id": "w25"
   },
   {
-    "text": "Privately",
-    "start": 9.42,
-    "end": 10.242,
+    "text": "USDC",
+    "start": 9.3,
+    "end": 9.64,
     "id": "w26"
   },
   {
     "text": "with",
-    "start": 10.242,
-    "end": 10.608,
+    "start": 9.64,
+    "end": 9.98,
     "id": "w27"
   },
   {
-    "text": "USDC,",
-    "start": 10.608,
-    "end": 11.064,
+    "text": "stocks",
+    "start": 9.98,
+    "end": 10.49,
     "id": "w28"
   },
   {
-    "text": "with",
-    "start": 11.064,
-    "end": 11.43,
+    "text": "or",
+    "start": 10.49,
+    "end": 10.65,
     "id": "w29"
   },
   {
-    "text": "stocks",
-    "start": 11.43,
-    "end": 11.978,
+    "text": "crypto",
+    "start": 10.66,
+    "end": 11.2,
     "id": "w30"
   },
   {
     "text": "or",
-    "start": 11.978,
-    "end": 12.161,
+    "start": 11.2,
+    "end": 11.38,
     "id": "w31"
   },
   {
-    "text": "crypto,",
-    "start": 12.161,
-    "end": 12.8,
+    "text": "later",
+    "start": 11.44,
+    "end": 11.75,
     "id": "w32"
   },
   {
-    "text": "or",
-    "start": 12.8,
-    "end": 12.957,
+    "text": "on",
+    "start": 11.81,
+    "end": 11.97,
     "id": "w33"
   },
   {
-    "text": "later",
-    "start": 12.957,
-    "end": 13.35,
+    "text": "credit",
+    "start": 11.97,
+    "end": 12.56,
     "id": "w34"
   },
   {
-    "text": "on",
-    "start": 13.35,
-    "end": 13.508,
+    "text": "still",
+    "start": 12.61,
+    "end": 12.91,
     "id": "w35"
   },
   {
-    "text": "credit,",
-    "start": 13.508,
-    "end": 14.058,
-    "id": "w36"
-  },
-  {
-    "text": "still",
-    "start": 14.058,
-    "end": 14.451,
-    "id": "w37"
-  },
-  {
     "text": "private.",
-    "start": 14.451,
-    "end": 15.08,
-    "id": "w38"
+    "start": 12.91,
+    "end": 13.44,
+    "id": "w36"
   }
 ]

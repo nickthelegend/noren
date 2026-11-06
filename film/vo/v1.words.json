@@ -1,248 +1,212 @@
 [
   {
     "text": "Pay",
-    "start": 0,
-    "end": 0.226,
+    "start": 0.05,
+    "end": 0.26,
     "id": "w0"
   },
   {
     "text": "a",
-    "start": 0.226,
-    "end": 0.302,
+    "start": 0.26,
+    "end": 0.34,
     "id": "w1"
   },
   {
     "text": "shop",
-    "start": 0.302,
-    "end": 0.603,
+    "start": 0.34,
+    "end": 0.68,
     "id": "w2"
   },
   {
     "text": "in",
-    "start": 0.603,
-    "end": 0.754,
+    "start": 0.68,
+    "end": 0.81,
     "id": "w3"
   },
   {
     "text": "crypto",
-    "start": 0.754,
-    "end": 1.206,
+    "start": 0.93,
+    "end": 1.38,
     "id": "w4"
   },
   {
-    "text": "today,",
-    "start": 1.206,
-    "end": 1.658,
+    "text": "today",
+    "start": 1.38,
+    "end": 1.51,
     "id": "w5"
   },
   {
     "text": "and",
-    "start": 1.658,
-    "end": 1.885,
+    "start": 1.85,
+    "end": 2.04,
     "id": "w6"
   },
   {
-    "text": "the",
-    "start": 1.885,
-    "end": 2.111,
+    "text": "it",
+    "start": 2.08,
+    "end": 2.22,
     "id": "w7"
   },
   {
-    "text": "shop",
-    "start": 2.111,
-    "end": 2.412,
+    "text": "sees",
+    "start": 2.22,
+    "end": 2.53,
     "id": "w8"
   },
   {
-    "text": "sees",
-    "start": 2.412,
-    "end": 2.714,
+    "text": "your",
+    "start": 2.53,
+    "end": 2.83,
     "id": "w9"
   },
   {
-    "text": "your",
-    "start": 2.714,
-    "end": 3.015,
+    "text": "whole",
+    "start": 2.83,
+    "end": 3.14,
     "id": "w10"
   },
   {
-    "text": "whole",
-    "start": 3.015,
-    "end": 3.392,
+    "text": "wallet.",
+    "start": 3.14,
+    "end": 3.77,
     "id": "w11"
   },
   {
-    "text": "wallet.",
-    "start": 3.392,
-    "end": 3.92,
+    "text": "Norin",
+    "start": 3.77,
+    "end": 4.07,
     "id": "w12"
   },
   {
-    "text": "No",
-    "start": 3.92,
-    "end": 4.07,
+    "text": "lets",
+    "start": 4.07,
+    "end": 4.36,
     "id": "w13"
   },
   {
-    "text": "Ren",
-    "start": 4.07,
-    "end": 4.294,
+    "text": "merchants",
+    "start": 4.36,
+    "end": 5.01,
     "id": "w14"
   },
   {
-    "text": "lets",
-    "start": 4.294,
-    "end": 4.593,
+    "text": "accept",
+    "start": 5.01,
+    "end": 5.23,
     "id": "w15"
   },
   {
-    "text": "merchants",
-    "start": 4.593,
-    "end": 5.266,
+    "text": "stablecoins,",
+    "start": 5.57,
+    "end": 6.42,
     "id": "w16"
   },
   {
-    "text": "accept",
-    "start": 5.266,
-    "end": 5.714,
+    "text": "stocks,",
+    "start": 6.42,
+    "end": 6.89,
     "id": "w17"
   },
   {
-    "text": "stablecoins,",
-    "start": 5.714,
-    "end": 6.611,
+    "text": "or",
+    "start": 7.04,
+    "end": 7.27,
     "id": "w18"
   },
   {
-    "text": "stocks,",
-    "start": 6.611,
-    "end": 7.134,
+    "text": "credit",
+    "start": 7.46,
+    "end": 7.96,
     "id": "w19"
   },
   {
-    "text": "or",
-    "start": 7.134,
-    "end": 7.284,
+    "text": "privately.",
+    "start": 7.96,
+    "end": 9,
     "id": "w20"
   },
   {
-    "text": "credit",
-    "start": 7.284,
-    "end": 7.732,
+    "text": "Underneath,",
+    "start": 9.05,
+    "end": 10,
     "id": "w21"
   },
   {
-    "text": "privately.",
-    "start": 7.732,
-    "end": 8.48,
+    "text": "a",
+    "start": 10,
+    "end": 10.08,
     "id": "w22"
   },
   {
-    "text": "Underneath,",
-    "start": 8.48,
-    "end": 9.256,
+    "text": "payment",
+    "start": 10.08,
+    "end": 10.51,
     "id": "w23"
   },
   {
-    "text": "a",
-    "start": 9.256,
-    "end": 9.326,
+    "text": "network",
+    "start": 10.85,
+    "end": 11.17,
     "id": "w24"
   },
   {
-    "text": "payment",
-    "start": 9.326,
-    "end": 9.82,
+    "text": "on",
+    "start": 11.19,
+    "end": 11.34,
     "id": "w25"
   },
   {
-    "text": "network",
-    "start": 9.82,
-    "end": 10.314,
+    "text": "ARK",
+    "start": 11.34,
+    "end": 11.57,
     "id": "w26"
   },
   {
-    "text": "on",
-    "start": 10.314,
-    "end": 10.455,
+    "text": "with",
+    "start": 11.57,
+    "end": 11.89,
     "id": "w27"
   },
   {
-    "text": "ARK,",
-    "start": 10.455,
-    "end": 10.737,
+    "text": "1-inch",
+    "start": 11.89,
+    "end": 12.51,
     "id": "w28"
   },
   {
-    "text": "lending",
-    "start": 10.737,
-    "end": 11.231,
+    "text": "Aqua",
+    "start": 12.74,
+    "end": 12.83,
     "id": "w29"
   },
   {
-    "text": "pools",
-    "start": 11.231,
-    "end": 11.583,
+    "text": "liquidity",
+    "start": 12.83,
+    "end": 13.6,
     "id": "w30"
   },
   {
-    "text": "that",
-    "start": 11.583,
-    "end": 11.865,
+    "text": "and",
+    "start": 13.6,
+    "end": 14.17,
     "id": "w31"
   },
   {
-    "text": "are",
-    "start": 11.865,
-    "end": 12.077,
+    "text": "USDC",
+    "start": 14.19,
+    "end": 14.96,
     "id": "w32"
   },
   {
-    "text": "one-inch",
-    "start": 12.077,
-    "end": 12.641,
+    "text": "from",
+    "start": 14.96,
+    "end": 15.22,
     "id": "w33"
   },
   {
-    "text": "aqua",
-    "start": 12.641,
-    "end": 12.923,
+    "text": "Anychain.",
+    "start": 15.22,
+    "end": 15.76,
     "id": "w34"
-  },
-  {
-    "text": "liquidity,",
-    "start": 12.923,
-    "end": 13.628,
-    "id": "w35"
-  },
-  {
-    "text": "and",
-    "start": 13.628,
-    "end": 13.84,
-    "id": "w36"
-  },
-  {
-    "text": "USDC",
-    "start": 13.84,
-    "end": 14.226,
-    "id": "w37"
-  },
-  {
-    "text": "from",
-    "start": 14.226,
-    "end": 14.612,
-    "id": "w38"
-  },
-  {
-    "text": "any",
-    "start": 14.612,
-    "end": 14.901,
-    "id": "w39"
-  },
-  {
-    "text": "chain.",
-    "start": 14.901,
-    "end": 15.48,
-    "id": "w40"
   }
 ]

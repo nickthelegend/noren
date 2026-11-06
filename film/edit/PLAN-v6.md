@@ -47,3 +47,26 @@ current audio.
 - Credit beat budget: at most one paid 0G check (open the line once).
 
 Deadline: record and render by 07:00 IST (submission 09:00, live judging 09:30).
+
+## Narration: Nick's voice (ElevenLabs)
+
+All 13 lines re-voiced with Nick's instant voice clone `MjGt6kOSu6JUWZqpE0Z3` (`eleven_multilingual_v2`, stability 0.5,
+similarity 0.8); the professional clone `nEK4SX92gTOZL1Weda0K` answered "not fine-tuned and cannot be used". Silence
+trimmed, converted to wav, word timings from `npx hyperframes transcribe` in `vo/*.words.json`. "Noren" is read as written
+(it comes out "NOR-en"; "Noh-ren" split into "no rent"). Long lines were shortened in the text, never sped up:
+
+| Line | s | Placed at |
+|---|---|---|
+| v1 | 15.83 | 0.0 |
+| v2 | 15.87 | 15.9 |
+| v3 | 13.46 | 35.3 |
+| v4 | 9.80 | 54.2 |
+| v4e | 16.37 | 66.4 |
+| v4c | 12.22 | 86.2 |
+| v4b | 19.82 | 99.8 |
+| v4d | 5.25 | 124.6 |
+| v4s | 4.02 | 130.2 |
+| v5a | 9.50 | 134.4 |
+| v5b | 9.57 | 146.6 |
+| v5c | 5.85 | 159.0 |
+| v6 | 11.07 | 167.6 |

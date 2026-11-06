@@ -140,7 +140,7 @@ CARDS = {
 }
 
 # Voice-over clips (absolute start). v4 is split at a sentence: v4 (home, pay, bridge) and v4c (stocks, the three rails).
-VO = [("v1", 0.0), ("v2", 15.5), ("v3", 35.2), ("v4", 52.2), ("v4e", 66.4), ("v4c", 86.2), ("v4b", 99.8), ("v4d", 124.6), ("v4s", 132.6), ("v5a", 136.3), ("v5b", 149.6), ("v5c-verified", 160.15), ("v6", 167.4)]
+VO = [("v1", 0.0), ("v2", 15.9), ("v3", 35.3), ("v4", 54.2), ("v4e", 66.4), ("v4c", 86.2), ("v4b", 99.8), ("v4d", 124.6), ("v4s", 130.2), ("v5a", 134.4), ("v5b", 146.6), ("v5c-verified", 159.0), ("v6", 167.6)]   # v6: Nick's cloned voice (ElevenLabs)
 
 POPS = []
 

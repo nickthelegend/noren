@@ -1,1 +1,0 @@
-A merchant signs in with Privy or a browser wallet. No password, no transaction. Name the store, choose where U S D C payouts land on Arc, and Noh-ren registers it on-chain. Then a first payment link, and API keys. The secret is shown once.
