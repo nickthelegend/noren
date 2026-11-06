@@ -86,8 +86,8 @@ ok('Credit line opened on Robinhood', `2 NVDA locked (collateral $${(Number(ev.a
 // 4. CRE: Robinhood → Arc
 const tOpen = Date.now();
 await until('the CRE bridge to sync the line to Arc', async () => (await arc.readContract({ address: c.creditLine, abi: lineAbi, functionName: 'lines', args: [lineId] })).limitUsdc6 === limit);
-const bridge1 = (await json('/credit/bridge')).find((e: any) => e.source === opened.hash);
-ok('CRE bridge → Arc', `NorenCreditLine limit 150 USDC after ${((Date.now() - tOpen) / 1000).toFixed(1)} s; forwarder tx ${bridge1?.written ?? '(see /credit/bridge)'}`);
+const bridge1 = await until('the CRE bridge log entry', async () => (await json('/credit/bridge')).find((e: any) => e.source === opened.hash && e.written), 30_000);
+ok('CRE bridge → Arc', `NorenCreditLine limit 150 USDC after ${((Date.now() - tOpen) / 1000).toFixed(1)} s; forwarder tx ${bridge1.written} (${(bridge1.ms / 1000).toFixed(1)} s in the CRE simulator)`);
 
 // 5. pay later on Arc
 const merchant = cfg.merchant as Address;
@@ -112,15 +112,15 @@ ok('Pay with stocks: invoice settled', `${(Number(assetIn) / 1e18).toFixed(6)} N
 
 // 6. CRE: Arc Drawn → Robinhood
 await until('Drawn to reach NorenCredit', async () => (await rh.readContract({ address: c.creditContract, abi: creditAbi, functionName: 'line', args: [lineId] })).drawn === 7_500_000n);
-const bridge2 = (await json('/credit/bridge')).find((e: any) => e.source === drawTx.hash);
-ok('CRE bridge → Robinhood (Drawn)', `NorenCredit line drawn = 7.50 USDC; forwarder tx ${bridge2?.written}`);
+const bridge2 = await until('the CRE bridge log entry', async () => (await json('/credit/bridge')).find((e: any) => e.source === drawTx.hash && e.written), 30_000);
+ok('CRE bridge → Robinhood (Drawn)', `NorenCredit line drawn = 7.50 USDC; forwarder tx ${bridge2.written}`);
 
 // 7. repay half on Arc
 await arc.request({ method: 'eth_sendTransaction', params: [{ from: cfg.merchant, to: cfg.deployment.usdc, data: (await import('viem')).encodeFunctionData({ abi: parseAbi(['function mint(address,uint256)']), functionName: 'mint', args: [borrower.address, 10_000_000n] }) }] });
 await send(arcW, arc, { address: cfg.deployment.usdc, abi: erc20Abi, functionName: 'approve', args: [c.creditLine, 3_750_000n] });
 const repayTx = await send(arcW, arc, { address: c.creditLine, abi: lineAbi, functionName: 'repay', args: [lineId, 3_750_000n] });
 await until('Repaid to reach NorenCredit', async () => (await rh.readContract({ address: c.creditContract, abi: creditAbi, functionName: 'line', args: [lineId] })).repaid === 3_750_000n);
-const bridge3 = (await json('/credit/bridge')).find((e: any) => e.source === repayTx.hash);
-ok('Repay + CRE bridge → Robinhood (Repaid)', `3.75 USDC repaid on Arc (tx ${repayTx.hash}); NorenCredit repaid = 3.75 USDC; forwarder tx ${bridge3?.written}`);
+const bridge3 = await until('the CRE bridge log entry', async () => (await json('/credit/bridge')).find((e: any) => e.source === repayTx.hash && e.written), 30_000);
+ok('Repay + CRE bridge → Robinhood (Repaid)', `3.75 USDC repaid on Arc (tx ${repayTx.hash}); NorenCredit repaid = 3.75 USDC; forwarder tx ${bridge3.written}`);
 
 console.log(`\nAll ${results.length} steps passed in ${at()} (local forks only).`);

@@ -125,7 +125,9 @@ export function createMerchantServer(options: ServerOptions): Server {
     if (existing.status === 0) {
       const data = encodeFunctionData({ abi: gatewayAbi, functionName: 'createInvoice', args: [id, row.invoice.amount, row.invoice.expiry] });
       let hash: Hex;
-      if (options.localUnlockedMerchant) hash = await rh.request({ method: 'eth_sendTransaction', params: [{ from: merchantAddress, to: gateway, data }] });
+      // On the dev fork the merchant is an Anvil account. Anvil's built-in signer keeps the fork's original chain id after
+      // anvil_setChainId (dev:all serves Robinhood as 46630 for CRE), so send as an impersonated account instead.
+      if (options.localUnlockedMerchant) { await rh.request({ method: 'anvil_impersonateAccount', params: [merchantAddress] }); hash = await rh.request({ method: 'eth_sendTransaction', params: [{ from: merchantAddress, to: gateway, data }] }); }
       else hash = await createWalletClient({ account: account as any, transport: http(options.credit.robinhoodRpc!) }).sendTransaction({ to: gateway, data, chain: null } as any);
       const receipt = await rh.waitForTransactionReceipt({ hash });
       if (receipt.status !== 'success') throw new Error(`NorenGateway.createInvoice reverted: ${hash}`);
