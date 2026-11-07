@@ -37,7 +37,23 @@ A noren is the split fabric curtain hung in the doorway of a traditional Japanes
 - **Reputation that raises your limit, on-chain but private.** World ID (one human), on-time repayments and Reclaim zkTLS proofs (credit score, exchange KYC, balances) are recorded in `NorenReputation` as a proof *kind* plus a salted commitment, never the data. Your tier, and so your LTV, is computed on-chain.
 - **USDC from any chain to Arc.** Circle CCTP V2 from 10 configured testnets, live from the app from Ethereum, Base, Arbitrum and Robinhood; a hook can pay an invoice, open an Aqua order or shield into the pool on arrival. Chainlink CRE orchestrates the relays, FX prices and credit lines; Chainlink CCIP carries credit instructions (10 messages, all delivered).
 
-**Demo video:** _link added at submission_ · **Arc Studio:** [studio.arc.io/app/074b59c4…](https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b) · **Surfaces:** Noren Merchant (`#/dashboard`), the Noren app (`#/app`), the Noren SDK (`@noren/core`, `@noren/robinhood`, `@noren/cctp`, `@noren/ccip`, `@noren/xchain-aqua`).
+**Demo video:** [ETHGlobal showcase](https://ethglobal.com/showcase/noren-bh8wb) · **Arc Studio:** [studio.arc.io/app/074b59c4…](https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b) · **Surfaces:** Noren Merchant (`#/dashboard`), the Noren app (`#/app`), the Noren SDK (`@noren/core`, `@noren/robinhood`, `@noren/cctp`, `@noren/ccip`, `@noren/xchain-aqua`).
+
+## For Arc judges
+
+Everything Arc's judging email asks for, in one place. Each item says plainly what exists.
+
+| Arc asks for | Noren |
+|---|---|
+| **Live deployment** | Live on **Arc testnet** (public chain 5042002), not Arc mainnet: Noren holds no real funds. Hosted apps: [Noren app](https://noren-app-beta.vercel.app) · [Noren Merchant](https://noren-merchant.vercel.app) · [Aubelle demo shop](https://noren-shop.vercel.app). |
+| **Arc Studio project URL** | [studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b](https://studio.arc.io/app/074b59c4-98ec-44d4-908e-92f5d97d462b) ("Arc Private USDC Payment"). Studio imported and compiled the 11 Arc contracts, wrote 24 Foundry tests (re-run locally: **24/24 pass**), checked the live deployment read-only and built a console that reads it ([docs/ARC.md](docs/ARC.md#arc-studio), [`arc-studio/`](arc-studio)). **Honest gap:** Noren's code came first; Studio is where the Arc contracts were imported, tested and verified, not where they were first written. |
+| **Public repo** | https://github.com/nickthelegend/noren |
+| **What it does** | Merchants accept stablecoins, stocks or credit, privately. A customer pays with a zero-knowledge proof made in the browser and bound to one invoice; the shop is paid in USDC on Arc and never learns who paid. |
+| **What Arc enables that other chains don't** | USDC is the gas token, so a shopper needs only USDC: no second token to buy before paying. Invoices, refunds and credit lines are all in dollars. Circle CCTP V2 lands USDC from any chain directly in Noren's hook (`NorenArcHook`), which can pay an invoice or shield into the pool on arrival. Fast finality makes a checkout feel like a card payment. |
+| **Video walkthrough** | [ETHGlobal showcase](https://ethglobal.com/showcase/noren-bh8wb): the full product on Arc testnet (merchant onboarding, private checkout, bridge from any chain, credit). It doesn't show Arc Studio. |
+| **Builder profile** | GitHub [@nickthelegend](https://github.com/nickthelegend) |
+| **Contract addresses** | `NorenCheckout` [`0xe18a80506fdb7f5498aad7387a21134118a77547`](https://explorer.testnet.arc.io/address/0xe18a80506fdb7f5498aad7387a21134118a77547) · Privacy Pools Entrypoint [`0xa22f3200ecb4319b48dca49677c2f73cd7260ad5`](https://explorer.testnet.arc.io/address/0xa22f3200ecb4319b48dca49677c2f73cd7260ad5) · USDC pool [`0x393d8d46e1dff8a719820e36d70ba509896ea57d`](https://explorer.testnet.arc.io/address/0x393d8d46e1dff8a719820e36d70ba509896ea57d) · `NorenCreditLine` [`0x4e26d0bfc5ac22b3fe8579afe50cb9584b2a1f86`](https://explorer.testnet.arc.io/address/0x4e26d0bfc5ac22b3fe8579afe50cb9584b2a1f86) · `NorenArcHook` [`0x30C84a5aAD4f4bDd25a27e33F563EfBC2CFaa3F4`](https://explorer.testnet.arc.io/address/0x30C84a5aAD4f4bDd25a27e33F563EfBC2CFaa3F4). The full list is in [Security, verified source, deploy](#security-verified-source-deploy). |
+| **One example transaction** | A private payment made on the hosted app: [`0x38b8ce96…b0f5`](https://explorer.testnet.arc.io/tx/0x38b8ce96c9ad3a2957467def0194eeba8e2cf0d2d26f5aae9df7b7b8fa12b0f5). The payer's address is not in the transaction, its input or its logs. More in [Live on public testnets](#live-on-public-testnets). |
 
 ## Screenshots
 
