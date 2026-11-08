@@ -6,6 +6,12 @@
 
 ![Noren](docs/img/readme/landing.jpg)
 
+## World is Flat edition
+
+Branch `wif` is a separate, Robinhood Chain-only Noren build for $WIF. A customer pays a USDG invoice with $WIF, ETH, USDG or an eligible Stock Token; the merchant receives USDG. The $WIF path performs an atomic two-hop swap through live Uniswap v4 pools. A 30 bps fee on non-WIF invoice payments accrues in USDG, then a keeper buys and burns $WIF. Paying in $WIF waives that fee. The gateway publishes `totalWifBurned` and `WifBurned` events, which the WIF merchant dashboard and receipt read from chain. The batch burn keeps small invoices from each paying for two extra swaps.
+
+This edition uses chain **4663** only. It has no Arc, CCTP, or privacy flow. The current [runbook](docs/WIF.md) covers the verified pool keys, fork tests, build flag (`NOREN_EDITION=wif`), deployment and exact demo transaction checklist. From the repo root, run `sh packages/robinhood/scripts/test-fork.sh` for the fresh-fork contract suite, `pnpm test` for the existing TypeScript suites, and `NOREN_EDITION=wif pnpm --filter @noren/web build` for the WIF app. The public repo is [nickthelegend/noren](https://github.com/nickthelegend/noren). Mainnet deployment, transaction links and a WIF demo video are pending funding and hosting, tracked in [BLOCKED.md](BLOCKED.md).
+
 ## Why the name Noren (暖簾)
 
 A noren is the split fabric curtain hung in the doorway of a traditional Japanese shop or restaurant. It tells passers-by the shop is open and shows its name, yet hides who is inside, while air still flows through. Noren does the same for payments: the merchant is open for business and is paid in full, but the curtain hides who paid. It hides the payer, not the payment: the merchant, the amount and the invoice are still visible on-chain. Value still flows freely: USDC from any chain, stocks and credit all settle on Arc.

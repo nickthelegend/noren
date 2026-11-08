@@ -188,3 +188,16 @@ The Anvil-only USDC shim is necessary because stock Anvil cannot execute Arc's n
 ## Browser flow (packages/web, Nov 6 2026)
 
 Headless Chromium against `pnpm dev:stack` (local fork): merchant console created a 7.50 USDC invoice; a fresh browser wallet took test USDC from the fork-only faucet, approved USDC to the Entrypoint, shielded 20 USDC (ASP approval after ~6 s), bound the invoice, **proved in the browser in 2.18 s**, and the merchant server relayed the payment (~4.5 s click-to-paid). The console showed `Paid`, then `Refunded` after a 2.50 refund; the customer saw 12.50 private balance and 2.50 in the refund inbox. Two bugs found and fixed in this run: the shield step must approve USDC first (Kohaku returns only the deposit), and the ASP tree endpoint needed CORS for browsers.
+# World is Flat edition (`wif`, November 9, 2026)
+
+| Check | Result |
+|---|---|
+| Real deployed v4 WIF and USDG pools on a latest-block Robinhood Chain fork (`NorenWifRouterTest`) | **1 passed**: exact USDG output for WIF and USDG-funded WIF buy |
+| WIF gateway fork suite (`NorenWifEditionTest`) | **3 passed**: WIF pays invoice with slippage bound and fee waiver; USDG and NVDA accrue fees; `burnAccrued` emits the amount burned, reduces real WIF total supply by that amount, and pays a keeper tip; owner-only fee caps and threshold |
+| Existing TypeScript suites, `pnpm test` | **157 passed**, 23 files, after excluding the local `.pnpm-store` cache from Vitest discovery |
+| `NOREN_EDITION=wif pnpm --filter @noren/web build` | **passed** |
+| `DeployWif.s.sol --broadcast` against a fresh local Anvil fork | **passed**, creating the gateway, WIF router, vault and oracle; the WIF server `/config` and fork gateway `totalWifBurned()` read succeeded |
+| Local fork runbook sequence on that deployment | **passed**: created 10 USDG and 25 USDG invoices, paid the first with real WIF through the two live v4 pools and the second with real NVDA through the vault, then called `burnAccrued`; the live WIF `totalSupply` fell by exactly **52.906344733525617488 WIF**, matching `totalWifBurned`. Fork-only tx hashes: WIF payment `0xefbff650c143b15c4ad7229e3002d15c12c0f86a0cf288cc2fa4b44e3673068a`, NVDA payment `0x40ca6b15019361e5aaca370eefe1903c8a792680d0d57b62ffad36fa27f835fe`, burn `0xcd26896a716e91bbd81d4378741623ea0cdb260de4523fe9d061dff7bb96deda`. These hashes exist only on the local fork. |
+| Full `sh packages/robinhood/scripts/test-fork.sh` | **179 passed, 10 failed, 3 skipped** across 17 suites. All new WIF tests passed in this run. The failures are in older oracle, Aqua, credit and liquidation tests with fixed assumptions about Stock Token feed age, current market price or maker-v4 relative quotes. The WIF router is unset in those fixtures, so their changed gateway/credit paths are inactive. A browser visual check was unavailable because the computer-use browser host could not be reached. |
+
+The full-suite failures mean the requested blanket `forge test` gate is **not yet green**. Do not report it as passed. The public RPC prunes old state, so use a fresh fork at the latest block for further runs.
