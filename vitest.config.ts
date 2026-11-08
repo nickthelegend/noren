@@ -7,5 +7,5 @@ import { configDefaults, defineConfig } from 'vitest/config';
 export default defineConfig({
   test: { exclude: [...configDefaults.exclude, '**/*.fork.test.ts',
     ...(process.argv.some((arg) => arg.endsWith('.live.test.ts')) ? [] : ['**/*.live.test.ts']),
-    '**/out/**', '**/lib/**', 'examples/shop/**', 'film/**'] },
+    '**/out/**', '**/lib/**', '**/.pnpm-store/**', 'examples/shop/**', 'film/**'] },
 });
