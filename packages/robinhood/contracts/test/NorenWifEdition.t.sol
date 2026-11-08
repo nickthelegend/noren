@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IERC20} from '@oz/token/ERC20/IERC20.sol';
+import {Vm} from 'forge-std/Vm.sol';
 import {RobinhoodBase} from './RobinhoodBase.sol';
 import {RobinhoodMainnet as RH} from '../script/RobinhoodMainnet.sol';
 import {NorenWifRouter} from '../src/NorenWifRouter.sol';
@@ -60,8 +61,20 @@ contract NorenWifEditionTest is RobinhoodBase {
     assertGt(fee, 3e6);
     uint256 supplyBefore = wif.totalSupply();
     uint256 tipBefore = wif.balanceOf(customer);
+    uint256 minOut = router.quoteWifFromUsdg(fee);
+    vm.recordLogs();
     vm.prank(customer);
-    uint256 burned = gateway.burnAccrued(1);
+    uint256 burned = gateway.burnAccrued(minOut);
+    Vm.Log[] memory entries = vm.getRecordedLogs();
+    bool found;
+    for (uint256 i; i < entries.length; ++i) {
+      if (entries[i].emitter != address(gateway) || entries[i].topics[0] != keccak256('WifBurned(bytes32,uint256,uint256)')) continue;
+      (uint256 usdgIn, uint256 eventBurned) = abi.decode(entries[i].data, (uint256, uint256));
+      assertEq(usdgIn, fee);
+      assertEq(eventBurned, burned);
+      found = true;
+    }
+    assertTrue(found, 'WifBurned emitted');
     assertEq(wif.totalSupply(), supplyBefore - burned);
     assertEq(gateway.totalWifBurned(), burned);
     assertGt(wif.balanceOf(customer), tipBefore);

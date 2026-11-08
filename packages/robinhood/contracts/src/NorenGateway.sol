@@ -150,6 +150,7 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   function burnAccrued(uint256 minWifOut) external nonReentrant returns (uint256 burned) {
     uint256 amount = accruedUsdg;
     if (amount < burnThresholdUsdg) revert BurnBelowThreshold(amount, burnThresholdUsdg);
+    if (minWifOut == 0) revert BadConfig();
     accruedUsdg = 0;
     usdg.forceApprove(address(wifRouter), amount);
     uint256 bought = wifRouter.usdgForWif(amount, minWifOut, address(this));

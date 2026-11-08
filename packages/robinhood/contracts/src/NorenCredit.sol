@@ -441,13 +441,12 @@ contract NorenCredit is Ownable2Step, ReentrancyGuard, EIP712, IReceiver, INoren
 
     _pullCollateral(collateral, c, collateralAmount);
     gateway.settleByCredit(merchant, invoiceId, msg.sender);
-    vault.disburse(merchant, principal - principal * pr.merchantFeeBps / BPS);
-    if (address(gateway.wifRouter()) != address(0)) {
-      uint256 wifFee = principal * gateway.protocolFeeBps() / BPS;
-      if (wifFee != 0) {
-        vault.disburse(address(gateway), wifFee);
-        gateway.accrueCreditFee(invoiceId, wifFee);
-      }
+    uint256 merchantFee = principal * pr.merchantFeeBps / BPS;
+    uint256 wifFee = address(gateway.wifRouter()) == address(0) ? 0 : principal * gateway.protocolFeeBps() / BPS;
+    vault.disburse(merchant, principal - (merchantFee > wifFee ? merchantFee : wifFee));
+    if (wifFee != 0) {
+      vault.disburse(address(gateway), wifFee);
+      gateway.accrueCreditFee(invoiceId, wifFee);
     }
     emit PlanOpened(planId, msg.sender, merchant, invoiceId, c, collateralAmount, principal, valueUsd8);
   }

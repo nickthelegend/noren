@@ -43,6 +43,15 @@ contract NorenWifRouter {
     return Math.mulDiv(eth, uint256(wif) * wif, 2 ** 192, Math.Rounding.Ceil) * 103 / 100 + 1;
   }
 
+  /// @notice Conservative minimum WIF output for a USDG fee burn, from both live pool prices.
+  function quoteWifFromUsdg(uint256 amountUsdg) external view returns (uint256) {
+    (uint160 usd,,,) = stateView.getSlot0(poolId(usdgKey()));
+    (uint160 wif,,,) = stateView.getSlot0(poolId(wifKey()));
+    if (usd == 0 || wif == 0) revert BadPool();
+    uint256 eth = Math.mulDiv(amountUsdg, 2 ** 192, uint256(usd) * usd);
+    return Math.mulDiv(eth, uint256(wif) * wif, 2 ** 192) * 97 / 100;
+  }
+
   /// @notice Exact USDG output. The payer's unused WIF is returned in this transaction.
   function wifForExactUsdg(uint256 amountUsdg, uint256 maxWifIn, address recipient) external returns (uint256 spent) {
     IERC20(WIF).safeTransferFrom(msg.sender, address(this), maxWifIn);
@@ -72,10 +81,10 @@ contract NorenWifRouter {
       manager.take(USDG, recipient, amount);
       return abi.encode(wifIn);
     }
-    int256 usdDelta = manager.swap(usdgKey(), SwapParams(false, -int256(amount), MAX_PRICE), '');
-    uint256 ethOut = uint256(uint128(_amount0(usdDelta)));
-    int256 wifDelta = manager.swap(wifKey(), SwapParams(true, -int256(ethOut), MIN_PRICE), '');
-    uint256 wifOut = uint256(uint128(_amount1(wifDelta)));
+    int256 sellUsdDelta = manager.swap(usdgKey(), SwapParams(false, -int256(amount), MAX_PRICE), '');
+    uint256 ethOut = uint256(uint128(_amount0(sellUsdDelta)));
+    int256 buyWifDelta = manager.swap(wifKey(), SwapParams(true, -int256(ethOut), MIN_PRICE), '');
+    uint256 wifOut = uint256(uint128(_amount1(buyWifDelta)));
     if (wifOut < limit) revert Slippage();
     manager.sync(USDG);
     IERC20(USDG).safeTransfer(address(manager), amount);

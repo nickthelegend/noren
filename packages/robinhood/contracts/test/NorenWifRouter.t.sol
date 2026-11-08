@@ -24,7 +24,7 @@ contract NorenWifRouterTest is Test {
     uint256 spent = router.wifForExactUsdg(10e6, quote, address(this));
     assertGt(spent, 0);
     usdg.approve(address(router), 1e6);
-    uint256 out = router.usdgForWif(1e6, 1, address(this));
+    uint256 out = router.usdgForWif(1e6, router.quoteWifFromUsdg(1e6), address(this));
     assertGt(out, 0);
   }
 }
