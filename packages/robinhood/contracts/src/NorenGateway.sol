@@ -11,6 +11,9 @@ import {NorenAssetOracle} from './NorenAssetOracle.sol';
 import {INorenVault} from './interfaces/INorenVault.sol';
 import {INorenLiquidity} from './interfaces/IAquaSwapVM.sol';
 import {IWETH} from './interfaces/IWETH.sol';
+import {NorenWifRouter} from './NorenWifRouter.sol';
+
+interface IBurnableWif { function burn(uint256 amount) external; }
 
 /// @title NorenGateway
 /// @notice Merchants post USDG invoices; customers pay them with USDG, ETH or a Stock Token.
@@ -50,6 +53,13 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   address public credit;
   /// @notice Aqua + SwapVM maker router; address(0) = vault only.
   INorenLiquidity public liquidity;
+  NorenWifRouter public wifRouter;
+  uint16 public protocolFeeBps = 30;
+  uint16 public burnShareBps = 10_000;
+  uint16 public keeperTipBps = 100;
+  uint256 public burnThresholdUsdg = 1e6;
+  uint256 public accruedUsdg;
+  uint256 public totalWifBurned;
   /// @notice Use the vault when no maker strategy can fill (true by default).
   bool public vaultFallback = true;
   mapping(address asset => uint16) public spreadBps;
@@ -72,6 +82,10 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   event LiquiditySet(address indexed liquidity, bool vaultFallback);
   event InvoiceRoutedToMaker(address indexed merchant, bytes32 indexed invoiceId, bytes32 indexed strategyHash, uint256 assetIn);
   event InvoiceRoutedToVault(address indexed merchant, bytes32 indexed invoiceId, uint256 assetIn);
+  event WifBurned(bytes32 indexed invoiceId, uint256 usdgIn, uint256 wifBurned);
+  event WifRouterSet(address indexed router);
+  event WifFeeConfigSet(uint16 feeBps, uint16 burnShareBps, uint16 keeperTipBps, uint256 thresholdUsdg);
+  event WifFeeAccrued(bytes32 indexed invoiceId, uint256 usdgAmount);
 
   error InvoiceExists();
   error InvoiceNotOpen(Status status);
@@ -84,6 +98,7 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
   error ReceivedShort(uint256 expected, uint256 received);
   error BadConfig();
   error NoMakerLiquidity(address asset, uint256 amountUsdg);
+  error BurnBelowThreshold(uint256 accrued, uint256 threshold);
 
   constructor(address owner_, IERC20 usdg_, IWETH weth_, NorenAssetOracle oracle_, INorenVault vault_) Ownable(owner_) {
     usdg = usdg_;
@@ -113,6 +128,37 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     liquidity = liquidity_;
     vaultFallback = vaultFallback_;
     emit LiquiditySet(address(liquidity_), vaultFallback_);
+  }
+
+  function setWifRouter(NorenWifRouter router_) external onlyOwner {
+    if (address(router_) == address(0) || address(router_.manager()).code.length == 0) revert BadConfig();
+    wifRouter = router_;
+    emit WifRouterSet(address(router_));
+  }
+
+  function setWifFeeConfig(uint16 feeBps, uint16 burnBps, uint16 tipBps, uint256 thresholdUsdg) external onlyOwner {
+    if (feeBps > 100 || burnBps > BPS || tipBps > 500 || thresholdUsdg == 0) revert BadConfig();
+    protocolFeeBps = feeBps;
+    burnShareBps = burnBps;
+    keeperTipBps = tipBps;
+    burnThresholdUsdg = thresholdUsdg;
+    emit WifFeeConfigSet(feeBps, burnBps, tipBps, thresholdUsdg);
+  }
+
+  /// @notice Anyone can buy and burn accrued fees once the threshold is met. A minimum output
+  /// protects the keeper against price movement; the tip is paid in bought WIF.
+  function burnAccrued(uint256 minWifOut) external nonReentrant returns (uint256 burned) {
+    uint256 amount = accruedUsdg;
+    if (amount < burnThresholdUsdg) revert BurnBelowThreshold(amount, burnThresholdUsdg);
+    accruedUsdg = 0;
+    usdg.forceApprove(address(wifRouter), amount);
+    uint256 bought = wifRouter.usdgForWif(amount, minWifOut, address(this));
+    uint256 tip = bought * keeperTipBps / BPS;
+    burned = bought - tip;
+    if (tip != 0) IERC20(wifRouter.WIF()).safeTransfer(msg.sender, tip);
+    IBurnableWif(wifRouter.WIF()).burn(burned);
+    totalWifBurned += burned;
+    emit WifBurned(bytes32(0), amount, burned);
   }
 
   // ---------------------------------------------------------------- merchants
@@ -148,7 +194,8 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed)
   {
     Invoice memory inv = _openInvoice(merchant, invoiceId);
-    (assetIn, priceUsd8, marketClosed,) = _quote(asset, inv.amountUsdg);
+    uint256 fee = address(wifRouter) != address(0) && asset != wifRouter.WIF() ? uint256(inv.amountUsdg) * protocolFeeBps / BPS : 0;
+    (assetIn, priceUsd8, marketClosed,) = _quote(asset, uint256(inv.amountUsdg) + fee);
   }
 
   /// @notice quote() plus the route: the Aqua strategy that fills it, or 0 for the vault (or USDG).
@@ -158,7 +205,8 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     returns (uint256 assetIn, uint256 priceUsd8, bool marketClosed, bytes32 strategyHash)
   {
     Invoice memory inv = _openInvoice(merchant, invoiceId);
-    return _quote(asset, inv.amountUsdg);
+    uint256 fee = address(wifRouter) != address(0) && asset != wifRouter.WIF() ? uint256(inv.amountUsdg) * protocolFeeBps / BPS : 0;
+    return _quote(asset, uint256(inv.amountUsdg) + fee);
   }
 
   /// @notice Pay an open invoice with USDG, native ETH (asset = address(0)) or an accepted Stock Token.
@@ -202,6 +250,16 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     emit InvoiceSettledByCredit(merchant, invoiceId, borrower, amountUsdg);
   }
 
+  /// @dev Credit pays this fee out of its existing merchant fee after the vault disbursement.
+  function accrueCreditFee(bytes32 invoiceId, uint256 fee) external {
+    if (msg.sender != credit) revert NotCredit();
+    if (address(wifRouter) == address(0) || fee == 0) return;
+    uint256 burnPart = fee * burnShareBps / BPS;
+    accruedUsdg += burnPart;
+    if (fee > burnPart) usdg.safeTransfer(owner(), fee - burnPart);
+    emit WifFeeAccrued(invoiceId, burnPart);
+  }
+
   /// @notice Invoice amount for an open, unexpired invoice (reverts otherwise).
   function openAmount(address merchant, bytes32 invoiceId) external view returns (uint256) {
     return _openInvoice(merchant, invoiceId).amountUsdg;
@@ -213,9 +271,12 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     Invoice storage inv = _invoices[_key(merchant, invoiceId)];
     _requireOpen(inv);
     uint256 amount = inv.amountUsdg;
+    bool wifMode = address(wifRouter) != address(0);
+    uint256 fee = wifMode && asset != wifRouter.WIF() ? amount * protocolFeeBps / BPS : 0;
+    uint256 total = amount + fee;
     uint256 priceUsd8;
     bytes32 strategyHash;
-    (assetIn, priceUsd8,, strategyHash) = _quote(asset, amount);
+    (assetIn, priceUsd8,, strategyHash) = _quote(asset, total);
     if (assetIn > maxAssetIn) revert Slippage(assetIn, maxAssetIn);
     if (asset != NATIVE_ETH && msg.value != 0) revert BadValue();
 
@@ -226,12 +287,21 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     inv.assetIn = assetIn;
 
     // interactions
-    if (asset == address(usdg)) {
-      usdg.safeTransferFrom(msg.sender, merchant, amount);
+    if (wifMode && asset == wifRouter.WIF()) {
+      IERC20(asset).forceApprove(address(wifRouter), maxAssetIn);
+      IERC20(asset).safeTransferFrom(msg.sender, address(this), maxAssetIn);
+      uint256 spent = wifRouter.wifForExactUsdg(amount, maxAssetIn, address(this));
+      if (spent < maxAssetIn) IERC20(asset).safeTransfer(msg.sender, maxAssetIn - spent);
+      assetIn = spent;
+      inv.assetIn = spent;
+      usdg.safeTransfer(merchant, amount);
+    } else if (asset == address(usdg)) {
+      usdg.safeTransferFrom(msg.sender, wifMode ? address(this) : merchant, total);
+      if (wifMode) usdg.safeTransfer(merchant, amount);
     } else if (asset == NATIVE_ETH) {
       if (msg.value < assetIn) revert Slippage(assetIn, msg.value);
       weth.deposit{value: assetIn}();
-      _convert(address(weth), strategyHash, merchant, invoiceId, amount, assetIn);
+      _convert(address(weth), strategyHash, merchant, wifMode ? address(this) : merchant, invoiceId, total, assetIn);
       uint256 refund = msg.value - assetIn;
       if (refund != 0) {
         (bool ok,) = msg.sender.call{value: refund}('');
@@ -244,24 +314,31 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
       IERC20(asset).safeTransferFrom(msg.sender, dest, assetIn);
       uint256 got = IERC20(asset).balanceOf(dest) - before;
       if (got < assetIn) revert ReceivedShort(assetIn, got);
-      _convert(asset, strategyHash, merchant, invoiceId, amount, assetIn);
+      _convert(asset, strategyHash, merchant, wifMode ? address(this) : merchant, invoiceId, total, assetIn);
+    }
+    if (wifMode && asset != address(usdg) && asset != wifRouter.WIF()) usdg.safeTransfer(merchant, amount);
+    if (fee != 0) {
+      uint256 burnPart = fee * burnShareBps / BPS;
+      accruedUsdg += burnPart;
+      if (fee > burnPart) usdg.safeTransfer(owner(), fee - burnPart);
+      emit WifFeeAccrued(invoiceId, burnPart);
     }
     emit InvoicePaid(merchant, invoiceId, msg.sender, inv.asset, assetIn, amount, priceUsd8);
   }
 
   /// @dev Maker route: the asset (held here) is sold to the strategy and the maker pays the merchant.
   /// Vault route: the asset was sent to the vault, which pays the merchant from LP liquidity.
-  function _convert(address priced, bytes32 strategyHash, address merchant, bytes32 invoiceId, uint256 amount, uint256 assetIn)
+  function _convert(address priced, bytes32 strategyHash, address merchant, address recipient, bytes32 invoiceId, uint256 amount, uint256 assetIn)
     internal
   {
     if (strategyHash == bytes32(0)) {
       if (priced == address(weth)) IERC20(priced).safeTransfer(address(vault), assetIn);
-      vault.disburse(merchant, amount);
+      vault.disburse(recipient, amount);
       emit InvoiceRoutedToVault(merchant, invoiceId, assetIn);
       return;
     }
     IERC20(priced).forceApprove(address(liquidity), assetIn);
-    (uint256 used, bytes32 filled) = liquidity.sellForUsdg(priced, amount, assetIn, merchant);
+    (uint256 used, bytes32 filled) = liquidity.sellForUsdg(priced, amount, assetIn, recipient);
     if (used != assetIn || filled != strategyHash) revert ReceivedShort(assetIn, used);
     emit InvoiceRoutedToMaker(merchant, invoiceId, strategyHash, assetIn);
   }
@@ -271,6 +348,9 @@ contract NorenGateway is Ownable2Step, ReentrancyGuard {
     view
     returns (uint256 assetIn, uint256 priceUsd8, bool closed, bytes32 strategyHash)
   {
+    if (address(wifRouter) != address(0) && asset == wifRouter.WIF()) {
+      return (wifRouter.quoteWifForUsdg(amountUsdg), 0, false, bytes32(0));
+    }
     // USDG settles 1:1 with no conversion, so it does not depend on a feed (priceUsd8 = 0).
     if (asset == address(usdg)) return (amountUsdg, 0, false, bytes32(0));
     address priced = asset == NATIVE_ETH ? address(weth) : asset;
