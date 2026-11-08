@@ -20,8 +20,8 @@ export default defineConfig({
   plugins: [react()],
   envDir: envDir(),
   resolve: { dedupe: ["react", "react-dom", "viem"], alias: { assert: require.resolve("assert/") } },
-  define: { "process.env": {}, global: "globalThis" },
-  optimizeDeps: { include: ["snarkjs", "@kohaku-eth/privacy-pools", "@kohaku-eth/provider/viem", "maci-crypto"], esbuildOptions: { target: "es2022" } },
+  define: { "process.env": {}, global: "globalThis", __NOREN_EDITION__: JSON.stringify(process.env.NOREN_EDITION ?? "") },
+  optimizeDeps: { include: process.env.NOREN_EDITION === "wif" ? [] : ["snarkjs", "@kohaku-eth/privacy-pools", "@kohaku-eth/provider/viem", "maci-crypto"], esbuildOptions: { target: "es2022" } },
   build: { target: "es2022", chunkSizeWarningLimit: 4000 },
   server: { port: 5190, strictPort: true },
 });
