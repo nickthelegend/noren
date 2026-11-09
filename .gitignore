@@ -17,3 +17,5 @@ deployments/
 
 # Templates with variable names only (no values) are tracked.
 !.env.example
+art-src/
+art-src-wif/
